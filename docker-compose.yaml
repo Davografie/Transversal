@@ -1,0 +1,74 @@
+services:
+  arangodb:
+    build: ./arangodb
+    image: tv_adb
+    container_name: tv_adb
+    environment:
+      ARANGO_ROOT_PASSWORD: ${ARANGO_ROOT_PASSWORD}
+    volumes:
+      - "tv_data:/var/lib/arangodb3"
+      - "./arangodb/init_data:/init_data"
+    networks:
+      - network_tv
+    ports:
+      - 8529:8529
+  flask:
+    build: ./flask
+    image: tv_flask
+    container_name: tv_flask
+    logging:
+      options:
+        max-size: "8KiB"
+        max-file: "3"
+    volumes:
+      - "./flask:/app/:ro"
+      - ${MEDIA_FOLDER}/uploads:/media/uploads
+      - ${MEDIA_FOLDER}/imagens:/media/imagens
+    environment:
+      PUBLIC_IP: ${PUBLIC_IP}
+      ARANGO_ROOT_PASSWORD: ${ARANGO_ROOT_PASSWORD}
+      MEDIA_FOLDER: ${MEDIA_FOLDER}
+    networks:
+      - network_tv
+    ports:
+      - 5000:5000
+    expose:
+      - 5000
+    entrypoint: python
+    command: app.py
+  vue:
+    build: ./vue
+    image: tv_vue
+    container_name: tv_vue
+    volumes:
+      - "./vue:/usr/src/app"
+      - "/usr/src/app/node_modules"
+      - ${MEDIA_FOLDER}/uploads:/usr/src/app/public/assets/uploads
+    environment:
+      VITE_PUBLIC_IP: ${PUBLIC_IP}
+    networks:
+      - network_tv
+    ports:
+      - 8080:8080
+    expose:
+      - 8080
+#   comfyui:
+#     image: comfyui/base
+#     container_name: comfyui
+#     volumes:
+#       - ${MEDIA_FOLDER}/imagens:/media/imagens
+#     gpus: all
+#     networks:
+#       - network_tv
+#     ports:
+#       - 8188:8188
+#     expose:
+#       - 8188
+
+networks:
+  network_tv:
+    driver: bridge
+
+volumes:
+  tv_data:
+#   tv_uploads:

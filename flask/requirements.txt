@@ -1,0 +1,9 @@
+Flask
+flask-cors
+flask-session
+pyarango
+graphql-server[flask]
+graphene
+python-arango
+Pillow
+pandas

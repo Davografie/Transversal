@@ -1,0 +1,153 @@
+/* color palette from <https://github.com/vuejs/theme> */
+:root {
+	--vt-c-white: #ffffff;
+	--vt-c-white-soft: #f8f8f8;
+	/* --vt-c-white-mute: #f2f2f2; */
+	/* --vt-c-white-mute: rgba(255, 255, 255, 0.7); */
+	--vt-c-white-mute: rgba(255, 255, 255, 0.7);
+
+	--vt-c-black: #000;
+	--vt-c-black-soft: #222222;
+	/* --vt-c-black-mute: #282828; */
+	--vt-c-black-mute: rgba(0, 0, 0, 0.7);
+
+	--vt-c-indigo: #2c3e50;
+
+	--vt-c-divider-light-1: #333;
+	--vt-c-divider-light-2: #666;
+	--vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
+	--vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+
+	--vt-c-text-light-1: var(--vt-c-indigo);
+	--vt-c-text-light-2: rgba(60, 60, 60, 1);
+	--vt-c-text-dark-1: var(--vt-c-white);
+	--vt-c-text-dark-2: rgba(235, 235, 235, 1);
+}
+
+/* semantic color variables for this project */
+:root {
+	--color-background: var(--vt-c-white);
+	--color-background-soft: var(--vt-c-white-soft);
+	--color-background-mute: var(--vt-c-white-mute);
+
+	--color-border: var(--vt-c-divider-light-2);
+	--color-border-hover: var(--vt-c-divider-light-1);
+
+	--color-heading: var(--vt-c-text-light-1);
+	--color-text: var(--vt-c-text-light-2);
+	--text-shadow: var(--color-background) 0px 0px 2px,
+		var(--color-background) 0px 0px 4px,
+		var(--color-background) 0px 0px 8px,
+		var(--color-background) 0px 0px 2px;
+
+	--section-gap: 160px;
+
+	--color-highlight: green;
+	--color-highlight-mute: rgba(255, 165, 0, 0.5);
+	--color-highlight-text: white;
+
+	--color-editing: lightblue;
+	--color-editing-mute: rgba(0, 255, 255, 0.5);
+	--color-editing-text: black;
+
+	--color-positive-die-4: orange;
+	--color-positive-die-4-text: black;
+	--color-positive-die-4-text-outline: white;
+	--color-positive-die-6: white;
+	--color-positive-die-6-text: black;
+	--color-positive-die-6-text-outline: white;
+	--color-positive-die-8: red;
+	--color-positive-die-8-text: white;
+	--color-positive-die-8-text-outline: black;
+	--color-positive-die-10: blue;
+	--color-positive-die-10-text: white;
+	--color-positive-die-10-text-outline: black;
+	--color-positive-die-12: green;
+	--color-positive-die-12-text: black;
+	--color-positive-die-12-text-outline: white;
+
+	--color-negative-die-4: chocolate;
+	--color-negative-die-4-text: white;
+	--color-negative-die-4-text-outline: black;
+	--color-negative-die-6: darkgrey;
+	--color-negative-die-6-text: black;
+	--color-negative-die-6-text-outline: white;
+	--color-negative-die-8: darkred;
+	--color-negative-die-8-text: white;
+	--color-negative-die-8-text-outline: black;
+	--color-negative-die-10: darkblue;
+	--color-negative-die-10-text: white;
+	--color-negative-die-10-text-outline: black;
+	--color-negative-die-12: darkgreen;
+	--color-negative-die-12-text: white;
+	--color-negative-die-12-text-outline: black;
+	--color-hitch: darkred;
+	--color-hitch-mute: lightcoral;
+	--color-hitch-text: white;
+	--color-disabled: lightgrey;
+	--color-disabled-text: darkgrey;
+	--color-disabled-text-outline: #333;
+
+	--dice-font-positive: "Courier New", "Lucida Console", "Menlo", monospace;
+	--dice-font-negative: "Avenir", "Fira Code", "Inconsolata", "Roboto Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-background: var(--vt-c-black);
+		--color-background-soft: var(--vt-c-black-soft);
+		--color-background-mute: var(--vt-c-black-mute);
+
+		--color-border: var(--vt-c-divider-dark-2);
+		--color-border-hover: var(--vt-c-divider-dark-1);
+
+		--color-heading: var(--vt-c-text-dark-1);
+		--color-text: var(--vt-c-text-dark-2);
+		--color-disabled: darkgrey;
+		--color-disabled-text: lightgrey;
+
+		--color-highlight: gold;
+		--color-highlight-mute: rgba(255, 165, 0, 0.5);
+		--color-highlight-text: black;
+
+		--color-hitch-mute: rgba(255, 0, 0, 0.5);
+	}
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	font-weight: normal;
+}
+
+body {
+	color: var(--color-text);
+	background: var(--color-background);
+	transition:
+		color 0.5s,
+		background-color 0.5s;
+	line-height: 1.6;
+	font-family:
+		Inter,
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		Roboto,
+		Oxygen,
+		Ubuntu,
+		Cantarell,
+		'Fira Sans',
+		'Droid Sans',
+		'Helvetica Neue',
+		sans-serif;
+	font-size: 15px;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+button {
+	cursor: pointer;
+}

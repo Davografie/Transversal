@@ -1,0 +1,61 @@
+/*
+    remove presence, then locations:
+        remove traitset settings
+        remove entity trait settings
+        remove relation trait settings
+        remove relations
+        remove entities
+*/
+
+LET locations = (
+    FOR location, edge, path IN 0..100 INBOUND 'Entities/4642762' Relations
+        FILTER path.edges[*].type ALL == 'super'
+    RETURN location
+)
+FOR l IN locations
+//RETURN e.name
+
+/*
+FOR e IN Entities
+    FILTER e.location == l._id
+    FILTER e.type != 'location'
+    FILTER TO_NUMBER(e._id) > 100
+*/
+//RETURN e.name
+
+/*
+FOR ts IN TraitsetSettings
+    FILTER ts._from == e._id
+REMOVE ts IN TraitsetSettings
+*/
+/*
+FOR t1 IN TraitSettings
+    FILTER t1._from == e._id
+REMOVE t1 IN TraitSettings
+*/
+/*
+FOR r1 IN Relations
+    FILTER r1._from == e._id
+FOR t2 IN TraitSettings
+    FILTER t2._from == r1._id
+REMOVE t2 IN TraitSettings
+*/
+/*
+FOR r2 IN Relations
+    FILTER r2._from == e._id
+FOR t3 IN TraitSettings
+    FILTER t3._to == r2._id
+REMOVE t3 IN TraitSettings
+*/
+/*
+FOR r3 IN Relations
+    FILTER r3._from == e._id
+REMOVE r3 IN Relations
+*/
+/*
+FOR r4 IN Relations
+    FILTER r4._to == e._id
+REMOVE r4 IN Relations
+*/
+
+//REMOVE e IN Entities

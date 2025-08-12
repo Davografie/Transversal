@@ -1,0 +1,4 @@
+
+arangodb/data/**/*
+arangodb/arangodump.sh
+media/

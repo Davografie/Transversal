@@ -1,0 +1,17 @@
+LET map = [
+    { 'rating': 'd4', 'score': 1 },
+    { 'rating': 'd6', 'score': 2 },
+    { 'rating': 'd8', 'score': 3 },
+    { 'rating': 'd10', 'score': 4 },
+    { 'rating': 'd12', 'score': 5 }
+]
+FOR setting IN TraitSettings
+FILTER setting.rating != null
+LET numbers = (
+    FOR r IN setting.rating
+    FOR m IN map
+    FILTER r == m.rating
+    RETURN m.score
+)
+UPDATE setting WITH { rating: numbers } IN TraitSettings
+RETURN { old: OLD.rating, new: NEW.rating }
