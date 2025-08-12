@@ -1,5 +1,5 @@
 # installation
-*tested on Ubuntu 24.04 LTS*
+*tested on Windows 11 and Ubuntu 24.04 LTS*
 
 ## requirements
 ### Linux
