@@ -8,7 +8,7 @@
 see https://docs.docker.com/compose/install/
 
 ### Windows
-- docker desktop
+- docker desktop (needs to be running)
 
 ## steps
 ### download/clone this repository
