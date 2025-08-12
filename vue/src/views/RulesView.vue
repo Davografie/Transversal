@@ -53,6 +53,7 @@
 			<h1 @click="show_controls = !show_controls" :class="{ 'title-active': show_controls }">app controls & navigation</h1>
 			<div id="controls" class="rule" v-if="show_controls">
 				<p>You can often change something with a right-click or long-press.</p>
+				<p>There's a light and a dark theme, change your browser or OS theme if you prefer.</p>
 				<div id="character_select_wrapper" :class="{ 'wrapper-active': show_character }">
 					<h2 @click="show_character = !show_character" :class="{ 'title-active': show_character }">character</h2>
 					<div id="character-select-screen" class="rule" v-if="show_character">
@@ -367,10 +368,6 @@
 		</div>
 
 		<p id="hint" style="text-align: center" v-if="!show_intro && !show_mechanics && !show_controls">click a subject to learn more ⤴</p>
-		<!-- <div id="transversing">
-			<div id="multiverse"></div>
-			<div id="alter-trait-sets"></div>
-		</div> -->
 	</div>
 </template>
 
