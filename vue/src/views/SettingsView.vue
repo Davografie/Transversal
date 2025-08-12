@@ -101,7 +101,7 @@
 		}
 	}
 
-	onMounted(() => {
+	watch(route, () => {
 		if(route.name == 'Landing' && player.the_entity?.location?.key) {
 			router.push({ path: '/location/' + player.the_entity?.location.key + '/settings' })
 		}
@@ -145,7 +145,7 @@
 					</div>
 
 					<div class="link" :class="{ 'header': view == 'rules'}" @click="go_to('rules')">
-						rules
+						help
 					</div>
 
 				</div>
