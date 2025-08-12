@@ -197,7 +197,10 @@
 				<RulesView class="setting-page" v-if="view == 'rules'" />
 			</div>
 		</div>
-		<div class="button menu-button" :class="{ 'active': scroll.x.value > 0}" @click="scroll.x.value > 0 ? container.scrollTo(0, 0) : container.scrollTo(300, 0)">
+		<div class="button menu-button"
+				:class="{ 'active': scroll.x.value > 0}"
+				@click="scroll.x.value > 0 ? container.scrollTo(0, 0) : container.scrollTo(300, 0)"
+				v-if="player.orientation == 'vertical'">
 			<span class="icon">
 				{{scroll.x.value > 0 ? '➡' : '⬅'}}
 			</span>
