@@ -39,7 +39,7 @@ export const useDicepoolStore = defineStore('dicepool', () => {
 	const pull_resolutions: Ref<boolean> = ref(true)
 
 	const dice: Ref<Array<Die>> = ref([])
-	const dicepool_limit: Ref<number> = ref(5)
+	const dicepool_limit: Ref<number> = ref(0)
 
 	const result_limit: Ref<number> = ref(2)
 	const result = computed(() => {

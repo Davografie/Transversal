@@ -41,7 +41,7 @@ arango_password = os.environ.get("ARANGO_ROOT_PASSWORD")
 arango_db = "transversal"
 
 # session variables
-dicepool_limit = 5
+dicepool_limit = -1
 result_limit = 2
 effect_limit = 1
 session_characters = []
@@ -872,18 +872,36 @@ class CreateTrait(Mutation):
 	trait = Field(Trait)
 
 	def mutate(self, info, trait_input=None):
-		# print("CreateTrait:\t", trait_input)
-		if(trait_input and trait_input.name and trait_input.traitset_id):
-			new_trait = db.collection('Traits').insert({
-				'name': trait_input.name,
-				'explanation': trait_input.explanation,
-				'traitset': trait_input.traitset_id,
-				'required_traits': trait_input.required_traits,
-				'possible_sub_traits': trait_input.possible_sub_traits
+		# can't straight up put trait_input because the key names are different
+		new_trait = db.collection('Traits').insert({
+			'name': trait_input.name,
+			'explanation': trait_input.explanation,
+			'traitset': trait_input.traitset_id,
+			'required_traits': trait_input.required_traits,
+			'possible_sub_traits': trait_input.possible_sub_traits
+		})
+
+		# now also create the trait default, based on the traitset default if it exists or the absolute default
+		traitset_default = db.collection('TraitSettings').find({'_from': trait_input.get('traitset_id'), '_to': 'Traits/1'})
+		
+		if not traitset_default.empty():
+			traitset_default = [doc for doc in traitset_default][0]
+			db.collection('TraitSettings').insert({
+				'_from': new_trait.get('_id'),
+				'_to': 'Traits/1',
+				**{k: v for k, v in traitset_default.items() if v is not None and not k.startswith('_')}
 			})
-			return CreateTrait(trait=Trait(id=new_trait['_id']))
 		else:
-			raise Exception("CreateTrait:\tMissing name or traitset id")
+			absolute_default = db.collection('TraitSettings').find({'_from': 'Traits/1', '_to': 'Traits/1'})
+			if not absolute_default.empty():
+				absolute_default = [doc for doc in absolute_default][0]
+				db.collection('TraitSettings').insert({
+					'_from': new_trait.get('_id'),
+					'_to': 'Traits/1',
+					**{k: v for k, v in absolute_default.items() if v is not None and not k.startswith('_')}
+				})
+
+		return CreateTrait(trait=Trait(id=new_trait['_id']))
 
 class UpdateTraitDefault(Mutation):
 	class Arguments:

@@ -200,7 +200,7 @@
 		console.log('adding trait: ' + trait_search.value)
 		create_trait(trait_search.value)
 		trait_search.value = ""
-		retrieve_potential_traits()
+		setTimeout(() => retrieve_potential_traits(), 200)
 	}
 
 	const dice_in_dicepool = computed(() => {

@@ -7,9 +7,10 @@
 	import type { Die as DieType, Traitset as TraitsetType } from '@/interfaces/Types'
 	import { usePlayer } from '@/stores/Player'
 	import { placeholder_d6 } from '@/composables/Die'
-	import { RouterLink } from 'vue-router'
+	import { useRoute, RouterLink } from 'vue-router'
 
 	const player = usePlayer()
+	const route = useRoute()
 
 	const die: DieType = placeholder_d6
 	const show_intro = ref(false)
@@ -28,10 +29,11 @@
 	const show_hitches = ref(false)
 
 	const show_controls = ref(false)
-	const show_character_select = ref(false)
+	const show_character = ref(false)
 	const show_navigating_locations = ref(false)
 	const show_managing_codex = ref(false)
 	const show_limits = ref(false)
+	const show_architect = ref(false)
 </script>
 
 <template>
@@ -50,14 +52,23 @@
 		<div id="controls_wrapper" :class="{ 'wrapper-active': show_controls }">
 			<h1 @click="show_controls = !show_controls" :class="{ 'title-active': show_controls }">app controls & navigation</h1>
 			<div id="controls" class="rule" v-if="show_controls">
-				<div id="character_select_wrapper" :class="{ 'wrapper-active': show_character_select }">
-					<h2 @click="show_character_select = !show_character_select" :class="{ 'title-active': show_character_select }">character select</h2>
-					<div id="character-select-screen" class="rule" v-if="show_character_select">
-						<ol>
-							<li>Click <RouterLink to="/settings">menu</RouterLink> in the top navigation bar, then <RouterLink to="/characters">characters</RouterLink>, here all characters are displayed.</li>
-							<li>Click a card to navigate to the character page.</li>
-							<li>Click on 👤 or "play as character".</li>
-						</ol>
+				<p>You can often change something with a right-click or long-press.</p>
+				<p>There's a light and a dark theme, change your browser or OS theme if you prefer.</p>
+				<div id="character_select_wrapper" :class="{ 'wrapper-active': show_character }">
+					<h2 @click="show_character = !show_character" :class="{ 'title-active': show_character }">character</h2>
+					<div id="character-select-screen" class="rule" v-if="show_character">
+						<b>pick/create a character</b>
+						<ul>
+							<li>Click <RouterLink :to="'/location/' + route.params.location_key + '/settings'">menu</RouterLink> in the top navigation bar, then <RouterLink :to="'/location/' + route.params.location_key + '/settings/characters'">characters</RouterLink>, here all characters are displayed.</li>
+							<li>Click a character to play as that character, or click the empty character card with a + in it to create a new character.</li>
+						</ul>
+						<b>edit a character</b>
+						<p>you can change the character's attributes by right-clicking or longpressing:</p>
+						<ul>
+							<li>portrait</li>
+							<li>name</li>
+							<li>description</li>
+						</ul>
 					</div>
 				</div>
 				<div id="traitset_wrapper" :class="{ 'wrapper-active': show_traitset }">
@@ -87,28 +98,50 @@
 							<p>Traits consist of:
 								<ul>
 									<li>
-										a name
-										<p></p>
+										<p class="li-name">name</p>
 									</li>
 									<li>
-										a statement
-										<p>a short description</p>
+										<p class="li-name">statement</p>
+										<p class="li-description">a description of max 7 words</p>
 									</li>
 									<li>
-										a rating
-										<p>a type of: empty, static, challenge, resource</p>
-										<p>one or more dice</p>
+										<p class="li-name">notes</p>
+										<p class="li-description">a longer description</p>
 									</li>
 									<li>
-										SFX's
-										<p>an exception of the rules with: limit, cost, effect</p>
+										<p class="li-name">rating</p>
+										<p class="li-description">one or more dice</p>
+										<p class="li-description">with a type of:</p>
+										<ul>
+											<li>
+												<p class="li-name">empty</p>
+												<p class="li-description">no dice</p>
+											</li>
+											<li>
+												<p class="li-name">static</p>
+												<p class="li-description">a constant value</p>
+											</li>
+											<li>
+												<p class="li-name">challenge</p>
+												<p class="li-description">represents a clock</p>
+											</li>
+											<li>
+												<p class="li-name">resource</p>
+												<p class="li-description">dice that represent the character's resources</p>
+											</li>
+										</ul>
 									</li>
 									<li>
-										sub-traits
-										<p>traits within traits</p>
+										<p class="li-name">SFX's</p>
+										<p class="li-description">an exception of the rules with: limit, cost, effect</p>
 									</li>
-									<li>a location restriction
-										<p>limits traits to specific locations</p>
+									<li>
+										<p class="li-name">sub-traits</p>
+										<p class="li-description">traits within traits</p>
+									</li>
+									<li>
+										<p class="li-name">location restriction</p>
+										<p class="li-description">limits traits to specific locations</p>
 									</li>
 								</ul>
 							</p>
@@ -137,13 +170,25 @@
 						<b>Adding</b>
 						<p>You can add entities to your contacts by clicking the 🏷-icon on entity-cards or locations.</p>
 						<b>Removing</b>
-						<p>You can remove entities from your contacts in 📝 edit mode by clicking 🗑.</p>
+						<p>You can remove contacts by opening their entity-card and clicking 💔.</p>
 					</div>
 				</div>
 				<div id="limits_wrapper" :class="{ 'wrapper-active': show_limits }">
 					<h2 @click="show_limits = !show_limits" :class="{ 'title-active': show_limits }">de-/increase dicepool and traitset limits</h2>
 					<div id="limits" class="rule" v-if="show_limits">
 						<p>The dicepool and traitset title bars have buttons (⊖/⊕) you can click to decrease/increase their limits.</p>
+					</div>
+				</div>
+				<div id="architect_wrapper" :class="{ 'wrapper-active': show_architect }">
+					<h2 @click="show_architect = !show_architect" :class="{ 'title-active': show_architect }">architect</h2>
+					<div id="architect" class="rule" v-if="show_architect">
+						<p>As the architect of the game, you can create/update/delete entities (characters, locations, etc), traitsets, traits, and SFXs.</p>
+						<b>changing PC starter traits</b>
+						<p>Player characters are based on the archetype <i>default character</i> so if you want to edit something so all player characters start with a given trait, you can edit default character.</p>
+						<b>Traversing as an NPC</b>
+						<p>As the architect, you can change the location of the character you're currently playing by right-clicking another location and clicking traverse.</p>
+						<b>change the default dicepool limit</b>
+						<p>Change this in the main settings page. Set it to -1 for unlimited.</p>
 					</div>
 				</div>
 			</div>
@@ -323,10 +368,6 @@
 		</div>
 
 		<p id="hint" style="text-align: center" v-if="!show_intro && !show_mechanics && !show_controls">click a subject to learn more ⤴</p>
-		<!-- <div id="transversing">
-			<div id="multiverse"></div>
-			<div id="alter-trait-sets"></div>
-		</div> -->
 	</div>
 </template>
 
@@ -346,10 +387,13 @@
 		}
 		.rule {
 			padding: .6em;
-		}
-		.rule p {
-			padding-left: 1em;
 			text-align: justify;
+			p {
+				padding-left: 1em;
+			}
+			.li-name {
+				font-weight: bold;
+			}
 		}
 		#cortex-logo-wrapper {
 			height: 0px;

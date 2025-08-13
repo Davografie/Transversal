@@ -49,6 +49,7 @@
 			: dicepool.phase === phases.EFFECT ? 'EFFECT'
 			: '',
 			{ 'disabled': is_disabled && !props.die.isHitch },
+			{ 'show-result': render_result },
 			{ 'result': props.die.isResultDie },
 			{ 'effect': props.die.isEffectDie },
 			{ 'hitch': props.die.isHitch }]"
@@ -264,6 +265,9 @@
 		left: 1px;
 		text-align: center;
 		font-size: 1.4em;
+	}
+	.show-result .label {
+		font-size: 2.4em;
 	}
 	.effect .label {
 		color: var(--color-highlight-text);
