@@ -41,7 +41,7 @@ arango_password = os.environ.get("ARANGO_ROOT_PASSWORD")
 arango_db = "transversal"
 
 # session variables
-dicepool_limit = 5
+dicepool_limit = -1
 result_limit = 2
 effect_limit = 1
 session_characters = []
