@@ -65,7 +65,7 @@ export const usePlayer = defineStore(
 			}
 		})
 
-		const perspective_id = ref<string>()
+		const perspective_id = ref<string>('Entities/1')
 		const {
 			entity: perspective,
 			set_entity_id: set_perspective_id,
