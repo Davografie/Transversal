@@ -1008,6 +1008,10 @@
 					backdrop-filter: v-bind('filter');
 				}
 			}
+			div.content div.center div.location-image-wrapper img {
+				max-width: 100%;
+				box-shadow: 0 0 10px var(--color-background);
+			}
 			.entities {
 				padding: 0 0 1em 0;
 			}
