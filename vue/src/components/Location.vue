@@ -121,13 +121,18 @@
 		// 		}
 		// 	}
 		// }
-		if(!show_location_image.value) {
-			show_active.value = false
-			overwrite_active.value = ""
-			show_location_image.value = true
+		if(props.zone) {
+			transverse(location.value)
 		}
 		else {
-			show_location_image.value = false
+			if(!show_location_image.value) {
+				show_active.value = false
+				overwrite_active.value = ""
+				show_location_image.value = true
+			}
+			else {
+				show_location_image.value = false
+			}
 		}
 	}
 
