@@ -47,11 +47,9 @@
 </template>
 
 <style scoped>
-	.pool-entity-wrapper {
-		max-width: 24rem;
-	}
-	.pool-wrapper {
+	.pool-entity-wrapper.pool-wrapper {
 		/* padding-left: 1em; */
+		max-width: 24rem;
 		text-align: left;
 		.divider {
 			border-bottom: 1px solid var(--color-highlight);
@@ -63,6 +61,7 @@
 			padding: 3px 1em;
 		}
 		.traitsets {
+			backdrop-filter: blur(5px);
 			box-shadow: inset 0 0 10px var(--color-highlight-mute);
 		}
 		.traitset-divider {

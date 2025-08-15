@@ -60,7 +60,7 @@
 		emit('collapse')
 	}
 
-	const verbose_dice = ref(false)
+	const verbose_dice = ref(true)
 
 	function open_dicepool() {
 		emit('expand')
@@ -414,18 +414,6 @@
 							:key="opposing_pool.player.uuid"
 							:resolution="opposing_pool" />
 					</div>
-					<!-- <div id="resolutions" v-if="dicepoolStore.resolutions && dicepoolStore.resolutions.length > 0
-												&& (dicepool.inResolvePhase.value)">
-						<template v-for="resolution in dicepoolStore.resolutions" :key="resolution.player.uuid">
-							<Resolution :resolution="resolution"
-								v-if="resolution.player.uuid != player.uuid || dicepool.inResolvePhase.value"
-								:winner="resolution.dice.filter(d => d.isResultDie)
-														.reduce((sum, d) => sum + d.result, 0) == 
-										Math.max(...dicepoolStore.resolutions.map(
-											resolution => resolution.dice.filter(d => d.isResultDie)
-																			.reduce((sum, d) => sum + d.result, 0)))" />
-						</template>
-					</div> -->
 				</div>
 				<div id="buttons" :class="[dicepoolStore.dice.length < 3 ? 'empty-dicepool' : 'dicepool-presence', dicepoolStore.resolutions.length == 0 ? '' : '']">
 					<button id="btn_roll" @click.stop="dicepool.roll" class="dicepool-button" v-if="dicepool.inAddingPhase.value">
