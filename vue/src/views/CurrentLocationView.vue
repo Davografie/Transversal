@@ -125,7 +125,6 @@
 					:active_entity_id="props.active_entity_id"
 					:parent_left="left"
 					:parent_width="width"
-					zone
 					@transverse="transverse"
 					@show_entity="(entity_key) => emit('show_entity', entity_key)" />
 				<div id="transversables" v-if="location.transversables && location.transversables.length > 0">
@@ -282,16 +281,13 @@
 			#current-location-wrapper {
 				background-image: linear-gradient(to bottom, transparent 0, transparent 50%, var(--color-background-mute) 100%);
 			}
-			#transversables #transversable-locations .transversable-location {
-				
+			&.horizontal {
+				/* background-position: top left; */
+				background-size: v-bind(width + 'px') 100vh;
+				background-position: v-bind(left + 'px') top;
+				background-repeat: no-repeat;
 			}
 		}
-	}
-	.container.horizontal {
-		/* background-position: top left; */
-		background-size: v-bind(width + 'px') 100vh;
-		background-position: v-bind(left + 'px') top;
-		background-repeat: no-repeat;
 	}
 	.light {
 		.container {
@@ -315,6 +311,10 @@
 				}
 				#transversables {
 					background-color: var(--color-background);
+					.transversable-location {
+						background-size: cover;
+						background-position: center;
+					}
 				}
 			}
 		}

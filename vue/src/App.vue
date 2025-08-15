@@ -29,6 +29,9 @@
 	const { orientation } = useScreenOrientation()
 	const { width: windowWidth, height: windowHeight } = useWindowSize()
 	const preferredColor = usePreferredColorScheme()
+	watch(preferredColor, () => {
+		player.theme = preferredColor.value
+	}, { immediate: true })
 	const { height: dicepoolHeight } = useElementSize(dicepool)
 
 	const landscape_header_height = ref<number>(24)

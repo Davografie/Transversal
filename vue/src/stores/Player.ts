@@ -38,7 +38,9 @@ export const usePlayer = defineStore(
 		const active_location = computed(() => player_character.value?.location?.id ?? "Entities/2")
 		const editing = ref(false)
 		const viewing = ref(false)
+
 		const orientation = ref("horizontal")	// horizontal (for landscape, e.g. desktop monitor) or vertical (for portrait, e.g. mobile)
+		const theme = ref("dark")
 
 		const {
 			character: player_character,
@@ -192,7 +194,8 @@ export const usePlayer = defineStore(
 			create_player,
 			editing,
 			viewing,
-			orientation
+			orientation,
+			theme
 		}
 	},
 	{

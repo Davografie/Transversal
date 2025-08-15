@@ -107,18 +107,32 @@
 		setTimeout(() => held.value = false, 500)
 	}
 
+	const show_location_image = ref(false)
+
 	function click_title() {
-		if(!held.value) {
-			if(player.is_player) {
-				transverse(location.value)
-			}
-			else {
-				expanded.value = !expanded.value
-				if(expanded.value) {
-					retrieve_location()
-				}
-			}
+		// if(!held.value) {
+		// 	if(player.is_player) {
+		// 		transverse(location.value)
+		// 	}
+		// 	else {
+		// 		expanded.value = !expanded.value
+		// 		if(expanded.value) {
+		// 			retrieve_location()
+		// 		}
+		// 	}
+		// }
+		if(!show_location_image.value) {
+			show_active.value = false
+			overwrite_active.value = ""
+			show_location_image.value = true
 		}
+		else {
+			show_location_image.value = false
+		}
+	}
+
+	function click_zone(zone: LocationType) {
+		transverse(zone)
 	}
 
 	function transverse(loc: LocationType) {
@@ -213,6 +227,15 @@
 			overwrite_active.value = ""
 		}
 	})
+	watch(() => props.active_entity_id, (newId) => {
+		overwrite_active.value = newId
+	})
+	watch(overwrite_active, (newId, oldId) => {
+		if(newId && newId != oldId) {
+			show_location_image.value = false
+			show_active.value = true
+		}
+	})
 
 	const filtered_zones = computed(() => {
 		return location.value.zones?.filter(z =>
@@ -266,7 +289,6 @@
     const router = useRouter()
 
 	import useClipboard from 'vue-clipboard3'
-import { size } from 'lodash'
 	const { toClipboard } = useClipboard()
 	const copy = async () => {
 		try {
@@ -411,10 +433,6 @@ import { size } from 'lodash'
 	// const location_width = computed(() => {
 	// 	return props.parent_width ?? this_width.value
 	// })
-
-	watch(() => props.active_entity_id, (newId) => {
-		overwrite_active.value = newId
-	})
 </script>
 
 <template>
@@ -519,6 +537,9 @@ import { size } from 'lodash'
 							:entity_id="overwrite_active ? overwrite_active : active_npc"
 							@hide_entity="overwrite_active = 'empty'"
 							@show_entity="(entity_key) => emit('show_entity', entity_key)" />
+					</div>
+					<div class="location-image-wrapper" v-if="show_location_image">
+						<img class="location-image" :src="image_link" @click="show_location_image = false" />
 					</div>
 				</div>
 				<div class="right">
@@ -1037,6 +1058,12 @@ import { size } from 'lodash'
 	.light {
 		.location-component {
 			border: 1px solid var(--color-border);
+			div.content div.center div.location-image-wrapper img {
+				border: 3px double var(--color-border);
+				max-width: calc(100% - 2em);
+				margin: 1em;
+				background-color: var(--color-background);
+			}
 			.location-attribute {
 				border-top: 3px double var(--color-border);
 				border-bottom: 3px double var(--color-border);
@@ -1054,7 +1081,7 @@ import { size } from 'lodash'
 			}
 			&.has-image {
 				background-position: top center;
-				background-size: 100vw 100vh;
+				background-size: 100vw auto;
 				.title .location-name {
 					background-color: var(--color-background);
 					border: 3px double var(--color-border);
@@ -1066,6 +1093,7 @@ import { size } from 'lodash'
 			}
 			&.zone {
 				background-position: top center;
+				background-size: cover;
 			}
 			&.has-image.is-not-expanded .title .button {
 				background-color: var(--color-background);
