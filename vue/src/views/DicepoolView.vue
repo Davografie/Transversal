@@ -183,7 +183,8 @@
 						|| (dicepool.dicepool_size.value > 0 && (!dicepoolStore.dicepool_limit || dicepoolStore.dicepool_limit <= 0))">
 					<input type="button" id="decrease-dicepool-limit" class="button-mnml"
 						:value="player.small_buttons ? '⊖' : 'decrease limit ⊖'"
-						@click.stop="dicepool.change_dicepool_limit(-1)" />
+						@click.stop="dicepool.change_dicepool_limit(-1)"
+						v-if="dicepoolStore.dicepool_limit && dicepoolStore.dicepool_limit > 0" />
 					<div id="dicepool-size">
 						<span v-for="d of dicepoolStore.dice">
 							{{ die_shapes[d.rating + '_active'] }}
@@ -195,7 +196,8 @@
 					</div>
 					<input type="button" id="increase-dicepool-limit" class="button-mnml"
 						:value="player.small_buttons ? '⊕' : '⊕ increase limit'"
-						@click.stop="dicepool.change_dicepool_limit(1)" />
+						@click.stop="dicepool.change_dicepool_limit(1)"
+						v-if="dicepoolStore.dicepool_limit && dicepoolStore.dicepool_limit > 0" />
 				</div>
 				<div id="dicepool-title" v-else-if="!props.expanded">
 					DICE TRAY
@@ -463,10 +465,9 @@
 			gap: 1em;
 			#dicepool-size {
 				display: flex;
-				justify-content: space-between;
+				justify-content: space-evenly;
 				align-items: center;
-				width: 50%;
-				max-width: 100%;
+				flex-grow: 1;
 				span {
 					display: block;
 					flex-grow: 1;
@@ -479,18 +480,17 @@
 				margin: 0;
 				line-height: 0;
 				border: none;
-				color: var(--color-border-hover);
 			}
 		}
 	}
 	#dicepool:not(.empty) .title {
 		background-color: var(--color-highlight);
+		color: var(--color-highlight-text);
 	}
 	#dicepool.empty .title {
 		background-image: linear-gradient(to top,
 			var(--color-background-mute) -100%,
 			rgba(0, 0, 0, 0) 50%);
-		color: var(--color-border-hover);
 	}
 	#dicepool.collapsed .title {
 		font-size: x-large;
@@ -748,6 +748,9 @@
 	}
 	.light {
 		#dicepool {
+			#dicepool-limit .button-mnml {
+				color: var(--color-highlight-text);
+			}
 			#dicepool-collapsible {
 				background-color: var(--color-background-soft);
 			}
