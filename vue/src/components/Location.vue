@@ -43,6 +43,7 @@
 		level: number,
 		show_levels?: number,
 		zone?: boolean,
+		transversable?: boolean,
 		scroll_y?: number,
 		active_entity_id?: string,
 		parent_left?: number,
@@ -121,7 +122,7 @@
 		// 		}
 		// 	}
 		// }
-		if(props.zone) {
+		if(props.transversable) {
 			transverse(location.value)
 		}
 		else {
@@ -681,6 +682,7 @@
 						:parent_left="props.parent_left"
 						:parent_width="props.parent_width"
 						zone
+						transversable
 						@transverse="(loc) => transverse(loc)" />
 				</div>
 			</div>

@@ -140,6 +140,7 @@
 							:level="0"
 							:show_levels="0"
 							:zone="false"
+							transversable
 							:parent_left="left"
 							:parent_width="width"
 							@transverse="(loc) => transverse(loc)" />
