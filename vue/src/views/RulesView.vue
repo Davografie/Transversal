@@ -53,7 +53,8 @@
 			<h1 @click="show_controls = !show_controls" :class="{ 'title-active': show_controls }">app controls & navigation</h1>
 			<div id="controls" class="rule" v-if="show_controls">
 				<p>You can often change something with a right-click or long-press.</p>
-				<p>There's a light and a dark theme, change your browser or OS theme if you prefer.</p>
+				<p>There's a high-contrast light theme and a sleek dark theme, change your browser or OS appearance to switch between themes.</p>
+				<p>This app uses functional cookies to work, especially on phone.</p>
 				<div id="character_select_wrapper" :class="{ 'wrapper-active': show_character }">
 					<h2 @click="show_character = !show_character" :class="{ 'title-active': show_character }">character</h2>
 					<div id="character-select-screen" class="rule" v-if="show_character">
