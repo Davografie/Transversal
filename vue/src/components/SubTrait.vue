@@ -22,7 +22,11 @@
 		parent_traitset_id?: string
 	}>()
 
-	const emit = defineEmits(['click_subtrait', 'remove_subtrait'])
+	const emit = defineEmits([
+		'click_subtrait',
+		'next_traitset',
+		'remove_subtrait',
+	])
 
 	const { is_gm } = usePlayer()
 
@@ -42,7 +46,8 @@
 		remove_complication_by_traitsetting,
 		check_trait,
 		check_subtrait,
-		change_result_limit
+		change_result_limit,
+		traitset_dice
 	} = useDicepool()
 
 	const is_in_pool = computed(() => check_trait(props.trait_setting_id) || check_subtrait(props.trait_setting_id))
@@ -116,9 +121,19 @@
 					retrieve_trait()
 				}
 			}
+			if(traitset_limit_reached.value) {
+				emit('next_traitset')
+			}
 			// emit('click_subtrait')
 		}
 	}
+
+	const traitset_limit_reached = computed(() => {
+		// trait traitset limit
+		return [...new Set(traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).map((d) => d.traitsettingId))].length >= (props.traitset_limit ?? 0)
+		// dice traitset limit
+		// return traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).length < (props.traitset_limit ?? 1)
+	})
 
 	function deplete_challenge(die: DieType) {
 		if(props.editing_trait && !editing.value) {

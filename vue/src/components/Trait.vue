@@ -201,7 +201,7 @@
 					// the trait (or its subtraits) isn't already present in the dicepool
 					trait.value.traitSettingId && !check_trait(trait.value.traitSettingId)
 					// traitset trait limit isn't reached
-					&& !traitset_limit_reached()
+					&& !traitset_limit_reached.value
 					// traitset dice limit isn't reached
 					// && traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).length < (props.traitset_limit ?? 0)
 				) {
@@ -244,7 +244,7 @@
 							}
 						}
 					}
-					if(traitset_limit_reached()) {
+					if(traitset_limit_reached.value) {
 						emit('next_traitset')
 					}
 				}
@@ -320,7 +320,7 @@
 					if(
 						// check traitset limit
 						(
-							!traitset_limit_reached()
+							!traitset_limit_reached.value
 							|| check_trait(trait.value.traitSettingId ?? '')
 						)
 						&& die.value.number_rating > 0
@@ -340,7 +340,7 @@
 				// resource subtrait with all rating die types the same
 				deplete_resource(subtrait.rating[0])
 			}
-			if(traitset_limit_reached()) {
+			if(traitset_limit_reached.value) {
 				emit('next_traitset')
 			}
 		}
@@ -356,12 +356,12 @@
 		}
 	}
 
-	const traitset_limit_reached = () => {
+	const traitset_limit_reached = computed(() => {
 		// trait traitset limit
 		return [...new Set(traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).map((d) => d.traitsettingId))].length >= (props.traitset_limit ?? 0)
 		// dice traitset limit
 		// return traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).length < (props.traitset_limit ?? 1)
-	}
+	})
 
 	function longtap_trait(e: MouseEvent) {
 		e.stopPropagation()
@@ -1080,6 +1080,7 @@
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
 							@click_subtrait="click_subtrait(subtrait)"
+							@next_traitset="emit('next_traitset')"
 							@remove_subtrait="remove_subtrait(subtrait)" />
 					</template>
 				</div>
