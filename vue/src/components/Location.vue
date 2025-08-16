@@ -618,7 +618,7 @@
 					/>
 				</div>
 			</div>
-			<div class="entities attribute" v-if="expanded">
+			<div class="entities attribute" v-if="player.is_gm && expanded">
 				<div class="attribute-header header" @click="editing_presence = !editing_presence">
 					<span>presence</span>
 					<div class="border-bottom"></div>
