@@ -67,7 +67,16 @@
 
 	const image = ref()
 	const { width: image_width } = useElementBounding(image)
-	const card_width = Math.min(entity.value.image?.width ?? 1000, 400)
+	const card_width = computed(() => {
+		if(entity.value.image?.height && entity.value.image?.width) {
+			if(entity.value.image.width > entity.value.image.height) {
+				return entity.value.image.width
+			}
+			else {
+				return Math.min(entity.value.image.width, 400)
+			}
+		}
+	})
 
 	const image_link_large = computed(() => {
 		return '/assets/uploads/' + entity.value.image?.path +
