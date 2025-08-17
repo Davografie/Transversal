@@ -410,7 +410,7 @@
 		return Math.max(
 			location.value.image?.height ?? 0,
 			window_height.value,
-			props.parent_width ?? 0 * (location.value.image?.height ?? 0) / (location.value.image?.width ?? 1)
+			(props.parent_width ?? 0) * (location.value.image?.height ?? 0) / (location.value.image?.width ?? 1)
 		)
 	})
 
