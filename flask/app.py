@@ -1929,7 +1929,7 @@ class Entity(Interface):
 						location_id = location.get('location')
 						location = db.collection('Entities').get(location_id)
 					parent.location = Location(id=location.get('_id'), key=location.get('_key'))
-					location_hierarchy = tv.retrieve_hierarchy(parent.location.id)
+					location_hierarchy = retrieve_hierarchy(parent.location.id)
 					if len(location_hierarchy) > 1:
 						location_key = location_hierarchy[-2].get('_key')
 				else: # if location
@@ -1938,7 +1938,7 @@ class Entity(Interface):
 						location_id = parents[0]
 						location = db.collection('Entities').get(location_id)
 						parent.location = Location(id=location.get('_id'), key=location.get('_key'))
-						location_hierarchy = tv.retrieve_hierarchy(parent.location.id)
+						location_hierarchy = retrieve_hierarchy(parent.location.id)
 						if len(location_hierarchy) > 1:
 							location_key = location_hierarchy[-2].get('_key')
 			if parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}"):
@@ -2015,7 +2015,7 @@ class Entity(Interface):
 					location_id = location.get('location')
 					location = db.collection('Entities').get(location_id)
 				parent.location = Location(id=location.get('_id'), name=location.get('name'), description=location.get('description'))
-				location_hierarchy = tv.retrieve_hierarchy(parent.location.id)
+				location_hierarchy = retrieve_hierarchy(parent.location.id)
 				if len(location_hierarchy) > 1:
 					location_key = location_hierarchy[-2].get('_key')
 				if os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}"):
@@ -3249,7 +3249,7 @@ def filter_trait_settings_by_location(trait_settings, location_id):
 	"""
 	result = []
 	# print(f"filter_trait_settings_by_location:\n\ttrait_settings: {[trait_setting.get('_id') for trait_setting in trait_settings]}")
-	hierarchy_ids = [location.get('_id') for location in tv.retrieve_hierarchy(location_id)]
+	hierarchy_ids = [location.get('_id') for location in retrieve_hierarchy(location_id)]
 	# print(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
 	for trait_setting in trait_settings:
 		# print(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting.get('_id')}")
@@ -3329,6 +3329,13 @@ def retrieve_location(entity):
 	else:
 		location = entity
 	return location
+
+def retrieve_hierarchy(location_id):
+	query = f"""FOR v, e, p IN 0..20 OUTBOUND "{ location_id }" Relations
+				FILTER p.edges[*].type ALL == 'super'
+				RETURN v"""
+	cursor = db.aql.execute(query)
+	return [doc for doc in cursor]
 
 # REST API
 
@@ -3599,7 +3606,7 @@ def upload_file_location(entity_key, location_key):
 	# filename = f"{ entity_id }{ file_extension }"
 	# filename = secure_filename(file.filename)
 	image = Image.open(file)
-	hierarchy = tv.retrieve_hierarchy('Entities/' + location_key)
+	hierarchy = retrieve_hierarchy('Entities/' + location_key)
 	# print("hierarchy: ", hierarchy)
 	location_key = hierarchy[-2].get('_key')
 	path = os.path.join(app.config['UPLOAD_FOLDER'], entity_key, location_key, f"original{ file_extension.lower() }")
@@ -3664,7 +3671,7 @@ def imagegen(entity_key, force):
 					location_id = location.get('location')
 					location = db.collection('Entities').get(location_id)
 					location_key = location.get('_key')
-				hierarchy = tv.retrieve_hierarchy(location_id)
+				hierarchy = retrieve_hierarchy(location_id)
 				if len(hierarchy) > 1:
 					location_key = hierarchy[-2].get('_key')
 		name = entity.get('name')
@@ -3734,7 +3741,7 @@ def imagegen(entity_key, force):
 			
 			positive_imagen = []
 
-			hierarchy = tv.retrieve_hierarchy(location.get('_id'))
+			hierarchy = retrieve_hierarchy(location.get('_id'))
 			for loc in hierarchy:
 				if entity_type in ["npc", "asset"]:
 					prompt += f" (located in { loc.get('name') }, { loc.get('description') }"
