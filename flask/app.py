@@ -267,6 +267,19 @@ class TraitSetting(ObjectType):
 	known_to = List(lambda: Character) # characters who have learned about this trait
 	hidden = Boolean()
 
+	@classmethod
+	def _hydrate_traitsetting(cls, parent, info):
+		if parent.id:
+			traitsetting = db.collection('TraitSettings').get(parent.id)
+			parent.statement = traitsetting.get('statement')
+			parent.notes = traitsetting.get('notes')
+			parent.rating_type = traitsetting.get('rating_type')
+			parent.rating = traitsetting.get('rating')
+			parent.locations_enabled = traitsetting.get('locations_enabled')
+			parent.locations_disabled = traitsetting.get('locations_disabled')
+			parent.sfxs_ids = traitsetting.get('sfxs')
+			parent.hidden = traitsetting.get('hidden')
+
 	def resolve_trait(parent, info):
 		if parent.trait:
 			return parent.trait
@@ -284,7 +297,7 @@ class TraitSetting(ObjectType):
 				entity_type = db.collection('Entities').get(entity_id).get('type')
 				if entity_type == 'character':
 					return Character(id=entity_id)
-				elif entity_type == 'npc':
+				elif entity_type in ['npc', 'gm']:
 					return NPC(id=entity_id)
 				elif entity_type == 'asset':
 					return Asset(id=entity_id)
