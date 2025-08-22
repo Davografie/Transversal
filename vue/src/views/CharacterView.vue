@@ -213,7 +213,7 @@
 	})
 
 	watch(() => props.entity_key, (newKey) => {
-		if(newKey && character.value.key != newKey) {
+		if(newKey && (character.value.key != newKey || entity.value.key != newKey)) {
 			set_character_key(newKey)
 			retrieve_character()
 			retrieve_small_entity()
