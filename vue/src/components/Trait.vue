@@ -506,7 +506,12 @@
 	)
 
 	const inherited = computed(() => {
-		return trait.value.traitSetting?.fromEntity?.id != props.entity_id
+		if(props.entity_id.startsWith('Relations/')) {
+			return trait.value.traitSetting?.fromEntity?.id != player.the_entity?.id
+		}
+		else {
+			return trait.value.traitSetting?.fromEntity?.id != props.entity_id
+		}
 	})
 
 
