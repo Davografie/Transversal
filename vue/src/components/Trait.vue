@@ -35,7 +35,7 @@
 	import { useSFXList } from '@/composables/SFXList'
 	import { useLocation } from '@/composables/Location'
 
-	import type { Die as DieType, SFX as SFXType, Trait } from '@/interfaces/Types'
+	import type { Die as DieType, SFX as SFXType, Trait, Entity as EntityType } from '@/interfaces/Types'
 
 	const props = defineProps<{
 		trait?: Trait,
@@ -1000,20 +1000,32 @@
 
 			<div class="show-character" v-if="show_pc_visible">
 				<input type="checkbox" id="hidden" name="hidden" v-model="new_hidden" @change="toggle_hidden" />
-				<label for="hidden">hidden</label>
-				<div class="show-character-list">
-					<EntityCard
-						v-for="entity_id in trait.traitSetting?.knownTo?.map((x) => x.id)" :key="entity_id"
-						:entity_id="entity_id"
-						:override_click="true"
-						is_active
-						@click_entity="toggle_known(entity_id)" />
-					<EntityCard
-						v-for="entity in showable_characters.filter((x) => !trait.traitSetting?.knownTo?.map((y) => y.id).includes(x.id))" :key="entity.id"
-						:entity_id="entity.id"
-						:override_click="true"
-						:is_active="false"
-						@click_entity="toggle_known(entity.id)" />
+				<label for="hidden">hidden by default</label>
+				<div class="show-character-list" v-if="new_hidden">
+					<div class="character-list">
+						<span class="show-character-title">known to:</span>
+						<span v-if="!trait.traitSetting?.knownTo?.length">
+							<i>no one</i>
+						</span>
+						<EntityCard
+							v-for="entity_id in trait.traitSetting?.knownTo?.map((x) => x.id)" :key="entity_id"
+							:entity_id="entity_id"
+							:override_click="true"
+							is_active
+							@click_entity="toggle_known(entity_id)" />
+					</div>
+					<div class="character-list">
+						<span class="show-character-title">hidden from:</span>
+						<span v-if="!showable_characters.filter((x: EntityType) => !trait.traitSetting?.knownTo?.map((y: EntityType) => y.id).includes(x.id)).length">
+							<i>no one</i>
+						</span>
+						<EntityCard
+							v-for="entity in showable_characters.filter((x: EntityType) => !trait.traitSetting?.knownTo?.map((y: EntityType) => y.id).includes(x.id))" :key="entity.id"
+							:entity_id="entity.id"
+							:override_click="true"
+							:is_active="false"
+							@click_entity="toggle_known(entity.id)" />
+					</div>
 				</div>
 			</div>
 
@@ -1351,6 +1363,16 @@
 				min-width: 100%;
 				max-width: fit-content;
 				min-height: 4em;
+			}
+		}
+		.show-character {
+			.show-character-list {
+				.character-list {
+					display: flex;
+					flex-wrap: wrap;
+					align-items: center;
+					gap: .4em;
+				}
 			}
 		}
 		.edit-buttons {
