@@ -501,8 +501,9 @@
 		statement_examples.value = _.clone(temp).sort(() => 0.5 - Math.random())
 		show_statement_examples.value = true
 	}
+
 	const rendered_statement = computed(
-		() => trait.value.statement ? marked.parse(trait.value.statement) : ''
+		() => trait.value.statement ? marked.parse(trait.value.statement.split(' ').map((word: string) => `<strong style="font-weight: 600; font-size: 0.8em; text-transform: uppercase">${word[0]}</strong>${word.slice(1)}`).join(' ')) : ''
 	)
 
 	const inherited = computed(() => {
@@ -802,7 +803,9 @@
 			<div class="trait-text">
 				<div class="label trait-name">
 					<span>
-						{{ trait.name }}
+						<span>
+							{{ trait.name }}
+						</span>
 						<span class="label" v-if="mode == 'editing'
 								&& inherited
 								&& trait.traitSetting?.fromEntity?.name">
@@ -1189,6 +1192,10 @@
 			width: 100%;
 			/* max-height: 5em; */
 			overflow: hidden;
+			strong {
+				font-weight: 100;
+				background-color: red;
+			}
 		}
 		.rating {
 			text-align: right;
