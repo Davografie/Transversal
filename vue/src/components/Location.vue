@@ -25,7 +25,7 @@
 	import EntityCard from './EntityCard.vue'
 	import NewEntityCard from './NewEntityCard.vue'
 	import Location from '@/components/Location.vue'
-	import LocationPresence from '@/components/LocationPresence.vue'
+	import Presence from '@/components/Presence.vue'
 	import ActiveNPC from '@/components/ActiveNPC.vue'
 	// const LocationItem = defineAsyncComponent(() => import('@/components/Location.vue'))
 
@@ -639,19 +639,19 @@
 						</div>
 					</div>
 					<div class="neighboring">
-						<LocationPresence class="parent-location" v-for="(neigbor_location, index) in location.parents?.slice(1, 4).reverse() ?? []"
+						<Presence class="parent-location" v-for="(neigbor_location, index) in location.parents?.slice(1, 4).reverse() ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="3 - index"
 								@click_entity="import_ett" />
-						<LocationPresence class="transversable-location" v-for="neigbor_location in location.transversables ?? []"
+						<Presence class="transversable-location" v-for="neigbor_location in location.transversables ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="0"
 								@click_entity="import_ett" />
-						<LocationPresence class="zone-location" v-for="neigbor_location in location.zones ?? []"
+						<Presence class="zone-location" v-for="neigbor_location in location.zones ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"

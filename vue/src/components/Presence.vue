@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { computed } from 'vue'
+	import { computed, inject } from 'vue'
 	import { useLocation } from '@/composables/Location'
 	import { usePlayer } from '@/stores/Player'
 
@@ -49,11 +49,23 @@
 	const header_size = computed(() => {
 		return 1.2 - (props.level * -0.1)
 	})
+	
+	const MEDIA_FOLDER = inject('MEDIA_FOLDER')
+
+	const backgroundImage = computed(() => {
+		if(location.value.image) {
+			return `background-image: url('${MEDIA_FOLDER + location.value.image.path + 'large' + location.value.image.ext}')`
+		}
+		else {
+			return ''
+		}
+	})
 </script>
 
 <template>
 	<div class="parent-location-inheritance"
 			:class="[{ 'super': props.level > 0, 'transversable': props.level == 0, 'zone': props.level < 0 }]"
+			:style="backgroundImage"
 			v-if="(filtered_presence && filtered_presence.length > 0) || (location.zones && location.zones.length > 0)">
 		<div class="parent-location-name">
 			{{ location.name }}
@@ -68,7 +80,7 @@
 			</template>
 		</div>
 		<div class="zones">
-			<LocationPresence
+			<Presence
 				class="neighboring-location"
 				v-for="neigbor_location in location.zones ?? []"
 				:key="neigbor_location.key"
@@ -84,6 +96,8 @@
 .parent-location-inheritance {
 	flex-grow: 1;
 	border: 1px solid var(--color-border);
+	background-size: cover;
+	background-position: center;
 	.parent-location-name {
 		text-align: left;
 		padding-left: .4em;
@@ -94,12 +108,15 @@
 		justify-content: center;
 		flex-wrap: wrap;
 		align-items: center;
-		padding: .4em .2em 1em .2em;
+		/* padding: .4em .2em 1em .2em; */
+		padding: 4em;
 		gap: 1em;
 	}
 	.zones {
 		display: flex;
 		flex-wrap: wrap;
+		padding: 1em;
+		gap: 1em;
 	}
 }
 </style>
