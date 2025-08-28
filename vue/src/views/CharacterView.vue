@@ -313,14 +313,12 @@
 		setTimeout(() => retrieve_small_entity(), 200)
 	}
 
-	function cycle_traitset_defaults() {
-		player.traitset_defaults = (
-			{
-				COLLAPSED: 'ACTIVE',
-				ACTIVE: 'EXPANDED',
-				EXPANDED: 'COLLAPSED',
-			} as const
-		)[player.traitset_defaults] ?? 'COLLAPSED'
+	function cycle_traitset_defaults(reverse = false) {
+		const order = ['COLLAPSED', 'ACTIVE', 'EXPANDED']
+		const index = order.indexOf(player.traitset_defaults)
+		let nextIndex = (index + (reverse ? -1 : 1)) % order.length
+		if(nextIndex < 0) { nextIndex = order.length - 1 }
+		player.traitset_defaults = order[nextIndex]
 	}
 
 	onMounted(() => {
@@ -480,7 +478,8 @@
 						}
 					})()"
 					title="collapse all traitsets"
-					@click="cycle_traitset_defaults" />
+					@click="cycle_traitset_defaults(false)"
+					@click.right.prevent="cycle_traitset_defaults(true)" />
 				<input type="button" class="button-mnml" id="delete-entity"
 					:value="player.small_buttons ? '🗑' : '🗑\ndelete entity'"
 					title="delete entity"
