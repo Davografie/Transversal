@@ -644,19 +644,19 @@
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="3 - index"
-								@click_entity="import_ett" />
+								@click_entity="(ett_id) => overwrite_active = ett_id" />
 						<Presence class="transversable-location" v-for="neigbor_location in location.transversables ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="0"
-								@click_entity="import_ett" />
+								@click_entity="(ett_id) => overwrite_active = ett_id" />
 						<Presence class="zone-location" v-for="neigbor_location in location.zones ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="-1"
-								@click_entity="import_ett" />
+								@click_entity="(ett_id) => overwrite_active = ett_id" />
 					</div>
 				</div>
 			</div>
