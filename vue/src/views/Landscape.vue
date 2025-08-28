@@ -69,6 +69,7 @@
 				orientation="horizontal" />
 			<CurrentLocationView id="current-location" class="panel"
 				:location_key="player.the_entity?.location?.key ?? ''"
+				@show_entity="(ett_key) => show_entity('Entities/' + ett_key)"
 				@transverse="transverse"
 				:active_entity_id="active_entity_id" />
 			<CodexView id="codex" class="panel"
