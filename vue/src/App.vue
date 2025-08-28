@@ -314,7 +314,7 @@
 			}
 		}
 
-		.panel {
+		.vertical.panel {
 			backdrop-filter: blur(5px);
 		}
 
