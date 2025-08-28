@@ -313,6 +313,16 @@
 		setTimeout(() => retrieve_small_entity(), 200)
 	}
 
+	function cycle_traitset_defaults() {
+		player.traitset_defaults = (
+			{
+				COLLAPSED: 'ACTIVE',
+				ACTIVE: 'EXPANDED',
+				EXPANDED: 'COLLAPSED',
+			} as const
+		)[player.traitset_defaults] ?? 'COLLAPSED'
+	}
+
 	onMounted(() => {
 		if(route.name == 'Landing') {
 			watch(() => player.the_entity?.key, (newKey) => {
@@ -456,6 +466,21 @@
 					title="show known to"
 					v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0"
 					@click="toggle_known_to" />
+				<input type="button" class="button-mnml" id="collapse-all-traitsets"
+					:value="(function() {
+						switch (player.traitset_defaults) {
+							case 'COLLAPSED':
+								return player.small_buttons ? '📕' : '📕\ncollapsed';
+							case 'ACTIVE':
+								return player.small_buttons ? '📑' : '📑\nactive';
+							case 'EXPANDED':
+								return player.small_buttons ? '📖' : '📖\nexpanded';
+							default:
+								return '';
+						}
+					})()"
+					title="collapse all traitsets"
+					@click="cycle_traitset_defaults" />
 				<input type="button" class="button-mnml" id="delete-entity"
 					:value="player.small_buttons ? '🗑' : '🗑\ndelete entity'"
 					title="delete entity"
@@ -495,11 +520,12 @@
 				:traitset_id="set.id"
 				:entity_id="character.id"
 				:limit="set.limit"
-				:expanded="set.id == active_traitset_id"
-				:extensible="player.is_gm || (player.is_player && player.player_character.id == character.id)"
+				:expanded="((set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE') || player.traitset_defaults == 'EXPANDED') && player.traitset_defaults != 'COLLAPSED'"
+				:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
 				visible
 				:location_key="character.location?.key"
-				:next="character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
+				:active="player.orientation == 'vertical' && set.id == active_traitset_id"
+				:next="player.orientation == 'vertical' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
 				:location="false"
 				:relationship="false"
 				@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
@@ -524,12 +550,11 @@
 			}
 			#character-details {
 				display: flex;
-				/* justify-content: space-between; */
 				align-items: center;
-				padding: 0 .4em;
 				#character-banner {
-					/* width: v-bind(banner_width + 'px'); */
+					overflow: scroll;
 					flex-grow: 1;
+					height: 100%;
 					#plot_points {
 						text-align: center;
 						display: inline-flex;
@@ -566,10 +591,10 @@
 					position: relative;
 					text-align: center;
 					min-height: 100px;
-					min-width: 100px;
+					width: fit-content;
 					img {
 						display: block;
-						max-width: 180px;
+						width: 100%;
 						max-height: 240px;
 					}
 					#portrait-upload-wrapper {
@@ -658,10 +683,21 @@
 <style>
 	.dark {
 		#entity-wrapper {
-			backdrop-filter: blur(5px);
+			/* backdrop-filter: blur(5px); */
 			#character-details {
+				background-color: var(--color-background-mute);
+				margin: 0 1em;
+				border-radius: 50px 30px 30px 50px;
+				max-height: 240px;
+				height: v-bind(portraitHeight + 'px');
+				#character-portrait img {
+					border-radius: 30px 0 0 30px;
+					border: 1px solid var(--color-background);
+					border-top: 3px solid var(--color-background);
+					/* margin: .4em; */
+				}
 				#character-banner {
-					text-shadow: #000 0px 0px 2px, #000 0px 0px 4px, #000 0px 0px 8px, #000 0px 0px 2px;
+					/* text-shadow: #000 0px 0px 2px, #000 0px 0px 4px, #000 0px 0px 8px, #000 0px 0px 2px; */
 					#plot_points {
 						background-color: var(--color-background-mute);
 						color: var(--color-text);
@@ -671,12 +707,6 @@
 							border: 1px solid var(--color-border);
 						}
 					}
-				}
-				#character-portrait img {
-					border-radius: 30px;
-					border: 1px solid var(--color-background);
-					border-top: 3px solid var(--color-background);
-					/* margin: .4em; */
 				}
 			}
 			#character-buttons {
@@ -689,7 +719,13 @@
 				}
 			}
 			#traitsets {
-				border-top: 1px solid var(--color-background);
+				/* border-top: 1px solid var(--color-background); */
+				display: flex;
+				flex-wrap: wrap;
+				align-items: start;
+				justify-content: space-between;
+				gap: 2em;
+				padding: 1em;
 			}
 			&.horizontal {
 				background-image: linear-gradient(to left, var(--color-background-mute) 0, transparent 20px, transparent 100%);
@@ -698,6 +734,9 @@
 	}
 	.light {
 		#entity-wrapper {
+			#character-details {
+				padding: 0 .4em;
+			}
 			#character-portrait img {
 				border: 3px double var(--color-text);
 				margin: 1em;

@@ -27,6 +27,7 @@ export const usePlayer = defineStore(
 		const is_active_player: Ref<boolean> = ref(false)
 		const small_buttons: Ref<boolean> = ref(false)
 		const data_saving: Ref<boolean> = ref(false)
+		const traitset_defaults: Ref<string> = ref("ACTIVE") // COLLAPSED, ACTIVE, EXPANDED
 
 		//	GM variables
 		const is_gm: Ref<boolean> = ref(false)
@@ -171,6 +172,7 @@ export const usePlayer = defineStore(
 			is_player,
 			small_buttons,
 			data_saving,
+			traitset_defaults,
 			player_character,
 			player_character_key,
 			retrieve_character,
