@@ -66,6 +66,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					path
 					ext
 					width
+					height
 				}
 				imagened
 				location {
