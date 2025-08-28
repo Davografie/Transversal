@@ -3834,10 +3834,11 @@ def imagegen(entity_key, force):
 					prompt += ", ".join(traits)
 
 				if len(doc['hierarchy']) > 1:
-					location_strength = 0.6
+					multiplier = 0.6
+					location_strength = 1.6
 					for l in doc['hierarchy'][1:]:
-						location_strength = location_strength * 0.2
-						if location_strength >= 0.2:
+						location_strength = location_strength * multiplier
+						if location_strength >= multiplier:
 							location_name = l[0]
 							location_description = l[1]
 							lts = l[2]
@@ -3852,11 +3853,11 @@ def imagegen(entity_key, force):
 							for lt in lts:
 								if lt[0].startswith("genre"):
 									genres.append(lt[1])
-					location_strength = 1.2
+					location_strength = 1.6
 					strengths = []
 					for l in doc['hierarchy'][1:]:
-						location_strength = location_strength * 0.2
-						if location_strength >= 0.2:
+						location_strength = location_strength * multiplier
+						if location_strength >= multiplier:
 							strengths.append(location_strength)
 					strengths.reverse()
 					for i in range(len(strengths)):
