@@ -14,7 +14,7 @@
 	import { useLocation } from '@/composables/Location'
 	import { useEntity } from '@/composables/Entity'
 	import { die_shapes } from '@/composables/Die'
-	import type { SFX as SFXType, Trait as TraitType } from '@/interfaces/Types'
+	import type { SFX as SFXType, Trait as TraitType, Die as DieType } from '@/interfaces/Types'
 
 	import { usePlayer } from '@/stores/Player'
 	import { useDicepool } from '@/composables/Dicepool'
@@ -27,6 +27,7 @@
 		expanded?: boolean,
 		visible?: boolean,
 		hide_title?: boolean,
+		active?: boolean,
 		next?: boolean,
 		location_key?: string,
 		extensible?: boolean,
@@ -207,10 +208,9 @@
 		return traitset_dice(traitset.value.id).filter((d) => d.entityId == props.entity_id)
 	})
 
-	const traits_in_dicepool = computed(() => {
+	const traits_in_dicepool: Ref<DieType[]> = computed(() => {
 		return [...new Set(traitset_dice(traitset.value.id)
-			.filter((d) => d.entityId == props.entity_id)
-			.map((d) => d.traitsettingId))]
+			.filter((d) => d.entityId == props.entity_id))]
 	})
 
 	watch(() => player.perspective.location, (newLocation, oldLocation) => {
@@ -329,7 +329,7 @@
 <template>
 	<div class="traitset"
 			:class="[
-				show_traits ? 'active' : 'inactive',
+				props.active && show_traits ? 'active' : 'inactive',
 				{ 'editing': player.editing },
 				{ 'next': props.next },
 				'ts-' + traitset.name?.replace(' ', '-').toLowerCase(),
@@ -337,6 +337,7 @@
 				{ 'relationships': props.relationship },
 				{ 'gm': traitset.entityTypes?.includes('gm') },
 				{ 'editing-traits': edit_mode },
+				{ 'full': limiter > 0 && traits_in_dicepool.length == limiter },
 			]"
 			v-if="(traitset.traits && traitset.traits.length > 0) || props.visible">
 
@@ -360,8 +361,13 @@
 				{{ traitset.traits ? traitset.traits.length : '' }}
 			</div>
 			<div v-else></div>
+
+			<input type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
+				:value="player.small_buttons ? '✎' : '✎\nedit' + (edit_mode ? 'ing' : '') + ' traits'"
+				@click.stop="edit_mode = !edit_mode" v-if="show_traits && !show_info" />
+				
 			<div class="title">
-				<div class="big-limiter" v-if="show_traits">
+				<div class="big-limiter" v-if="show_traits && props.active">
 					<span v-for="d of dice_in_dicepool" :key="d.id">
 						{{ die_shapes[d.rating + (d.number_rating >= 0 ? '_active' : '_inactive')] }}
 					</span>
@@ -370,16 +376,16 @@
 					</span>
 				</div>
 
-				<span class="traitset-name">
+				<span class="traitset-name header">
 					{{ (traitset.name?.toUpperCase() ?? '') }}
 				</span>
 
 				<span class="dicepool-traits" v-if="!show_traits">
-					<TraitLabel v-for="t of traits_in_dicepool" :key="t" :trait_setting_id="t" />
+					<TraitLabel v-for="t of traits_in_dicepool.map((t: DieType) => t.traitsettingId)" :key="t" :trait_setting_id="t" />
 				</span>
 
 			</div>
-			<div class="limiter" v-if="!show_traits">
+			<div class="limiter" v-if="!show_traits || !props.active">
 				<span v-if="limiter - traits_in_dicepool.length > 0" v-for="i in limiter - traits_in_dicepool.length" :key="i">
 					{{ die_shapes.default_inactive }}
 				</span>
@@ -387,10 +393,6 @@
 					{{ die_shapes[d.rating + (d.number_rating >= 0 ? '_active' : '_inactive')] }}
 				</span>
 			</div>
-
-			<input type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
-				:value="player.small_buttons ? '✎' : '✎\nedit' + (edit_mode ? 'ing' : '') + ' traits'"
-				@click.stop="edit_mode = !edit_mode" v-if="show_traits && !show_info" />
 
 			<input type="button" class="button-mnml"
 				:value="player.small_buttons ? '⊕' : '⊕ increase limit'"
@@ -445,12 +447,23 @@
 							@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
 							@set_highlight="highlight_traits"
 							@kill_highlight="kill_highlight_traits"
-							v-if="player.is_gm
+							v-if="(player.is_gm
 								|| props.relationship
 								|| (player.is_player && entity.entityType == 'character')
 								|| (player.is_player && trait.traitSetting && trait.traitSetting.hidden == false)
 								|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
-								|| props.tutorial
+								|| props.tutorial)
+								&& (
+									(
+										traits_in_dicepool.length == limiter
+										&& (
+											traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
+											|| traits_in_dicepool.map((t: DieType) => t.subTraitsettingId).includes(trait.traitSettingId)
+										)
+									)
+									|| traitset_dice(traitset.id).length < limiter
+									|| limiter == 0
+								)
 							" />
 						<div class="trait-divider"
 							v-if="
@@ -463,7 +476,16 @@
 					<input type="button" class="button add-trait-button"
 						v-if="
 							((props.extensible || show_info) && player.is_gm)
-							|| (player.is_player && player.player_character.id == props.entity_id)
+							|| (
+								player.is_player
+								&& player.player_character.id == props.entity_id
+								&& (
+									props.extensible
+									|| show_info
+									|| edit_mode
+									|| traitset.traits.length == 0
+								)
+							)
 							|| (props.relationship && props.extensible)
 							|| (props.location && props.extensible)
 						"
@@ -546,6 +568,9 @@
 
 <style scoped>
 	.traitset {
+		&.active, &.next {
+			width: 100%;
+		}
 		.set-title {
 			text-align: center;
 			font-size: large;
@@ -579,6 +604,8 @@
 				padding-right: 1em;
 				text-align: right;
 				flex-grow: 1;
+				display: flex;
+				justify-content: space-around;
 			}
 			.button-mnml {
 				padding: 0 1em;
@@ -818,8 +845,16 @@
 <style>
 	.dark {
 		.traitset {
+			flex-grow: 1;
+			border: 1px solid var(--color-border);
+			border-radius: 10px;
+			overflow: hidden;
+			backdrop-filter: blur(5px);
+			box-shadow: inset 0 0 10px var(--color-background-mute);
+			.set-title {
+				letter-spacing: .1em;
+			}
 			.traitset-info {
-				backdrop-filter: blur(5px);
 				.traitset-score {
 					box-shadow: inset 0 0 10px var(--color-background-mute);
 				}
@@ -831,8 +866,11 @@
 					var(--color-background) 0px 0px 16px,
 					var(--color-background) 0px 0px 4px;
 			}
-			.traits {
+			.entity-traits {
 				/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
+				flex-wrap: wrap;
+				flex-direction: column;
+				padding: .4em;
 			}
 			.trait-divider {
 				display: none;
@@ -845,9 +883,23 @@
 				text-shadow: none;
 			}
 		}
-		.traitset.inactive .set-title {
-			color: var(--color-text);
-			background-color: var(--color-background-mute);
+		.traitset.inactive {
+			.set-title {
+				/* color: var(--color-text); */
+				background-color: var(--color-background-mute);
+				justify-content: space-between;
+				.title {
+					gap: 1em;
+				}
+			}
+		}
+		.traitset.inactive.full {
+			box-shadow: 0 0 10px var(--color-highlight);
+			.trait-count,
+			.title .traitset-name {
+				color: var(--color-disabled);
+				text-shadow: 0 0 4px var(--color-highlight);
+			}
 		}
 		.traitset.inactive.next {
 			border-top: 1px solid var(--color-border);
