@@ -97,10 +97,10 @@
 				<h1>contacts</h1>
 			</div>
 			<div id="codex-contact-list">
-				<div id="scroll-indicator-wrapper">
+				<!-- <div id="scroll-indicator-wrapper">
 					<div class="scroll-indicator scroll-indicator-top" :class="{ 'hidden': arrivedState.top }"></div>
 					<div class="scroll-indicator scroll-indicator-bottom" :class="{ 'hidden': arrivedState.bottom }"></div>
-				</div>
+				</div> -->
 				<div id="codex-contacts" ref="codexContacts">
 					<div class="top-scroll-space scroll-space" v-if="player.orientation == 'horizontal'"></div>
 					<Relation :relation_id="selected_relation.id"
@@ -113,7 +113,7 @@
 						v-if="selected_relation && player.orientation == 'vertical'" />
 					<div class="mid-scroll-space scroll-space" v-if="player.orientation == 'horizontal'"></div>
 					<h2 v-if="player.is_gm && entities.length > 0">
-						characters
+						{{player.orientation == 'vertical' ? 'characters' :  'PCs'}}
 					</h2>
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0">
 						<template v-for="(entity, index) in entities" :key="entity.id" v-if="player.is_gm">
@@ -137,7 +137,7 @@
 								@click_entity="click_relation(relation)" />
 						</template>
 					</div>
-					<div class="bottom-scroll-space scroll-space"></div>
+					<!-- <div class="bottom-scroll-space scroll-space"></div> -->
 				</div>
 			</div>
 		</div>
@@ -258,7 +258,13 @@
 				background-color: var(--color-background-mute);
 			}
 			&.horizontal {
-				background-image: linear-gradient(to right, var(--color-background-mute) 0%, transparent 20%);
+				#codex-contacts {
+					height: 100%;
+					.relations-container, .scroll-space {
+						background-image: linear-gradient(to right, var(--color-background-mute) 0%, transparent 20%);
+						flex-grow: 1;
+					}
+				}
 			}
 			#codex-nav-back a {
 				box-shadow: 0 0 10px var(--color-background);
