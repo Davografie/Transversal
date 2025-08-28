@@ -16,7 +16,7 @@
 </script>
 
 <template>
-	<div class="trait-label">
+	<div class="trait-label" :class="trait.ratingType != 'empty' ? die_constants.find(dc => dc.number_rating == Math.max(...(trait.rating?.map(die => Math.abs(die.number_rating)) ?? [0])))?.rating : ''">
 		{{ trait.statement || trait.name }}
 		<span v-for="d of dice_in_pool" :key="d.id">
 			{{ d.number_rating > 0 ?
@@ -33,5 +33,25 @@
 		border-radius: 10px;
 		padding: 0 .4em;
 		background-color: var(--color-background-soft);
+		&.d4 {
+			background-color: var(--color-positive-die-4);
+			color: var(--color-positive-die-4-text);
+		}
+		&.d6 {
+			background-color: var(--color-positive-die-6);
+			color: var(--color-positive-die-6-text);
+		}
+		&.d8 {
+			background-color: var(--color-positive-die-8);
+			color: var(--color-positive-die-8-text);
+		}
+		&.d10 {
+			background-color: var(--color-positive-die-10);
+			color: var(--color-positive-die-10-text);
+		}
+		&.d12 {
+			background-color: var(--color-positive-die-12);
+			color: var(--color-positive-die-12-text);
+		}
 	}
 </style>
