@@ -1457,13 +1457,14 @@
 	}
 	.dark {
 		.trait {
+			flex-grow: 1;
 			.trait-inner {
 				border-radius: 10px;
 				height: 100%;
 			}
 			/* margin: .6em .4em; */
 			border-radius: 10px;
-			flex-grow: 0.6;
+			/* flex-grow: 0.6; */
 			text-shadow: none;
 			.descriptor {
 				padding: 0 1em;
