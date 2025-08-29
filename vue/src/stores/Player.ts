@@ -204,7 +204,16 @@ export const usePlayer = defineStore(
 		// https://github.com/prazdevs/pinia-plugin-persistedstate
 		persist: {
 			debug: true,
-			paths: ['uuid', 'player_name', 'player_character_key', 'perspective_id', 'is_gm', 'small_buttons', 'data_saving'],
+			paths: [
+				'uuid', 
+				'player_name', 
+				'player_character_key', 
+				'perspective_id', 
+				'is_gm', 
+				'small_buttons',
+				'data_saving',
+				'traitset_defaults'
+			],
 		},
 	},
 )
