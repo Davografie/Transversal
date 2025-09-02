@@ -56,6 +56,8 @@ function submit() {
 			:dice="props.rating"
 			preview
 			:resource="['resource', 'challenge'].includes(new_rating_type)"
+			:negative="new_rating_type == 'challenge'"
+			:key="new_rating_type"
 			@change-die="die_picker_change"
 			@cancel="emit('cancel')"
 			v-if="new_rating_type != 'empty'" />

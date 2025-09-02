@@ -20,7 +20,8 @@
 		custom?: boolean,
 		show_effects?: boolean,
 		preview?: boolean,
-		dialogue?: boolean
+		dialogue?: boolean,
+		negative?: boolean
 	}>()
 
 	const emit = defineEmits(['change-die', 'cancel'])
@@ -37,6 +38,12 @@
 			newDice.forEach(d => {
 				d.id = uuidv4()
 			})
+		}
+	})
+
+	watch(() => props.negative, (newNegative) => {
+		if(newNegative) {
+			sign.value = '-'
 		}
 	})
 
@@ -117,7 +124,7 @@
 		return_rating.value.splice(i, 1)
 	}
 
-	const sign = ref((props.die?.number_rating ?? props.dice?.reduce((a, b) => a + b.number_rating, 0) ?? 0) >= 0 ? '+' : '-')
+	const sign = ref(props.negative || (props.die?.number_rating ?? props.dice?.reduce((a, b) => a + b.number_rating, 0) ?? 0) < 0 ? '-' : '+')
 </script>
 
 <template>

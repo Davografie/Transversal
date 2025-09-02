@@ -480,6 +480,8 @@
 	function cancel_edit() {
 		retrieve_trait()
 		mode.value = 'neutral'
+		transfer_resource_mode.value = false
+		edit_rating.value = false
 	}
 
 	function delete_trait() {
@@ -797,11 +799,6 @@
 			
 		<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
 					trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',]">
-			<input type="button" class="button copy-id"
-				title="copy traitsetting id"
-				@click.stop="copy_id"
-				value="#"
-				v-if="player.is_gm && ['viewing', 'editing'].includes(mode)" />
 			<div class="trait-text">
 				<div class="label trait-name">
 					<span>
@@ -830,7 +827,7 @@
 					<div class="edit-statement-1">
 						<input type="text" name="text-statement" ref="text-statement"
 							class="statement statement-edit"
-							:class="{ 'changed': new_statement != trait.statement }"
+							:class="{ 'changed': new_statement != (trait.statement ?? '') }"
 							v-model="new_statement"
 							placeholder="statement"
 							@input="!show_statement_examples ? display_statement_examples() : undefined"
@@ -871,7 +868,7 @@
 
 
 			<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
-					v-if="trait.ratingType != 'empty'"
+					v-if="trait.ratingType != 'empty' && !edit_rating"
 					@click="(mode == 'editing' && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
 				<Rating v-if="trait.rating" :rating="trait.rating"
 					:rating-type="trait.ratingType"
@@ -968,21 +965,6 @@
 			</div>
 
 			<div class="edit-rating edit-attribute" v-if="edit_rating">
-				<!-- <span>trait type: </span>
-				<input type="button" class="button" :value="rating_type_fix"
-					@click="increase_rating_type"
-					@click.right="decrease_rating_type" />
-				<DiePicker v-if="['static', 'resource','challenge'].includes(new_ratingType ?? '')"
-					:die="new_ratingType == 'static' && trait.rating ?
-							trait.rating[0] :
-							undefined"
-					:dice="['resource','challenge'].includes(new_ratingType ?? '') && trait.rating ?
-							trait.rating :
-							undefined"
-					:resource="['resource'].includes(trait.ratingType ?? '')"
-					:preview="trait.ratingType != 'static'"
-					@change-die="(rating: DieType[]) => die_picker_pick(rating)"
-					@cancel="edit_rating = false" /> -->
 				<RatingEdit
 					v-if="trait.ratingType && trait.rating"
 					:rating_type="new_ratingType"
@@ -992,7 +974,7 @@
 			</div>
 
 			<div class="edit-notes edit-attribute" v-if="edit_notes">
-				<textarea class="notes" :class="{ 'changed': trait.notes != new_notes }" v-model="new_notes" placeholder="notes" @contextmenu="(e) => e.stopPropagation()"
+				<textarea class="notes" :class="{ 'changed': (trait.notes ?? '') != new_notes }" v-model="new_notes" placeholder="notes" @contextmenu="(e) => e.stopPropagation()"
 					v-if="player.is_gm || (props.entity_id == player.player_character.id || props.entity_id?.startsWith('Relations/'))" />
 			</div>
 
