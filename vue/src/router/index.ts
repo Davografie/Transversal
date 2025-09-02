@@ -90,7 +90,7 @@ const router = createRouter({
 						},
 						{
 							path: 'sfxs',
-							name: 'SFX overview',
+							name: 'SFXs',
 							component: SFXOverview
 						},
 						{
