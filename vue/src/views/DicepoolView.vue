@@ -512,6 +512,8 @@
 			overflow: hidden;
 			margin: 10px;
 			border: 1px solid var(--color-highlight);
+			backdrop-filter: blur(5px);
+			text-shadow: var(--text-shadow);
 			.swade-result {
 				display: flex;
 				flex-direction: column;
