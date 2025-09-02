@@ -3628,7 +3628,7 @@ def imagegen(entity_key, force):
 		1.0,
 	]
 	genre_loras = {
-		"wuxia": "import/Xia3",
+		"wuxia": "setting/ChineseWuXia",
 		"modern": "import/ModernCartoon-Gudarzi",
 		"fantasy": "import/FantasyIllustration",
 		"scifi": "setting/ScifiEnvironment",
@@ -3707,6 +3707,12 @@ def imagegen(entity_key, force):
 			for trait_setting in trait_settings:
 				trait_id = trait_setting.get('_to')
 				trait = db.collection('Traits').get(trait_id)
+				subtrait_ids = db.collection('TraitSettings').find({'_from': trait_setting.get('_id')})
+				subtraits = []
+				for subtrait_id in subtrait_ids:
+					subtrait = db.collection('Traits').get(subtrait_id.get('_to'))
+					subtraits.append(subtrait)
+				trait['subtraits'] = subtraits
 				traitset_id = trait.get('traitset')
 				traitset = db.collection('Traitsets').get(traitset_id)
 				traits.append((traitset, trait, trait_setting))
@@ -3724,17 +3730,19 @@ def imagegen(entity_key, force):
 					# negative += f"{', '.join([trait_setting.get('statement'), trait_setting.get('notes')])}"
 					negative += "," + trait_setting.get('statement') if trait_setting.get('statement') else ""
 					negative += ", " + trait_setting.get('notes') if trait_setting.get('notes') else ""
-				else:
+				elif trait_setting.get('rating_type') != 'challenge':
 					# prompt += f"({', '.join([trait.get('name'),trait_setting.get('statement'),trait_setting.get('notes')])}:{ str(rating_weights[abs(t[3]) - 1]) })"
 					prompt += "("
 					prompt += traitset.get('prompt_prefix') if traitset.get('prompt_prefix') else traitset.get('name') + " "
 					prompt += trait.get('name')
+					prompt += " of (" + ",".join([subtrait.get('name') for subtrait in trait.get('subtraits')]) + ")" if trait.get('subtraits') else ""
 					prompt += ", " if trait_setting.get('statement') else ""
 					prompt += trait_setting.get('statement') if trait_setting.get('statement') else ""
 					prompt += ", " if trait_setting.get('notes') else ""
 					prompt += trait_setting.get('notes') if trait_setting.get('notes') else ""
-					prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
-					prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
+					prompt += ":"
+					# prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
+					prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else "0.4"
 					prompt += ")"
 				prompt += ", "
 
