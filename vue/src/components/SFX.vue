@@ -39,6 +39,14 @@
     function activate() {
         emit('activate', sfx.value)
     }
+    function add() {
+        show_description.value = false
+        emit('add')
+    }
+    function remove() {
+        show_description.value = false
+        emit('remove')
+    }
     const show_description = ref(false)
 </script>
 
@@ -56,9 +64,9 @@
         <div class="sfx-description" v-if="show_description && sfx?.description"
             v-html="rendered_description" @click.stop="props.adding ? click_card($event) : activate" title="play">
         </div>
-        <input type="button" class="button" value="add" @click.stop="emit('add')" 
+        <input type="button" class="button" value="add" @click.stop="add" 
             v-if="show_description && props.adding" />
-        <input type="button" class="button" value="remove" @click.stop="emit('remove')" 
+        <input type="button" class="button" value="remove" @click.stop="remove" 
             v-if="show_description && !props.adding && props.editing" />
     </div>
 </template>

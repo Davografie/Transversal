@@ -12,6 +12,7 @@
 	import TraitSelector from '@/components/TraitSelector.vue'
 	import ToggleButton from '@/components/ToggleButton.vue'
 	import Trait from '@/components/Trait.vue'
+	import SFX from '@/components/SFX.vue'
 	import { useTrait, rating_types } from '@/composables/Trait'
 	import { useSFXList } from '@/composables/SFXList'
 	import { useTraitsetList } from '@/composables/TraitsetList'
@@ -35,6 +36,7 @@
 		retrieve_statement_examples,
 		default_settings,
 		retrieve_default_settings,
+		retrieve_possible_sfxs,
 		mutate_trait,
 		mutate_default_settings,
 		delete_trait
@@ -66,7 +68,8 @@
 	const default_rating_type = ref(rating_types[0])
 	const requirements: Ref<Array<string>> = ref([])
 	const new_requirement: Ref<string> = ref("")
-	const new_sfxs: Ref<Array<string>> = ref([])
+	const new_possible_sfx_ids: Ref<Array<string>> = ref([])
+	const new_default_sfxs: Ref<Array<string>> = ref([])
 	const statement_examples = ref<string[]>([])
 	const new_inheritable = ref(false)
 	
@@ -80,7 +83,7 @@
 		if(!show_details.value) {
 			refresh()
 		}
-		// if (trait.value.sfxs) new_sfxs.value = trait.value.sfxs.map(x => x.id)
+		// if (trait.value.sfxs) new_default_sfxs.value = trait.value.sfxs.map(x => x.id)
 		show_details.value = !show_details.value
 	}
 
@@ -98,7 +101,7 @@
 			rating: default_rating.value.map(x => x.number_rating),
 			locationsEnabled: default_settings.value?.locationsEnabled,
 			locationsDisabled: default_settings.value?.locationsDisabled,
-			sfxs: new_sfxs.value
+			sfxs: new_default_sfxs.value
 		})
 		refresh()
 		// toggle_details()
@@ -120,7 +123,7 @@
 			if(newDefaults) {
 				default_rating_type.value = newDefaults.ratingType ?? rating_types[0]
 				default_rating.value = newDefaults.rating ?? []
-				new_sfxs.value = newDefaults.sfxs?.map((x: SFXType) => x.id) ?? []
+				new_default_sfxs.value = newDefaults.sfxs?.map((x: SFXType) => x.id) ?? []
 			}
 		})
 	}
@@ -161,14 +164,14 @@
 
 	const show_sfxs = ref(false)
 	function toggle_sfx(sfx_id: string) {
-		if(new_sfxs.value.includes(sfx_id)) {
-			const i = new_sfxs.value.indexOf(sfx_id)
-			new_sfxs.value.splice(i, 1)
+		if(new_default_sfxs.value.includes(sfx_id)) {
+			const i = new_default_sfxs.value.indexOf(sfx_id)
+			new_default_sfxs.value.splice(i, 1)
 		}
 		else {
-			new_sfxs.value = [...new_sfxs.value, sfx_id]
+			new_default_sfxs.value = [...new_default_sfxs.value, sfx_id]
 		}
-		mutate_default_settings({ sfxs: new_sfxs.value }) // this does work because this is how it's written to the database
+		mutate_default_settings({ sfxs: new_default_sfxs.value }) // this does work because this is how it's written to the database
 	}
 
 	function update_locations(locations_enabled: string[], locations_disabled: string[]) {
@@ -218,6 +221,31 @@
 			retrieve_trait()
 		})
 	}
+
+	/* POSSIBLE SFXS */
+	const show_possible_sfxs = ref(false)
+	function toggle_show_sfxs() {
+		retrieve_possible_sfxs()
+		show_possible_sfxs.value = !show_possible_sfxs.value
+	}
+	function toggle_possible_sfx(sfx: SFXType) {
+		if(new_possible_sfx_ids.value.includes(sfx.id)) {
+			const i = new_possible_sfx_ids.value.indexOf(sfx.id)
+			new_possible_sfx_ids.value.splice(i, 1)
+		}
+		else {
+			new_possible_sfx_ids.value = [...new_possible_sfx_ids.value, sfx.id]
+		}
+		mutate_trait({
+			possibleSfxs: new_possible_sfx_ids.value
+		})
+		setTimeout(() => {
+			retrieve_possible_sfxs()
+		}, 200)
+	}
+	watch(() => trait.value.possibleSfxs, () => {
+		new_possible_sfx_ids.value = trait.value.possibleSfxs?.map(x => x.id) ?? []
+	})
 
 	const editing_die = ref<DieType|undefined>(undefined)
 	function edit_die(die: DieType) {
@@ -374,6 +402,18 @@
 						@click="toggle_subtrait(subtrait)" /> -->
 				</div>
 
+				<h2 @click="toggle_show_sfxs">sfxs</h2>
+				<div class="sfxs" v-show="show_possible_sfxs">
+					<SFX class="button"
+						v-for="sfx in sfx_list" :key="sfx.id"
+						:sfx_id="sfx.id"
+						:adding="!trait.possibleSfxs?.map(x => x.id).includes(sfx.id)"
+						:editing="trait.possibleSfxs?.map(x => x.id).includes(sfx.id)"
+						@add="toggle_possible_sfx(sfx)"
+						@remove="toggle_possible_sfx(sfx)"
+						:class="{ 'active': trait.possibleSfxs?.map(x => x.id).includes(sfx.id) }" />
+				</div>
+
 				<h2 @click="show_locations = !show_locations">locations</h2>
 				<div class="locations" v-show="show_locations">
 					<LocationSelector location_key="2"
@@ -403,7 +443,7 @@
 					<h3>default SFX's</h3>
 					<input type="button" class="button" value="show" @click="show_sfxs = !show_sfxs" />
 					<div class="possible_sfxs" v-show="show_sfxs">
-						<input type="button" class="button" :class="{ 'active': new_sfxs?.includes(sfx.id) }"
+						<input type="button" class="button" :class="{ 'active': new_default_sfxs?.includes(sfx.id) }"
 							v-for="sfx in sfx_list" :key="sfx.id" :value="sfx.name" @click="toggle_sfx(sfx.id)" />
 					</div>
 				</div>
@@ -436,6 +476,12 @@
 		}
 		.statement-example-divider {
 			border-bottom: 1px solid var(--color-border);
+		}
+		.sfxs {
+			.active {
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+			}
 		}
 	}
 	.trait-title {

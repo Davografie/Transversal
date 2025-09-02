@@ -473,12 +473,3 @@
 	}
 }
 </style>
-
-<style>
-.dark {
-	#traitset-view {
-		text-shadow: var(--text-shadow);
-		/* backdrop-filter: blur(5px); */
-	}
-}
-</style>

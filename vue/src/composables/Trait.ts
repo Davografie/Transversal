@@ -452,6 +452,31 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
+	function retrieve_possible_sfxs() {
+		const query_get_sfxs = gql`query PossibleSFXs($traitId: ID) {
+			traits(traitId: $traitId) {
+				possibleSfxs {
+					id
+					name
+					description
+				}
+			}
+		}`
+		if(apolloClient && trait_id.value) {
+			const { result } = provideApolloClient(apolloClient)(
+				() => useQuery(
+					query_get_sfxs,
+					{ traitId: trait_id.value },
+					{ fetchPolicy: 'cache-and-network' }
+				)
+			)
+			watch(result, (newResult) => {
+				console.log("retrieved possible sfxs: ", JSON.stringify(newResult))
+				trait.value = { ...trait.value, possibleSfxs: newResult.traits[0].possibleSfxs }
+			})
+		}
+	}
+
 	function retrieve_default_settings() {
 		const query_get_default_trait = gql`query TraitDefaults($traitId: ID) {
 			traits(traitId: $traitId) {
@@ -609,6 +634,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		transfer_resource,
 		unassign_trait,
 		retrieve_statement_examples,
+		retrieve_possible_sfxs,
 		retrieve_default_settings,
 		mutate_default_settings,
 		assign_subtrait,

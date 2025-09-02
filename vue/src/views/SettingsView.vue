@@ -355,7 +355,7 @@
 }
 .dark #settings-wrapper {
 	backdrop-filter: blur(5px);
-	.page {
+	#settings {
 		text-shadow: var(--text-shadow);
 	}
 	nav {

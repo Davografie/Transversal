@@ -73,6 +73,7 @@
 		assign_subtrait,
 		unassign_subtrait,
 		retrieve_statement_examples,
+		retrieve_possible_sfxs,
 		change_trait_entity,
 		transfer_resource
 	} = useTrait(props.trait, props.trait_id, props.trait_setting_id, props.entity_id)
@@ -528,7 +529,8 @@
 	const new_sfx_description = ref<string>('')
 
 	function toggle_sfxs(event: MouseEvent) {
-		event.stopPropagation()
+		// event.stopPropagation()
+		retrieve_possible_sfxs()
 		show_sfxs.value = !show_sfxs.value
 	}
 
@@ -1070,9 +1072,9 @@
 					<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
 				</template>
 			</div>
-			<div class="add-sfx" v-if="mode == 'editing' && show_sfxs">
+			<div class="add-sfx" v-if="mode == 'editing' && trait.possibleSfxs">
 				<div class="add-sfx-list">
-					<template v-for="(sfx, i) in sfx_list" :key="sfx.id">
+					<template v-for="(sfx, i) in trait.possibleSfxs" :key="sfx.id">
 						<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
 							:editing="mode == 'editing'" @add="add_sfx(sfx)" adding />
 						<!-- <span class="sfx-divider" v-if="i < (sfx_list?.length ?? 0) - 1">/</span> -->
