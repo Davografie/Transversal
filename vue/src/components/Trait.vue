@@ -830,6 +830,7 @@
 					<div class="edit-statement-1">
 						<input type="text" name="text-statement" ref="text-statement"
 							class="statement statement-edit"
+							:class="{ 'changed': new_statement != trait.statement }"
 							v-model="new_statement"
 							placeholder="statement"
 							@input="!show_statement_examples ? display_statement_examples() : undefined"
@@ -991,7 +992,7 @@
 			</div>
 
 			<div class="edit-notes edit-attribute" v-if="edit_notes">
-				<textarea class="notes" v-model="new_notes" placeholder="notes" @contextmenu="(e) => e.stopPropagation()"
+				<textarea class="notes" :class="{ 'changed': trait.notes != new_notes }" v-model="new_notes" placeholder="notes" @contextmenu="(e) => e.stopPropagation()"
 					v-if="player.is_gm || (props.entity_id == player.player_character.id || props.entity_id?.startsWith('Relations/'))" />
 			</div>
 
@@ -1698,6 +1699,9 @@
 			border-right: 1px solid var(--color-editing);
 			.sfxs {
 				border-top: 1px solid var(--color-editing);
+			}
+			.changed {
+				border: 1px solid red;
 			}
 			.edit-trait {
 				.edit-setting-buttons {
