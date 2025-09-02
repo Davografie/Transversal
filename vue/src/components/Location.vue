@@ -401,15 +401,15 @@
 
 	const background_image_width = computed(() => {
 		return Math.max(
-			location.value.image?.width ?? 0,
-			props.parent_width ?? 0,
+			// location.value.image?.width ?? 0,
+			// props.parent_width ?? 0,
 			window_height.value * (location.value.image?.width ?? 0) / (location.value.image?.height ?? 1)
 		)
 	})
 	const background_image_height = computed(() => {
 		return Math.max(
-			location.value.image?.height ?? 0,
-			window_height.value,
+			// location.value.image?.height ?? 0,
+			// window_height.value,
 			(props.parent_width ?? 0) * (location.value.image?.height ?? 0) / (location.value.image?.width ?? 1)
 		)
 	})
