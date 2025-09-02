@@ -505,9 +505,17 @@
 		show_statement_examples.value = true
 	}
 
-	const rendered_statement = computed(
-		() => trait.value.statement ? marked.parse(trait.value.statement.split(' ').map((word: string) => `<strong style="font-weight: 600; font-size: 0.8em; text-transform: uppercase">${word[0]}</strong>${word.slice(1)}`).join(' ')) : ''
-	)
+	// render statement with first letter of each word bold
+	const rendered_statement = computed(() => {
+		if (!trait.value.statement) return ''
+		const words = trait.value.statement.split(/([\s\-\/])/)
+		const parsed_words = words.map(word => {
+			if (word.match(/^\d+$/)) return word
+			return `<strong style="font-weight: 600; font-size: 0.8em; text-transform: uppercase">${word[0]}</strong>${word.slice(1)}`
+		})
+		const statement = parsed_words.join('').replace(/(\s)(\S)/g, (_, g1, g2) => `${g1}${g2}`).replace(/(\S)(\-|\s\/\s)(\S)/g, (_, g1, g2, g3) => `${g1}${g2}${g3}`)
+		return marked.parse(statement)
+	})
 
 	const inherited = computed(() => {
 		if(props.entity_id.startsWith('Relations/')) {
@@ -826,10 +834,12 @@
 						{{ trait.ratingType ?? 'empty' }}
 					</span>
 				</div>
-				<div class="label explanation" v-if="preferredColor == 'light' ||
-													['viewing', 'editing'].includes(mode) ||
-													player.viewing"
-													v-html="marked(trait.explanation ?? '')">
+				<div class="label explanation"
+					title="trait explanation"
+					v-if="preferredColor == 'light' ||
+						['viewing', 'editing'].includes(mode) ||
+						player.viewing"
+					v-html="marked(trait.explanation ?? '')">
 				</div>
 				<div class="statement" v-if="trait.statement && mode != 'editing'"
 					v-html="rendered_statement" />
