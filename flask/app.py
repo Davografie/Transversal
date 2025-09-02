@@ -3695,8 +3695,10 @@ def imagegen(entity_key, force):
 		elif entity_type == "location":
 			prompt = f"(location background image, a humanless atmospheric image focusing on { name }:1.2), "
 			negative += ", person"
+		else:
+			prompt = ""
 
-		if entity_type in ["character", "npc", "asset"]:
+		if entity_type in ["character", "npc", "asset", "gm"]:
 			entity = db.collection('Entities').get(entity_key)
 			location = retrieve_location(entity)
 			trait_settings = [doc for doc in db.collection('TraitSettings').find({'_from': entity.get('_id')})]
