@@ -156,8 +156,12 @@ export function useDie(init?: Die, die_type?: string, number_rating?: number) {
 		die.value.id = uuidv4()
 	}
 
+	/**
+	 * Rolls the die
+	 * @param explosive - if true, roll an explosive die
+	 */
 	function roll(explosive?: boolean) {
-		const die_values = die_constants.find(d => d.rating == die.value.rating)
+		const die_values = die_constants.find(d => d.number_rating == die.value.number_rating)
 		const sides = die.value.sides ?? die_values?.sides ?? 0
 		if(explosive) die.value.result = explosive_roll(sides)
 		else die.value.result = Math.ceil(Math.random() * sides)

@@ -396,7 +396,7 @@
 			if(props.trait_setting_id) dc.traitsettingId = props.trait_setting_id
 			if(dc.number_rating > 0) {
 				add_die(_.clone(dc))
-				change_result_limit(1)
+				// change_result_limit(1)
 			}
 			else {
 				add_complication(_.clone(dc))

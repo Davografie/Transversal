@@ -132,6 +132,9 @@ export function useDicepool() {
 		}
 	}
 
+	/**
+	 * Rolls all dice in the dicepool
+	 */
 	function roll() {
 		// swade roll
 		if(dicepool.dice.length <= 2) {
@@ -149,18 +152,31 @@ export function useDicepool() {
 				d.isResultDie = true
 				d.isResolved = true
 			})
-			dicepool.dice.sort((d1, d2) => d2.result - d1.result)
+			dicepool.dice.sort((d1: Die, d2: Die) => d2.result - d1.result)
 			dicepool.phase = dicepool.phases.SWADE_RESULT
 		}
 
 		// cortex roll
 		else if(dicepool.dice.length > 1) {
+			// set intermediate phase while rolling
 			dicepool.phase = dicepool.phases.ROLLING
+
 			dicepool.dice.forEach(d => {
-				const { die, roll } = useDie(d, undefined)
+				const { die, roll } = useDie(d, undefined, undefined)
 				roll()
 				d.result = die.value.result
 			})
+
+			// if multiple resource dice, disable all except for highest result
+			if(dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch).length > 1) {
+				dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch).sort((d1: Die, d2: Die) => d2.result - d1.result)
+					.slice(1)
+					.forEach(d => d.disabled = true)
+			}
+			// non-disabled resource dice should be inResult
+			dicepool.dice.filter(d => d.ratingType == 'resource' && !d.disabled && !d.isHitch).forEach(d => d.isResultDie = true)
+
+			// set next phase after rolling finished
 			dicepool.phase = dicepool.phases.RESULT
 		}
 	}
@@ -225,13 +241,18 @@ export function useDicepool() {
 		dicepool.dicepool_limit += n
 	}
 
-	const result_size = computed(() => dicepool.dice.filter(d => d.isResultDie).length)
+	const result_size = computed(() => dicepool.dice.filter(d => d.isResultDie && d.ratingType != 'resource').length)
 	const result_limit = computed(() => dicepool.result_limit)
-	const result = computed(() => dicepool.dice.filter(d => d.isResultDie).reduce((sum, d) => sum + d.result, 0))
+	const result = computed(() => dicepool.dice.filter(d => d.isResultDie && !d.disabled).reduce((sum, d) => sum + d.result, 0))
 	const effect_size = computed(() => dicepool.dice.filter(d => d.isEffectDie).length)
 	const effect_limit = computed(() => dicepool.effect_limit)
 	const effect = computed(() => dicepool.dice.filter(d => d.isEffectDie))
 	const hitches_size = computed(() => dicepool.dice.filter(d => d.result == 1).length)
+	const interactive_dice = computed(() => {
+		if(dicepool.phase == dicepool.phases.ADDING) return dicepool.dice
+		else if(dicepool.phase == dicepool.phases.RESULT) return dicepool.dice.filter(d => !d.disabled && d.ratingType != 'resource')
+		else return dicepool.dice
+	})
 
 	function next() {
 		if(dicepool.phase == dicepool.phases.ADDING) dicepool.phase = dicepool.phases.ROLLING
@@ -502,6 +523,7 @@ export function useDicepool() {
 		effect_limit,
 		change_effect_limit,
 		hitches_size,
+		interactive_dice,
 		toggle_effect,
 		effect,
 		next,

@@ -223,7 +223,7 @@
 							<div class="info-half-wrapper">
 								<input type="button" class="button-mnml" value="-" @click.stop="dicepool.change_result_limit(-1)"
 									v-if="dicepool.result_limit.value > 1 && dicepool.inResultPhase.value" />
-								<Die v-for="die in dicepoolStore.dice.filter((d) => d.isResultDie)" :key="die.id" :die="die" in_pool
+								<Die v-for="die in dicepoolStore.dice.filter((d) => d.isResultDie && d.ratingType != 'resource')" :key="die.id" :die="die" in_pool
 									@click.stop="dicepool.inResultPhase.value ? die.isResultDie = false : dicepool.set_result_phase()" />
 								<span class="slot" v-for="i of dicepool.result_limit.value - dicepool.result_size.value" :key="i">
 									{{ die_shapes.default_inactive }}
@@ -377,7 +377,7 @@
 											@longpress_die="(die: DieType) => longtap_die(die)" />
 									</div>
 									<div id="simple-dice" v-else>
-										<template v-for="die in dicepoolStore.dice" :key="die.id">
+										<template v-for="die in dicepool.interactive_dice.value" :key="die.id">
 											<DieComponent
 												:class="{ 'editing': editing_die && die.id == editing_die.id }"
 												:die="die"
