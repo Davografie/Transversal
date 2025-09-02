@@ -324,6 +324,12 @@
 	})
 
 	const edit_mode = ref(false)
+	function toggle_edit_mode() {
+		edit_mode.value = !edit_mode.value
+		if(!edit_mode.value) {
+			adding_trait.value = false
+		}
+	}
 </script>
 
 <template>
@@ -364,7 +370,7 @@
 
 			<input type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
 				:value="player.small_buttons ? '✎' : '✎\nedit' + (edit_mode ? 'ing' : '') + ' traits'"
-				@click.stop="edit_mode = !edit_mode" v-if="show_traits && !show_info" />
+				@click.stop="toggle_edit_mode" v-if="show_traits && !show_info" />
 				
 			<div class="title">
 				<div class="big-limiter" v-if="show_traits && props.active">
@@ -427,7 +433,7 @@
 				</div>
 
 				<div class="entity-traits" v-if="got_traits_to_show
-						|| ((props.extensible || show_info) && player.is_gm)
+						|| ((props.extensible || show_info || edit_mode) && player.is_gm)
 						|| (player.is_player && player.player_character.id == props.entity_id)
 						|| (props.relationship && props.extensible)
 						|| (props.location && props.extensible)">
@@ -475,7 +481,7 @@
 					</template>
 					<input type="button" class="button add-trait-button"
 						v-if="
-							((props.extensible || show_info) && player.is_gm)
+							((props.extensible || show_info || edit_mode) && player.is_gm)
 							|| (
 								player.is_player
 								&& player.player_character.id == props.entity_id
@@ -483,7 +489,7 @@
 									props.extensible
 									|| show_info
 									|| edit_mode
-									|| traitset.traits.length == 0
+									|| traitset.traits?.length == 0
 								)
 							)
 							|| (props.relationship && props.extensible)
