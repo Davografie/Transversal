@@ -1,6 +1,6 @@
 <script setup lang="ts">
 	import { marked } from 'marked'
-	import { ref, watch, inject, computed, onMounted } from 'vue'
+	import { ref, watch, inject, computed, onMounted, nextTick } from 'vue'
 	import { RouterLink, useRoute, useRouter } from 'vue-router'
 	import { useFetch, useElementSize } from '@vueuse/core'
 
@@ -202,6 +202,7 @@
 	const { height: portraitHeight, width: portraitWidth } = useElementSize(portrait_img)
 	const detail_height = computed(() => portrait_img.value ? portraitHeight.value * 0.9 : 200)
 	const entity_wrapper = ref()
+	const character_wrapper = ref()
 	const { width: entity_width } = useElementSize(entity_wrapper)
 	const banner_width = computed(() => (props.windowWidth ?? entity_width.value) - portraitWidth.value)
 
@@ -217,6 +218,9 @@
 			set_character_key(newKey)
 			retrieve_character()
 			retrieve_small_entity()
+
+			nextTick(() => character_wrapper.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+			switching_entities.value = false
 		}
 	})
 
@@ -328,6 +332,7 @@
 				set_character_key(newKey ?? '')
 			})
 		}
+		character_wrapper.value?.scrollIntoView({ behavior: 'smooth' })
 		// if(player.is_gm) {
 		// 	watch(character, () => {
 		// 		if(player.perspective_id != character.value.id && character.value.entityType == 'npc') {
@@ -336,6 +341,18 @@
 		// 	}, { once: true })
 		// }
 	})
+
+	const switching_entities = ref(false)
+	function switch_to_entity(entity_id: string) {
+		if(player.is_gm) {
+			player.set_perspective_id(entity_id)
+			player.retrieve_perspective()
+		}
+		else if(player.is_player) {
+			player.player_character_key = entity_id.substring(9)
+			if(player.uuid) { activate_character(player.uuid) }
+		}
+	}
 </script>
 
 <template>
@@ -344,7 +361,15 @@
 			<img id="portrait_large" v-if="character.image && show_image"
 				:src="img_link_large" />
 		</div>
-		<div id="character" v-if="character">
+		<div id="character-quick-switch" v-if="switching_entities && player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0">
+			<EntityCard
+				class="entity-card"
+				v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
+				:entity_id="entity_id"
+				override_click
+				@click_entity="switch_to_entity(entity_id)" />
+		</div>
+		<div id="character" v-if="character" ref="character_wrapper">
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
 			<div id="entity-name-wrapper" :class="{ 'editing': editing_name_type }">
 				<input type="text" id="entity-name" class="header" v-model="new_name" v-if="editing_name_type" />
@@ -390,6 +415,8 @@
 							@contextmenu="(e) => e.preventDefault()"
 							v-if="!editing_name_type">
 						{{ character.name }}
+						<input id="entity-switch" v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
+							type="button" class="button-mnml" value="🔁" @click="switching_entities = !switching_entities" />
 					</h1>
 					<div id="plot_points">
 						<PP class="plot_point" v-for="i in character.pp" v-if="character.pp && character.pp <= 5" :key="i" @click="decrease_pp" />
@@ -537,7 +564,17 @@
 
 <style scoped>
 	#entity-wrapper {
-		padding-top: 1em;
+		#character-quick-switch {
+			padding: 1em;
+			display: flex;
+			justify-content: space-around;
+			width: 100%;
+			overflow-x: auto;
+			.entity-card {
+				width: 50px;
+				height: 70px;
+			}
+		}
 		#character {
 			position: relative;
 			#entity-name-wrapper.editing {
@@ -685,12 +722,12 @@
 			/* backdrop-filter: blur(5px); */
 			#character-details {
 				background-color: var(--color-background-mute);
-				margin: 0 1em;
-				border-radius: 50px 30px 30px 50px;
+				/* margin: 0 1em; */
+				/* border-radius: 50px 30px 30px 50px; */
 				max-height: 240px;
 				height: v-bind(portraitHeight + 'px');
 				#character-portrait img {
-					border-radius: 30px 0 0 30px;
+					/* border-radius: 30px 0 0 30px; */
 					border: 1px solid var(--color-background);
 					border-top: 3px solid var(--color-background);
 					/* margin: .4em; */

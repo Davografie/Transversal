@@ -21,6 +21,7 @@ export const usePlayer = defineStore(
 
 		//	character
 		const player_character_key: Ref<string|undefined> = ref()
+		const previous_perspective_ids: Ref<Array<string>> = ref([])
 
 		// const 
 		const plot_points: Ref<number> = ref(0)
@@ -58,6 +59,16 @@ export const usePlayer = defineStore(
 				set_character_key(newCharacterKey)
 			}
 		})
+
+		function save_perspective_id(new_perspective_id: string) {
+			if(!new_perspective_id) return
+			const existingIndex = previous_perspective_ids.value.indexOf(new_perspective_id)
+			if(existingIndex > -1) {
+				previous_perspective_ids.value.splice(existingIndex, 1)
+			}
+			previous_perspective_ids.value.unshift(new_perspective_id)
+			previous_perspective_ids.value = Array.from(new Set(previous_perspective_ids.value)).slice(0, 13)
+		}
 
 		watch(player_character, (newCharacter, oldCharacter) => {
 			// if(oldCharacter) {
@@ -109,6 +120,7 @@ export const usePlayer = defineStore(
 				console.log("switching from " + oldEntity.name + "/" + oldEntity.key + " to " + newEntity.name + "/" + newEntity.key)
 				if(oldEntity && oldEntity.id != 'placeholder') {
 					deactivate_entity(oldEntity.key)
+					save_perspective_id(oldEntity.id)
 				}
 				if(newEntity && is_gm.value) {
 					activate_perspective()
@@ -175,6 +187,7 @@ export const usePlayer = defineStore(
 			traitset_defaults,
 			player_character,
 			player_character_key,
+			previous_perspective_ids,
 			retrieve_character,
 			retrieve_relations,
 			set_location,
@@ -208,6 +221,7 @@ export const usePlayer = defineStore(
 				'uuid', 
 				'player_name', 
 				'player_character_key', 
+				'previous_perspective_ids',
 				'perspective_id', 
 				'is_gm', 
 				'small_buttons',
