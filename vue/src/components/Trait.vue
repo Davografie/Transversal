@@ -557,10 +557,21 @@
 
 	function create_new_sfx() {
 		create_sfx(new_sfx_name.value, new_sfx_description.value)
-		new_sfx_name.value = ''
-		new_sfx_description.value = ''
-		show_add_sfx.value = false
-		setTimeout(retrieve_sfx_list, 200)
+		setTimeout(() => {
+			retrieve_sfx_list()
+			watch(sfx_list, (newSfxList) => {
+				console.log("new sfx list: ", newSfxList)
+				const new_sfx = newSfxList.find(sfx => sfx.name == new_sfx_name.value)
+				if(!new_sfx) return
+				mutate_trait({
+					possibleSfxs: [...(trait.value.possibleSfxs?.map((sfx) => sfx.id) ?? []), new_sfx.id]
+				})
+				new_sfx_name.value = ''
+				new_sfx_description.value = ''
+				show_add_sfx.value = false
+				setTimeout(() => retrieve_possible_sfxs(), 200)
+			}, { once: true })
+		}, 200)
 	}
 
 

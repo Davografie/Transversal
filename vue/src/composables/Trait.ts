@@ -298,22 +298,19 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					}
 				}
 			}`
-		const mutate_setting_trait = gql`
-			mutation MutateTraitSetting($traitSettingInput: TraitSettingInput!, $traitSettingId: ID) {
-				mutateTraitSetting(traitSettingInput: $traitSettingInput, traitSettingId: $traitSettingId) {
-					trait {
-						id
-					}
-				}
-			}`
-		const query = trait_setting_id.value ? mutate_setting_trait : mutate_trait
+		// const mutate_setting_trait = gql`
+		// 	mutation MutateTraitSetting($traitSettingInput: TraitSettingInput!, $traitSettingId: ID) {
+		// 		mutateTraitSetting(traitSettingInput: $traitSettingInput, traitSettingId: $traitSettingId) {
+		// 			trait {
+		// 				id
+		// 			}
+		// 		}
+		// 	}`
+		// const query = trait_setting_id.value ? mutate_setting_trait : mutate_trait
 		
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
-			let variables: object = trait_setting_id.value ? {
-				traitSettingId: trait_setting_id.value,
-				traitSettingInput: input
-			} : {
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_trait))
+			const variables: object = {
 				traitId: trait.value.id,
 				traitInput: input
 			}

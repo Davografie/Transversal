@@ -49,7 +49,7 @@
 
 	const { traitsets, retrieve_traitsets } = useTraitsetList(undefined, undefined, undefined)
 	
-	const { sfx_list } = useSFXList()
+	const { sfx_list, retrieve_sfx_list } = useSFXList()
 
 	const { toClipboard } = useClipboard()
 	const copy = async () => {
@@ -225,7 +225,10 @@
 	/* POSSIBLE SFXS */
 	const show_possible_sfxs = ref(false)
 	function toggle_show_sfxs() {
-		retrieve_possible_sfxs()
+		if(!show_possible_sfxs.value) {
+			retrieve_sfx_list()
+			retrieve_possible_sfxs()
+		}
 		show_possible_sfxs.value = !show_possible_sfxs.value
 	}
 	function toggle_possible_sfx(sfx: SFXType) {

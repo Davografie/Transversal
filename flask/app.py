@@ -202,7 +202,7 @@ class CreateSFX(Mutation):
 			'name': name,
 			'description': description
 		})
-		return CreateSFX(sfx=SFX(id=sfx['id'], name=name, description=description))
+		return CreateSFX(sfx=SFX(id=sfx.get('id'), name=name, description=description))
 
 class UpdateSFX(Mutation):
 	class Arguments:
@@ -230,6 +230,16 @@ class DeleteSFX(Mutation):
 
 	def mutate(self, info, id):
 		try:
+			# Remove SFX as possible from all Traits
+			query = f"""FOR trait IN Traits
+				FILTER '{ id }' IN trait.possible_sfxs
+				RETURN trait"""
+			results = db.aql.execute(query)
+			for result in results:
+				new_sfxs = result.get('possible_sfxs')
+				new_sfxs.remove(id)
+				db.collection('Traits').update(result, {'possible_sfxs': new_sfxs})
+			# Remove SFX from all TraitSettings
 			query = f"""FOR ts IN TraitSettings
 				FILTER '{ id }' IN ts.sfxs
 				RETURN ts"""
@@ -239,7 +249,7 @@ class DeleteSFX(Mutation):
 				new_sfxs.remove(id)
 				db.collection('TraitSettings').update(result, {'sfxs': new_sfxs})
 			db.collection('SFXs').delete(id)
-			return DeleteSFX(success=True)
+			return DeleteSFX(success=True, message="SFX deleted")
 		except Exception as e:
 			return DeleteSFX(success=False, message=str(e))
 
