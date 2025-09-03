@@ -13,6 +13,16 @@
 	import Traitset from '@/components/Traitset.vue'
 	import EntityCard from '@/components/EntityCard.vue'
 
+	import useClipboard from 'vue-clipboard3'
+	const { toClipboard } = useClipboard()
+	const copy_id = async () => {
+		try {
+			await toClipboard(entity.value.id)
+		} catch (e) {
+			console.error(e)
+		}
+	}
+
 	const props = defineProps({
 		entity_key: String,
 		windowWidth: Number,	// used in styling
@@ -58,12 +68,6 @@
 		set_location_key
 	} = useLocation(undefined, character.value?.location?.id)
 
-	// watch(() => route.params.id, (newId) => {
-	// 	console.log('route id changed, retrieving character: ' + route.params.id)
-	// 	if(character.value && character.value.key != newId) {
-	// 		retrieve_character()
-	// 	}
-	// })
 
 	// entity name and type
 	const new_name = ref('')
@@ -463,6 +467,10 @@
 					:value="player.small_buttons ? entity_icons['gm'] : entity_icons['gm'] + '\nswitch to gm'"
 					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'"
 					@click="switch_gm" />
+				<input type="button" class="button-mnml" id="copy-id"
+					:value="player.small_buttons ? '📋' : '📋\ncopy ID'"
+					v-if="player.is_gm"
+					@click="copy_id" />
 				<input type="button" class="button-mnml" id="pick-character"
 					:value="player.small_buttons ? entity_icons[character.entityType] : entity_icons[character.entityType] + '\npick ' + character.entityType"
 					v-if="character.id != player.the_entity?.id && (player.is_gm || (character.entityType == 'character'))"
