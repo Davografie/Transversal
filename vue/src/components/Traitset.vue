@@ -464,7 +464,7 @@
 										traits_in_dicepool.length == limiter
 										&& (
 											traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
-											|| traits_in_dicepool.map((t: DieType) => t.subTraitsettingId).includes(trait.traitSettingId)
+											|| traits_in_dicepool.map((t: DieType) => t.traitsettingId).some((id) => trait.subTraits?.some((st) => st.traitSettingId == id))
 										)
 									)
 									|| traitset_dice(traitset.id).length < limiter

@@ -105,6 +105,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 						id
 						traitSettingId
 						rating
+						subTraits {
+							traitSettingId
+						}
 						requiredTraits {
 							id
 						}
