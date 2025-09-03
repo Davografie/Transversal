@@ -468,7 +468,7 @@
 					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'"
 					@click="switch_gm" />
 				<input type="button" class="button-mnml" id="copy-id"
-					:value="player.small_buttons ? '📋' : '📋\ncopy ID'"
+					:value="player.small_buttons ? '#' : '#\ncopy ID'"
 					v-if="player.is_gm"
 					@click="copy_id" />
 				<input type="button" class="button-mnml" id="pick-character"
