@@ -161,10 +161,6 @@
 		new_locationsDisabled.value = trait.value?.traitSetting?.locationsDisabled ?? []
 	}
 
-	// watch(trait, () => {
-	// 	reset_temporary_attributes()
-	// })
-
 	watch(() => props.edit_mode, () => {
 		if (props.edit_mode) {
 			switch_to_editing()
@@ -518,7 +514,7 @@
 	})
 
 	const inherited = computed(() => {
-		if(props.entity_id.startsWith('Relations/')) {
+		if(props.entity_id?.startsWith('Relations/')) {
 			return trait.value.traitSetting?.fromEntity?.id != player.the_entity?.id
 		}
 		else {
@@ -538,8 +534,7 @@
 	const new_sfx_name = ref<string>('')
 	const new_sfx_description = ref<string>('')
 
-	function toggle_sfxs(event: MouseEvent) {
-		// event.stopPropagation()
+	function toggle_sfxs() {
 		retrieve_possible_sfxs()
 		show_sfxs.value = !show_sfxs.value
 	}
@@ -557,8 +552,6 @@
 	}
 
     function remove_sfx(sfx_id: string) {
-        // mutate_trait({ 'sfxs': new_sfxs.value.filter(sfx => sfx.id != sfx_id).map(sfx => sfx.id) })
-		// retrieve_trait()
 		new_sfxs.value = new_sfxs.value.filter(sfx => sfx.id != sfx_id)
 		expanded_sfx.value = {} as SFXType
     }
@@ -580,13 +573,6 @@
 				setTimeout(() => retrieve_possible_sfxs(), 200)
 			}, { once: true })
 		}, 200)
-	}
-
-
-	function die_picker_pick(rating: DieType[]) {
-		console.log("die picker picked: " + JSON.stringify(rating))
-		new_rating.value = rating
-		change_trait()
 	}
 
 	function change_rating(rating_type: string, rating: DieType[]) {
@@ -614,33 +600,6 @@
 			unassign_subtrait(subtrait.traitSettingId)
 		}
 		retrieve_trait()
-	}
-
-
-	// change rating type
-	function increase_rating_type() {
-		// cycles through rating types to change trait rating type
-		if(new_ratingType.value) {
-			new_ratingType.value = rating_types[(rating_types.findIndex(x => x == new_ratingType.value) + 1) % rating_types.length]
-		}
-		else {
-			// sometimes the ratingType is null, so it needs to be created
-			new_ratingType.value = rating_types[0]
-		}
-		mutate_trait({ 'ratingType': new_ratingType.value })
-	}
-
-	function decrease_rating_type() {
-		// cycles through rating types to change trait rating type
-		if(new_ratingType.value) {
-			const index = rating_types.findIndex(x => x == new_ratingType.value) - 1;
-			new_ratingType.value = rating_types[index < 0 ? rating_types.length - 1 : index];
-		}
-		else {
-			// sometimes the ratingType is null, so it needs to be created
-			new_ratingType.value = rating_types[0]
-		}
-		mutate_trait({ 'ratingType': new_ratingType.value })
 	}
 
 	// used for the location restriction widget
@@ -672,8 +631,8 @@
 		}
 	}
 
-	const isLocationEnabled = (location_id?: string, index?: number) => {
-		return (
+	const isLocationEnabled = (location_id?: string, index?: number): boolean => {
+		return Boolean(
 			(location_id && index)
 			&& (
 				trait.value.traitSetting?.locationsEnabled?.includes(location_id)
@@ -682,8 +641,8 @@
 		) ?? false
 	}
 
-	const isLocationDisabled = (location_id?: string, index?: number) => {
-		return (
+	const isLocationDisabled = (location_id?: string, index?: number): boolean => {
+		return Boolean(
 			(location_id && index)
 			&& (
 				trait.value.traitSetting?.locationsDisabled?.includes(location_id)
