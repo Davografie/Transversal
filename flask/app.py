@@ -1147,29 +1147,53 @@ class AssignSubTrait(Mutation):
 	class Arguments:
 		trait_setting_id = ID(required=True)
 		subtrait_id = ID(required=True)
+		entity_id = ID(required=False)
 
 	trait = Field(Trait)
 
-	def mutate(self, info, trait_setting_id=None, subtrait_id=None):
+	def mutate(self, info, trait_setting_id=None, subtrait_id=None, entity_id=None):
+		"""
+		Assigns subtrait to given trait setting.
+
+		This is a shortcut for creating a trait setting between the given trait
+		setting and the given subtrait, using the default trait setting for the
+		traitset that the subtrait is in.
+
+		Args:
+			trait_setting_id: The ID of the trait setting to assign the subtrait to.
+			subtrait_id: The ID of the subtrait to assign.
+			entity_id: The ID of the entity to assign the subtrait to. If not
+				provided, the entity ID will be taken from the trait setting.
+
+		Returns:
+			A GraphQL `AssignSubTrait` object with the ID of the new subtrait.
+		"""
 		global absolute_default_trait_setting
 
 		traitset_id = db.collection('Traits').get(subtrait_id).get('traitset')
 		traitset = db.collection('Traitsets').get(traitset_id)
 
 		if 'subtrait' in traitset.get('entity_types'):
+			# get the default trait setting for this subtrait
 			default_trait_setting = absolute_default_trait_setting
 
+			# if the subtrait already has a default trait setting, use that
 			default_trait_settings = db.collection('TraitSettings').find({ '_from': subtrait_id, '_to': 'Traits/1' })
 			if not default_trait_settings.empty():
 				default_trait_setting = [doc for doc in default_trait_settings][0]
 				default_trait_setting = {k: v for k, v in default_trait_setting.items() if not k.startswith('_')}
 			else:
+				# if the subtrait doesn't have a default trait setting, use the default
+				# trait setting for the traitset that the subtrait is in
 				traitset_id = db.collection('Traits').get(subtrait_id).get('traitset')
 				traitset_settings = db.collection('TraitsetSettings').find({ '_from': traitset_id, '_to': 'Traits/1' })
 				if not traitset_settings.empty():
 					default_trait_setting = [doc for doc in traitset_settings][0]
 					default_trait_setting = {k: v for k, v in default_trait_setting.items() if not k.startswith('_')}
 				else:
+					# if the subtrait doesn't have a default trait setting, and the
+					# traitset it's in doesn't have a default trait setting, use the
+					# absolute default trait setting
 					default_trait_settings = db.collection('TraitSettings').find({ '_from': 'Traits/1', '_to': 'Traits/1' })
 					if not default_trait_settings.empty():
 						default_trait_setting = [doc for doc in default_trait_settings][0]
@@ -1177,6 +1201,33 @@ class AssignSubTrait(Mutation):
 					else:
 						default_trait_setting = absolute_default_trait_setting
 
+			# check if entity was archetype and given entity ID is not the archetype
+			traitsetting = db.collection('TraitSettings').get(trait_setting_id)
+			from_entity_id = traitsetting.get('_from')
+			if from_entity_id.startswith('Entities/') and db.collection('Entities').get(from_entity_id).get('is_archetype') and entity_id and from_entity_id != entity_id:
+				# if so copy the original trait setting for the given entity
+				new_traitsetting = db.collection('TraitSettings').insert({
+					'_from': entity_id,
+					'_to': traitsetting.get('_to'),
+					**{k: v for k, v in traitsetting.items() if not k.startswith('_')},
+					'inherited_as': trait_setting_id
+				})
+				new_trait_setting_id = traitsetting.get('_id')
+				# also copy all the original traitsetting's subtraits
+				for subtrait in db.collection('TraitSettings').find({
+					'_from': trait_setting_id
+				}):
+					if subtrait.get('_to') != subtrait_id:
+						db.collection('TraitSettings').insert({
+							'_from': new_trait_setting_id,
+							'_to': subtrait.get('_to'),
+							**{k: v for k, v in subtrait.items() if not k.startswith('_')}
+						})
+				trait_setting_id = new_traitsetting.get('_id')
+
+
+			# if the subtrait isn't already assigned to the given trait setting,
+			# create a new trait setting
 			if db.collection('TraitSettings').find({
 				'_from': trait_setting_id,
 				'_to': subtrait_id
@@ -1187,25 +1238,7 @@ class AssignSubTrait(Mutation):
 					**default_trait_setting
 				})
 
-				# check if entity was archetype, if so; add subtrait to entities based on that archetype
-				traitsetting = db.collection('TraitSettings').get(trait_setting_id)
-				entity_id = traitsetting.get('_from')
-				if entity_id.startswith('Entities/') and db.collection('Entities').get(entity_id).get('is_archetype'):
-					for entity in db.collection('Entities').find({'archetype_id': entity_id}):
-						if not (entity_traitsettings := db.collection('TraitSettings').find({
-							'_from': entity.get('_id'),
-							'_to': traitsetting.get('_to'),
-						})).empty():
-							for entity_traitsetting in entity_traitsettings:
-								if db.collection('TraitSettings').find({
-									'_from': entity_traitsetting.get('_id'),
-									'_to': subtrait_id
-								}).empty():
-									db.collection('TraitSettings').insert({
-										'_from': entity_traitsetting.get('_id'),
-										'_to': subtrait_id,
-										**default_trait_setting
-									})
+
 
 				return AssignSubTrait(trait=Trait(id=new_subtrait.get('_to'), trait_setting_id=new_subtrait.get('_id')))
 			else:

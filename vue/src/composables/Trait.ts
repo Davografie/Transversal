@@ -559,11 +559,11 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function assign_subtrait(trait_setting_id: string, subtrait_id: string) {
+	function assign_subtrait(trait_setting_id: string, subtrait_id: string, entity_id?: string) {
 		if(apolloClient && trait_setting_id && subtrait_id) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
-				mutation Mutation($traitSettingId: ID!, $subtraitId: ID!) {
-					assignSubTrait(traitSettingId: $traitSettingId, subtraitId: $subtraitId) {
+				mutation Mutation($traitSettingId: ID!, $subtraitId: ID!, $entityId: ID) {
+					assignSubTrait(traitSettingId: $traitSettingId, subtraitId: $subtraitId, entityId: $entityId) {
 						trait {
 							id
 						}
@@ -572,7 +572,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			))
 			let variables: object = {
 				traitSettingId: trait_setting_id,
-				subtraitId: subtrait_id
+				subtraitId: subtrait_id,
+				entityId: entity_id
 			}
 			console.log("assigning sub-trait: " + subtrait_id + " to trait setting: " + trait_setting_id)
 			mutate(variables)
