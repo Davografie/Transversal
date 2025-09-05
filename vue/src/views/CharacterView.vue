@@ -221,6 +221,7 @@
 		if(newKey && (character.value.key != newKey || entity.value.key != newKey)) {
 			set_character_key(newKey)
 			retrieve_character()
+			set_entity_id('Entities/' + newKey)
 			retrieve_small_entity()
 
 			nextTick(() => character_wrapper.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
