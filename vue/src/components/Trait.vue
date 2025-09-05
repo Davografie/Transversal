@@ -468,6 +468,7 @@
 			})
 		}
 		mode.value = 'neutral'
+		edit_rating.value = false
 		setTimeout(() => {
 			refetch(); retrieve_trait()
 		}, 200)
