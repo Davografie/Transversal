@@ -486,7 +486,7 @@
 					v-if="player.is_gm"
 					@click="toggle_archetype" />
 				<input type="button" class="button-mnml" id="clone-entity"
-					:value="player.small_buttons ? '⧉' : 'clone entity ⧉'"
+					:value="player.small_buttons ? '⧉' : '⧉\nclone entity'"
 					title="clone entity"
 					v-if="character.isArchetype && player.is_gm"
 					@click="clone_entity" />
