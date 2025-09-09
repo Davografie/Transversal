@@ -82,10 +82,6 @@
 	retrieve_traitset()
 	retrieve_default_settings()
 
-	// watch(traitset, (newTraitset) => {
-	// 	limiter.value = newTraitset.limit ?? 1
-	// })
-
 	const limiter: Ref<number> = ref(props.limit ?? traitset.value.limit ?? 1)
 
 	const expanded_sfx: Ref<SFXType> = ref({} as SFXType)
@@ -97,6 +93,15 @@
 	watch(() => props.expanded, (newExpanded) => {
 		show_traits.value = newExpanded
 		highlighted_traits.value = []
+	})
+	watch(show_traits, (newShowTraits) => {
+		// only poll when showing traits
+		if(!newShowTraits) {
+			polling_active.value = false
+		}
+		else if(newShowTraits && props.polling && !polling_active.value) {
+			polling_active.value = true
+		}
 	})
 
 	const held = ref(false)
@@ -433,7 +438,7 @@
 				</div>
 
 				<div class="entity-traits" v-if="got_traits_to_show
-						|| ((props.extensible || show_info || edit_mode) && player.is_gm)
+						|| ((props.extensible || show_info || edit_mode || traitset.traits?.length == 0) && player.is_gm)
 						|| (player.is_player && player.player_character.id == props.entity_id)
 						|| (props.relationship && props.extensible)
 						|| (props.location && props.extensible)">
@@ -481,7 +486,7 @@
 					</template>
 					<input type="button" class="button add-trait-button"
 						v-if="
-							((props.extensible || show_info || edit_mode) && player.is_gm)
+							(player.is_gm)
 							|| (
 								player.is_player
 								&& player.player_character.id == props.entity_id
