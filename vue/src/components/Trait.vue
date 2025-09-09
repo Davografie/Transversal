@@ -579,7 +579,7 @@
 	function change_rating(rating_type: string, rating: DieType[]) {
 		new_ratingType.value = rating_type
 		new_rating.value = rating
-		// change_trait()
+		change_trait()
 	}
 
 	watch(() => player.editing, (newVal) => {
@@ -921,16 +921,15 @@
 					@click="toggle_sfxs"
 					v-if="sfx_list && sfx_list?.length > 0 && can_edit" />
 				<input type="button" class="button-mnml"
+					:value="player.small_buttons ? '⧉' : '⧉\nduplicate trait'"
+					@click.stop="copy" />
+				<input type="button" class="button-mnml"
 					:class="transfer_resource_mode ? 'active' : 'inactive'"
 					:value="player.small_buttons ?
 						'🫳' : '🫳\n' + (props.entity_id != player.the_entity?.id ? ' take ' : ' drop ') + trait.name"
 					:title="props.entity_id != player.the_entity?.id ? ' take ' : ' drop ' + trait.name"
 					@click.stop="steal"
 					v-if="trait.ratingType == 'resource' || props.traitset_id == 'Traitsets/3'" />
-				<input type="button" class="button-mnml"
-					:value="player.small_buttons ? '⧉' : '⧉\ncopy trait'"
-					@click.stop="copy"
-					v-if="player.is_gm" />
 				<input type="button" class="button-mnml"
 					:class="show_pc_visible ? 'active' : 'inactive'"
 					:value="player.small_buttons ? '🧠' : '🧠\nshow PC'"
@@ -1246,6 +1245,10 @@
 					background-color: var(--color-editing);
 					color: var(--color-editing-text);
 				}
+				&:hover {
+					background-color: var(--color-highlight);
+					color: var(--color-highlight-text);
+				}
 			}
 			&.small-buttons .button-mnml {
 				font-size: 1.2em;
@@ -1345,7 +1348,7 @@
 			.notes {
 				min-width: 100%;
 				max-width: fit-content;
-				min-height: 4em;
+				min-height: 6em;
 			}
 		}
 		.show-character {

@@ -26,6 +26,8 @@
 
 	const emit = defineEmits(['change-die', 'cancel'])
 
+	const multiple = ref(props.dice && props.dice.length > 1 ? true : false)
+
 	watch(() => props.die, (newDie) => {
 		if(newDie) {
 			return_rating.value = [newDie]
@@ -111,7 +113,7 @@
 		die.value.traitsetId = props.die?.traitsetId ?? (die.value.traitsetId ?? (props.custom ? 'Traitsets/3800280' : undefined))
 		die.value.traitsettingId = props.die?.traitsettingId ?? (die.value.traitsettingId ?? (props.custom ? 'TraitSettings/1' : undefined))
 		die.value.sfxId = props.die?.sfxId
-		if(props.dice) {
+		if(multiple.value) {
 			return_rating.value.push(die.value)
 		}
 		else {
@@ -133,6 +135,7 @@
 				sign == '-' ? 'negative' : 'positive'
 			]">
 		<div class="die-picker-wrapper" :class="{ 'small-buttons': player.small_buttons }">
+			<input type="button" id="multiple-button" class="button multiple" :value="multiple ? '●●●' : '○●○'" @click.stop="multiple = !multiple" v-if="!props.custom" />
 			<div class="dice">
 				<span v-if="resource">add dice</span>
 				<!-- <div class="negative-positive-indicator">±</div> -->
@@ -155,7 +158,7 @@
 					<Die class="pickable-die" :die="{rating: 'd12', number_rating: 5}" @click.stop="pick_die(5)" />
 				</div>
 				<span v-if="resource">remove dice</span>
-				<div class="current-rating" v-if="!props.custom && props.preview">
+				<div class="current-rating" v-if="!props.custom && props.preview && multiple">
 					<Die v-for="(d, index) in return_rating" :key="d.id" :die="d" @click.stop="remove_die(index)" />
 				</div>
 				<div class="effect" v-if="!resource && props.die && show_effects">
@@ -179,6 +182,12 @@
 		.die-picker-wrapper {
 			display: flex;
 			justify-content: space-between;
+			/* position: relative;
+			#multiple-button {
+				position: absolute;
+				left: 0;
+				top: 0;
+			} */
 			.effect {
 				width: 100%;
 				min-height: 3em;
