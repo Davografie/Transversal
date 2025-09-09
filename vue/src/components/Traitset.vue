@@ -486,7 +486,7 @@
 					</template>
 					<input type="button" class="button add-trait-button"
 						v-if="
-							(player.is_gm)
+							((props.extensible || show_info || edit_mode || traitset.traits?.length == 0) && player.is_gm)
 							|| (
 								player.is_player
 								&& player.player_character.id == props.entity_id
@@ -499,6 +499,7 @@
 							)
 							|| (props.relationship && props.extensible)
 							|| (props.location && props.extensible)
+							|| adding_trait
 						"
 						:value="adding_trait ?
 							player.small_buttons ? 'x' : 'stop adding trait x' :
