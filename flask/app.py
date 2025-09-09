@@ -546,16 +546,31 @@ class MutateTraitSetting(Mutation):
 class CloneTraitSetting(Mutation):
 	class Arguments:
 		trait_setting_id = ID(required=True)
+		trait_setting_input = TraitSettingInput()
 	
 	trait = Field(lambda: Trait)
 
-	def mutate(root, info, trait_setting_id=None):
+	def mutate(root, info, trait_setting_id=None, trait_setting_input=None):
 		trait_setting = db.collection('TraitSettings').get(trait_setting_id)
+
+		new_trait_settings = { key: value for key, value in trait_setting.items() if not key.startswith('_') }
+		if trait_setting_input is not None:
+			new_trait_settings = { **new_trait_settings, **trait_setting_input }
+
 		new_trait_setting = db.collection('TraitSettings').insert({
 			'_from': trait_setting.get('_from'),
 			'_to': trait_setting.get('_to'),
-			**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
+			**new_trait_settings
 		})
+
+		# also clone subtraits
+		subtraits = db.collection('TraitSettings').find({'_from': trait_setting_id})
+		for subtrait in subtraits:
+			db.collection('TraitSettings').insert({
+				'_from': new_trait_setting.get('_id'),
+				'_to': subtrait.get('_to'),
+				**{ key: value for key, value in subtrait.items() if not key.startswith('_') },
+			})
 		return CloneTraitSetting(trait=Trait(trait_setting_id=new_trait_setting.get('_id')))
 
 class Trait(ObjectType):
@@ -1582,6 +1597,9 @@ class Traitset(ObjectType):
 			else:
 				result = []
 			return result
+
+		else:
+			return []
 
 	def resolve_sfxs(parent, info):
 		sfxs = db.collection('Traitsets').get(parent.id).get('sfxs')
@@ -3247,6 +3265,7 @@ class Mutation(ObjectType):
 	mutate_trait_setting = MutateTraitSetting.Field()
 	unassign_trait = UnassignTrait.Field()
 	delete_trait = DeleteTrait.Field()
+	clone_trait_setting = CloneTraitSetting.Field()
 
 	create_traitset = CreateTraitset.Field()
 	mutate_traitset = MutateTraitset.Field()
@@ -3722,8 +3741,9 @@ def imagegen(entity_key, force):
 		negative = "cgi, 3d, bad quality, watermark, signature"
 
 		if entity_type in ["character", "npc"]:
-			prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
-			negative += ", full body, legs, cropped head"
+			# prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
+			# negative += ", full body, legs, cropped head"
+			prompt = ""
 			genre_loras['realistic'] = "frame/RealFaceji"
 		elif entity_type == "asset":
 			prompt = f"(an image of { name }:1.2), "
@@ -3745,6 +3765,13 @@ def imagegen(entity_key, force):
 			entity = db.collection('Entities').get(entity_key)
 			location = retrieve_location(entity)
 			trait_settings = [doc for doc in db.collection('TraitSettings').find({'_from': entity.get('_id')})]
+			archetype_trait_settings = []
+			archetype_id = entity.get('archetype_id')
+			while archetype_id is not None:
+				archetype_entity = db.collection('Entities').get(archetype_id)
+				archetype_trait_settings += [doc for doc in db.collection('TraitSettings').find({'_from': archetype_entity.get('_id')})]
+				archetype_id = archetype_entity.get('archetype_id')
+			trait_settings += archetype_trait_settings
 			trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 			traits = []
 			for trait_setting in trait_settings:
@@ -3776,7 +3803,7 @@ def imagegen(entity_key, force):
 				elif trait_setting.get('rating_type') != 'challenge':
 					# prompt += f"({', '.join([trait.get('name'),trait_setting.get('statement'),trait_setting.get('notes')])}:{ str(rating_weights[abs(t[3]) - 1]) })"
 					prompt += "("
-					prompt += traitset.get('prompt_prefix') if traitset.get('prompt_prefix') else traitset.get('name') + " "
+					# prompt += traitset.get('prompt_prefix') if traitset.get('prompt_prefix') else traitset.get('name') + " "
 					prompt += trait.get('name')
 					prompt += " of (" + ",".join([subtrait.get('name') for subtrait in trait.get('subtraits')]) + ")" if trait.get('subtraits') else ""
 					prompt += ", " if trait_setting.get('statement') else ""
