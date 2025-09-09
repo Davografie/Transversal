@@ -360,9 +360,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function copy_trait(trait_setting_input: TraitSettingInput) {
-		const copy_query = gql`mutation CopyTrait($traitSettingInput: TraitSettingInput!, $traitId: ID!, $entityId: ID!) {
-			assignTrait(traitSettingInput: $traitSettingInput, traitId: $traitId, entityId: $entityId) {
+	function copy_trait(trait_setting_input?: TraitSettingInput) {
+		const copy_query = gql`mutation CopyTrait($traitSettingId: ID!, $traitSettingInput: TraitSettingInput) {
+			cloneTraitSetting(traitSettingId: $traitSettingId, traitSettingInput: $traitSettingInput) {
 				trait {
 					id
 				}
@@ -371,9 +371,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		if(apolloClient) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(copy_query))
 			let variables: object = {
-				traitSettingInput: trait_setting_input,
-				traitId: trait_id.value,
-				entityId: entity_id.value
+				traitSettingId: trait_setting_id.value,
+				traitSettingInput: trait_setting_input
 			}
 			mutate(variables)
 		}
