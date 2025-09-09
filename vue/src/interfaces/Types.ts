@@ -179,6 +179,7 @@ export interface Entity {
     favorite?: boolean
     isArchetype?: boolean
     archetype?: Entity
+    instances?: Entity[]
     hidden?: boolean
     knownTo?: Entity[]
 }
@@ -195,7 +196,7 @@ export interface EntityInput {
     sfxs?: string[]
     favorite?: boolean
     isArchetype?: boolean
-    archetype?: string
+    archetypeId?: string
     hidden?: boolean
     showTo?: string[]
     knownTo?: string[]

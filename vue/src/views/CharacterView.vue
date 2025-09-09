@@ -12,6 +12,7 @@
 	import PP from '@/components/PP.vue'
 	import Traitset from '@/components/Traitset.vue'
 	import EntityCard from '@/components/EntityCard.vue'
+	import ArchetypePicker from '@/components/ArchetypePicker.vue'
 
 	import useClipboard from 'vue-clipboard3'
 	const { toClipboard } = useClipboard()
@@ -31,6 +32,8 @@
 			default: 'landscape',
 		}
 	})
+
+	const emit = defineEmits(['show_entity'])
 
 	const API_URL = inject('API_URL')
 	const player = usePlayer()
@@ -56,10 +59,16 @@
 		entity,
 		set_entity_id,
 		retrieve_small_entity,
+		retrieve_instances,
 		create_relation,
 		update_entity
 	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
 	retrieve_small_entity()
+	watch(entity, (newEntity, oldEntity) => {
+		if(newEntity && newEntity.id != oldEntity?.id && newEntity.isArchetype) {
+			retrieve_instances()
+		}
+	})
 
 	const {
 		location,
@@ -357,6 +366,13 @@
 			player.player_character_key = entity_id.substring(9)
 			if(player.uuid) { activate_character(player.uuid) }
 		}
+		switching_entities.value = false
+		editing_name_type.value = false
+		editing_description.value = false
+	}
+
+	function click_instance(entity_id: string) {
+		emit('show_entity', entity_id)
 	}
 </script>
 
@@ -438,11 +454,13 @@
 							{{ character.entityType }} located in
 							<span v-if="!character.location || player.the_entity?.id == character.id">{{ character.location?.name }}</span>
 							<a v-else @click="player.set_perspective_location(character.location)">{{ character.location?.name }} ⬇</a>
-							<div v-if="character.archetype && (player.editing || (player.is_gm && (editing_description || editing_name_type)))">
+							<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
 								instance of 
-								<RouterLink :to="'/Entity/' + character.archetype.key">
+								<!-- <RouterLink :to="'/Entity/' + character.archetype.key">
 									{{ character.archetype.name }}
-								</RouterLink>
+								</RouterLink> -->
+								<ArchetypePicker v-if="player.is_gm" :entity_id="character.id" :entity_type="character.entityType" />
+								<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
 							</div>
 						</div>
 						<div id="character-description-text"
@@ -462,6 +480,12 @@
 						@click="editing_description = false"
 						v-if="editing_description" />
 				</div>
+			</div>
+			<div id="archetype-instances" v-if="entity.isArchetype">
+				<EntityCard v-for="entity in entity.instances" :key="entity.key"
+					:entity_id="entity.id"
+					override_click
+					@click_entity="click_instance(entity.id)" />
 			</div>
 			<div id="character-buttons" :class="player.small_buttons ? 'small-buttons' : 'verbose-buttons'">
 				<input type="button" class="button-mnml" id="switch-gm"

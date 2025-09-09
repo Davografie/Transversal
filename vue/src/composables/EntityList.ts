@@ -48,6 +48,32 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 		}
 	}
 
+	function retrieve_archetypes(entity_type?: string) {
+		const get_archetypes_query = gql`query Archetypes($entityType: String, $isArchetype: Boolean) {
+			entities(entityType: $entityType, isArchetype: $isArchetype) {
+				key
+				id
+				name
+				entityType
+			}
+		}`
+		const variables = { "entityType": entity_type, "isArchetype": true }
+		if(apolloClient) {
+			const { result } = provideApolloClient(apolloClient)(
+				() => useQuery<{entities: Entity[]}>(
+					get_archetypes_query,
+					variables,
+					{ fetchPolicy: 'cache-and-network' }
+				)
+			)
+			watch(result, (newResult) => {
+				if(newResult) {
+					entities.value = newResult.entities
+				}
+			}, { immediate: true })
+		}
+	}
+
 	function search_entities(query: string) {
 		const search_entities_query = gql`query SearchEntities($search: String) {
 			entities(search: $search) {
@@ -142,6 +168,7 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 	return {
 		entities,
 		retrieve_entities,
+		retrieve_archetypes,
 		search_entities,
 		retrieve_characters,
 		create_entity,

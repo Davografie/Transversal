@@ -1926,6 +1926,7 @@ class Entity(Interface):
 	favorite = Boolean()
 	is_archetype = Boolean()
 	archetype = Field(lambda: Entity)
+	instances = List(lambda: Entity)
 	active = Boolean()
 	hidden = Boolean()
 	known_to = List(lambda: Entity)
@@ -2222,6 +2223,27 @@ class Entity(Interface):
 		else:
 			return None
 
+	def resolve_instances(parent, info):
+		"""
+		Returns all instances of this entity
+		"""
+		if not hasattr(parent, '_hydrated'):
+			Entity._hydrate_entity(parent, info)
+		if not parent.is_archetype:
+			return []
+		result = []
+		cursor = db.collection('Entities').find({'archetype_id': parent.id})
+		for entity in cursor:
+			if entity.get('type') == 'character':
+				result.append(Character(id=entity.get('_id')))
+			elif entity.get('type') == 'npc':
+				result.append(NPC(id=entity.get('_id')))
+			elif entity.get('type') == 'asset':
+				result.append(Asset(id=entity.get('_id')))
+			elif entity.get('type') == 'faction':
+				result.append(Faction(id=entity.get('_id')))
+		return result
+
 	def resolve_active(parent, info):
 		Entity._hydrate_entity(parent, info)
 		return parent.active
@@ -2255,6 +2277,7 @@ class Entity(Interface):
 class EntityInput(InputObjectType):
 	name = String()
 	entity_type = String()
+	archetype_id = ID()
 	location = ID()
 	pp = Int()
 	active = Boolean()
@@ -2993,13 +3016,16 @@ class Query(ObjectType):
 	entities = List(Entity,
 				 key=ID(required=False),
 				 entity_type=String(required=False),
-				 search=String(required=False))
-	def resolve_entities(parent, info, key=None, entity_type=None, search=None):
+				 search=String(required=False),
+				 is_archetype=Boolean(required=False))
+	def resolve_entities(parent, info, key=None, entity_type=None, search=None, is_archetype=None):
 		# print("entity resolver, for key: ", key)
 		if not key and not entity_type:
 			query = "FOR e IN Entities "
 			if search:
 				query += "FILTER LOWER(e.name) LIKE LOWER('%" + search + "%') "
+			if is_archetype:
+				query += "FILTER e.is_archetype == true "
 			query += """SORT POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
 			RETURN e"""
 			cursor = db.aql.execute(query)
@@ -3021,6 +3047,8 @@ class Query(ObjectType):
 			query = "FOR e IN Entities "
 			if search:
 				query += "FILTER LOWER(e.name) LIKE LOWER('%" + search + "%') "
+			if is_archetype:
+				query += "FILTER e.is_archetype == true "
 			query += f"""FILTER e.type == '{ entity_type }'
 			SORT e.name ASC
 			RETURN e"""
@@ -3805,11 +3833,11 @@ def imagegen(entity_key, force):
 					prompt += "("
 					# prompt += traitset.get('prompt_prefix') if traitset.get('prompt_prefix') else traitset.get('name') + " "
 					prompt += trait.get('name')
-					prompt += " of (" + ",".join([subtrait.get('name') for subtrait in trait.get('subtraits')]) + ")" if trait.get('subtraits') else ""
-					prompt += ", " if trait_setting.get('statement') else ""
+					prompt += " is " if trait.get('name') and trait_setting.get('statement') else ""
 					prompt += trait_setting.get('statement') if trait_setting.get('statement') else ""
-					prompt += ", " if trait_setting.get('notes') else ""
-					prompt += trait_setting.get('notes') if trait_setting.get('notes') else ""
+					prompt += " of (" + ",".join([subtrait.get('name') for subtrait in trait.get('subtraits')]) + ")" if trait.get('subtraits') else ""
+					prompt += ", (" if trait_setting.get('notes') else ""
+					prompt += trait_setting.get('notes') + ")" if trait_setting.get('notes') else ""
 					prompt += ":"
 					# prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
 					prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else "0.4"

@@ -87,6 +87,9 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				following {
 					id
 				}
+				instances {
+					id
+				}
 				traitsets {
 					id
 				}
@@ -201,6 +204,35 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery(
 					followers_query,
+					{ entityId: entity_id },
+					{ fetchPolicy: 'cache-and-network' }
+				)
+			)
+			watch(result, () => {
+				entity.value = {
+					...entity.value,
+					...result.value.entities[0]
+				}
+			})
+		}
+	}
+
+	function retrieve_instances() {
+		/* if current entity is an archetype, retrieve all entities with that archetype */
+		const instances_query = gql`query EntityInstances($entityId: ID) {
+			entities(key: $entityId) {
+				instances {
+					id
+					entityType
+					name
+				}
+			}
+		}`
+
+		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
+			const { result } = provideApolloClient(apolloClient)(
+				() => useQuery(
+					instances_query,
 					{ entityId: entity_id },
 					{ fetchPolicy: 'cache-and-network' }
 				)
@@ -352,6 +384,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		retrieve_small_entity,
 		retrieve_relations,
 		retrieve_followers,
+		retrieve_instances,
 		update_entity,
 		activate_entity,
 		deactivate_entity,
