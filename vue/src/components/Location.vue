@@ -349,6 +349,14 @@
 	}
 
 	const show_flavortext = ref(false)
+	function click_description_header() {
+		show_flavortext.value = !show_flavortext.value
+	}
+	function rightclick_description_header() {
+		if(player.is_gm) {
+			toggle_editing_description()
+		}
+	}
 
 	const { entities, search_entities } = useEntityList(undefined, undefined)
 	const show_import = ref(false)
@@ -566,12 +574,12 @@
 				</div>
 			</div>
 			<div class="description attribute" v-if="player.is_gm && expanded">
-				<div class="attribute-header header" @click="show_flavortext = !show_flavortext">
+				<div class="attribute-header header" @click="click_description_header" @click.right.prevent="rightclick_description_header">
 					<span>description</span>
 					<div class="border-bottom"></div>
 				</div>
 				<div class="attribute-body"
-						v-if="show_flavortext && (rendered_flavortext || new_flavortext)">
+						v-if="show_flavortext && (rendered_flavortext || new_flavortext || editing_description)">
 					<span class="flavortext" v-html="rendered_flavortext"
 						v-if="!editing_description && player.is_gm"
 						@click.right="toggle_editing_description"
