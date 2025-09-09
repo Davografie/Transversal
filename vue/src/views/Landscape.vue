@@ -1,6 +1,6 @@
 <script setup lang="ts">
-	import { ref, computed } from 'vue';
-	import { useRoute, useRouter } from 'vue-router';
+	import { ref, computed, watch } from 'vue';
+	import { useRoute } from 'vue-router';
 	import { useWindowSize } from '@vueuse/core'
 
 	import { usePlayer } from '@/stores/Player';
@@ -14,7 +14,6 @@
 	import type { Location as LocationType } from '@/interfaces/Types';
 
 	const route = useRoute()
-	const router = useRouter()
 	const player = usePlayer()
 
 	const { width: windowWidth, height: windowHeight } = useWindowSize()
@@ -24,13 +23,6 @@
 
 	//	changed by show_entity()
 	const active_entity_id = ref<string|undefined>()
-
-	function take_gm_perspective() {
-		if(player.is_gm) {
-			player.set_perspective_id('Entities/1')
-			player.retrieve_perspective()
-		}
-	}
 
 	function transverse(loc: LocationType) {
 		if(player.is_gm && player.perspective && player.perspective.entityType != 'faction') {
@@ -49,13 +41,10 @@
 			active_entity_id.value = undefined
 		}
 	}
-
-	// watch(route, () => {
-	// 	if(route.matched.length > 1 && route.matched[1].name?.toString().toLowerCase() && route.matched[1].name?.toString().toLowerCase() != view.value) {
-	// 		console.log('switching to ' + route.matched[1].name?.toString().toLowerCase())
-	// 		view.value = route.matched[1].name?.toString().toLowerCase()
-	// 	}
-	// })
+	
+	watch(route, () => {
+		active_entity_id.value = undefined
+	})
 </script>
 
 <template>
@@ -66,7 +55,8 @@
 				class="panel"
 				v-if="player.the_entity"
 				:entity_key="player.the_entity?.key"
-				orientation="horizontal" />
+				orientation="horizontal"
+				@show_entity="show_entity" />
 			<CurrentLocationView id="current-location" class="panel"
 				:location_key="player.the_entity?.location?.key ?? ''"
 				@show_entity="(ett_key) => show_entity('Entities/' + ett_key)"
