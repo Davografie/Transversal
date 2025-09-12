@@ -118,11 +118,13 @@
 <template>
 	<div id="mobile-container" ref="mobile_component">
 
-		<CurrentLocationView
-			:location_key="route.params.location_key as string ?? player.the_entity?.location?.key ?? ''"
-			:key="route.params.location_key as string ?? player.the_entity?.location?.key ?? ''"
-			@show_entity="show_entity"
-			@transverse="scroll_top" />
+		<div id="location-container" v-if="view == 'location'" :key="view">
+			<CurrentLocationView
+				:location_key="route.params.location_key as string ?? player.the_entity?.location?.key ?? ''"
+				:key="route.params.location_key as string ?? player.the_entity?.location?.key ?? ''"
+				@show_entity="show_entity"
+				@transverse="scroll_top" />
+		</div>
 
 		<div id="charactersheet-container" v-if="view == 'entity'" :key="view">
 			<CharacterView
