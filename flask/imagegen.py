@@ -1,5 +1,5 @@
 import json
-from urllib import request, parse
+from urllib import request
 import random
 import os
 
@@ -9,7 +9,7 @@ prompt_text = """
   "4": {
     "inputs": {
       "noise_seed": 365437518561265,
-      "steps": 24,
+      "steps": 28,
       "timestep_to_start_cfg": 1,
       "true_gs": 3.5,
       "image_to_image_strength": 0,
