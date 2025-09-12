@@ -12,6 +12,7 @@ import logging
 import os
 import shutil
 import math
+import re
 from PIL import Image
 
 # https://github.com/graphql-python/graphql-server/blob/master/docs/flask.md
@@ -1310,24 +1311,26 @@ class UnassignTrait(Mutation):
 		if trait_setting.get('_from').startswith('Entities/'):
 			archetype = db.collection('Entities').get(trait_setting.get('_from'))
 			if archetype.get('is_archetype'):
-				for instance in db.collection('Entities').find({'archetype_id': archetype.get('_id')}):
-					# check if settings are the same
-					instance_trait_settings = db.collection('TraitSettings').find({
-						'_from': instance.get('_id'),
-						'_to': trait_setting.get('_to'),
-						'rating_type': trait_setting.get('rating_type'),
-						'rating': trait_setting.get('rating'),
-						'statement': trait_setting.get('statement'),
-						'locations_enabled': trait_setting.get('locations_enabled'),
-						'locations_disabled': trait_setting.get('locations_disabled'),
-						'sfxs': trait_setting.get('sfxs')
-					})
-					if not instance_trait_settings.empty():
-						for instance_trait_setting in instance_trait_settings:
-							subtraits = db.collection('TraitSettings').find({'_from': instance_trait_setting.get('_id')})
-							for subtrait in subtraits:
-								db.collection('TraitSettings').delete(subtrait.get('_id'))
-							db.collection('TraitSettings').delete(instance_trait_setting.get('_id'))
+				instances = db.collection('Relations').find({'_to': archetype.get('_id'), 'type': 'archetype'})
+				if not instances.empty():
+					for instance in instances:
+						# check if settings are the same
+						instance_trait_settings = db.collection('TraitSettings').find({
+							'_from': instance.get('_id'),
+							'_to': trait_setting.get('_to'),
+							'rating_type': trait_setting.get('rating_type'),
+							'rating': trait_setting.get('rating'),
+							'statement': trait_setting.get('statement'),
+							'locations_enabled': trait_setting.get('locations_enabled'),
+							'locations_disabled': trait_setting.get('locations_disabled'),
+							'sfxs': trait_setting.get('sfxs')
+						})
+						if not instance_trait_settings.empty():
+							for instance_trait_setting in instance_trait_settings:
+								subtraits = db.collection('TraitSettings').find({'_from': instance_trait_setting.get('_id')})
+								for subtrait in subtraits:
+									db.collection('TraitSettings').delete(subtrait.get('_id'))
+								db.collection('TraitSettings').delete(instance_trait_setting.get('_id'))
 		subtraits = db.collection('TraitSettings').find({'_from': trait_setting_id})
 		for subtrait in subtraits:
 			db.collection('TraitSettings').delete(subtrait.get('_id'))
@@ -2041,7 +2044,9 @@ class Entity(Interface):
 							return Portrait(path=f"{parent.location.key}/", size="original", ext=ext)
 						else:
 							return None
-					elif (archetype_id := db.collection('Entities').get(parent.id).get('archetype_id')) is not None:
+					# elif (archetype_id := db.collection('Entities').get(parent.id).get('archetype_id')) is not None:
+					elif not db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' }).empty():
+						archetype_id = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' })][0]
 						archetype = db.collection('Entities').get(archetype_id)
 						if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/{location_key}/original{ext}"):
 							# return f"{archetype.get('_key')}/{location_key}/original{ext}"
@@ -2209,17 +2214,19 @@ class Entity(Interface):
 		return parent.is_archetype
 
 	def resolve_archetype(parent, info):
-		archetype_id = db.collection('Entities').get(parent.id).get('archetype_id')
-		if archetype_id is not None:
-			archetype = db.collection('Entities').get(archetype_id)
-			if archetype.get('type') == 'character':
-				return Character(id=archetype_id)
-			elif archetype.get('type') == 'npc':
-				return NPC(id=archetype_id)
-			elif archetype.get('type') == 'asset':
-				return Asset(id=archetype_id)
-			elif archetype.get('type') == 'faction':
-				return Faction(id=archetype_id)
+		# archetype_id = db.collection('Entities').get(parent.id).get('archetype_id')
+		if not (archetypes := db.collection('Relations').find({'_from': parent.id, 'type': 'archetype'})).empty():
+			archetype_id = [archetype.get('_to') for archetype in archetypes][0]
+			if archetype_id is not None:
+				archetype = db.collection('Entities').get(archetype_id)
+				if archetype.get('type') == 'character':
+					return Character(id=archetype_id)
+				elif archetype.get('type') == 'npc':
+					return NPC(id=archetype_id)
+				elif archetype.get('type') == 'asset':
+					return Asset(id=archetype_id)
+				elif archetype.get('type') == 'faction':
+					return Faction(id=archetype_id)
 		else:
 			return None
 
@@ -2232,7 +2239,16 @@ class Entity(Interface):
 		if not parent.is_archetype:
 			return []
 		result = []
-		cursor = db.collection('Entities').find({'archetype_id': parent.id})
+		# cursor = db.collection('Entities').find({'archetype_id': parent.id})
+		query = f"""FOR relation IN Relations
+			FILTER relation._to == '{parent.id}'
+			FOR e IN Entities
+			FILTER e._id == relation._from
+			FILTER relation.type == 'archetype'
+			SORT relation.favorite DESC, POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
+
+			RETURN e"""
+		cursor = db.aql.execute(query)
 		for entity in cursor:
 			if entity.get('type') == 'character':
 				result.append(Character(id=entity.get('_id')))
@@ -2277,7 +2293,6 @@ class Entity(Interface):
 class EntityInput(InputObjectType):
 	name = String()
 	entity_type = String()
-	archetype_id = ID()
 	location = ID()
 	pp = Int()
 	active = Boolean()
@@ -2331,13 +2346,12 @@ class UpdateEntity(Mutation):
 		following = ID()
 		favorite = Boolean()
 		is_archetype = Boolean()
-		archetype_id = ID()
 		active = Boolean()
 		entity_input = EntityInput()
 
 	entity = Field(lambda: Entity)
 
-	def mutate(root, info, key, entity_input=None, name=None, location=None, following=None, favorite=None, is_archetype=None, archetype_id=None, active=None):
+	def mutate(root, info, key, entity_input=None, name=None, location=None, following=None, favorite=None, is_archetype=None, active=None):
 		entity = db.collection('Entities').get(key)
 		# print(f"UpdateEntity.mutate:\t0\tparameters:\t{ locals() }")
 		changes = {}
@@ -2367,8 +2381,6 @@ class UpdateEntity(Mutation):
 			changes['favorite'] = favorite
 		if is_archetype is not None:
 			changes['is_archetype'] = is_archetype
-		if archetype_id is not None:
-			changes['archetype_id'] = archetype_id
 		if active is not None:
 			changes['active'] = active
 		# print(f"UpdateEntity.mutate:\t4\tchanges: { changes }")
@@ -2412,7 +2424,7 @@ class InstantiateArchetype(Mutation):
 	def mutate(root, info, key, name=None):
 		archetype = db.collection('Entities').get(key)
 		new_entity = {key: value for key, value in archetype.items() if not key.startswith('_')}
-		new_entity['archetype_id'] = archetype.get('_id')
+		# new_entity['archetype_id'] = archetype.get('_id')
 		new_entity['is_archetype'] = False
 		if name is not None:
 			new_entity['name'] = name
@@ -2429,28 +2441,6 @@ class InstantiateArchetype(Mutation):
 		
 		# link instance with archetype
 		db.collection('Relations').insert({ '_from': new_entity.get('_id'), '_to': archetype.get('_id'), 'type': 'archetype' })
-
-		# # copy trait settings
-		# query = f"""FOR entity IN Entities
-		# 				FILTER entity._id == 'Entities/{ key }'
-
-		# 			LET traitsettings = (
-		# 				FOR ts IN TraitSettings
-		# 				FILTER entity._id == ts._from
-		# 				RETURN ts
-		# 			)
-
-		# 			RETURN {{
-		# 				entity: entity,
-		# 				traitsettings: traitsettings
-		# 			}}"""
-		# cursor = db.aql.execute(query)
-		# result = [doc for doc in cursor][0]
-		# for traitsetting in result.get('traitsettings'):
-		# 	new_traitsetting = {key: value for key, value in traitsetting.items() if not key.startswith('_')}
-		# 	new_traitsetting['_from'] = new_entity.get('_id')
-		# 	new_traitsetting['_to'] = traitsetting.get('_to')
-		# 	db.collection('TraitSettings').insert(new_traitsetting)
 
 		# copy traitset settings
 		query = f"""FOR entity IN Entities
@@ -2930,6 +2920,9 @@ class CreateRelation(Mutation):
 
 	def mutate(root, info, from_id=None, to_id=None, type=None):
 		if db.collection('Relations').find({'_from': from_id, '_to': to_id, 'type': type}).empty():
+			# if type == 'archetype', remove all other archetypes from entity
+			if type == 'archetype':
+				db.collection('Relations').delete_match({'_from': from_id, 'type': 'archetype'})
 			db.collection('Relations').insert({ '_from': from_id, '_to': to_id, 'type': type, 'favorite': False })
 			return CreateRelation(success=True)
 		else:
@@ -3794,11 +3787,11 @@ def imagegen(entity_key, force):
 			location = retrieve_location(entity)
 			trait_settings = [doc for doc in db.collection('TraitSettings').find({'_from': entity.get('_id')})]
 			archetype_trait_settings = []
-			archetype_id = entity.get('archetype_id')
-			while archetype_id is not None:
+			archetype_id = db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'archetype'})
+			while not archetype_id.empty():
 				archetype_entity = db.collection('Entities').get(archetype_id)
 				archetype_trait_settings += [doc for doc in db.collection('TraitSettings').find({'_from': archetype_entity.get('_id')})]
-				archetype_id = archetype_entity.get('archetype_id')
+				archetype_id = db.collection('Relations').find({'_from': archetype_entity.get('_id'), 'type': 'archetype'})
 			trait_settings += archetype_trait_settings
 			trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 			traits = []
@@ -3834,13 +3827,13 @@ def imagegen(entity_key, force):
 					# prompt += traitset.get('prompt_prefix') if traitset.get('prompt_prefix') else traitset.get('name') + " "
 					prompt += trait.get('name')
 					prompt += " is " if trait.get('name') and trait_setting.get('statement') else ""
-					prompt += trait_setting.get('statement') if trait_setting.get('statement') else ""
+					prompt += re.sub(r'\([^)]*\)', '', trait_setting.get('statement')) if trait_setting.get('statement') else ""
 					prompt += " of (" + ",".join([subtrait.get('name') for subtrait in trait.get('subtraits')]) + ")" if trait.get('subtraits') else ""
 					prompt += ", (" if trait_setting.get('notes') else ""
-					prompt += trait_setting.get('notes') + ")" if trait_setting.get('notes') else ""
-					prompt += ":"
-					# prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
-					prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else "0.4"
+					prompt += trait_setting.get('notes') + ":0.4)" if trait_setting.get('notes') else ""
+					# prompt += ":"
+					prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
+					prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
 					prompt += ")"
 				prompt += ", "
 
@@ -3852,7 +3845,7 @@ def imagegen(entity_key, force):
 			hierarchy = retrieve_hierarchy(location.get('_id'))
 			for loc in hierarchy:
 				if entity_type in ["npc", "asset"]:
-					prompt += f" (located in { loc.get('name') }, { loc.get('description') }"
+					prompt += f" (located in { loc.get('name') }, " + re.sub(r'\([^)]*\)', '', loc.get('description'))
 				loc_trait_settings = db.collection('TraitSettings').find({'_from': loc.get('_id')})
 				for lts in loc_trait_settings:
 					trait_id = lts.get('_to')
