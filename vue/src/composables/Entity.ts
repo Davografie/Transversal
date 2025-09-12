@@ -352,6 +352,10 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		retrieve_entity()
 	}
 
+	/**
+	 * creates a relation from given entity to set entity, with the type "relation"
+	 * @param entity_id the id of the entity to create a relation from
+	 */
 	function create_relation(entity_id: string) {
 		/* create a relation between this character and an entity */
 		const query_create_relation = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
@@ -366,6 +370,28 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				"fromId": entity_id,
 				"toId": entity.value.id,
 				"type": "relation"
+			})
+		}
+	}
+
+	/**
+	 * sets the archetype of this entity
+	 * @param archetype_id the id of the archetype entity
+	 */
+	function set_archetype(archetype_id: string) {
+		/* create a relation between this character and an entity */
+		const query_create_relation = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
+				createRelation(fromId: $fromId, toId: $toId, type: $type) {
+					success
+				}
+			}`
+		if(apolloClient) {
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
+			console.log('setting archetype of ' + entity.value.name + ' to ' + archetype_id)
+			mutate({
+				"fromId": entity.value.id,
+				"toId": archetype_id,
+				"type": "archetype"
 			})
 		}
 	}
@@ -392,6 +418,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		delete_entity,
 		set_location,
 		create_relation,
+		set_archetype,
 		entity_type_icon
 	}
 }
