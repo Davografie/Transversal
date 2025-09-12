@@ -3787,8 +3787,9 @@ def imagegen(entity_key, force):
 			location = retrieve_location(entity)
 			trait_settings = [doc for doc in db.collection('TraitSettings').find({'_from': entity.get('_id')})]
 			archetype_trait_settings = []
-			archetype_id = db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'archetype'})
-			while not archetype_id.empty():
+			archetypes = db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'archetype'})
+			while not archetypes.empty():
+				archetype_id = [archetype.get('_to') for archetype in archetypes][0]
 				archetype_entity = db.collection('Entities').get(archetype_id)
 				archetype_trait_settings += [doc for doc in db.collection('TraitSettings').find({'_from': archetype_entity.get('_id')})]
 				archetype_id = db.collection('Relations').find({'_from': archetype_entity.get('_id'), 'type': 'archetype'})
