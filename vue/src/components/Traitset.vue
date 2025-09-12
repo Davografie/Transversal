@@ -392,7 +392,7 @@
 				</span>
 
 				<span class="dicepool-traits" v-if="!show_traits">
-					<TraitLabel v-for="t of traits_in_dicepool.map((t: DieType) => t.traitsettingId)" :key="t" :trait_setting_id="t" />
+					<TraitLabel v-for="t of new Set(traits_in_dicepool.map((t: DieType) => t.traitsettingId))" :key="t" :trait_setting_id="t" />
 				</span>
 
 			</div>
@@ -400,7 +400,7 @@
 				<span v-if="limiter - traits_in_dicepool.length > 0" v-for="i in limiter - traits_in_dicepool.length" :key="i">
 					{{ die_shapes.default_inactive }}
 				</span>
-				<span v-for="d of dice_in_dicepool" :key="d.id">
+				<span v-for="d of dice_in_dicepool.filter((d) => d.number_rating >= 0)" :key="d.id">
 					{{ die_shapes[d.rating + (d.number_rating >= 0 ? '_active' : '_inactive')] }}
 				</span>
 			</div>
@@ -486,7 +486,7 @@
 					</template>
 					<input type="button" class="button add-trait-button"
 						v-if="
-							((props.extensible || show_info || edit_mode || traitset.traits?.length == 0) && player.is_gm)
+							player.is_gm
 							|| (
 								player.is_player
 								&& player.player_character.id == props.entity_id
