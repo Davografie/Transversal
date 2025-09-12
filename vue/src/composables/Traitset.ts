@@ -98,6 +98,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					name
 					explainer
 					entityTypes
+					duplicates
 					sfxs {
 						id
 					}

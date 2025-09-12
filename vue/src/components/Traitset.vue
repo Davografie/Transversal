@@ -335,6 +335,13 @@
 			adding_trait.value = false
 		}
 	}
+	const potential_traits = computed(() => {
+		return traits.value.filter(t => (
+			traitset.value.duplicates ?
+				true :
+				!traitset.value.traits.map(x => x.id).includes(t.id)
+			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
+	})
 </script>
 
 <template>
@@ -490,12 +497,6 @@
 							|| (
 								player.is_player
 								&& player.player_character.id == props.entity_id
-								&& (
-									props.extensible
-									|| show_info
-									|| edit_mode
-									|| traitset.traits?.length == 0
-								)
 							)
 							|| (props.relationship && props.extensible)
 							|| (props.location && props.extensible)
@@ -523,7 +524,7 @@
 					</div>
 
 					<div class="trait-list">
-						<template v-for="trait in traits.filter(t => t.name.toLowerCase().includes(trait_search.toLowerCase()))" :key="trait.id">
+						<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
 							<div class="button potential-trait"
 									:class="[trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
 											trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn',
@@ -543,6 +544,7 @@
 							</div>
 							<TraitEdit :trait_id="trait.id" :trait_name="trait.name" :expanded="true" v-if="player.is_gm && editing_potential_traits.includes(trait.id)" />
 						</template>
+						<div v-else class="no-results">no available traits to add</div>
 					</div>
 
 					<div class="unavailable-traits-title" @click="show_unavailable_traits = !show_unavailable_traits">
@@ -553,8 +555,7 @@
 							<div class="button excluded-trait" :class="trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn'"
 									v-if="
 										!traits.map(t => t.id).includes(trait.id)
-										&& traitset.traits
-										&& !traitset.traits.map(t => t.id).includes(trait.id)
+										&& !potential_traits.map(t => t.id).includes(trait.id)
 									"
 									@click="player.is_gm ? assign_trait_to_entity(trait) : null"
 									@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
