@@ -64,11 +64,6 @@
 		update_entity
 	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
 	retrieve_small_entity()
-	watch(entity, (newEntity, oldEntity) => {
-		if(newEntity && newEntity.id != oldEntity?.id && newEntity.isArchetype) {
-			retrieve_instances()
-		}
-	})
 
 	const {
 		location,
@@ -372,6 +367,13 @@
 		editing_description.value = false
 	}
 
+
+	const instances_visible = ref(false)
+	function show_instances() {
+		!instances_visible.value ? retrieve_instances() : null
+		instances_visible.value = !instances_visible.value
+	}
+
 	function click_instance(entity_id: string) {
 		emit('show_entity', entity_id)
 	}
@@ -482,7 +484,7 @@
 						v-if="editing_description" />
 				</div>
 			</div>
-			<div id="archetype-instances" v-if="entity.isArchetype">
+			<div id="archetype-instances" v-if="entity.isArchetype && instances_visible">
 				<EntityCard v-for="entity in entity.instances" :key="entity.key"
 					:entity_id="entity.id"
 					override_click
@@ -510,6 +512,11 @@
 					:title="character.isArchetype ? 'unarchetype' : 'make archetype'"
 					v-if="player.is_gm"
 					@click="toggle_archetype" />
+				<input type="button" class="button-mnml" id="show-instances"
+					:value="player.small_buttons ? '⧉' : '⧉\n' + (instances_visible ? 'hide' : 'show') + ' instances'"
+					title="show instances"
+					v-if="character.isArchetype"
+					@click="show_instances" />
 				<input type="button" class="button-mnml" id="clone-entity"
 					:value="player.small_buttons ? '⧉' : '⧉\nclone entity'"
 					title="clone entity"
