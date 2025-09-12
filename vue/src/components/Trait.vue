@@ -216,7 +216,11 @@
 								// GMs can add challenges to function as complications against players
 								(player.is_gm && trait.value.ratingType == 'challenge')
 								// players can add other entities' complications to their own pool
-								|| (player.the_entity && props.entity_id != player.the_entity?.id)
+								|| (
+									player.the_entity
+									&& props.entity_id != player.the_entity?.id
+									&& props.entity_id != 'Entities/' + props.location_key
+								)
 							) {
 								add_die(_.clone(die))
 							}
