@@ -43,14 +43,13 @@
 	const triptych = computed(() => orientation.value == "portrait-primary" || windowWidth.value <= 832)
 	const third_width = computed(() => windowWidth.value / 3)
 
-	watch(windowWidth, (newWidth) => {
-		if(newWidth <= 832) {
-			player.orientation = 'vertical'
-		}
-		else {
-			player.orientation = 'horizontal'
-		}
-	}, { immediate: true })
+	watch(
+		[windowWidth, windowHeight],
+		([newWidth, newHeight]) => {
+			player.orientation = newWidth > newHeight ? "horizontal" : "vertical"
+		},
+		{ immediate: true }
+	)
 
 	const view = ref('location')
 	
