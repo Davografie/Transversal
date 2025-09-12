@@ -23,7 +23,7 @@ function increase_rating_type() {
 		// sometimes the ratingType is null, so it needs to be created
 		new_rating_type.value = rating_types[0]
 	}
-	// emit('change-rating', new_rating_type.value, new_rating.value)
+	emit('change-rating', new_rating_type.value, new_rating.value)
 }
 function decrease_rating_type() {
 	// cycles through rating types to change trait rating type
@@ -35,7 +35,7 @@ function decrease_rating_type() {
 		// sometimes the ratingType is null, so it needs to be created
 		new_rating_type.value = rating_types[0]
 	}
-	// emit('change-rating', new_rating_type.value, new_rating.value)
+	emit('change-rating', new_rating_type.value, new_rating.value)
 }
 function die_picker_change(dice: DieType[]) {
 	new_rating.value = dice
