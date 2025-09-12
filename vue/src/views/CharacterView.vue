@@ -302,6 +302,7 @@
 	const deletion = ref(false)
 	function entity_deletion() {
 		delete_entity()
+		deletion.value = false
 		router.push({ name: 'Character overview' })
 	}
 
@@ -699,6 +700,11 @@
 						}
 					}
 				}
+			}
+			#archetype-instances {
+				display: flex;
+				max-width: 100%;
+				overflow-x: auto;
 			}
 			#character-known-to {
 				.entity-cards {
