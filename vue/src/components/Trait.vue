@@ -226,8 +226,8 @@
 						}
 					}
 					// check if trait has any negative subtraits, they should be added as complications
-					if(trait.value.subTraits && trait.value.subTraits?.length > 0) {
-						for(const subtrait of trait.value.subTraits) {
+					if(trait.value.subTraits && trait.value.subTraits.filter((st: Trait) => st.ratingType == 'static').length > 0) {
+						for(const subtrait of trait.value.subTraits.filter((st: Trait) => st.ratingType == 'static')) {
 							if(subtrait.rating && subtrait.rating.some((d) => d.number_rating < 0) && !check_trait(subtrait.traitSettingId ?? '')) {
 								for(const die of subtrait.rating) {
 									die.traitId = subtrait.id
@@ -469,6 +469,7 @@
 		}
 		mode.value = 'neutral'
 		edit_rating.value = false
+		show_sfxs.value = false
 		setTimeout(() => {
 			refetch(); retrieve_trait()
 		}, 200)
@@ -479,6 +480,7 @@
 		mode.value = 'neutral'
 		transfer_resource_mode.value = false
 		edit_rating.value = false
+		show_sfxs.value = false
 	}
 
 	function delete_trait() {
@@ -579,7 +581,7 @@
 	function change_rating(rating_type: string, rating: DieType[]) {
 		new_ratingType.value = rating_type
 		new_rating.value = rating
-		change_trait()
+		// change_trait()
 	}
 
 	watch(() => player.editing, (newVal) => {
@@ -928,8 +930,7 @@
 					:value="player.small_buttons ?
 						'🫳' : '🫳\n' + (props.entity_id != player.the_entity?.id ? ' take ' : ' drop ') + trait.name"
 					:title="props.entity_id != player.the_entity?.id ? ' take ' : ' drop ' + trait.name"
-					@click.stop="steal"
-					v-if="trait.ratingType == 'resource' || props.traitset_id == 'Traitsets/3'" />
+					@click.stop="steal" />
 				<input type="button" class="button-mnml"
 					:class="show_pc_visible ? 'active' : 'inactive'"
 					:value="player.small_buttons ? '🧠' : '🧠\nshow PC'"
@@ -1395,12 +1396,6 @@
 			gap: .4em;
 			.add-sfx {
 				/* display: inline-block; */
-				.add-sfx-title {
-					font-weight: bold;
-				}
-				.add-sfx-description {
-					border-top: 1px solid var(--color-border);
-				}
 			}
 		}
 		.create-sfx {
@@ -1408,6 +1403,14 @@
 			flex-direction: column;
 			gap: .4em;
 			padding: 1em;
+				.add-sfx-title {
+					font-weight: bold;
+				}
+				.add-sfx-description {
+					border-top: 1px solid var(--color-border);
+					max-width: 100%;
+					min-height: 6em;
+				}
 		}
 	}
 	.trait.clickable {
@@ -1465,135 +1468,243 @@
 			}
 		}
 		.trait.d4.positive.inactive {
-			background-image: linear-gradient(215deg,
-				var(--color-positive-die-4) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(215deg,
+					var(--color-positive-die-4) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-positive-die-4);
 			border-right: 1px solid var(--color-positive-die-4);
 			border-color: var(--color-positive-die-4);
 			.sfxs {
 				border-top: 1px solid var(--color-positive-die-4);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(215deg,
+						var(--color-positive-die-4) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d6.positive.inactive {
-			background-image: linear-gradient(215deg,
-				var(--color-positive-die-6) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(215deg,
+					var(--color-positive-die-6) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-positive-die-6);
 			border-right: 1px solid var(--color-positive-die-6);
 			border-color: var(--color-positive-die-6);
 			.sfxs {
 				border-top: 1px solid var(--color-positive-die-6);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(215deg,
+						var(--color-positive-die-6) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d8.positive.inactive {
-			background-image: linear-gradient(215deg,
-				var(--color-positive-die-8) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(215deg,
+					var(--color-positive-die-8) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-positive-die-8);
 			border-right: 1px solid var(--color-positive-die-8);
 			border-color: var(--color-positive-die-8);
 			.sfxs {
 				border-top: 1px solid var(--color-positive-die-8);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(215deg,
+						var(--color-positive-die-8) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d10.positive.inactive {
-			background-image: linear-gradient(215deg,
-				var(--color-positive-die-10) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(215deg,
+					var(--color-positive-die-10) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-positive-die-10);
 			border-right: 1px solid var(--color-positive-die-10);
 			border-color: var(--color-positive-die-10);
 			.sfxs {
 				border-top: 1px solid var(--color-positive-die-10);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(215deg,
+						var(--color-positive-die-10) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d12.positive.inactive {
-			background-image: linear-gradient(215deg,
-				var(--color-positive-die-12) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(215deg,
+					var(--color-positive-die-12) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-positive-die-12);
 			border-right: 1px solid var(--color-positive-die-12);
 			border-color: var(--color-positive-die-12);
 			.sfxs {
 				border-top: 1px solid var(--color-positive-die-12);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(215deg,
+						var(--color-positive-die-12) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d4.negative.inactive {
-			background-image: linear-gradient(45deg,
-				var(--color-negative-die-4) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(45deg,
+					var(--color-negative-die-4) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-negative-die-4);
 			border-right: 1px solid var(--color-negative-die-4);
 			border-color: var(--color-negative-die-4);
 			.sfxs {
 				border-top: 1px solid var(--color-negative-die-4);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(45deg,
+						var(--color-negative-die-4) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d6.negative.inactive {
-			background-image: linear-gradient(45deg,
-				var(--color-negative-die-6) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(45deg,
+					var(--color-negative-die-6) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-negative-die-6);
 			border-right: 1px solid var(--color-negative-die-6);
 			border-color: var(--color-negative-die-6);
 			.sfxs {
 				border-top: 1px solid var(--color-negative-die-6);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(45deg,
+						var(--color-negative-die-6) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d8.negative.inactive {
-			background-image: linear-gradient(45deg,
-				var(--color-negative-die-8) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(45deg,
+					var(--color-negative-die-8) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-negative-die-8);
 			border-right: 1px solid var(--color-negative-die-8);
 			border-color: var(--color-negative-die-8);
 			.sfxs {
 				border-top: 1px solid var(--color-negative-die-8);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(45deg,
+						var(--color-negative-die-8) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d10.negative.inactive {
-			background-image: linear-gradient(45deg,
-				var(--color-negative-die-10) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(45deg,
+					var(--color-negative-die-10) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-negative-die-10);
 			border-right: 1px solid var(--color-negative-die-10);
 			border-color: var(--color-negative-die-10);
 			.sfxs {
 				border-top: 1px solid var(--color-negative-die-10);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(45deg,
+						var(--color-negative-die-10) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.d12.negative.inactive {
-			background-image: linear-gradient(45deg,
-				var(--color-negative-die-12) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(45deg,
+					var(--color-negative-die-12) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-negative-die-12);
 			border-right: 1px solid var(--color-negative-die-12);
 			border-color: var(--color-negative-die-12);
 			.sfxs {
 				border-top: 1px solid var(--color-negative-die-12);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(45deg,
+						var(--color-negative-die-12) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.dis {
-			background-image: linear-gradient(45deg,
-				var(--color-disabled) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(45deg,
+					var(--color-disabled) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-disabled);
 			border-right: 1px solid var(--color-disabled);
 			border-color: var(--color-disabled);
 			.sfxs {
 				border-top: 1px solid var(--color-disabled);
 			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(45deg,
+						var(--color-disabled) -50%,
+						var(--color-background) 80%);
+				}
+			}
 		}
 		.trait.empty {
-			background-image: linear-gradient(45deg,
-				var(--color-background-soft) -100%,
-				var(--color-background) 50%);
+			.trait-inner {
+				background-image: linear-gradient(45deg,
+					var(--color-background-soft) -100%,
+					var(--color-background) 50%);
+			}
 			border-left: 1px solid var(--color-background-soft);
 			border-right: 1px solid var(--color-background-soft);
 			border-color: var(--color-background-soft);
 			.sfxs {
 				border-top: 1px solid var(--color-background-soft);
+			}
+			&:hover {
+				.trait-inner {
+					background-image: linear-gradient(45deg,
+						var(--color-background-soft) -50%,
+						var(--color-background) 80%);
+				}
 			}
 		}
 		.trait.challenge {
