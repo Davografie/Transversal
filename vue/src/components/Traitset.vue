@@ -130,7 +130,8 @@
 			show_traits.value = true
 		}
 		else if(!props.expanded) {
-			show_traits.value = false
+			filter.value = ""
+			highlighted_traits.value = []
 		}
 		setTimeout(() => held.value = false, 500)
 	}
@@ -342,6 +343,8 @@
 				!traitset.value.traits.map(x => x.id).includes(t.id)
 			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
 	})
+	const search_potential_traits_visible = ref(false)
+	const filter = ref('')
 </script>
 
 <template>
@@ -428,6 +431,9 @@
 					<div class="gm-info" v-if="player.is_gm">{{ traitset.id }}</div>
 					<div class="traitset-explainer" v-if="traitset.explainer" v-html="traitset.explainer"></div>
 					<div class="options">
+						<input type="text" class="filter" v-model="filter" placeholder="filter" />
+						<input type="button" class="button" value="filter"
+							@click.stop="" />
 						<input type="button" class="button" value="random"
 							@click.stop="random_highlight" />
 						<input type="button" class="button" :value="sorting.text"
@@ -449,7 +455,7 @@
 						|| (player.is_player && player.player_character.id == props.entity_id)
 						|| (props.relationship && props.extensible)
 						|| (props.location && props.extensible)">
-					<template v-for="trait in traitset.traits"
+					<template v-for="trait in traitset.traits?.filter(t => highlighted_traits.includes(t.traitSettingId))"
 							:key="trait.traitSettingId">
 						<Trait
 							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
@@ -461,6 +467,50 @@
 							:location_key="props.location_key"
 							:traitset_limit="limiter"
 							:edit_mode="edit_mode"
+							:filter="filter"
+							@refetch="retrieve_traitset"
+							@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
+							@set_highlight="highlight_traits"
+							@kill_highlight="kill_highlight_traits"
+							v-if="(player.is_gm
+								|| props.relationship
+								|| (player.is_player && entity.entityType == 'character')
+								|| (player.is_player && trait.traitSetting && trait.traitSetting.hidden == false)
+								|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
+								|| props.tutorial)
+								&& (
+									(
+										traits_in_dicepool.length == limiter
+										&& (
+											traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
+											|| traits_in_dicepool.map((t: DieType) => t.traitsettingId).some((id) => trait.subTraits?.some((st) => st.traitSettingId == id))
+										)
+									)
+									|| traitset_dice(traitset.id).length < limiter
+									|| limiter == 0
+								)
+							" />
+						<div class="trait-divider"
+							v-if="
+								highlighted_traits.length > 0 &&
+								traitset.traits?.some((t) => t.requiredTraits && t.requiredTraits.length > 0) ?
+								highlighted_traits.includes(trait.id) && highlighted_traits.indexOf(trait.id) < highlighted_traits.length - 1 :
+								traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
+							"></div>
+					</template>
+					<template v-for="trait in traitset.traits?.filter(t => !highlighted_traits.includes(t.traitSettingId))"
+							:key="trait.traitSettingId">
+						<Trait
+							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
+							:trait_id="trait.id"
+							:traitset_id="traitset.id"
+							:trait_setting_id="trait.traitSettingId"
+							:entity_id="props.entity_id"
+							:highlight_root_id="root_highlight_id"
+							:location_key="props.location_key"
+							:traitset_limit="limiter"
+							:edit_mode="edit_mode"
+							:filter="filter"
 							@refetch="retrieve_traitset"
 							@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
 							@set_highlight="highlight_traits"
@@ -510,20 +560,26 @@
 
 				<div class="add_trait" v-if="adding_trait">
 
-					<div class="trait-search">
-						<input class="trait-search-query" type="text" placeholder="find trait"
-							v-model="trait_search" autocomplete="off" />
-						<input type="button" class="button create-trait-button"
-							:value="'create ' + trait_search"
-							v-if="trait_search.length > 0
-								&& traits.filter(
-									t => t.name.toLowerCase() == trait_search.toLowerCase()
-								).length == 0
-								&& player.is_gm"
-							@click="add_trait" />
-					</div>
 
+					<div v-if="potential_traits.length == 0" class="no-results">no available traits to add</div>
+					
 					<div class="trait-list">
+						<div class="trait-search" v-if="search_potential_traits_visible || potential_traits.length == 0">
+							<input class="trait-search-query" type="text" placeholder="find trait"
+								v-model="trait_search" autocomplete="off" />
+							<input type="button" class="button create-trait-button"
+								:value="'create ' + trait_search"
+								v-if="trait_search.length > 0
+									&& traits.filter(
+										t => t.name.toLowerCase() == trait_search.toLowerCase()
+									).length == 0
+									&& player.is_gm"
+								@click="add_trait" />
+						</div>
+						<div class="search-potential-trait-toggle" :class="search_potential_traits_visible ? 'active' : 'inactive'" v-if="potential_traits.length > 0">
+							<div class="button" @click="search_potential_traits_visible = true" v-if="!search_potential_traits_visible">search for trait</div>
+							<div class="button" @click="search_potential_traits_visible = false" v-else>x</div>
+						</div>
 						<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
 							<div class="button potential-trait"
 									:class="[trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
@@ -544,18 +600,16 @@
 							</div>
 							<TraitEdit :trait_id="trait.id" :trait_name="trait.name" :expanded="true" v-if="player.is_gm && editing_potential_traits.includes(trait.id)" />
 						</template>
-						<div v-else class="no-results">no available traits to add</div>
 					</div>
 
 					<div class="unavailable-traits-title" @click="show_unavailable_traits = !show_unavailable_traits">
 						{{ show_unavailable_traits ? 'hide unavailable traits' : 'show unavailable traits' }}
 					</div>
-					<div class="trait-list" v-if="!trait_search && show_unavailable_traits">
-						<template v-for="trait in all_traits.sort((t1, t2) => t1.name.localeCompare(t2.name)).filter(t => t.name.toLowerCase())" :key="trait.id">
+					<div class="trait-list" v-if="show_unavailable_traits">
+						<template v-for="trait in all_traits.sort((t1, t2) => t1.name.localeCompare(t2.name)).filter(t => t.name.toLowerCase().includes(trait_search.toLowerCase()))" :key="trait.id">
 							<div class="button excluded-trait" :class="trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn'"
 									v-if="
-										!traits.map(t => t.id).includes(trait.id)
-										&& !potential_traits.map(t => t.id).includes(trait.id)
+										!potential_traits.map(t => t.id).includes(trait.id)
 									"
 									@click="player.is_gm ? assign_trait_to_entity(trait) : null"
 									@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
@@ -716,6 +770,14 @@
 				gap: .4em;
 				padding: 1em;
 				width: 100%;
+				.search-potential-trait-toggle {
+					&.inactive {
+						.button {
+							background-color: var(--color-highlight);
+							color: var(--color-highlight-text);
+						}
+					}
+				}
 				.potential-trait, .excluded-trait {
 					flex-grow: 1;
 					/* max-width: 50%; */
