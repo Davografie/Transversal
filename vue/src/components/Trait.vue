@@ -48,7 +48,8 @@
 		highlight_root_id?: string,
 		highlighted?: boolean,
 		location_key?: string,
-		traitset_limit?: number
+		traitset_limit?: number,
+		filter?: string
 	}>()
 
 	const emit = defineEmits([
@@ -524,6 +525,9 @@
 		if(props.entity_id?.startsWith('Relations/')) {
 			return trait.value.traitSetting?.fromEntity?.id != player.the_entity?.id
 		}
+		else if(props.trait_id != trait.value.id) {
+			return true
+		}
 		else {
 			return trait.value.traitSetting?.fromEntity?.id != props.entity_id
 		}
@@ -761,6 +765,26 @@
 	function toggle_hidden() {
 		mutate_trait_setting({ 'hidden': new_hidden.value })
 	}
+
+	const passes_filter = computed(() => {
+		if(!props.filter) {
+			return true
+		}
+		else if(
+			props.filter &&
+			(
+				trait.value.name.toLowerCase().includes(props.filter.toLowerCase()) ||
+				trait.value.statement.toLowerCase().includes(props.filter.toLowerCase()) ||
+				trait.value.notes.toLowerCase().includes(props.filter.toLowerCase())
+			)
+		) {
+			// if the filter string is contained in the name or statement of the trait
+			return true
+		}
+		else {
+			return false
+		}
+	})
 </script>
 
 <template>
@@ -778,7 +802,7 @@
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
 				{ 'clickable': mode != 'editing' }
 			]"
-			v-if="trait"
+			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
 			@click.right="longtap_trait"
 			@click="click_trait"
