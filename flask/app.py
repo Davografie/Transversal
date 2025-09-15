@@ -252,7 +252,7 @@ class DeleteSFX(Mutation):
 			db.collection('SFXs').delete(id)
 			return DeleteSFX(success=True, message="SFX deleted")
 		except Exception as e:
-			return DeleteSFX(success=False, message=str(e))
+			return DeleteSFX(success=False, message=f"DeleteSFX failed: {str(e)}")
 
 
 absolute_default_trait_setting = {
@@ -542,7 +542,7 @@ class MutateTraitSetting(Mutation):
 			return MutateTraitSetting(trait=Trait(trait_setting_id=trait_setting.get('_id')))
 		except Exception as e:
 			# print(e)
-			return MutateTraitSetting(message=str(e))
+			return MutateTraitSetting(message=f"MutateTraitSetting failed: {str(e)}")
 
 class CloneTraitSetting(Mutation):
 	class Arguments:
@@ -677,6 +677,8 @@ class Trait(ObjectType):
 	def resolve_trait_setting(parent, info):
 		if parent.trait_setting_id:
 			return TraitSetting(id=parent.trait_setting_id)
+		elif info.context.get('trait_setting_id'):
+			return TraitSetting(id=info.context.get('trait_setting_id'))
 		elif parent.id is not None and info.context.get('entity_id') is not None:
 			# print("resolve_trait_setting:\ttrait: ", parent.id, "\tentity_id: ", info.context.get('entity_id'))
 			cursor = db.collection('TraitSettings').find({'_from': info.context.get('entity_id'), '_to': parent.id})
@@ -869,7 +871,7 @@ class Trait(ObjectType):
 		return [Trait(id=doc.get('_to'), trait_setting_id=doc.get('_id')) for doc in result]
 
 	def resolve_possible_sub_traits(parent, info):
-		if possible_sub_traits := db.collection('Traits').get(parent.id).get('possible_sub_traits'):
+		if parent.id.startswith('Traits/') and (possible_sub_traits := db.collection('Traits').get(parent.id).get('possible_sub_traits')):
 			result = []
 			for sub_trait in possible_sub_traits:
 				traitset_id = db.collection('Traits').get(sub_trait).get('traitset')
@@ -1373,12 +1375,12 @@ class DeleteTrait(Mutation):
 				db.collection('TraitSettings').delete(setting.get('_id'))
 			return DeleteTrait(success=True)
 		except Exception as e:
-			return DeleteTrait(success=False, error=str(e))
+			return DeleteTrait(success=False, error=f"DeleteTrait failed: {str(e)}")
 
 
 class Traitset(ObjectType):
 	key = ID()
-	id = ID(id=String())
+	id = ID(required=True)
 	name = String()
 	explainer = String()
 	entity_types = List(String)
@@ -1983,84 +1985,80 @@ class Entity(Interface):
 		if not parent.key:
 			Entity._hydrate_entity(parent, info)
 		
-		try:
-			location_key = None
-			if not parent.location:
-				if parent.entity_type != 'location':
-					location_id = db.collection('Entities').get(parent.id).get('location')
+		location_key = None
+		if not parent.location:
+			if parent.entity_type != 'location':
+				location_id = db.collection('Entities').get(parent.id).get('location')
+				location = db.collection('Entities').get(location_id)
+				if location.get('type') != 'location':
+					# if following
+					location_id = location.get('location')
 					location = db.collection('Entities').get(location_id)
-					if location.get('type') != 'location':
-						# if following
-						location_id = location.get('location')
-						location = db.collection('Entities').get(location_id)
+				parent.location = Location(id=location.get('_id'), key=location.get('_key'))
+				location_hierarchy = retrieve_hierarchy(parent.location.id)
+				if len(location_hierarchy) > 1:
+					location_key = location_hierarchy[-2].get('_key')
+			else: # if location
+				parents = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'super' })]
+				if len(parents) > 0:
+					location_id = parents[0]
+					location = db.collection('Entities').get(location_id)
 					parent.location = Location(id=location.get('_id'), key=location.get('_key'))
 					location_hierarchy = retrieve_hierarchy(parent.location.id)
 					if len(location_hierarchy) > 1:
 						location_key = location_hierarchy[-2].get('_key')
-				else: # if location
-					parents = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'super' })]
-					if len(parents) > 0:
-						location_id = parents[0]
-						location = db.collection('Entities').get(location_id)
-						parent.location = Location(id=location.get('_id'), key=location.get('_key'))
-						location_hierarchy = retrieve_hierarchy(parent.location.id)
-						if len(location_hierarchy) > 1:
-							location_key = location_hierarchy[-2].get('_key')
-			if parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}"):
-				# print("Resolving image 2: ", parent.key, "/", location_key)
-				old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}")[0]
-				ext = os.path.splitext(old_file)[1]
-				save_image(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}/{old_file}", parent.key, location_key)
-				os.remove(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}/{old_file}")
-				os.rmdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}")
-				os.rmdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")
-				# return f"{parent.key}/{location_key}/original{ext}"
-				return Portrait(path=f"{parent.key}/{location_key}/", size="original", ext=ext)
-			elif parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['UPLOAD_FOLDER']}/{parent.key}/{location_key}"):
-				# print("Resolving image 3: ", parent.key, "/", location_key)
-				for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
-					if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{parent.key}/{location_key}/original{ext}"):
-						# return f"{parent.key}/{location_key}/original{ext}"
-						return Portrait(path=f"{parent.key}/{location_key}/", size="original", ext=ext)
-			elif os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}"):
-				# print("Resolving image 4: ", parent.key)
-				old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")[0]
-				ext = os.path.splitext(old_file)[1]
-				# os.rename(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", f"{app.config['IMAGEN_FOLDER']}/{parent.key}/original.jpg")
-				save_image(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", parent.key)
-				os.remove(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}")
-				os.rmdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")
-				# return f"{parent.key}/original{ext}"
-				return Portrait(path=f"{parent.key}/", size="original", ext=ext)
-			else:
-				# print("Resolving image 5: ", parent.key)
-				for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
-					if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{parent.key}/original{ext}"):
-						# return f"{parent.key}/original{ext}"
-						return Portrait(path=f"{parent.key}/", size="original", ext=ext)
-					elif parent.entity_type == 'location' and parent.location is not None:
-						if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{parent.location.key}/original{ext}"):
-							# return f"{parent.location.key}/original{ext}"
-							return Portrait(path=f"{parent.location.key}/", size="original", ext=ext)
-						else:
-							return None
-					# elif (archetype_id := db.collection('Entities').get(parent.id).get('archetype_id')) is not None:
-					elif not db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' }).empty():
-						archetype_id = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' })][0]
-						archetype = db.collection('Entities').get(archetype_id)
-						if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/{location_key}/original{ext}"):
-							# return f"{archetype.get('_key')}/{location_key}/original{ext}"
-							return Portrait(path=f"{archetype.get('_key')}/{location_key}/", size="original", ext=ext)
-						elif os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/original{ext}"):
-							# return f"{archetype.get('_key')}/original{ext}"
-							return Portrait(path=f"{archetype.get('_key')}/", size="original", ext=ext)
-						else:
-							return None
+		if parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}"):
+			# print("Resolving image 2: ", parent.key, "/", location_key)
+			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}")[0]
+			ext = os.path.splitext(old_file)[1]
+			save_image(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}/{old_file}", parent.key, location_key)
+			os.remove(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}/{old_file}")
+			os.rmdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}")
+			os.rmdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")
+			# return f"{parent.key}/{location_key}/original{ext}"
+			return Portrait(path=f"{parent.key}/{location_key}/", size="original", ext=ext)
+		elif parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['UPLOAD_FOLDER']}/{parent.key}/{location_key}"):
+			# print("Resolving image 3: ", parent.key, "/", location_key)
+			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{parent.key}/{location_key}/original{ext}"):
+					# return f"{parent.key}/{location_key}/original{ext}"
+					return Portrait(path=f"{parent.key}/{location_key}/", size="original", ext=ext)
+		elif os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}"):
+			# print("Resolving image 4: ", parent.key)
+			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")[0]
+			ext = os.path.splitext(old_file)[1]
+			# os.rename(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", f"{app.config['IMAGEN_FOLDER']}/{parent.key}/original.jpg")
+			save_image(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", parent.key)
+			os.remove(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}")
+			os.rmdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")
+			# return f"{parent.key}/original{ext}"
+			return Portrait(path=f"{parent.key}/", size="original", ext=ext)
+		else:
+			# print("Resolving image 5: ", parent.key)
+			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{parent.key}/original{ext}"):
+					# return f"{parent.key}/original{ext}"
+					return Portrait(path=f"{parent.key}/", size="original", ext=ext)
+				elif parent.entity_type == 'location' and parent.location is not None:
+					if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{parent.location.key}/original{ext}"):
+						# return f"{parent.location.key}/original{ext}"
+						return Portrait(path=f"{parent.location.key}/", size="original", ext=ext)
 					else:
 						return None
-		except Exception as e:
-			# print(f"Entity\tresolve_image:\t{e}")
-			return None
+				# elif (archetype_id := db.collection('Entities').get(parent.id).get('archetype_id')) is not None:
+				elif not db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' }).empty():
+					archetype_id = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' })][0]
+					archetype = db.collection('Entities').get(archetype_id)
+					if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/{location_key}/original{ext}"):
+						# return f"{archetype.get('_key')}/{location_key}/original{ext}"
+						return Portrait(path=f"{archetype.get('_key')}/{location_key}/", size="original", ext=ext)
+					elif os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/original{ext}"):
+						# return f"{archetype.get('_key')}/original{ext}"
+						return Portrait(path=f"{archetype.get('_key')}/", size="original", ext=ext)
+					else:
+						return None
+				else:
+					return None
 
 	def resolve_imagening(parent, info):
 		"""prevents the user from running image generation while busy"""
@@ -2583,7 +2581,7 @@ class DeleteEntity(Mutation):
 
 			return DeleteEntity(success=True, message="entity deleted")
 		except Exception as e:
-			return DeleteEntity(success=False, message=str(e))
+			return DeleteEntity(success=False, message=f"DeleteEntity failed: {str(e)}")
 
 class Character(ObjectType):
 	class Meta:
@@ -3124,7 +3122,7 @@ class Query(ObjectType):
 		if trait_setting_id is not None:
 			info.context['trait_setting_id'] = trait_setting_id
 			trait_setting = db.collection('TraitSettings').get(trait_setting_id)
-			# check if it is a default trait
+			# check if it is a trait default
 			if trait_setting is not None and trait_id is not None and trait_setting.get('_from') == trait_id and trait_setting.get('_to') == 'Traits/1':
 				return [Trait(id=trait_id, trait_setting_id=trait_setting_id, trait_setting=trait_setting)]
 			return [Trait(id=trait_setting.get('_to'), trait_setting_id=trait_setting_id, trait_setting=trait_setting)]
@@ -3810,21 +3808,24 @@ def imagegen(entity_key, force):
 				traits.append((traitset, trait, trait_setting))
 
 			prompt += "("
-			prompt += f"({entity.get('description')}), " if entity.get('description') else ""
+			prompt += f"portrait of {entity.get('name')}" if entity.get('name') else ""
+			prompt += f", {entity.get('description')}" if entity.get('description') else ""
 			for traitset, trait, trait_setting in traits:
+				if traitset.get('name') == 'tutorial':
+					continue
 				if trait.get('name') == 'appearance':
-					prompt += "("
+					prompt += ", ("
 					prompt += trait_setting.get('statement') if trait_setting.get('statement') else ""
 					prompt += ", " if trait_setting.get('statement') and trait_setting.get('notes') else ""
 					prompt += trait_setting.get('notes') if trait_setting.get('notes') else ""
 					prompt += ":1.4)"
 				elif trait.get('name') == 'negative imagen':
 					# negative += f"{', '.join([trait_setting.get('statement'), trait_setting.get('notes')])}"
-					negative += "," + trait_setting.get('statement') if trait_setting.get('statement') else ""
+					negative += ", " + trait_setting.get('statement') if trait_setting.get('statement') else ""
 					negative += ", " + trait_setting.get('notes') if trait_setting.get('notes') else ""
 				elif trait_setting.get('rating_type') != 'challenge':
 					# prompt += f"({', '.join([trait.get('name'),trait_setting.get('statement'),trait_setting.get('notes')])}:{ str(rating_weights[abs(t[3]) - 1]) })"
-					prompt += "("
+					prompt += ", ("
 					# prompt += traitset.get('prompt_prefix') if traitset.get('prompt_prefix') else traitset.get('name') + " "
 					prompt += trait.get('name')
 					prompt += " is " if trait.get('name') and trait_setting.get('statement') else ""
@@ -3836,9 +3837,9 @@ def imagegen(entity_key, force):
 					prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
 					prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
 					prompt += ")"
-				prompt += ", "
+				# prompt += ", "
 
-			prompt = prompt[:-2] # remove the last comma
+			# prompt = prompt[:-2] # remove the last comma
 			prompt += ":1.2), "
 			
 			positive_imagen = []
@@ -3870,8 +3871,9 @@ def imagegen(entity_key, force):
 					prompt += f":{str(strength_list[i])}"
 					if i < len(strength_list) - 1:
 						prompt += ")"
-			prompt += "), "
-			prompt += "(" + ", ".join(positive_imagen) + ":0.8)"
+			# prompt += "), "
+			if len(positive_imagen) > 0:
+				prompt += ", (" + ", ".join(positive_imagen) + ":0.8)"
 
 
 
