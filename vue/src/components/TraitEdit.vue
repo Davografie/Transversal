@@ -406,7 +406,7 @@
 				</div>
 
 				<h2 @click="toggle_show_sfxs">sfxs</h2>
-				<div class="sfxs" v-show="show_possible_sfxs">
+				<div class="sfxs" v-if="show_possible_sfxs">
 					<SFX class="button"
 						v-for="sfx in sfx_list" :key="sfx.id"
 						:sfx_id="sfx.id"
