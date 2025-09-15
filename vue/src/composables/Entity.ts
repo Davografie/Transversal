@@ -396,6 +396,23 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
+	function unset_archetype() {
+		const query_delete_relation = gql`mutation DeleteRelation($fromId: ID!, $toId: ID!, $type: String) {
+				deleteRelation(fromId: $fromId, toId: $toId, type: $type) {
+					success
+				}
+			}`
+		if(apolloClient && entity.value.archetype) {
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query_delete_relation))
+			console.log('unsetting archetype of ' + entity.value.name)
+			mutate({
+				"fromId": entity.value.id,
+				"toId": entity.value.archetype.id,
+				"type": "archetype"
+			})
+		}
+	}
+
 	// onMounted(() => {
 	// 	if(entity_id && !entity.value) {
 	// 		retrieve_entity()
@@ -419,6 +436,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		set_location,
 		create_relation,
 		set_archetype,
+		unset_archetype,
 		entity_type_icon
 	}
 }

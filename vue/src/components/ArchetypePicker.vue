@@ -8,7 +8,7 @@
 		entity_type: string
 	}>()
 
-	const { entity, retrieve_entity, set_archetype } = useEntity(undefined, props.entity_id)
+	const { entity, retrieve_entity, set_archetype, unset_archetype } = useEntity(undefined, props.entity_id)
 	const { entities, retrieve_archetypes } = useEntityList(undefined, props.entity_type)
 
 	retrieve_entity()
@@ -21,6 +21,10 @@
 		if(selected_archetype.value) {
 			// update_entity({ "archetypeId": selected_archetype.value })
 			set_archetype(selected_archetype.value)
+		}
+		else {
+			// update_entity({ "archetypeId": null })
+			unset_archetype()
 		}
 	}
 
@@ -38,7 +42,7 @@
 	<div class="archetype-picker">
 		<select v-model="selected_archetype" @change="select_archetype">
 			<option :value="null">None</option>
-			<option v-for="archetype in entities" :key="archetype.id" :value="archetype.id">{{ archetype.name }}</option>
+			<option v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id)" :key="archetype.id" :value="archetype.id">{{ archetype.name }}</option>
 		</select>
 	</div>
 </template>

@@ -2942,16 +2942,28 @@ class UpdateRelation(Mutation):
 
 class DeleteRelation(Mutation):
 	class Arguments:
-		relation_id = ID(required=True)
+		relation_id = ID()
+		from_id = ID()
+		to_id = ID()
+		type = String()
 
 	success = Boolean()
 
-	def mutate(self, info, relation_id):
-		traits = db.collection('TraitSettings').find({'_from': relation_id})
-		for trait in traits:
-			db.collection('TraitSettings').delete(trait.get('_id'))
-		db.collection('Relations').delete(relation_id)
-		return DeleteRelation(success=True)
+	def mutate(self, info, relation_id=None, from_id=None, to_id=None, type=None):
+		if relation_id is None and from_id is not None and to_id is not None and type is not None:
+			relation = db.collection('Relations').find({'_from': from_id, '_to': to_id, 'type': type})
+			if relation.empty():
+				return DeleteRelation(success=False)
+			relation = [r for r in relation][0]
+			relation_id = relation.get('_id')
+		if relation_id is not None:
+			traits = db.collection('TraitSettings').find({'_from': relation_id})
+			for trait in traits:
+				db.collection('TraitSettings').delete(trait.get('_id'))
+			db.collection('Relations').delete(relation_id)
+			return DeleteRelation(success=True)
+		else:
+			return DeleteRelation(success=False)
 
 
 
