@@ -298,7 +298,8 @@
 	function entity_deletion() {
 		delete_entity()
 		deletion.value = false
-		router.push({ name: 'Character overview' })
+		player.set_perspective_id('Entities/1')
+		player.retrieve_perspective()
 	}
 
 	function relate() {
@@ -557,12 +558,15 @@
 						&& character.key != 'placeholder'
 						&& !['1', '2'].includes(character.key)"
 					@click="deletion = true" />
-				<input type="button" class="button-mnml" id="verify-delete"
-					value="yes" title="confirm and delete"
-					v-if="deletion" @click="entity_deletion" />
-				<input type="button" class="button-mnml" id="cancel-delete"
-					value="no" title="cancel deletion"
-					v-if="deletion" @click="deletion = false" />
+				<div id="delete-confirmation" v-if="deletion">
+					<label>🗑</label>
+					<input type="button" class="button-mnml verify" id="verify-delete"
+						value="yes" title="confirm and delete"
+						@click="entity_deletion" />
+					<input type="button" class="button-mnml cancel" id="cancel-delete"
+						value="cancel" title="cancel deletion"
+						@click="deletion = false" />
+				</div>
 				<input type="button" class="button-mnml" :value="player.small_buttons ? '⚙' : '⚙\nsettings'"
 					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })"
 					v-if="props.orientation == 'horizontal'" />
@@ -726,6 +730,23 @@
 				display: flex;
 				flex-wrap: wrap;
 				width: 100%;
+				#delete-confirmation {
+					display: flex;
+					flex-grow: 1;
+					border: 3px solid var(--color-hitch);
+					align-items: center;
+					label {
+						font-size: 1.2em;
+						padding: 0 1em;
+					}
+					.button-mnml {
+						height: 100%;
+						&.verify {
+							background-color: var(--color-hitch);
+							color: var(--color-hitch-text);
+						}
+					}
+				}
 				.button-mnml {
 					text-align: center;
 					flex-grow: 1;
