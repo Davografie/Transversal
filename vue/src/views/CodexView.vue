@@ -137,7 +137,7 @@
 								@click_entity="click_relation(relation)" />
 						</template>
 					</div>
-					<!-- <div class="bottom-scroll-space scroll-space"></div> -->
+					<div class="bottom-scroll-space scroll-space"></div>
 				</div>
 			</div>
 		</div>
