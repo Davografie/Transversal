@@ -1998,6 +1998,8 @@ class Entity(Interface):
 				location_hierarchy = retrieve_hierarchy(parent.location.id)
 				if len(location_hierarchy) > 1:
 					location_key = location_hierarchy[-2].get('_key')
+				else:
+					location_key = location_hierarchy[0].get('_key')
 			else: # if location
 				parents = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'super' })]
 				if len(parents) > 0:
@@ -2007,6 +2009,8 @@ class Entity(Interface):
 					location_hierarchy = retrieve_hierarchy(parent.location.id)
 					if len(location_hierarchy) > 1:
 						location_key = location_hierarchy[-2].get('_key')
+					else:
+						location_key = location_hierarchy[0].get('_key')
 		if parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}"):
 			# print("Resolving image 2: ", parent.key, "/", location_key)
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{location_key}")[0]
@@ -2024,8 +2028,9 @@ class Entity(Interface):
 					# return f"{parent.key}/{location_key}/original{ext}"
 					return Portrait(path=f"{parent.key}/{location_key}/", size="original", ext=ext)
 		elif os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}"):
-			# print("Resolving image 4: ", parent.key)
+			print("Resolving image 4: ", parent.key)
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")[0]
+			print("old_file: ", old_file)
 			ext = os.path.splitext(old_file)[1]
 			# os.rename(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", f"{app.config['IMAGEN_FOLDER']}/{parent.key}/original.jpg")
 			save_image(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", parent.key)
