@@ -48,11 +48,11 @@
 		set_location_key(newLocationKey)
 		retrieve_parents()
 		retrieve_transversables()
-		panel.value?.scrollTo(0, 0)
+		panel.value?.scrollTo({ top: 0, behavior: 'smooth' })
 	})
 
 	watch(() => props.active_entity_id, () => {
-		panel.value?.scrollTo(0, 0)
+		panel.value?.scrollTo({ top: 0, behavior: 'smooth' })
 	})
 
 	watch(() => location.value.parent, (newParent) => {
@@ -125,6 +125,7 @@
 					:active_entity_id="props.active_entity_id"
 					:parent_left="left"
 					:parent_width="width"
+					@scroll_to_top="panel.scrollTo({ top: 0, behavior: 'smooth' })"
 					@transverse="transverse"
 					@show_entity="(entity_key) => emit('show_entity', entity_key)" />
 				<div id="transversables" v-if="location.transversables && location.transversables.length > 0">

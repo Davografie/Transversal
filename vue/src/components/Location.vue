@@ -53,6 +53,7 @@
 	const emit = defineEmits([
 		'transverse',
 		'show_entity',
+		'scroll_to_top'
 	])
 
 	const {
@@ -447,6 +448,10 @@
 	// const location_width = computed(() => {
 	// 	return props.parent_width ?? this_width.value
 	// })
+	function change_active(entity_id: string) {
+		overwrite_active.value = entity_id
+		emit('scroll_to_top')
+	}
 </script>
 
 <template>
@@ -652,19 +657,19 @@
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="3 - index"
-								@click_entity="(ett_id) => overwrite_active = ett_id" />
+								@click_entity="(ett_id) => change_active(ett_id)" />
 						<Presence class="transversable-location" v-for="neigbor_location in location.transversables ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="0"
-								@click_entity="(ett_id) => overwrite_active = ett_id" />
+								@click_entity="(ett_id) => change_active(ett_id)" />
 						<Presence class="zone-location" v-for="neigbor_location in location.zones ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"
 								:level="-1"
-								@click_entity="(ett_id) => overwrite_active = ett_id" />
+								@click_entity="(ett_id) => change_active(ett_id)" />
 					</div>
 				</div>
 			</div>

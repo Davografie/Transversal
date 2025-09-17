@@ -87,6 +87,7 @@
 				:location_key="neigbor_location.key"
 				:search="props.search"
 				:level="props.level - 1"
+				@click_entity="(ett_id) => $emit('click_entity', ett_id)"
 				v-if="props.level < 0" />
 		</div>
 	</div>
