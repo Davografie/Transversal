@@ -403,6 +403,8 @@
 					<option value="npc">NPC</option>
 					<option value="asset">Asset</option>
 					<option value="faction">Faction</option>
+					<option value="location">Location</option>
+					<option value="gm">GM</option>
 				</select>
 				<input type="button" class="button" :value="player.small_buttons ? '💾' : '💾 save'"
 					@click="update_name_type"
