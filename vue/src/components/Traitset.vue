@@ -310,7 +310,12 @@
 
 	function change_limit(limit: number) {
 		limiter.value += limit
-		update_traitset_settings({ limit: limiter.value })
+		if(limiter.value >= 0) {
+			update_traitset_settings({ limit: limiter.value })
+		}
+		else {
+			limiter.value = 0
+		}
 	}
 
 	function random_highlight() {
@@ -367,16 +372,8 @@
 				v-touch:hold="title_longpress"
 				@click.right="title_longpress"
 				@contextmenu="(e) => e.preventDefault()">
-			<!-- <div class="limiter" v-if="!show_traits">
-				<span v-for="d of dice_in_dicepool" :key="d.id">
-					{{ die_shapes[d.rating + '_active'] }}
-				</span>
-				<span v-if="limiter - traits_in_dicepool.length > 0" v-for="i in limiter - traits_in_dicepool.length" :key="i">
-					{{ die_shapes.default_inactive }}
-				</span>
-			</div> -->
-			<input type="button" class="button-mnml"
-				:value="player.small_buttons ? '⊖' : 'decrease limit ⊖'"
+			<input type="button" class="button-mnml change-limit limit-decrease"
+				:value="player.small_buttons ? '⊖' : '⊖\ndecrease limit'"
 				@click.stop="change_limit(-1)" v-if="show_info" />
 			<div class="trait-count" v-else-if="!show_traits">
 				{{ traitset.traits ? traitset.traits.length : '' }}
@@ -415,8 +412,8 @@
 				</span>
 			</div>
 
-			<input type="button" class="button-mnml"
-				:value="player.small_buttons ? '⊕' : '⊕ increase limit'"
+			<input type="button" class="button-mnml change-limit limit-increase"
+				:value="player.small_buttons ? '⊕' : '⊕\nincrease limit'"
 				@click.stop="change_limit(1)" v-if="show_info" />
 			<div v-else></div>
 		</div>
@@ -642,14 +639,15 @@
 			text-align: center;
 			font-size: large;
 			cursor: pointer;
-			padding: .4em 0;
+			/* padding: .4em 0; */
 			justify-content: space-between;
 			display: flex;
 			z-index: 1;
+			gap: 1em;
 			.trait-count {
 				width: 3em;
 				text-align: right;
-				padding-right: 1em;
+				/* padding-right: 1em; */
 			}
 			.title {
 				position: relative;
@@ -668,14 +666,18 @@
 			}
 			.limiter {
 				/* min-width: 4em; */
-				padding-right: 1em;
+				/* padding-right: 1em; */
 				text-align: right;
 				flex-grow: 1;
 				display: flex;
 				justify-content: space-around;
 			}
 			.button-mnml {
-				padding: 0 1em;
+				/* padding: 0 1em; */
+				&.change-limit {
+					background-color: var(--color-highlight);
+					color: var(--color-highlight-text);
+				}
 			}
 			.score {
 				width: 20%;
