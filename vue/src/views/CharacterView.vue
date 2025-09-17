@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { marked } from 'marked'
 	import { ref, watch, inject, computed, onMounted, nextTick } from 'vue'
-	import { RouterLink, useRoute, useRouter } from 'vue-router'
+	import { useRoute, useRouter } from 'vue-router'
 	import { useFetch, useElementSize } from '@vueuse/core'
 
 	import { usePlayer } from '@/stores/Player'
@@ -49,7 +49,6 @@
 		activate_character,
 		mutate_pp,
 		update_character,
-		clone_entity,
 		delete_entity,
 		toggle_archetype,
 		retrieve_character
@@ -60,6 +59,7 @@
 		set_entity_id,
 		retrieve_small_entity,
 		retrieve_instances,
+		clone_entity,
 		create_relation,
 		update_entity
 	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
@@ -524,7 +524,7 @@
 					:value="player.small_buttons ? '⧉' : '⧉\nclone entity'"
 					title="clone entity"
 					v-if="character.isArchetype && player.is_gm"
-					@click="clone_entity" />
+					@click="clone_entity()" />
 				<input type="button" class="button-mnml" id="hide-entity"
 					:value="character.hidden ? (player.small_buttons ? '🌑' : '🌑\nhiding entity') : player.small_buttons ? '🌕' : '🌕\nshowing entity'"
 					title="hide entity"
