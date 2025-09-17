@@ -679,16 +679,16 @@
 	})
 
 	function steal() {
-		if(props.traitset_id == 'Traitsets/3' && player.the_entity && props.entity_id != player.the_entity?.id) {
+		if(trait.value.ratingType == 'resource') {
+			transfer_resource_mode.value = !transfer_resource_mode.value
+		}
+		else if(player.the_entity && props.entity_id != player.the_entity?.id) {
 			change_trait_entity(player.the_entity.id)
 			emit('refetch')
 		}
-		else if(props.traitset_id == 'Traitsets/3' && player.the_entity && player.the_entity?.location && props.entity_id == player.the_entity?.id) {
+		else if(player.the_entity && player.the_entity?.location && props.entity_id == player.the_entity?.id) {
 			change_trait_entity(player.the_entity.location?.id)
 			emit('refetch')
-		}
-		else if(trait.value.ratingType == 'resource') {
-			transfer_resource_mode.value = !transfer_resource_mode.value
 		}
 	}
 
