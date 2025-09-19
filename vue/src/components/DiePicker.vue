@@ -135,7 +135,6 @@
 				sign == '-' ? 'negative' : 'positive'
 			]">
 		<div class="die-picker-wrapper" :class="{ 'small-buttons': player.small_buttons }">
-			<input type="button" id="multiple-button" class="button multiple" :value="multiple ? '●●●' : '○●○'" @click.stop="multiple = !multiple" v-if="!props.custom" />
 			<div class="dice">
 				<span v-if="resource">add dice</span>
 				<!-- <div class="negative-positive-indicator">±</div> -->
@@ -158,8 +157,9 @@
 					<Die class="pickable-die" :die="{rating: 'd12', number_rating: 5}" @click.stop="pick_die(5)" />
 				</div>
 				<span v-if="resource">remove dice</span>
-				<div class="current-rating" v-if="!props.custom && props.preview && multiple">
-					<Die v-for="(d, index) in return_rating" :key="d.id" :die="d" @click.stop="remove_die(index)" />
+				<div class="current-rating" v-if="!props.custom && props.preview">
+					<input type="button" id="multiple-button" class="button multiple" :value="multiple ? '●●●' : '○●○'" @click.stop="multiple = !multiple" v-if="!props.custom" />
+					<Die v-for="(d, index) in return_rating" :key="d.id" :die="d" @click.stop="remove_die(index)" v-if="multiple" />
 				</div>
 				<div class="effect" v-if="!resource && props.die && show_effects">
 					<input type="button" class="button-mnml" :value="player.small_buttons ? '▼' : '▼\nstep down'" @click.stop="step_down(); submit()" />
@@ -216,6 +216,19 @@
 				.pickable-die {
 					cursor: pointer;
 					margin: 0 0.4em;
+				}
+				.current-rating {
+					display: flex;
+					justify-content: center;
+					/* background-color: var(--color-border); */
+					gap: 1px;
+					border-top: 1px solid var(--color-border);
+					border-bottom: none;
+					overflow: hidden;
+					.button-mnml {
+						background-color: var(--color-background);
+						width: 20%;
+					}
 				}
 			}
 			.buttons {

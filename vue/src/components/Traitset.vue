@@ -421,19 +421,24 @@
 		<!-- <Transition name="traits-transition"> -->
 			<div class="traits" v-if="show_traits" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
-				<div class="traitset-info" v-if="!props.hide_title && show_info && (score || traitset.explainer)">
+				<div class="traitset-info" v-if="!props.hide_title && (show_info || edit_mode) && (score || traitset.explainer)">
 					<div class="traitset-score" v-if="score" title="score">
 						{{ score }}
 					</div>
 					<div class="gm-info" v-if="player.is_gm">{{ traitset.id }}</div>
 					<div class="traitset-explainer" v-if="traitset.explainer" v-html="traitset.explainer"></div>
 					<div class="options">
-						<input type="text" class="filter" v-model="filter" placeholder="filter" />
-						<input type="button" class="button" value="filter"
-							@click.stop="" />
-						<input type="button" class="button" value="random"
+						<div class="traitset-filter" v-if="traitset.traits && traitset.traits.length > 0">
+							<input type="text" class="filter" v-model="filter" placeholder="filter" />
+							<input type="button" class="button"
+								:value="'&#x1F50D;' + (player.small_buttons ? '' : '\nfilter')" title="filter"
+								@click.stop="" />
+						</div>
+						<input type="button" class="button"
+							:value="'🎲' + (player.small_buttons ? '' : '\nrandom')"
 							@click.stop="random_highlight" />
-						<input type="button" class="button" :value="sorting.text"
+						<input type="button" class="button"
+							:value="'⇅' + (player.small_buttons ? '' : '\n' + sorting.text)"
 							@click.stop="next_sort" />
 					</div>
 				</div>
@@ -701,6 +706,11 @@
 			.options {
 				display: flex;
 				justify-content: flex-end;
+				flex-wrap: wrap;
+				max-width: 100%;
+				.traitset-filter {
+					display: flex;
+				}
 			}
 		}
 		.traitset-sfxs {
