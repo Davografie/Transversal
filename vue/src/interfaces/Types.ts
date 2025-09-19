@@ -70,6 +70,7 @@ export interface TraitSetting {
     hidden?: boolean
     resource?: boolean
     fromEntity?: Entity
+    priority?: number
 }
 
 export interface TraitSettingInput {
