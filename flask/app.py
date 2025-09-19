@@ -1547,6 +1547,11 @@ class Traitset(ObjectType):
 					{ sorting }
 					RETURN setting"""
 				direct_trait_settings = [doc for doc in db.aql.execute(query)]
+				direct_trait_settings = [{
+					'max': 10000,
+					'entity_depth': 0,
+					**doc
+				} for doc in direct_trait_settings]
 				# print(f"Traitset.resolve_traits:\tentity trait_settings: { trait_settings }")
 				direct_trait_settings = filter_trait_settings_by_location(direct_trait_settings, location_id)
 
@@ -1558,9 +1563,9 @@ class Traitset(ObjectType):
 				# inherited_traits = [ts.get('inherited_as') for ts in trait_settings if ts.get('inherited_as') is not None]
 				# print(f"Traitset.resolve_traits:\tinherited_traits: { inherited_traits }")
 				query = f"""LET archetypes = (
-						FOR v, e, p IN 0..20 OUTBOUND 'Entities/201090323' Relations
+						FOR v, e, p IN 0..20 OUTBOUND '{ entity.get('_id') }' Relations
 						FILTER p.edges[*].type ALL == 'archetype'
-						FILTER v._id != 'Entities/201090323'
+						FILTER v._id != '{ entity.get('_id') }'
 						RETURN {{
 							id: v._id,
 							depth: LENGTH(p.edges)
@@ -1584,8 +1589,8 @@ class Traitset(ObjectType):
 				inherited_trait_settings = [doc for doc in db.aql.execute(query)]
 				inherited_trait_settings = [
 					{
-						'max': ts.get('max'),
-						'entity_depth': ts.get('entity').get('depth'),
+						'max': ts.get('max') or 0,
+						'entity_depth': ts.get('entity').get('depth') or 0,
 						**ts.get('traitsetting')
 					}
 					for ts in inherited_trait_settings
