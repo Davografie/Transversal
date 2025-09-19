@@ -31,7 +31,7 @@
 	import { usePlayer } from '@/stores/Player'
 	
 	import { useTrait, rating_types } from '@/composables/Trait'
-	import { useDie } from '@/composables/Die'
+	import { die_constants, useDie } from '@/composables/Die'
 	import { useSFXList } from '@/composables/SFXList'
 	import { useLocation } from '@/composables/Location'
 
@@ -785,6 +785,19 @@
 			return false
 		}
 	})
+
+	const styling_rating = computed(() => {
+		if(new_rating.value.length > 0) {
+			const max_rating = Math.max(...new_rating.value.map((r) => Math.abs(r.number_rating)))
+			const sign = Math.max(...new_rating.value.map((r) => r.number_rating)) > 0 ? 'positive' : 'negative'
+			return { rating: die_constants.find(d => d.number_rating == max_rating)?.rating, sign: sign }
+		}
+		else if(trait.value.rating && trait.value.rating.length > 0) {
+			const max_rating = Math.max(...trait.value.rating.map((r) => Math.abs(r.number_rating)))
+			const sign = Math.max(...trait.value.rating.map((r) => r.number_rating)) > 0 ? 'positive' : 'negative'
+			return { rating: die_constants.find(d => d.number_rating == max_rating)?.rating, sign: sign }
+		}
+	})
 </script>
 
 <template>
@@ -793,8 +806,10 @@
 				in_dicepool ? 'active' : 'inactive',
 				trait.ratingType ?? '',
 				trait.statement ? 'with-statement' : 'without-statement',
-				trait.ratingType != 'empty' && trait.rating && trait.rating.length > 0 && trait.rating[0].rating && trait.ratingType != 'empty' ? trait.rating[0].rating : 'empty',
-				trait.ratingType != 'empty' && trait.rating && trait.rating.length > 0 && trait.rating[0].number_rating > 0 ? 'positive' : 'negative',
+				// trait.ratingType != 'empty' && trait.rating && trait.rating.length > 0 && trait.rating[0].rating && trait.ratingType != 'empty' ? trait.rating[0].rating : 'empty',
+				styling_rating?.rating,
+				// trait.ratingType != 'empty' && trait.rating && trait.rating.length > 0 && trait.rating[0].number_rating > 0 ? 'positive' : 'negative',
+				styling_rating?.sign,
 				trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',
 				trait.subTraits && trait.subTraits?.length > 0 ? 'with-subtraits' : 'without-subtraits',
 				props.highlighted || trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'highlighted' : '',
