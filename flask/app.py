@@ -795,7 +795,9 @@ class Trait(ObjectType):
 		return [SFX(id=sfx) for sfx in trait.get('possible_sfxs') or []]
 
 	def resolve_inheritable(parent, info):
-		return db.collection('Traits').get(parent.id).get('inheritable')
+		if not parent.inheritable:
+			Trait._hydrate_trait(parent, info)
+		return parent.inheritable
 
 	def resolve_default_trait_setting(parent, info):
 		global absolute_default_trait_setting
@@ -1984,6 +1986,7 @@ class Entity(Interface):
 	favorite = Boolean()
 	is_archetype = Boolean()
 	archetype = Field(lambda: Entity)
+	archetypes = List(lambda: Entity)
 	instances = List(lambda: Entity)
 	active = Boolean()
 	hidden = Boolean()
@@ -2285,6 +2288,23 @@ class Entity(Interface):
 					return Faction(id=archetype_id)
 		else:
 			return None
+
+	def resolve_archetypes(parent, info):
+		result = []
+		archetypes = db.collection('Relations').find({'_from': parent.id, 'type': 'archetype'})
+		for archetype in archetypes:
+			archetype_id = archetype.get('_to')
+			if archetype_id is not None:
+				archetype = db.collection('Entities').get(archetype_id)
+				if archetype.get('type') == 'character':
+					result.append(Character(id=archetype_id))
+				elif archetype.get('type') == 'npc':
+					result.append(NPC(id=archetype_id))
+				elif archetype.get('type') == 'asset':
+					result.append(Asset(id=archetype_id))
+				elif archetype.get('type') == 'faction':
+					result.append(Faction(id=archetype_id))
+		return result
 
 	def resolve_instances(parent, info):
 		"""
