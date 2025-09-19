@@ -2997,8 +2997,8 @@ class CreateRelation(Mutation):
 	def mutate(root, info, from_id=None, to_id=None, type=None):
 		if db.collection('Relations').find({'_from': from_id, '_to': to_id, 'type': type}).empty():
 			# if type == 'archetype', remove all other archetypes from entity
-			if type == 'archetype':
-				db.collection('Relations').delete_match({'_from': from_id, 'type': 'archetype'})
+			# if type == 'archetype':
+			# 	db.collection('Relations').delete_match({'_from': from_id, 'type': 'archetype'})
 			db.collection('Relations').insert({ '_from': from_id, '_to': to_id, 'type': type, 'favorite': False })
 			return CreateRelation(success=True)
 		else:

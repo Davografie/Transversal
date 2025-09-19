@@ -675,6 +675,7 @@
 					text-align: center;
 					min-height: 100px;
 					width: fit-content;
+					min-width: 15%;
 					img {
 						display: block;
 						width: 100%;
