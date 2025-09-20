@@ -8,9 +8,6 @@
 	import { usePlayer } from '@/stores/Player'
 	const player = usePlayer()
 
-	// import { useCharacterList } from '@/composables/CharacterList'
-	// import CharacterCard from '@/components/CharacterCard.vue'
-	// import EntityCard from '@/components/EntityCard.vue'
 	const EntityCard = defineAsyncComponent(() => import('@/components/EntityCard.vue'))
 	import NewEntityCard from '@/components/NewEntityCard.vue'
 	import { useEntityList } from '@/composables/EntityList'
@@ -18,10 +15,12 @@
 
 	const emit = defineEmits(['show_entity'])
 
-	// const { characters, retrieve_characters, create_character } = useCharacterList()
-	// const character_list = computed(() => characters.value)
-	const { entities, retrieve_entities, create_entity, entityType } = useEntityList(undefined, 'character')
-	// const entities = computed(() => entities.value)
+	const {
+		entities,
+		retrieve_entities,
+		create_entity,
+		entityType
+	} = useEntityList(undefined, 'character')
 	retrieve_entities()
 
 	const new_entity_name: Ref<string> = ref("")
@@ -32,11 +31,9 @@
 	const show_factions = ref<boolean>(false)
 	const show_assets = ref<boolean>(false)
 	const show_character_creation = ref<boolean>(false)
-	// const created_character = ref<boolean>(false)
 
 	async function create_character(name: string, entityType: string) {
 		const new_entity = await create_entity(name, entityType)
-		// retrieve_entities()
 		router.push({ path: '/entity/' + new_entity.key })
 	}
 
@@ -47,8 +44,6 @@
 		}
 		else if(player.is_player) {
 			player.player_character_key = entity.key
-			// player.retrieve_character()
-			// if(player.uuid) { activate_character(player.uuid) }
 		}
 	}
 
@@ -109,6 +104,8 @@
 	}
 
 	const search = ref("")
+
+	const show_archetypes = ref(false)
 </script>
 
 <template>
@@ -123,21 +120,13 @@
 		<div class="search">
 			<input type="text" placeholder="search" v-model="search" />
 		</div>
+		<div class="filters">
+			<input type="checkbox" id="show-archetypes" v-model="show_archetypes" />
+			<label for="show-archetypes">show archetypes</label>
+		</div>
 		<div id="characters">
 			<h1 @click="display_characters">characters</h1>
-			<!-- <CharacterCard v-if="show_characters" v-for="entity in entities.filter((e) => e.entityType == 'character')" :key="entity.key" :character_key="entity.key" /> -->
 			<div class="entities" v-show="show_characters">
-				<!-- <div class="entity-card no-image">
-					<div class="card-wrapper clicker" v-if="!show_character_creation" @click="new_entityType = 'character'; show_character_creation = true">
-						+
-					</div>
-					<div class="card-wrapper" v-else>
-						<input type="text" :placeholder="'add ' + new_entityType" v-model="new_entity_name" />
-						<input type="button" class="button"
-							:value="new_entity_name ? 'add' : 'cancel'"
-							@click="new_entity_name ? create_character(new_entity_name, new_entityType) : show_character_creation = false" />
-					</div>
-				</div> -->
 				<NewEntityCard
 					location_id="Entities/1"
 					entity_type="character"
@@ -146,7 +135,10 @@
 				<EntityCard
 					v-for="entity in entities.filter((e) => e.entityType == 'character'
 						&& e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1
-						&& (!e.isArchetype || player.is_gm))"
+						&& (
+							(player.is_player && !e.isArchetype)
+							|| (player.is_gm && (!show_archetypes && !e.isArchetype) || (show_archetypes && e.isArchetype))
+						))"
 					:key="entity.key"
 					:entity_id="entity.id"
 					@refresh_favorites="retrieve_entities"
@@ -171,7 +163,14 @@
 					</div>
 				</div>
 				<EntityCard
-					v-for="entity in entities.filter((e) => e.entityType == 'npc' && e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1)"
+					v-for="entity in entities.filter((e) =>
+						e.entityType == 'npc'
+						&& e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1
+						&& (
+							(player.is_gm && (!show_archetypes && !e.isArchetype)
+							|| (show_archetypes && e.isArchetype))
+						)
+					)"
 					:key="entity.key"
 					:entity_id="entity.id"
 					@refresh_favorites="retrieve_entities"
@@ -238,14 +237,6 @@
 				</div>
 			</div>
 		</div>
-		<!-- <input type="text" placeholder="add character" v-model="new_entity_name" />
-		<select name="entity-type" id="entity-type" v-model="new_entityType" v-if="player.is_gm">
-			<option value="character">Character</option>
-			<option value="npc">NPC</option>
-			<option value="asset">Asset</option>
-			<option value="faction">Faction</option>
-		</select>
-		<input type="button" class="button" value="add" @click="create_entity(new_entity_name, new_entityType); retrieve_entities()" v-if="new_entity_name" /> -->
 		<div class="scroll-space"></div>
 	</div>
 </template>
@@ -256,7 +247,6 @@
 		h1 {
 			position: sticky;
 			z-index: 1;
-			/* text-shadow: 0 0 2px var(--color-background), 0 0 2px var(--color-background), 0 0 2px var(--color-background); */
 			text-shadow: var(--text-shadow);
 			cursor: pointer;
 			&.current {
