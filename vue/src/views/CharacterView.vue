@@ -519,23 +519,29 @@
 			<div id="character-buttons" :class="player.small_buttons ? 'small-buttons' : 'verbose-buttons'">
 				<input type="button" class="button-mnml" id="switch-gm"
 					:value="player.small_buttons ? entity_icons['gm'] : entity_icons['gm'] + '\nswitch to gm'"
+					title="switch to gm"
 					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'"
 					@click="switch_gm" />
 				<input type="button" class="button-mnml" id="copy-id"
 					:value="player.small_buttons ? '#' : '#\ncopy ID'"
+					title="copy ID"
 					v-if="player.is_gm"
 					@click="copy_id" />
 				<input type="button" class="button-mnml" id="pick-character"
 					:value="player.small_buttons ? entity_icons[character.entityType] : entity_icons[character.entityType] + '\npick ' + character.entityType"
+					:title="'play as ' + character.name"
 					v-if="character.id != player.the_entity?.id && (player.is_gm || (character.entityType == 'character'))"
 					@click="pick_character" />
 				<input type="button" class="button-mnml" id="create-relation"
 					:value="player.small_buttons ? '🤝' : '🤝\ncreate relation'"
+					title="create relation"
 					v-if="character.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(character.id)"
 					@click="relate" />
 				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
+					:value="'🔁' + (player.small_buttons ? '' : '\nswitch entity')"
+					title="switch entity"
 					v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
-					:value="'🔁' + (player.small_buttons ? '' : '\nswitch entity')" @click="toggle_quick_switch" />
+					@click="toggle_quick_switch" />
 				<input type="button" class="button-mnml" id="archetype"
 					:value="character.isArchetype ? (player.small_buttons ? '◑' : '◑\nunarchetype') : (player.small_buttons ? '○' : '○\nmake archetype')"
 					:title="character.isArchetype ? 'unarchetype' : 'make archetype'"
@@ -599,7 +605,9 @@
 						value="cancel" title="cancel deletion"
 						@click="deletion = false" />
 				</div>
-				<input type="button" class="button-mnml" :value="player.small_buttons ? '⚙' : '⚙\nsettings'"
+				<input type="button" class="button-mnml"
+					:value="player.small_buttons ? '⚙' : '⚙\nsettings'"
+					title="settings"
 					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })"
 					v-if="props.orientation == 'horizontal'" />
 			</div>
