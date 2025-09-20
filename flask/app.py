@@ -2439,7 +2439,10 @@ class UpdateEntity(Mutation):
 			changes['location'] = location or entity_input.pop('location')
 			# print(f"UpdateEntity.mutate:\t1\tchanges: { changes }")
 			location_doc = db.collection('Entities').get(changes.get('location'))
-			# print(f"UpdateEntity.mutate:\t2\tlocation_doc: { location_doc }")
+			
+			# if the entity changes to a location,
+			# especially if that location is 'hidden'
+			# the entity henceforth knows about and how to reach this location
 			known_to = location_doc.get('known_to') or []
 			if entity.get('_id') not in known_to:
 				known_to.append(entity.get('_id'))
