@@ -64,7 +64,8 @@
 			:entity="archetype"
 			:is_active="selected_archetypes.includes(archetype.id)"
 			@click="select_archetype(archetype.id)"
-			override_click />
+			override_click
+			show_archetypes />
 	</div>
 </template>
 

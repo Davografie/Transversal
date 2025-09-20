@@ -65,7 +65,7 @@
 		) {
 			return (entity.value as CharacterType).available ?? true
 		}
-		else if(entity.value.isArchetype && player.is_player) {
+		else if(entity.value.isArchetype && player.is_player && !props.show_archetypes) {
 			return false
 		}
 		else {
