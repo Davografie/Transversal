@@ -800,7 +800,8 @@
 				props.highlighted || trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'highlighted' : '',
 				// dim all traits that don't have highlight when highlight is set
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
-				{ 'clickable': mode != 'editing' }
+				{ 'clickable': mode != 'editing' },
+				{ 'inherited': inherited },
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
@@ -816,6 +817,7 @@
 			<div class="trait-text">
 				<div class="label trait-name">
 					<span>
+						<span v-if="inherited && player.is_gm">· </span>
 						<span>
 							{{ trait.name }}
 						</span>
