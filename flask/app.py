@@ -410,7 +410,11 @@ class TraitSetting(ObjectType):
 
 	def resolve_hidden(parent, info):
 		if parent.id and parent.hidden is None:
-			return db.collection('TraitSettings').get(parent.id).get('hidden')
+			result = db.collection('TraitSettings').get(parent.id).get('hidden')
+			if result is not None:
+				return result
+			else:
+				return False
 		else:
 			return False
 
