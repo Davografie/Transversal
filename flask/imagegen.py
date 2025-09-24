@@ -323,7 +323,7 @@ def generate_image(description, entity_key):
 	prompt = json.loads(prompt_text)
 	#set the text prompt for our positive CLIPTextEncode
 	prompt["54"]["inputs"]["text"] = description
-	prompt["46"]["inputs"]["output_path"] = f"{os.environ['MEDIA_FOLDER']}/imagens/{entity_key}"
+	prompt["46"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
 
 	#set the seed for our KSampler node
 	# prompt["3"]["inputs"]["seed"] = 5
@@ -354,9 +354,9 @@ def generate_image(
 	prompt["25"]["inputs"]["lora_weight"] = lora2_weight
 	prompt["4"]["inputs"]["noise_seed"] = random.randint(0, 10000)
 	if location_key:
-		prompt["46"]["inputs"]["output_path"] = f"{os.environ['MEDIA_FOLDER']}/imagens/{entity_key}/{location_key}"
+		prompt["46"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}/{location_key}"
 	else:
-		prompt["46"]["inputs"]["output_path"] = f"{os.environ['MEDIA_FOLDER']}/imagens/{entity_key}"
+		prompt["46"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
 	
 	print(f"imagen:\nentity_key: { entity_key }\nlora1: { lora1 }:{ lora1_weight }\nlora2: { lora2 }:{ lora2_weight }\nwidth: { width }\nheight: { height }\n\t{ description }\n\t{ negative }")
 
