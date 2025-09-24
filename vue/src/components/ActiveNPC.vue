@@ -246,7 +246,6 @@
 			<Traitset
 				:traitset_id="traitset.id"
 				:entity_id="entity.id"
-				:visible="true"
 				expanded
 				hide_title
 				:limit="traitset.limit"

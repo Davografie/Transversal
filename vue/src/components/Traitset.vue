@@ -390,7 +390,7 @@
 				{ 'editing-traits': edit_mode },
 				{ 'full': limiter > 0 && traits_in_dicepool.length == limiter },
 			]"
-			v-if="(traitset.traits && traitset.traits.length > 0) || props.visible">
+			v-if="((traitset.traits && traitset.traits.length > 0) || props.visible) && ((player.is_player && !traitset.entityTypes?.includes('gm')) || player.is_gm)">
 
 		<div class="set-title" v-if="(!props.hide_title || player.editing || show_info)"
 				@click="toggle_traits"
@@ -497,7 +497,7 @@
 							v-if="(player.is_gm
 								|| props.relationship
 								|| (player.is_player && entity.entityType == 'character')
-								|| (player.is_player && trait.traitSetting && trait.traitSetting.hidden == false)
+								|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
 								|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
 								|| props.tutorial)
 								&& (
