@@ -548,12 +548,12 @@
 					v-if="player.is_gm"
 					@click="toggle_archetype" />
 				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
-					:value="player.small_buttons ? '⧉' : '⧉\n' + (entityOverviewType == 'INSTANCES' ? 'hide' : 'show') + ' instances'"
+					:value="player.small_buttons ? '⊛' : '⊛\n' + (entityOverviewType == 'INSTANCES' ? 'hide' : 'show') + ' instances'"
 					title="show instances"
 					v-if="character.isArchetype"
 					@click="show_instances" />
 				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'ARCHETYPES' }" id="show-archetypes"
-					:value="player.small_buttons ? '⧉' : '⧉\n' + (entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show') + ' archetypes'"
+					:value="player.small_buttons ? '⊛' : '⊛\n' + (entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show') + ' archetypes'"
 					title="show archetypes"
 					@click="show_archetypes" />
 				<input type="button" class="button-mnml" id="clone-entity"
