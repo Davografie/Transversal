@@ -18,8 +18,7 @@ services:
     container_name: tv_imagen
     volumes:
       - ${MEDIA_FOLDER}/imagens:/media/imagens
-      - ${COMFYUI_FOLDER}/models:/app/ComfyUI/models
-      # - ${COMFYUI_FOLDER}/custom_nodes:/app/ComfyUI/custom_nodes
+      - ${T2I_MODEL_FOLDER}:/app/ComfyUI/models
     deploy:
       resources:
         reservations:
