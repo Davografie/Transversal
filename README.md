@@ -23,6 +23,8 @@ Then create port forwarding in your router for ports 8080, 8529, and 5000 if you
 
 Change the media folder in the .env file to the directory where you saved this folder, appended with `/media`.
 
+***Broken** (WIP): A Flux.1-dev model is required for the text-to-image generator to work. Create a folder to save your models and set the model path in your .env file. In the model folder, in a subfolder `unet`, put the Flux.1-dev `.guff`-file named `model.guff`.*
+
 ### build the server
 Navigate to the project root folder in terminal. On Windows you can first go to the root folder, right-click and click "Open in Terminal".
 ```
