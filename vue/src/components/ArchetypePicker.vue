@@ -59,7 +59,7 @@
 		</select> -->
 		<EntityCard
 			class="entity-card"
-			v-for="archetype in entities" :key="archetype.id"
+			v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id)" :key="archetype.id"
 			:entity_id="archetype.id"
 			:entity="archetype"
 			:is_active="selected_archetypes.includes(archetype.id)"
