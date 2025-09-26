@@ -41,6 +41,7 @@
 		trait?: Trait,
 		trait_id: string,
 		traitset_id?: string,
+		traitset_types?: string[],
 		trait_setting_id?: string,
 		entity_id?: string,
 		edit_mode?: boolean,
@@ -977,10 +978,17 @@
 				<input type="button" class="button-mnml"
 					:class="transfer_resource_mode ? 'active' : 'inactive'"
 					:value="player.small_buttons ?
-						'🫳' : '🫳\n' + (props.entity_id != player.the_entity?.id ? ' take ' : ' drop ') + trait.name"
-					:title="props.entity_id != player.the_entity?.id ? ' take ' : ' drop ' + trait.name"
+						'🫳' : '🫳\n' + 'take ' + trait.name"
+					:title="'take ' + trait.name"
 					@click.stop="steal"
-					v-if="!inherited" />
+					v-if="props.entity_id != player.the_entity?.id && !inherited" />
+				<input type="button" class="button-mnml"
+					:class="transfer_resource_mode ? 'active' : 'inactive'"
+					:value="player.small_buttons ?
+						'🫳' : '🫳\n' + 'drop ' + trait.name"
+					:title="'drop ' + trait.name"
+					@click.stop="steal"
+					v-if="props.entity_id == player.the_entity?.id && !inherited && props.traitset_types?.includes('location')" />
 				<input type="button" class="button-mnml"
 					:class="show_pc_visible ? 'active' : 'inactive'"
 					:value="player.small_buttons ? '🧠' : '🧠\nshow PC'"
