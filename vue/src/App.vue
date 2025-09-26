@@ -107,7 +107,8 @@
 
 	watch(location, (newLocation) => {
 		if(newLocation.image) {
-			location_image_link.value = '/assets/uploads/' + newLocation.image.path + '/original' + newLocation.image?.ext
+			const size = player.data_saving ? 'small' : 'large'
+			location_image_link.value = '/assets/uploads/' + newLocation.image.path + '/' + size + newLocation.image?.ext
 		}
 		else {
 			location_image_link.value = ''
