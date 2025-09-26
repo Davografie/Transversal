@@ -1084,40 +1084,6 @@
 			</div>
 		</div>
 
-		<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
-			<div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div>
-			<div class="sfx-list">
-				<template v-for="(sfx, i) in (mode == 'editing' ? new_sfxs : trait.sfxs)" :key="sfx.id">
-					<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
-						@expand="expanded_sfx = sfx"
-						@collapse="expanded_sfx = {} as SFXType"
-						@activate="selected_sfx = sfx; click_trait()"
-						@remove="remove_sfx(sfx.id)"
-						:editing="mode == 'editing'"
-						:adding="false"
-						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
-					<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
-				</template>
-			</div>
-			<div class="add-sfx" v-if="mode == 'editing' && trait.possibleSfxs">
-				<div class="add-sfx-list">
-					<template v-for="(sfx, i) in trait.possibleSfxs.filter((sfx) => !new_sfxs.map((x) => x.id).includes(sfx.id))" :key="sfx.id">
-						<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
-							:editing="mode == 'editing'" @add="add_sfx(sfx)" adding />
-						<!-- <span class="sfx-divider" v-if="i < (sfx_list?.length ?? 0) - 1">/</span> -->
-					</template>
-					<input type="button" class="button add-sfx-title"
-						@click.stop="toggle_add_sfx" :value="show_add_sfx ? 'X' : '+'" />
-				</div>
-				<div class="create-sfx" v-if="show_add_sfx">
-					<input type="text" class="add-sfx-name" placeholder="name" v-model="new_sfx_name" />
-					<textarea type="text" class="add-sfx-description" placeholder="description" v-model="new_sfx_description" />
-					<input type="button" class="button" value="create"
-						@click="create_new_sfx"
-						v-if="new_sfx_name && new_sfx_description" />
-				</div>
-			</div>
-		</div>
 		<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0">
 			<div class="section-icon">⪽</div>
 			<div>
@@ -1161,6 +1127,42 @@
 				</div>
 			</div>
 		</div>
+
+		<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
+			<div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div>
+			<div class="sfx-list">
+				<template v-for="(sfx, i) in (mode == 'editing' ? new_sfxs : trait.sfxs)" :key="sfx.id">
+					<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
+						@expand="expanded_sfx = sfx"
+						@collapse="expanded_sfx = {} as SFXType"
+						@activate="selected_sfx = sfx; click_trait()"
+						@remove="remove_sfx(sfx.id)"
+						:editing="mode == 'editing'"
+						:adding="false"
+						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
+					<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
+				</template>
+			</div>
+			<div class="add-sfx" v-if="mode == 'editing' && trait.possibleSfxs">
+				<div class="add-sfx-list">
+					<template v-for="(sfx, i) in trait.possibleSfxs.filter((sfx) => !new_sfxs.map((x) => x.id).includes(sfx.id))" :key="sfx.id">
+						<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
+							:editing="mode == 'editing'" @add="add_sfx(sfx)" adding />
+						<!-- <span class="sfx-divider" v-if="i < (sfx_list?.length ?? 0) - 1">/</span> -->
+					</template>
+					<input type="button" class="button add-sfx-title"
+						@click.stop="toggle_add_sfx" :value="show_add_sfx ? 'X' : '+'" />
+				</div>
+				<div class="create-sfx" v-if="show_add_sfx">
+					<input type="text" class="add-sfx-name" placeholder="name" v-model="new_sfx_name" />
+					<textarea type="text" class="add-sfx-description" placeholder="description" v-model="new_sfx_description" />
+					<input type="button" class="button" value="create"
+						@click="create_new_sfx"
+						v-if="new_sfx_name && new_sfx_description" />
+				</div>
+			</div>
+		</div>
+
 		<div class="edit-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == 'editing'">
 			<input  type="button" class="button-mnml save-button"
 				:value="player.small_buttons ? '💾' : '💾' + (inherited ? 'overwrite' : 'save') + ' trait'"
@@ -1242,7 +1244,7 @@
 				top: 2px;
 			}
 			.sfx-list {
-				display: flex;
+				/* display: flex; */
 			}
 			.sfx-divider {
 				margin: 0 .5em;

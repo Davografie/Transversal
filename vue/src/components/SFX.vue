@@ -47,7 +47,7 @@
         show_description.value = false
         emit('remove')
     }
-    const show_description = ref(false)
+    const show_description = ref(!props.adding)
 </script>
 
 <template>
@@ -59,7 +59,7 @@
         <div class="sfx-title"
                 @click="click_card" :title="show_description ? 'collapse' : 'expand'">
             {{ sfx?.name }}
-            <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span>
+            <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
         </div>
         <div class="sfx-description" v-if="show_description && sfx?.description"
             v-html="rendered_description" @click.stop="props.adding ? click_card($event) : activate" title="play">
@@ -102,7 +102,7 @@
         flex-grow: 1;
         .sfx-title {
             font-weight: bold;
-            text-align: center;
+            /* text-align: center; */
         }
     }
     .sfx.adding {
