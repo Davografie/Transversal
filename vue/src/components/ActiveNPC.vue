@@ -34,7 +34,7 @@
 		set_location
 	} = useEntity(undefined, props.entity_id)
 
-	retrieve_small_entity()
+	retrieve_entity()
 
 	const relation_exists = computed(() => {
 		return player.the_entity?.relations?.map(r => r.toEntity.id).includes(props.entity_id)
@@ -143,7 +143,7 @@
 	}
 
 	onMounted(() => {
-		retrieve_entity()
+		// retrieve_entity()
 		retrieve_followers()
 		if(player.the_entity?.relations?.map(r => r.toEntity.id).includes(props.entity_id)) {
 			retrieve_relation()
