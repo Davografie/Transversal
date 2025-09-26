@@ -861,8 +861,8 @@
 				height: v-bind(portraitHeight + 'px');
 				#character-portrait img {
 					/* border-radius: 30px 0 0 30px; */
-					border: 1px solid var(--color-background);
-					border-top: 3px solid var(--color-background);
+					/* border: 1px solid var(--color-background); */
+					/* border-top: 3px solid var(--color-background); */
 					/* margin: .4em; */
 				}
 				#character-banner {
