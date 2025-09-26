@@ -143,8 +143,10 @@
 	}
 
 	function transverse(loc: LocationType) {
-		console.log("transversing to " + loc.name)
-		emit('transverse', loc)
+		if(player.the_entity?.id != loc.id) {
+			console.log("transversing to " + loc.name)
+			emit('transverse', loc)
+		}
 	}
 
 	const expanded = ref(props.level < (props.show_levels ?? 2))
