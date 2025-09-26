@@ -2856,7 +2856,7 @@ class Location(ObjectType):
 		# active entities need to be added to each other's known_to list if not already there
 		active_entities = [entity for entity in entities if entity.get('active')]
 		for entity in active_entities:
-			character_entities = [entity for entity in entities if entity.get('type') == 'character']
+			character_entities = [entity for entity in active_entities if entity.get('type') == 'character']
 			for other_entity in character_entities:
 				if other_entity.get('_id') != entity.get('_id') and (entity.get('known_to') or []).count(other_entity.get('_id')) == 0:
 					if entity.get('known_to') is None:
