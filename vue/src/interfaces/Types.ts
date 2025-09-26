@@ -70,6 +70,7 @@ export interface TraitSetting {
     hidden?: boolean
     resource?: boolean
     fromEntity?: Entity
+    priority?: number
 }
 
 export interface TraitSettingInput {
@@ -179,6 +180,7 @@ export interface Entity {
     favorite?: boolean
     isArchetype?: boolean
     archetype?: Entity
+    archetypes?: Entity[]
     instances?: Entity[]
     hidden?: boolean
     knownTo?: Entity[]

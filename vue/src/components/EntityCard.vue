@@ -65,7 +65,7 @@
 		) {
 			return (entity.value as CharacterType).available ?? true
 		}
-		else if(entity.value.isArchetype && player.is_player) {
+		else if(entity.value.isArchetype && player.is_player && !props.show_archetypes) {
 			return false
 		}
 		else {
@@ -209,6 +209,7 @@
 				{ 'favorite': player.is_gm && entity.favorite },
 				{ 'archetype': entity.isArchetype },
 				{ 'editing': editing_card },
+				{ 'active': props.is_active ?? entity.active },
 				entity.entityType,
 				editing_card || (
 					(props.is_active ?? entity.active)
@@ -497,7 +498,8 @@
 				text-shadow: none;
 			}
 		}
-		.entity-card.current {
+		.entity-card.current,
+		.entity-card.active {
 			box-shadow: 0 0 20px var(--color-highlight);
 			border: none;
 			.card-wrapper {

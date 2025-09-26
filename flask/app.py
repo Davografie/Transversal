@@ -277,6 +277,7 @@ class TraitSetting(ObjectType):
 	sfxs_ids = List(String)
 	known_to = List(lambda: Character) # characters who have learned about this trait
 	hidden = Boolean()
+	priority = Int()
 
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
@@ -368,7 +369,8 @@ class TraitSetting(ObjectType):
 			return None
 
 	def resolve_locations_enabled(parent, info):
-		if parent.locations_enabled != None:
+		print(f"\nresolve_locations_enabled:\tparent:\n{parent}")
+		if parent.locations_enabled is not None:
 			return parent.locations_enabled
 		if parent.id:
 			return db.collection('TraitSettings').get(parent.id).get('locations_enabled')
@@ -376,7 +378,7 @@ class TraitSetting(ObjectType):
 			return None
 		
 	def resolve_locations_disabled(parent, info):
-		if parent.locations_disabled != None:
+		if parent.locations_disabled is not None:
 			return parent.locations_disabled
 		if parent.id:
 			return db.collection('TraitSettings').get(parent.id).get('locations_disabled')
@@ -408,9 +410,19 @@ class TraitSetting(ObjectType):
 
 	def resolve_hidden(parent, info):
 		if parent.id and parent.hidden is None:
-			return db.collection('TraitSettings').get(parent.id).get('hidden')
+			result = db.collection('TraitSettings').get(parent.id).get('hidden')
+			if result is not None:
+				return result
+			else:
+				return False
 		else:
 			return False
+
+	def resolve_priority(parent, info):
+		if parent.priority:
+			return parent.priority
+		else:
+			return 0
 
 class TraitSettingInput(InputObjectType):
 	rating_type = String(required=False)
@@ -646,7 +658,12 @@ class Trait(ObjectType):
 			raise Exception("trait_setting is None 1")
 
 	def resolve_name(parent, info):
-		# print(f"resolve_name:\ttrait: '{ parent.id }'")
+		print(f"\nTrait.resolve_name:\ttrait:\n'{ parent }'")
+		if parent.name:
+			return parent.name
+		else:
+			Trait._hydrate_trait(parent, info)
+			return parent.name
 		result = db.collection('Traits').get(parent.id).get('name')
 		return result
 
@@ -675,7 +692,9 @@ class Trait(ObjectType):
 		return parent.location_restricted or db.collection('Traitsets').get(parent.traitset_id).get('location_restricted')
 
 	def resolve_trait_setting(parent, info):
-		if parent.trait_setting_id:
+		if parent.trait_setting:
+			return parent.trait_setting
+		elif parent.trait_setting_id:
 			return TraitSetting(id=parent.trait_setting_id)
 		elif info.context.get('trait_setting_id'):
 			return TraitSetting(id=info.context.get('trait_setting_id'))
@@ -780,7 +799,9 @@ class Trait(ObjectType):
 		return [SFX(id=sfx) for sfx in trait.get('possible_sfxs') or []]
 
 	def resolve_inheritable(parent, info):
-		return db.collection('Traits').get(parent.id).get('inheritable')
+		if not parent.inheritable:
+			Trait._hydrate_trait(parent, info)
+		return parent.inheritable
 
 	def resolve_default_trait_setting(parent, info):
 		global absolute_default_trait_setting
@@ -1531,40 +1552,78 @@ class Traitset(ObjectType):
 						FILTER trait.traitset == '{ parent.id }'
 					{ sorting }
 					RETURN setting"""
-				trait_settings = [doc for doc in db.aql.execute(query)]
+				direct_trait_settings = [doc for doc in db.aql.execute(query)]
+				direct_trait_settings = [{
+					'max': 10000,
+					'entity_depth': 0,
+					**doc
+				} for doc in direct_trait_settings]
 				# print(f"Traitset.resolve_traits:\tentity trait_settings: { trait_settings }")
-				result = filter_trait_settings_by_location(trait_settings, location_id)
+				direct_trait_settings = filter_trait_settings_by_location(direct_trait_settings, location_id)
 
 				# inherited traits
 				if info.context.get('sorting') is not None and info.context.get('sorting') == 'NAME':
 					sorting = "SORT t.name, traitsettings[0].traitsetting.statement, MAX(traitsettings[0].traitsetting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], traitsettings[0].traitsetting.rating_type, true) ASC"
 				else:
 					sorting = "SORT MAX(traitsettings[0].traitsetting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], traitsettings[0].traitsetting.rating_type, true) ASC, t.name"
-				inherited_traits = [ts.get('inherited_as') for ts in trait_settings if ts.get('inherited_as') is not None]
+				# inherited_traits = [ts.get('inherited_as') for ts in trait_settings if ts.get('inherited_as') is not None]
 				# print(f"Traitset.resolve_traits:\tinherited_traits: { inherited_traits }")
 				query = f"""LET archetypes = (
-						FOR v, e, p IN 0..5 OUTBOUND '{ entity.get('_id') }' Relations
+						FOR v, e, p IN 0..20 OUTBOUND '{ entity.get('_id') }' Relations
 						FILTER p.edges[*].type ALL == 'archetype'
 						FILTER v._id != '{ entity.get('_id') }'
-						RETURN v._id
+						RETURN {{
+							id: v._id,
+							depth: LENGTH(p.edges)
+						}}
 					)
+					LET max_depth = MAX(archetypes[*].depth) + 1
 					FOR entity IN archetypes
-						FOR trait, traitsetting IN OUTBOUND entity TraitSettings
-						FILTER traitsetting._id NOT IN { inherited_traits }
+						FOR trait, traitsetting IN OUTBOUND entity.id TraitSettings
 						COLLECT traitId = traitsetting._to INTO traitsettings
 					FOR t IN Traits
 						FILTER traitsettings[0].traitsetting._to == t._id
 						FILTER t.traitset == '{ parent.id }'
 						{ sorting }
 					FOR ts IN traitsettings
-					RETURN ts.traitsetting"""
+					RETURN {{
+						max: max_depth,
+						entity: ts.entity,
+						traitsetting: ts.traitsetting
+					}}"""
 				# print(f"Traitset.resolve_traits:\tarchetype query: { query }")
-				trait_settings = [doc for doc in db.aql.execute(query)]
-				# print(f"Traitset.resolve_traits:\tarchetype trait_settings: { trait_settings }")
-				trait_settings = filter_trait_settings_by_location(trait_settings, location_id)
-				result = result + trait_settings
+				inherited_trait_settings = [doc for doc in db.aql.execute(query)]
+				inherited_trait_settings = [
+					{
+						'max': ts.get('max') or 0,
+						'entity_depth': ts.get('entity').get('depth') or 0,
+						**ts.get('traitsetting')
+					}
+					for ts in inherited_trait_settings
+				]
+				inherited_trait_settings = filter_trait_settings_by_location(inherited_trait_settings, location_id)
 
-				return [Trait(id=trait_setting.get('_to'), trait_setting_id=trait_setting.get('_id')) for trait_setting in result]
+				result = [
+					Trait(
+						id=ts.get('_to'),
+						trait_setting_id=ts.get('_id'),
+						trait_setting=TraitSetting(
+							id=ts.get('_id'),
+							priority=0 if ts == direct_trait_settings else ts.get('max') - ts.get('entity_depth')
+						)
+					)
+					for ts in direct_trait_settings + inherited_trait_settings
+				]
+				return result
+
+				# return [Trait(
+				# 		id=trait_setting.get('_to'),
+				# 		trait_setting_id=trait_setting.get('_id'),
+				# 		trait_setting=TraitSetting(
+				# 			id=trait_setting.get('_id'),
+				# 			priority=trait_setting.get('entity_depth'),
+				# 		)
+				# 	) for trait_setting in inherited_trait_settings]
 
 
 			# neither entity nor relation
@@ -1931,6 +1990,7 @@ class Entity(Interface):
 	favorite = Boolean()
 	is_archetype = Boolean()
 	archetype = Field(lambda: Entity)
+	archetypes = List(lambda: Entity)
 	instances = List(lambda: Entity)
 	active = Boolean()
 	hidden = Boolean()
@@ -2233,6 +2293,23 @@ class Entity(Interface):
 		else:
 			return None
 
+	def resolve_archetypes(parent, info):
+		result = []
+		archetypes = db.collection('Relations').find({'_from': parent.id, 'type': 'archetype'})
+		for archetype in archetypes:
+			archetype_id = archetype.get('_to')
+			if archetype_id is not None:
+				archetype = db.collection('Entities').get(archetype_id)
+				if archetype.get('type') == 'character':
+					result.append(Character(id=archetype_id))
+				elif archetype.get('type') == 'npc':
+					result.append(NPC(id=archetype_id))
+				elif archetype.get('type') == 'asset':
+					result.append(Asset(id=archetype_id))
+				elif archetype.get('type') == 'faction':
+					result.append(Faction(id=archetype_id))
+		return result
+
 	def resolve_instances(parent, info):
 		"""
 		Returns all instances of this entity
@@ -2366,7 +2443,10 @@ class UpdateEntity(Mutation):
 			changes['location'] = location or entity_input.pop('location')
 			# print(f"UpdateEntity.mutate:\t1\tchanges: { changes }")
 			location_doc = db.collection('Entities').get(changes.get('location'))
-			# print(f"UpdateEntity.mutate:\t2\tlocation_doc: { location_doc }")
+			
+			# if the entity changes to a location,
+			# especially if that location is 'hidden'
+			# the entity henceforth knows about and how to reach this location
 			known_to = location_doc.get('known_to') or []
 			if entity.get('_id') not in known_to:
 				known_to.append(entity.get('_id'))
@@ -2468,7 +2548,7 @@ class InstantiateArchetype(Mutation):
 			db.collection('TraitsetSettings').insert(new_traitsetsetting)
 		
 		# copy relations
-		relations = db.collection('Relations').find({'_from': archetype.get('_id')})
+		relations = db.collection('Relations').find({'_from': archetype.get('_id'), 'type': 'relation'})
 		for relation in relations:
 			new_relation = {key: value for key, value in relation.items() if not key.startswith('_')}
 			new_relation['_from'] = new_entity.get('_id')
@@ -2776,7 +2856,7 @@ class Location(ObjectType):
 		# active entities need to be added to each other's known_to list if not already there
 		active_entities = [entity for entity in entities if entity.get('active')]
 		for entity in active_entities:
-			character_entities = [entity for entity in entities if entity.get('type') == 'character']
+			character_entities = [entity for entity in active_entities if entity.get('type') == 'character']
 			for other_entity in character_entities:
 				if other_entity.get('_id') != entity.get('_id') and (entity.get('known_to') or []).count(other_entity.get('_id')) == 0:
 					if entity.get('known_to') is None:
@@ -2924,8 +3004,8 @@ class CreateRelation(Mutation):
 	def mutate(root, info, from_id=None, to_id=None, type=None):
 		if db.collection('Relations').find({'_from': from_id, '_to': to_id, 'type': type}).empty():
 			# if type == 'archetype', remove all other archetypes from entity
-			if type == 'archetype':
-				db.collection('Relations').delete_match({'_from': from_id, 'type': 'archetype'})
+			# if type == 'archetype':
+			# 	db.collection('Relations').delete_match({'_from': from_id, 'type': 'archetype'})
 			db.collection('Relations').insert({ '_from': from_id, '_to': to_id, 'type': type, 'favorite': False })
 			return CreateRelation(success=True)
 		else:
@@ -2970,9 +3050,31 @@ class DeleteRelation(Mutation):
 		else:
 			return DeleteRelation(success=False)
 
+class Base1(ObjectType):
+	words = String()
+	number = Int()
+
+class Referral1(ObjectType):
+	base1 = Field(Base1)
+
+	def resolve_base1(parent, info):
+		if parent.base1:
+			return parent.base1
+		return Base1(words="hello", number=1)
+
+class Referral2(ObjectType):
+	referral1 = Field(Referral1)
+
+	def resolve_referral1(parent, info):
+		return Referral1(base1=Base1(words="world", number=1-1))
 
 
 class Query(ObjectType):
+	referral2 = Field(Referral2)
+
+	def resolve_referral2(parent, info):
+		return Referral2()
+
 	session = Field(Session)
 	def resolve_session(parent, info):
 		return Session()
@@ -3141,8 +3243,8 @@ class Query(ObjectType):
 			trait_setting = db.collection('TraitSettings').get(trait_setting_id)
 			# check if it is a trait default
 			if trait_setting is not None and trait_id is not None and trait_setting.get('_from') == trait_id and trait_setting.get('_to') == 'Traits/1':
-				return [Trait(id=trait_id, trait_setting_id=trait_setting_id, trait_setting=trait_setting)]
-			return [Trait(id=trait_setting.get('_to'), trait_setting_id=trait_setting_id, trait_setting=trait_setting)]
+				return [Trait(id=trait_id, trait_setting_id=trait_setting_id)]
+			return [Trait(id=trait_setting.get('_to'), trait_setting_id=trait_setting_id)]
 
 		# retrieve a trait for an entity
 		elif trait_id is not None and entity_id is not None:

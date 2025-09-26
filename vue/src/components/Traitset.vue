@@ -350,6 +350,31 @@
 	})
 	const search_potential_traits_visible = ref(false)
 	const filter = ref('')
+
+	const traits_to_display = computed(() => {
+		if(traitset.value.traits) {
+			let result = <TraitType[]>[]
+			const unique_traits = Array.from(new Set(traitset.value.traits.map((t) => t.name + ((!traitset.value.duplicates || t.inheritable) ? '' : (t.traitSetting?.statement ?? '')))))
+			unique_traits.forEach((ut) => {
+				const highest_priority_trait = traitset.value.traits.filter((t) => t.name + ((!traitset.value.duplicates || t.inheritable) ? '' : (t.traitSetting?.statement ?? '')) == ut)
+													.reduce((a, b) => (a?.traitSetting?.priority ?? -1) > (b?.traitSetting?.priority ?? -1) ? a : b)
+				if(highest_priority_trait) {
+					result.push(highest_priority_trait)
+				}
+			})
+			if(filter.value) {
+				result = result.filter((t) => {
+					t.name.toLowerCase().includes(filter.value.toLowerCase())
+					|| t.traitSetting?.statement?.toLowerCase().includes(filter.value.toLowerCase())
+					|| t.traitSetting?.notes?.toLowerCase().includes(filter.value.toLowerCase())
+				})
+			}
+			return result
+		}
+		else {
+			return []
+		}
+	})
 </script>
 
 <template>
@@ -365,7 +390,7 @@
 				{ 'editing-traits': edit_mode },
 				{ 'full': limiter > 0 && traits_in_dicepool.length == limiter },
 			]"
-			v-if="(traitset.traits && traitset.traits.length > 0) || props.visible">
+			v-if="((traitset.traits && traitset.traits.length > 0) || props.visible) && ((player.is_player && !traitset.entityTypes?.includes('gm')) || player.is_gm)">
 
 		<div class="set-title" v-if="(!props.hide_title || player.editing || show_info)"
 				@click="toggle_traits"
@@ -376,7 +401,7 @@
 				:value="player.small_buttons ? '⊖' : '⊖\ndecrease limit'"
 				@click.stop="change_limit(-1)" v-if="show_info" />
 			<div class="trait-count" v-else-if="!show_traits">
-				{{ traitset.traits ? traitset.traits.length : '' }}
+				{{ traitset.traits ? traits_to_display.length : '' }}
 			</div>
 			<div v-else></div>
 
@@ -457,7 +482,7 @@
 						|| (player.is_player && player.player_character.id == props.entity_id)
 						|| (props.relationship && props.extensible)
 						|| (props.location && props.extensible)">
-					<template v-for="trait in traitset.traits?.filter(t => highlighted_traits.includes(t.traitSettingId))"
+					<template v-for="trait in traits_to_display.filter(t => highlighted_traits.includes(t.traitSettingId))"
 							:key="trait.traitSettingId">
 						<Trait
 							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
@@ -477,7 +502,7 @@
 							v-if="(player.is_gm
 								|| props.relationship
 								|| (player.is_player && entity.entityType == 'character')
-								|| (player.is_player && trait.traitSetting && trait.traitSetting.hidden == false)
+								|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
 								|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
 								|| props.tutorial)
 								&& (
@@ -500,7 +525,7 @@
 								traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
 							"></div>
 					</template>
-					<template v-for="trait in traitset.traits?.filter(t => !highlighted_traits.includes(t.traitSettingId))"
+					<template v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
 							:key="trait.traitSettingId">
 						<Trait
 							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"

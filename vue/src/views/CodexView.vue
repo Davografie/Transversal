@@ -33,9 +33,16 @@
 		emit('hide_codex')
 	}
 
+	const polling_active = ref(player.is_gm)
+
+	function poll() {
+		retrieve_characters(true)
+		if(polling_active.value) setTimeout(poll, 7000)
+	}
+
 	onMounted(() => {
 		player.retrieve_perspective_relations();
-		if(player.is_gm) { retrieve_characters(true) }
+		if(player.is_gm) { poll() }
 		({ arrivedState } = useScroll(codexContacts))
 	})
 	

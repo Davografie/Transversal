@@ -472,6 +472,10 @@
 				'locationsDisabled': new_locationsDisabled.value
 			})
 		}
+	}
+
+	function submit_changes() {
+		change_trait()
 		mode.value = 'neutral'
 		edit_rating.value = false
 		show_sfxs.value = false
@@ -815,7 +819,8 @@
 				props.highlighted || trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'highlighted' : '',
 				// dim all traits that don't have highlight when highlight is set
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
-				{ 'clickable': mode != 'editing' }
+				{ 'clickable': mode != 'editing' },
+				{ 'inherited': inherited },
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
@@ -831,6 +836,7 @@
 			<div class="trait-text">
 				<div class="label trait-name">
 					<span>
+						<span v-if="inherited && player.is_gm">· </span>
 						<span>
 							{{ trait.name }}
 						</span>
@@ -973,7 +979,8 @@
 					:value="player.small_buttons ?
 						'🫳' : '🫳\n' + (props.entity_id != player.the_entity?.id ? ' take ' : ' drop ') + trait.name"
 					:title="props.entity_id != player.the_entity?.id ? ' take ' : ' drop ' + trait.name"
-					@click.stop="steal" />
+					@click.stop="steal"
+					v-if="!inherited" />
 				<input type="button" class="button-mnml"
 					:class="show_pc_visible ? 'active' : 'inactive'"
 					:value="player.small_buttons ? '🧠' : '🧠\nshow PC'"
@@ -1086,7 +1093,7 @@
 			</div>
 			<div class="add-sfx" v-if="mode == 'editing' && trait.possibleSfxs">
 				<div class="add-sfx-list">
-					<template v-for="(sfx, i) in trait.possibleSfxs" :key="sfx.id">
+					<template v-for="(sfx, i) in trait.possibleSfxs.filter((sfx) => !new_sfxs.map((x) => x.id).includes(sfx.id))" :key="sfx.id">
 						<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
 							:editing="mode == 'editing'" @add="add_sfx(sfx)" adding />
 						<!-- <span class="sfx-divider" v-if="i < (sfx_list?.length ?? 0) - 1">/</span> -->
@@ -1149,7 +1156,7 @@
 		<div class="edit-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == 'editing'">
 			<input  type="button" class="button-mnml save-button"
 				:value="player.small_buttons ? '💾' : '💾' + (inherited ? 'overwrite' : 'save') + ' trait'"
-				@click.stop="change_trait"
+				@click.stop="submit_changes"
 				v-if="can_edit" />
 
 			<input  type="button" class="button-mnml cancel-button"

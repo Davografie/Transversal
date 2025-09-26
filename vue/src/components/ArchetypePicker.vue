@@ -3,6 +3,8 @@
 	import { useEntity } from '@/composables/Entity'
 	import { useEntityList } from '@/composables/EntityList'
 
+	import EntityCard from '@/components/EntityCard.vue'
+
 	const props = defineProps<{
 		entity_id: string
 		entity_type: string
@@ -15,17 +17,20 @@
 	retrieve_archetypes(props.entity_type)
 
 	const selected_archetype = ref<string | null>(entity.value.archetype?.id ?? null)
+	const selected_archetypes = ref<string[]>(entity.value.archetypes?.map(archetype => archetype.id) ?? [])
 
-	function select_archetype() {
-		console.log('selecting archetype: ' + selected_archetype.value)
-		if(selected_archetype.value) {
+	function select_archetype(archetype_id: string) {
+		if(!entity.value.archetypes?.map(archetype => archetype.id).includes(archetype_id)) {
 			// update_entity({ "archetypeId": selected_archetype.value })
-			set_archetype(selected_archetype.value)
+			set_archetype(archetype_id)
 		}
 		else {
 			// update_entity({ "archetypeId": null })
-			unset_archetype()
+			unset_archetype(archetype_id)
 		}
+		setTimeout(() => {
+			retrieve_entity()
+		}, 200)
 	}
 
 	watch(() => entity.value.archetype, (newArchetype) => {
@@ -36,19 +41,41 @@
 			selected_archetype.value = null
 		}
 	})
+	watch(() => entity.value.archetypes, (newArchetypes) => {
+		if(newArchetypes) {
+			selected_archetypes.value = newArchetypes.map(archetype => archetype.id)
+		}
+		else {
+			selected_archetypes.value = []
+		}
+	})
 </script>
 
 <template>
 	<div class="archetype-picker">
-		<select v-model="selected_archetype" @change="select_archetype">
+		<!-- <select v-model="selected_archetype" @change="select_archetype">
 			<option :value="null">None</option>
 			<option v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id)" :key="archetype.id" :value="archetype.id">{{ archetype.name }}</option>
-		</select>
+		</select> -->
+		<EntityCard
+			class="entity-card"
+			v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id)" :key="archetype.id"
+			:entity_id="archetype.id"
+			:entity="archetype"
+			:is_active="selected_archetypes.includes(archetype.id)"
+			@click="select_archetype(archetype.id)"
+			override_click
+			show_archetypes />
 	</div>
 </template>
 
 <style scoped>
 	.archetype-picker {
-		display: inline-block;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		.entity-card {
+			width: 80px;
+		}
 	}
 </style>

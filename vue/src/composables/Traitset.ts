@@ -105,7 +105,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					traits {
 						id
 						traitSettingId
+						name
 						rating
+						inheritable
 						subTraits {
 							traitSettingId
 						}
@@ -116,7 +118,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 							knownTo {
 								id
 							}
+							statement
 							hidden
+							priority
 						}
 					}
 				}

@@ -62,6 +62,9 @@ export function useEntity(init?: Entity, entity_id?: string) {
 						ext
 					}
 				}
+				archetypes {
+					id
+				}
 				image {
 					path
 					ext
@@ -396,7 +399,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function unset_archetype() {
+	function unset_archetype(archetype_id: string) {
 		const query_delete_relation = gql`mutation DeleteRelation($fromId: ID!, $toId: ID!, $type: String) {
 				deleteRelation(fromId: $fromId, toId: $toId, type: $type) {
 					success
@@ -407,7 +410,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			console.log('unsetting archetype of ' + entity.value.name)
 			mutate({
 				"fromId": entity.value.id,
-				"toId": entity.value.archetype.id,
+				"toId": archetype_id,
 				"type": "archetype"
 			})
 		}

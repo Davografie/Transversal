@@ -314,14 +314,32 @@
 		setTimeout(() => retrieve_character(), 200)
 	}
 
+	const entityOverviewTypes = Object.freeze({
+		NONE: 'none',
+		KNOWN_TO: 'known_to',
+		QUICK_SWITCH: 'quick_switch',
+		ARCHETYPES: 'archetypes',
+		INSTANCES: 'instances',
+	})
+
+	const entityOverviewType = ref<keyof typeof entityOverviewTypes>('NONE')
+
+	function toggleEntityOverviewType(type: keyof typeof entityOverviewTypes) {
+		entityOverviewType.value = type
+	}
+
 	const show_known_to = ref(false)
 	function toggle_known_to() {
-		if(!show_known_to.value && character.value.location?.key) {
+		if(entityOverviewType.value != 'KNOWN_TO' && character.value.location?.key) {
 			set_location_key(character.value.location.key)
 			retrieve_small_location()
 			retrieve_presence()
+			toggleEntityOverviewType('KNOWN_TO')
 		}
-		show_known_to.value = !show_known_to.value
+		else {
+			toggleEntityOverviewType('NONE')
+		}
+		// show_known_to.value = !show_known_to.value
 	}
 	function remove_known_to(entity_id: string) {
 		update_entity({ knownTo: entity.value.knownTo?.filter(e => e.id != entity_id).map(e => e.id) ?? [] })
@@ -363,7 +381,8 @@
 			player.player_character_key = entity_id.substring(9)
 			if(player.uuid) { activate_character(player.uuid) }
 		}
-		switching_entities.value = false
+		// switching_entities.value = false
+		entityOverviewType.value = 'NONE'
 		editing_name_type.value = false
 		editing_description.value = false
 	}
@@ -371,8 +390,29 @@
 
 	const instances_visible = ref(false)
 	function show_instances() {
-		!instances_visible.value ? retrieve_instances() : null
-		instances_visible.value = !instances_visible.value
+		if(entityOverviewType.value != 'INSTANCES') {
+			retrieve_instances()
+			toggleEntityOverviewType('INSTANCES')
+		}
+		else {
+			toggleEntityOverviewType('NONE')
+		}
+	}
+	function show_archetypes() {
+		if(entityOverviewType.value != 'ARCHETYPES') {
+			toggleEntityOverviewType('ARCHETYPES')
+		}
+		else {
+			toggleEntityOverviewType('NONE')
+		}
+	}
+	function toggle_quick_switch() {
+		if(entityOverviewType.value != 'QUICK_SWITCH') {
+			toggleEntityOverviewType('QUICK_SWITCH')
+		}
+		else {
+			toggleEntityOverviewType('NONE')
+		}
 	}
 
 	function click_instance(entity_id: string) {
@@ -385,14 +425,6 @@
 		<div id="portrait-lightbox" v-if="show_image" @click="show_image = false">
 			<img id="portrait_large" v-if="character.image && show_image"
 				:src="img_link_large" />
-		</div>
-		<div id="character-quick-switch" v-if="switching_entities && player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0">
-			<EntityCard
-				class="entity-card"
-				v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
-				:entity_id="entity_id"
-				override_click
-				@click_entity="switch_to_entity(entity_id)" />
 		</div>
 		<div id="character" v-if="character" ref="character_wrapper">
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
@@ -442,8 +474,6 @@
 							@contextmenu="(e) => e.preventDefault()"
 							v-if="!editing_name_type">
 						{{ character.name }}
-						<input id="entity-switch" v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
-							type="button" class="button-mnml" value="🔁" @click="switching_entities = !switching_entities" />
 					</h1>
 					<div id="plot_points">
 						<PP class="plot_point" v-for="i in character.pp" v-if="character.pp && character.pp <= 5" :key="i" @click="decrease_pp" />
@@ -465,7 +495,6 @@
 								<!-- <RouterLink :to="'/Entity/' + character.archetype.key">
 									{{ character.archetype.name }}
 								</RouterLink> -->
-								<ArchetypePicker v-if="player.is_gm" :entity_id="character.id" :entity_type="character.entityType" />
 								<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
 							</div>
 						</div>
@@ -487,39 +516,46 @@
 						v-if="editing_description" />
 				</div>
 			</div>
-			<div id="archetype-instances" v-if="entity.isArchetype && instances_visible">
-				<EntityCard v-for="entity in entity.instances" :key="entity.key"
-					:entity_id="entity.id"
-					override_click
-					@click_entity="click_instance(entity.id)" />
-			</div>
 			<div id="character-buttons" :class="player.small_buttons ? 'small-buttons' : 'verbose-buttons'">
 				<input type="button" class="button-mnml" id="switch-gm"
 					:value="player.small_buttons ? entity_icons['gm'] : entity_icons['gm'] + '\nswitch to gm'"
+					title="switch to gm"
 					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'"
 					@click="switch_gm" />
 				<input type="button" class="button-mnml" id="copy-id"
 					:value="player.small_buttons ? '#' : '#\ncopy ID'"
+					title="copy ID"
 					v-if="player.is_gm"
 					@click="copy_id" />
 				<input type="button" class="button-mnml" id="pick-character"
 					:value="player.small_buttons ? entity_icons[character.entityType] : entity_icons[character.entityType] + '\npick ' + character.entityType"
+					:title="'play as ' + character.name"
 					v-if="character.id != player.the_entity?.id && (player.is_gm || (character.entityType == 'character'))"
 					@click="pick_character" />
 				<input type="button" class="button-mnml" id="create-relation"
 					:value="player.small_buttons ? '🤝' : '🤝\ncreate relation'"
+					title="create relation"
 					v-if="character.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(character.id)"
 					@click="relate" />
+				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
+					:value="'🔁' + (player.small_buttons ? '' : '\nswitch entity')"
+					title="switch entity"
+					v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
+					@click="toggle_quick_switch" />
 				<input type="button" class="button-mnml" id="archetype"
 					:value="character.isArchetype ? (player.small_buttons ? '◑' : '◑\nunarchetype') : (player.small_buttons ? '○' : '○\nmake archetype')"
 					:title="character.isArchetype ? 'unarchetype' : 'make archetype'"
 					v-if="player.is_gm"
 					@click="toggle_archetype" />
-				<input type="button" class="button-mnml" id="show-instances"
-					:value="player.small_buttons ? '⧉' : '⧉\n' + (instances_visible ? 'hide' : 'show') + ' instances'"
+				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
+					:value="player.small_buttons ? '⊛' : '⊛\n' + (entityOverviewType == 'INSTANCES' ? 'hide' : 'show') + ' instances'"
 					title="show instances"
 					v-if="character.isArchetype"
 					@click="show_instances" />
+				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'ARCHETYPES' }" id="show-archetypes"
+					:value="player.small_buttons ? '⊛' : '⊛\n' + (entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show') + ' archetypes'"
+					title="show archetypes"
+					@click="show_archetypes" />
 				<input type="button" class="button-mnml" id="clone-entity"
 					:value="player.small_buttons ? '⧉' : '⧉\nclone entity'"
 					title="clone entity"
@@ -530,7 +566,7 @@
 					title="hide entity"
 					v-if="player.is_gm && character.entityType != 'character'"
 					@click="hide_entity" />
-				<input type="button" class="button-mnml" id="show-known-to"
+				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
 					:value="player.small_buttons ? '👀' : '👀\nknown to'"
 					title="show known to"
 					v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0"
@@ -569,11 +605,26 @@
 						value="cancel" title="cancel deletion"
 						@click="deletion = false" />
 				</div>
-				<input type="button" class="button-mnml" :value="player.small_buttons ? '⚙' : '⚙\nsettings'"
+				<input type="button" class="button-mnml"
+					:value="player.small_buttons ? '⚙' : '⚙\nsettings'"
+					title="settings"
 					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })"
 					v-if="props.orientation == 'horizontal'" />
 			</div>
-			<div id="character-known-to" v-if="player.is_gm && show_known_to && entity.knownTo && entity.knownTo.length > 0">
+
+			<div id="character-quick-switch"
+					v-if="entityOverviewType == 'QUICK_SWITCH' && player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0">
+				<EntityCard
+					class="entity-card"
+					v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
+					:entity_id="entity_id"
+					override_click
+					@click_entity="switch_to_entity(entity_id)" />
+			</div>
+
+			<ArchetypePicker v-if="entityOverviewType == 'ARCHETYPES'" :entity_id="character.id" :entity_type="character.entityType" />
+
+			<div id="character-known-to" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0">
 				<div class="info">
 					<div class="header">known to</div>
 					<div class="explainer">click to remove from known to</div>
@@ -584,6 +635,13 @@
 						override_click
 						@click_entity="remove_known_to(entity.id)" />
 				</div>
+			</div>
+
+			<div id="archetype-instances" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'">
+				<EntityCard v-for="entity in entity.instances" :key="entity.key"
+					:entity_id="entity.id"
+					override_click
+					@click_entity="click_instance(entity.id)" />
 			</div>
 		</div>
 		<div id="traitsets" v-if="character.traitsets">
@@ -675,6 +733,7 @@
 					text-align: center;
 					min-height: 100px;
 					width: fit-content;
+					min-width: 15%;
 					img {
 						display: block;
 						width: 100%;
@@ -755,6 +814,11 @@
 					text-shadow: var(--text-shadow);
 					text-wrap: wrap;
 					font-size: 1.2em;
+					&.active {
+						background-color: var(--color-highlight);
+						color: var(--color-highlight-text);
+						text-shadow: none;
+					}
 				}
 			}
 		}
@@ -797,8 +861,8 @@
 				height: v-bind(portraitHeight + 'px');
 				#character-portrait img {
 					/* border-radius: 30px 0 0 30px; */
-					border: 1px solid var(--color-background);
-					border-top: 3px solid var(--color-background);
+					/* border: 1px solid var(--color-background); */
+					/* border-top: 3px solid var(--color-background); */
 					/* margin: .4em; */
 				}
 				#character-banner {
