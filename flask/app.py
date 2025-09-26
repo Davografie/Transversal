@@ -3050,31 +3050,9 @@ class DeleteRelation(Mutation):
 		else:
 			return DeleteRelation(success=False)
 
-class Base1(ObjectType):
-	words = String()
-	number = Int()
-
-class Referral1(ObjectType):
-	base1 = Field(Base1)
-
-	def resolve_base1(parent, info):
-		if parent.base1:
-			return parent.base1
-		return Base1(words="hello", number=1)
-
-class Referral2(ObjectType):
-	referral1 = Field(Referral1)
-
-	def resolve_referral1(parent, info):
-		return Referral1(base1=Base1(words="world", number=1-1))
 
 
 class Query(ObjectType):
-	referral2 = Field(Referral2)
-
-	def resolve_referral2(parent, info):
-		return Referral2()
-
 	session = Field(Session)
 	def resolve_session(parent, info):
 		return Session()
@@ -3904,12 +3882,13 @@ def imagegen(entity_key, force):
 			location = retrieve_location(entity)
 			trait_settings = [doc for doc in db.collection('TraitSettings').find({'_from': entity.get('_id')})]
 			archetype_trait_settings = []
-			archetypes = db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'archetype'})
-			while not archetypes.empty():
-				archetype_id = [archetype.get('_to') for archetype in archetypes][0]
-				archetype_entity = db.collection('Entities').get(archetype_id)
-				archetype_trait_settings += [doc for doc in db.collection('TraitSettings').find({'_from': archetype_entity.get('_id')})]
-				archetype_id = db.collection('Relations').find({'_from': archetype_entity.get('_id'), 'type': 'archetype'})
+
+			archetype_ids = [archetype.get('_to') for archetype in db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'archetype'})]
+			while archetype_ids:
+				archetype = db.collection('Entities').get(archetype_ids[0])
+				archetype_trait_settings += [doc for doc in db.collection('TraitSettings').find({'_from': archetype.get('_id')})]
+				archetype_ids = [archetype.get('_to') for archetype in db.collection('Relations').find({'_from': archetype.get('_id'), 'type': 'archetype'})]
+
 			trait_settings += archetype_trait_settings
 			trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 			traits = []
