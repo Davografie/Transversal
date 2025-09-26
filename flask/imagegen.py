@@ -316,7 +316,7 @@ prompt_text = """
 def queue_prompt(prompt):
 	p = {"prompt": prompt}
 	data = json.dumps(p).encode('utf-8')
-	req =  request.Request(f"http://{os.environ['PUBLIC_IP']}:8188/prompt", data=data)
+	req =  request.Request(f"http://imagen:8188/prompt", data=data)
 	request.urlopen(req)
 
 def generate_image(description, entity_key):
