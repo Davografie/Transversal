@@ -101,12 +101,21 @@
 		editing_zones.value = !editing_zones.value
 	}
 
+	const new_location_name = ref(location.value.name)
+
 	function longpress_location_header() {
 		held.value = true
+		new_location_name.value = location.value.name
 		new_flavortext.value = location.value.flavortext
 		editing_location.value = !editing_location.value
 		title_pulsate.value = true
 		setTimeout(() => held.value = false, 500)
+	}
+
+	function update_name() {
+		update_location({ name: new_location_name.value })
+		setTimeout(() => retrieve_location(), 400)
+		editing_location.value = false
 	}
 
 	const show_location_image = ref(false)
@@ -351,7 +360,7 @@
 		}
 	}
 
-	const show_flavortext = ref(false)
+	const show_flavortext = ref(true)
 	function click_description_header() {
 		show_flavortext.value = !show_flavortext.value
 	}
@@ -472,17 +481,21 @@
 					:class="[
 						{ 'header': is_current_location },
 					]"
-					v-touch:hold="longpress_location_header"
-					@click.right="longpress_location_header"
-					@click="click_title"
-					@contextmenu="(e) => e.preventDefault()"
 					v-if="location">
 				
 				<component :is="'h' + (props.level + 2)" class="location-name"
 						:class="{ 'text-pulsate': title_pulsate }"
-						@animationend="title_pulsate = false">
+						@animationend="title_pulsate = false"
+						v-touch:hold="longpress_location_header"
+						@click.right="longpress_location_header"
+						@contextmenu="(e) => e.preventDefault()"
+						@click="click_title"
+						>
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
+
+				<input type="text" class="header location-name-edit" v-model="new_location_name" v-if="editing_location && player.is_gm" />
+				<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
 
 				<input type="button" class="button transverse-button corner-button"
 					:value="player.small_buttons ? '⬇' : '⬇\ntransverse'"
@@ -723,6 +736,9 @@
 				.location-name {
 					flex-grow: 2;
 					font-size: 2em;
+				}
+				.location-name-edit {
+					text-align: center;
 				}
 				.button {
 					z-index: 2;
