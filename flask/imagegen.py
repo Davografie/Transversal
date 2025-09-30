@@ -336,9 +336,9 @@ def generate_image(
 		entity_key,
 		location_key=None,
 		lora1="style/Anime art",
-		lora1_weight=0.5,
+		lora1_weight=0.0,
 		lora2="setting/ChineseWuXia",
-		lora2_weight=0.5,
+		lora2_weight=0.0,
 		width=1024,
 		height=1024
 	):

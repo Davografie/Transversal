@@ -28,8 +28,10 @@ services:
               count: 1
     networks:
       - network_tv
-    # ports:
-    #   - 8188:8188
+    ports:
+      - 8188:8188
+    # expose:
+    #   - 8188
   flask:
     build: ./flask
     image: tv_flask
@@ -42,6 +44,7 @@ services:
       - "./flask:/app/:ro"
       - ${MEDIA_FOLDER}/uploads:/media/uploads
       - ${MEDIA_FOLDER}/imagens:/media/imagens
+      - ${T2I_MODEL_FOLDER}:/media/ComfyUI/models
     environment:
       PUBLIC_IP: ${PUBLIC_IP}
       ARANGO_ROOT_PASSWORD: ${ARANGO_ROOT_PASSWORD}

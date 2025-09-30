@@ -34,6 +34,7 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 app.config['UPLOAD_FOLDER'] = '/media/uploads'
 app.config['IMAGEN_FOLDER'] = '/media/imagens'
+app.config['T2I_MODELS_FOLDER'] = '/media/ComfyUI/models'
 
 arango_host = "tv_adb"
 arango_port = "8529"
@@ -4125,9 +4126,10 @@ def imagegen(entity_key, force):
 		
 		genres = list(set(genres))
 		if len(genres) > 0:
-			lora1 = genre_loras.get(genres[0])
-			lora1_weight = 0.8
-			if len(genres) > 1:
+			if genres[0] in genre_loras.keys():
+				lora1 = genre_loras.get(genres[0])
+				lora1_weight = 0.8
+			if len(genres) > 1 and genres[1] in genre_loras.keys():
 				lora2 = genre_loras.get(genres[1])
 				lora2_weight = 0.4
 			# elif entity_type in ['character', 'npc']:
@@ -4221,6 +4223,37 @@ def save_image(filepath, entity_key, location_key=None):
 	db.collection('Entities').update(entity)
 
 	return jsonify({"success": True})
+
+# example url: http://localhost:5000/get-t2i-models?model_type=loras
+@app.route("/get-t2i-models", methods=["GET"])
+def get_t2i_models():
+	model_type = request.args.get("model_type", default=None)
+	t2i_models = {}
+	if model_type is None or model_type == "checkpoints":
+		for root, dirs, files in os.walk(os.path.join(app.config['T2I_MODELS_FOLDER'], "diffusion_models", "FLUX1")):
+			current_folder = t2i_models
+			for part in os.path.relpath(root, os.path.join(app.config['T2I_MODELS_FOLDER'], "diffusion_models", "FLUX1")).split(os.sep):
+				if part not in current_folder:
+					current_folder[part] = {}
+				current_folder = current_folder[part]
+			for file in files:
+				if file.endswith(".safetensors"):
+					name = re.sub(r'\.safetensors$', '', file)
+					name = re.sub(r'_[0-9]+$', '', name)
+					current_folder[name] = file
+	if model_type is None or model_type == "loras":
+		for root, dirs, files in os.walk(os.path.join(app.config['T2I_MODELS_FOLDER'], "loras", "flux")):
+			current_folder = t2i_models
+			for part in os.path.relpath(root, os.path.join(app.config['T2I_MODELS_FOLDER'], "loras", "flux")).split(os.sep):
+				if part not in current_folder:
+					current_folder[part] = {}
+				current_folder = current_folder[part]
+			for file in files:
+				if file.endswith(".safetensors"):
+					name = re.sub(r'\.safetensors$', '', file)
+					name = re.sub(r'_[0-9]+$', '', name)
+					current_folder[name] = file
+	return jsonify(t2i_models)
 
 if __name__ == "__main__":
 	app.run(debug=True, host='0.0.0.0', port=5000)
