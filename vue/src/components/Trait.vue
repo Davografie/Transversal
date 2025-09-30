@@ -165,7 +165,7 @@
 
 	watch(() => props.edit_mode, () => {
 		if (props.edit_mode) {
-			switch_to_editing()
+			// switch_to_editing()
 		}
 		else {
 			mode.value = 'neutral'
