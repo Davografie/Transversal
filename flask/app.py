@@ -1805,6 +1805,28 @@ class MutateTraitset(Mutation):
 		db.collection('Traitsets').update(ts)
 		return MutateTraitset(traitset=Traitset(id=ts.get('_id')), message="Traitset updated")
 
+class DeleteTraitset(Mutation):
+	class Arguments:
+		traitset_id = ID(required=True)
+
+	message = String()
+	success = Boolean()
+
+	def mutate(self, info, traitset_id=None):
+		traits = db.collection('Traits').find({'traitset': traitset_id})
+		for trait in traits:
+			default_trait_setting = db.collection('TraitSettings').find({'_from': trait.get('_id'), '_to': 'Traits/1'})
+			for default in default_trait_setting:
+				db.collection('TraitSettings').delete(default.get('_id'))
+			trait_settings = db.collection('TraitSettings').find({'_to': trait.get('_id')})
+			for trait_setting in trait_settings:
+				db.collection('TraitSettings').delete(trait_setting.get('_id'))
+			db.collection('Traits').delete(trait.get('_id'))
+		db.collection('TraitsetSettings').delete({'_to': traitset_id})
+		db.collection('Traitsets').delete(traitset_id)
+
+		return DeleteTraitset(message="Traitset deleted", success=True)
+
 class UpdateTraitsetDefault(Mutation):
 	class Arguments:
 		traitset_id = ID(required=True)
@@ -2608,6 +2630,28 @@ class DeleteEntity(Mutation):
 			traits = db.collection('TraitSettings').find({'_from': entity_id})
 			for trait in traits:
 				db.collection('TraitSettings').delete(trait.get('_id'))
+
+			# if this entity is a location, also remove it from other traits' locations_enabled/disabled
+			query = f"""FOR s IN TraitSettings
+						FILTER { entity_id } IN s.locations_enabled
+						RETURN s"""
+			cursor = db.aql.execute(query)
+			for doc in cursor:
+				doc['locations_enabled'].remove(entity_id)
+				if doc['locations_enabled'] == []:
+					# if the locations_enabled list is now empty,
+					# that means the trait was only available at this location
+					# thus we can delete it
+					db.collection('TraitSettings').delete(doc['_id'])
+				else:
+					db.collection('TraitSettings').update(doc)
+			query = f"""FOR s IN TraitSettings
+						FILTER { entity_id } IN s.locations_disabled
+						RETURN s"""
+			cursor = db.aql.execute(query)
+			for doc in cursor:
+				doc['locations_disabled'].remove(entity_id)
+				db.collection('TraitSettings').update(doc)
 			
 			# and all traitset settings
 			traitset_settings = db.collection('TraitsetSettings').find({'_from': entity_id})
@@ -3386,6 +3430,7 @@ class Mutation(ObjectType):
 
 	create_traitset = CreateTraitset.Field()
 	mutate_traitset = MutateTraitset.Field()
+	delete_traitset = DeleteTraitset.Field()
 	update_traitset_default = UpdateTraitsetDefault.Field()
 	update_traitset_setting = UpdateTraitsetSetting.Field()
 
