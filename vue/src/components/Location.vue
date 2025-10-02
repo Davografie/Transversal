@@ -481,21 +481,17 @@
 					:class="[
 						{ 'header': is_current_location },
 					]"
-					v-if="location">
+					v-if="location"
+					@click="click_title">
 				
 				<component :is="'h' + (props.level + 2)" class="location-name"
 						:class="{ 'text-pulsate': title_pulsate }"
 						@animationend="title_pulsate = false"
 						v-touch:hold="longpress_location_header"
 						@click.right="longpress_location_header"
-						@contextmenu="(e) => e.preventDefault()"
-						@click="click_title"
-						>
+						@contextmenu="(e) => e.preventDefault()">
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
-
-				<input type="text" class="header location-name-edit" v-model="new_location_name" v-if="editing_location && player.is_gm" />
-				<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
 
 				<input type="button" class="button transverse-button corner-button"
 					:value="player.small_buttons ? '⬇' : '⬇\ntransverse'"
@@ -565,6 +561,9 @@
 					</div>
 				</div>
 				<div class="center">
+					<input type="text" class="header location-name-edit" v-model="new_location_name" v-if="editing_location && player.is_gm" />
+					<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
+				
 					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty'">
 						<ActiveNPC
 							class="active-npc"
