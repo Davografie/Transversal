@@ -90,8 +90,10 @@
 		<div id="traitset-list">
 			<div id="traitset-list-wrapper">
 				<ol v-sortable @update="order_change">
-					<li v-for="traitset in traitsets.filter(ts => entity_types.every(et => ts.entityTypes?.includes(et)))">
-						<span @click="emit('show_traitset', traitset.key)">{{ traitset.name }}</span>
+					<li
+							v-for="traitset in traitsets.filter(ts => entity_types.every(et => ts.entityTypes?.includes(et)))"
+							@click="emit('show_traitset', traitset.key)">
+						<span>{{ traitset.name }}</span>
 					</li>
 				</ol>
 			</div>
@@ -118,6 +120,10 @@
 			font-size: 1.2em;
 			padding: .2em;
 			cursor: grab;
+			&:hover {
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+			}
 		}
 		#traitset-list-wrapper {
 			width: 60%;
@@ -139,8 +145,10 @@
 <style>
 .dark {
 	#traitsets-wrapper {
+		h1, #entity-types {
+			text-shadow: var(--text-shadow);
+		}
 		/* backdrop-filter: blur(5px); */
-		text-shadow: var(--text-shadow);
 	}
 }
 .landscape {
