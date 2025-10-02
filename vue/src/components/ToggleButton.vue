@@ -4,6 +4,17 @@
 		falsy: string,
 		default: boolean
 	}>()
+
+	const emit = defineEmits(['toggle'])
+
+	function toggle(truthy?: boolean) {
+		if(props.default && !truthy) {
+			emit('toggle')
+		}
+		else if(!props.default && truthy) {
+			emit('toggle')
+		}
+	}
 </script>
 
 <template>
@@ -14,14 +25,14 @@
 			id="truthy-button"
 			:value="props.truthy"
 			:class="props.default ? 'active' : 'inactive'"
-			@click="$emit('toggle')" />
+			@click="toggle(true)" />
 		<input
 			type="button"
 			class="button-mnml"
 			id="falsy-button"
 			:value="props.falsy"
 			:class="!props.default ? 'active' : 'inactive'"
-			@click="$emit('toggle')" />
+			@click="toggle(false)" />
 	</div>
 </template>
 
@@ -31,7 +42,6 @@
 		display: flex;
 		justify-content: center;
 		.button-mnml {
-			flex-grow: 1;
 			&.active {
 				padding: .4em 2em;
 				box-shadow: 0 0 20px var(--color-highlight);

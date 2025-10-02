@@ -10,6 +10,7 @@
 
 	const EntityCard = defineAsyncComponent(() => import('@/components/EntityCard.vue'))
 	import NewEntityCard from '@/components/NewEntityCard.vue'
+	import ToggleButton from '@/components/ToggleButton.vue'
 	import { useEntityList } from '@/composables/EntityList'
 	import type { Entity as EntityType } from '@/interfaces/Types'
 
@@ -117,12 +118,14 @@
 					:entity_id="entity.id" @refresh_favorites="retrieve_entities" />
 			</div>
 		</div>
-		<div class="search">
+		<div id="search">
 			<input type="text" placeholder="search" v-model="search" />
 		</div>
-		<div class="filters">
-			<input type="checkbox" id="show-archetypes" v-model="show_archetypes" />
-			<label for="show-archetypes">show archetypes</label>
+		<div id="filters">
+			<ToggleButton
+				truthy="show archetypes" falsy="hide archetypes"
+				:default="show_archetypes" @toggle="show_archetypes = !show_archetypes"
+				v-if="player.is_gm" />
 		</div>
 		<div id="characters">
 			<h1 @click="display_characters">characters</h1>
@@ -262,7 +265,7 @@
 		.wrapper {
 			text-align: center;
 		}
-		.search {
+		#search {
 			width: 100%;
 			display: flex;
 			justify-content: center;
@@ -271,6 +274,9 @@
 				font-size: 1.4em;
 				padding: .2em .6em;
 			}
+		}
+		#filters {
+			padding: 1em 0;
 		}
 		.entities {
 			display: flex;
