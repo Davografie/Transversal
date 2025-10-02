@@ -1057,11 +1057,11 @@
 					inset 0 0 30px var(--color-background-mute);
 			}
 			&.has-image {
-				text-shadow: var(--text-shadow);
+				/* text-shadow: var(--text-shadow); */
 				.flavortext, .corner-button {
 					color: var(--color-text);
 				}
-				.title .location-name, .corner-button {
+				.title .location-name, .header, .corner-button {
 					text-shadow: var(--color-background) 0px 0px 2px,
 						var(--color-background) 0px 0px 4px,
 						var(--color-background) 0px 0px 8px,
