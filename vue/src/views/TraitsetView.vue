@@ -151,9 +151,9 @@
 			rating: new_traitset_rating.value.map(d => d.number_rating),
 			locationsEnabled: new_locations_enabled.value,
 			locationsDisabled: new_locations_disabled.value,
-			sfxs: new_trait_default_sfxs.value.map(x => x.id)
+			sfxs: new_trait_default_sfxs.value
 		})
-		// retrieve_default_settings()
+		setTimeout(() => retrieve_default_settings(), 200)
 	}
 
 	watch(default_settings, (new_default_settings) => {
@@ -173,7 +173,7 @@
 			limit: traitset_limit.value,
 			sfxs: new_sfxs.value.map(sfx => sfx.id)
 		})
-		retrieve_traitset()
+		setTimeout(() => retrieve_traitset(), 200)
 	}
 	
 	const show_default_rating = computed(() => {

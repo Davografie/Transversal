@@ -10,7 +10,7 @@ import gql from 'graphql-tag'
 
 import { useRating } from '@/composables/Rating'
 import { placeholder_trait } from '@/composables/Trait'
-import type { Traitset, TraitSetting, TraitSettingInput, Die } from '@/interfaces/Types'
+import type { Traitset, TraitSetting, TraitSettingInput, Die, TraitsetInput } from '@/interfaces/Types'
 
 export const placeholder_traitset: Traitset = {
 	id: "placeholder",
@@ -204,7 +204,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function mutate_traitset(traitset_input: Traitset) {
+	function mutate_traitset(traitset_input: TraitsetInput) {
 		const query = gql`mutation MutateTraitset(
 			$traitsetId: ID!,
 			$traitsetInput: TraitsetInput!
@@ -232,7 +232,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function mutate_default_settings(new_defaults: TraitSetting) {
+	function mutate_default_settings(new_defaults: TraitSettingInput) {
 		const mutate_update_traitset = gql`mutation updateTraitsetDefault($defaultSettings: TraitSettingInput!, $traitsetId: ID!) {
 			updateTraitsetDefault(defaultSettings: $defaultSettings, traitsetId: $traitsetId) {
 				traitset {

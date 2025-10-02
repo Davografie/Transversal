@@ -147,6 +147,19 @@ export interface Traitset {
     score?: number
 }
 
+export interface TraitsetInput {
+    name?: string
+    explainer?: string
+    entityTypes?: string[]
+    locationRestricted?: boolean
+    limit?: number
+    order?: number
+    duplicates?: boolean
+    traits?: string[]
+    sfxs?: string[]
+    defaultTraitSetting?: TraitSetting
+}
+
 export interface Relation {
     id: string
     fromEntity: Entity
