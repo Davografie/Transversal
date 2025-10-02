@@ -618,8 +618,7 @@
 				<input type="button" class="button-mnml"
 					:value="player.small_buttons ? '⚙' : '⚙\nsettings'"
 					title="settings"
-					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })"
-					v-if="props.orientation == 'horizontal'" />
+					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
 			</div>
 
 			<div id="character-quick-switch"
