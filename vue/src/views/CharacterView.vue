@@ -61,6 +61,7 @@
 		retrieve_instances,
 		clone_entity,
 		create_relation,
+		prune_location,
 		update_entity
 	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
 	retrieve_small_entity()
@@ -295,8 +296,13 @@
 	}
 
 	const deletion = ref(false)
-	function entity_deletion() {
-		delete_entity()
+	function entity_deletion(rmtree?: boolean) {
+		if(rmtree) {
+			prune_location()
+		}
+		else {
+			delete_entity()
+		}
 		deletion.value = false
 		player.set_perspective_id('Entities/1')
 		player.retrieve_perspective()
@@ -598,9 +604,13 @@
 					@click="deletion = true" />
 				<div id="delete-confirmation" v-if="deletion">
 					<label>🗑</label>
+					<input type="button" class="button-mnml verify-rmtree" id="verify-rmtree"
+						value="prune" title="delete recursively"
+						@click="entity_deletion(true)"
+						v-if="entity.entityType == 'location'" />
 					<input type="button" class="button-mnml verify" id="verify-delete"
 						value="yes" title="confirm and delete"
-						@click="entity_deletion" />
+						@click="entity_deletion(false)" />
 					<input type="button" class="button-mnml cancel" id="cancel-delete"
 						value="cancel" title="cancel deletion"
 						@click="deletion = false" />

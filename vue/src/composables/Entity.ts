@@ -341,7 +341,26 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			console.log('deleting character: ' + entity.value.key)
 			mutate({
 				"key": entity.value.key
-			  })
+			})
+		}
+	}
+
+	function prune_location() {
+		/* post character changes to the server */
+		console.log('pruning location: ' + entity.value.key)
+		const query_prune_location = gql`mutation PruneLocation($key: ID!, $rmtree: Boolean) {
+			deleteEntity(key: $key, rmtree: $rmtree) {
+				message
+				success
+			}
+		}`
+		if(apolloClient) {
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_prune_location))
+			console.log('pruning location: ' + entity.value.key)
+			mutate({
+				"key": entity.value.key,
+				"rmtree": true
+			})
 		}
 	}
 
@@ -436,6 +455,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		deactivate_entity,
 		clone_entity,
 		delete_entity,
+		prune_location,
 		set_location,
 		create_relation,
 		set_archetype,
