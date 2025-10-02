@@ -35,7 +35,8 @@
 		mutate_traitset,
 		retrieve_default_settings,
 		mutate_default_settings,
-		create_trait
+		create_trait,
+		delete_traitset
 	} = 
 		useTraitset(undefined, "Traitsets/" + (props.traitset_key ?? route.params.id.toString()), undefined)
 
@@ -222,6 +223,9 @@
 			retrieve_traitset()
 		}
 	})
+
+	const deleting = ref<boolean>(false)
+
 </script>
 
 <template>
@@ -231,6 +235,12 @@
 			v-if="traitset.name != traitset_name" value="rename"
 			@click="mutate_traitset({'name': traitset_name})" />
 		<input type="button" @click.stop="copy" class="copy-id button" title="copy trait id" value="#" />
+		<input type="button" class="delete button" value="🗑" @click="deleting = true" v-if="!deleting" />
+		<div class="delete-confirm" v-if="deleting">
+			are you sure you want to delete this traitset?<br />this action is permanent
+			<input type="button" class="delete-y button" value="✅" @click="delete_traitset" v-if="deleting" />
+			<input type="button" class="delete-n button" value="❌" @click="deleting = false" v-if="deleting" />
+		</div>
 		<h2>settings</h2>
 		<div id="traitset-settings">
 			<div>

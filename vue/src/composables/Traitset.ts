@@ -363,6 +363,24 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
+	function delete_traitset() {
+		const mutate_delete_traitset = gql`mutation DeleteTraitset($traitsetId: ID!) {
+			deleteTraitset(traitsetId: $traitsetId) {
+				message
+				success
+			}
+		}`
+		
+		if(apolloClient) {
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_delete_traitset))
+			let variables: object = {
+				traitsetId: traitset_id
+			}
+			console.log("deleting traitset with variables: ", variables)
+			mutate(variables)
+		}
+	}
+
 	return {
 		traitset,
 		retrieve_traitset,
@@ -376,6 +394,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		mutate_default_settings,
 		set_entity,
 		set_traitset_id,
-		sorting
+		sorting,
+		delete_traitset
 	}
 }

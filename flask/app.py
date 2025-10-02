@@ -1814,15 +1814,25 @@ class DeleteTraitset(Mutation):
 
 	def mutate(self, info, traitset_id=None):
 		traits = db.collection('Traits').find({'traitset': traitset_id})
-		for trait in traits:
-			default_trait_setting = db.collection('TraitSettings').find({'_from': trait.get('_id'), '_to': 'Traits/1'})
-			for default in default_trait_setting:
+		if not traits.empty():
+			for trait in traits:
+				default_trait_setting = db.collection('TraitSettings').find({'_from': trait.get('_id'), '_to': 'Traits/1'})
+				if not default_trait_setting.empty():
+					for default in default_trait_setting:
+						db.collection('TraitSettings').delete(default.get('_id'))
+				trait_settings = db.collection('TraitSettings').find({'_to': trait.get('_id')})
+				if not trait_settings.empty():
+					for trait_setting in trait_settings:
+						db.collection('TraitSettings').delete(trait_setting.get('_id'))
+				db.collection('Traits').delete(trait.get('_id'))
+		traitset_default = db.collection('TraitSettings').find({'_from': traitset_id, '_to': 'Traits/1'})
+		if not traitset_default.empty():
+			for default in traitset_default:
 				db.collection('TraitSettings').delete(default.get('_id'))
-			trait_settings = db.collection('TraitSettings').find({'_to': trait.get('_id')})
-			for trait_setting in trait_settings:
-				db.collection('TraitSettings').delete(trait_setting.get('_id'))
-			db.collection('Traits').delete(trait.get('_id'))
-		db.collection('TraitsetSettings').delete({'_to': traitset_id})
+		traitset_settings = db.collection('TraitsetSettings').find({'_to': traitset_id})
+		if not traitset_settings.empty():
+			for traitset_setting in traitset_settings:
+				db.collection('TraitsetSettings').delete(traitset_setting.get('_id'))
 		db.collection('Traitsets').delete(traitset_id)
 
 		return DeleteTraitset(message="Traitset deleted", success=True)
