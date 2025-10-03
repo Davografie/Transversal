@@ -807,12 +807,12 @@
 
 <template>
 	<div class="trait" :class="[
-				player.viewing ? 'viewing' : mode,
+				mode,
 				in_dicepool ? 'active' : 'inactive',
 				trait.ratingType ?? '',
 				trait.statement ? 'with-statement' : 'without-statement',
 				// trait.ratingType != 'empty' && trait.rating && trait.rating.length > 0 && trait.rating[0].rating && trait.ratingType != 'empty' ? trait.rating[0].rating : 'empty',
-				styling_rating?.rating,
+				styling_rating?.rating?.length ?? 0 > 0 ? styling_rating?.rating : 'empty',
 				// trait.ratingType != 'empty' && trait.rating && trait.rating.length > 0 && trait.rating[0].number_rating > 0 ? 'positive' : 'negative',
 				styling_rating?.sign,
 				trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',
@@ -1129,7 +1129,7 @@
 		</div>
 
 		<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
-			<div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div>
+			<!-- <div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div> -->
 			<div class="sfx-list">
 				<template v-for="(sfx, i) in (mode == 'editing' ? new_sfxs : trait.sfxs)" :key="sfx.id">
 					<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
@@ -1278,199 +1278,199 @@
 				flex-wrap: wrap;
 			}
 		}
-	}
-	.trait.highlighted .trait-inner {
-		border: 1px solid var(--color-highlight);
-		color: var(--color-highlight-text);
-		background-image: linear-gradient(45deg, var(--color-highlight) -20%,
-							var(--color-background) 120%) !important;
-	}
-	.trait.editing {
-		border-color: var(--color-highlight);
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		gap: 1em;
-		.edit-setting-buttons {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 1px;
-			background-color: var(--color-border);
-			border-color: var(--color-border-hover);
-			overflow: hidden;
-			.button-mnml {
-				flex-grow: 1;
-				padding: 1em .4em;
-				background-color: var(--color-background);
-				&.active {
-					background-color: var(--color-editing);
-					color: var(--color-editing-text);
-				}
-				&:hover {
-					background-color: var(--color-highlight);
-					color: var(--color-highlight-text);
-				}
-			}
-			&.small-buttons .button-mnml {
-				font-size: 1.2em;
-				&.subtrait-icon.inactive {
-					font-size: 2em;
-					line-height: 0;
-				}
-			}
+		&.highlighted .trait-inner {
+			border: 1px solid var(--color-highlight);
+			color: var(--color-highlight-text);
+			background-image: linear-gradient(45deg, var(--color-highlight) -20%,
+								var(--color-background) 120%) !important;
 		}
-		.location-restriction-container {
-			/* https://codepen.io/dp_lewis/pen/MWYgbOY */
-			border-radius: 25px;
-			border: 1px solid var(--color-border);
-			display: inline-flex;
-			overflow: hidden;
-			flex-wrap: wrap;
-			gap: 1px;
-			background-color: var(--color-border);
-			.location-restriction {
-				color: var(--color-text);
-				background-color: var(--color-background);
-				outline: none;
-				position: relative;
-				text-decoration: none;
-				transition: background 0.2s linear;
-				flex-grow: 1;
-				text-align: center;
-				/* padding: .4em 0; */
-				/* border-right: 1px solid var(--color-border); */
-				&:after,
-				&:before {
-					background-color: var(--color-background);
-					bottom: 0;
-					clip-path: polygon(50% 50%, -50% -50%, 0 100%);
-					content: "";
-					left: 100%;
-					position: absolute;
-					top: 0;
-					transition: background 0.2s linear;
-					width: 1.4em;
-					z-index: 1;
-				}
-				&:before {
-					background: var(--color-border);
-					margin-left: 2px;
-				}
-				&:last-child {
-					border-right: none;
-				}
-				&.enabled, &.enabled:after {
-					background-color: var(--color-highlight);
-					color: var(--color-highlight-text);
-				}
-				&.explicitly-enabled {
-					text-decoration: underline;
-				}
-				&.explicitly-disabled {
-					text-decoration: line-through;
-				}
-			}
-		}
-		.edit-statement {
-			position: relative;
-			.statement-edit {
-				font-size: 1.2em;
-				resize: vertical;
-				overflow: hidden;
-				padding-right: 1em;
-			}
-			.statement-length {
-				position: absolute;
-				right: 0;
-				top: 2px;
-				width: 3em;
-				text-align: center;
-				font-size: .8em;
-				text-shadow: var(--text-shadow);
-				background-image: linear-gradient(45deg, transparent 0%, var(--color-background) 100%);
-				&.exceeded {
-					color: red;
-				}
-			}
-			.statement-examples {
-				display: flex;
-				flex-direction: column;
-				align-items: flex-start;
-				max-width: fit-content;
-				width: 80%;
-				.statement-example {
-					padding: .4em 0;
-					border: 1px solid var(--color-border);
-					text-align: left;
-				}
-			}
-		}
-		.edit-notes {
-			.notes {
-				min-width: 100%;
-				max-width: fit-content;
-				min-height: 6em;
-			}
-		}
-		.show-character {
-			.show-character-list {
-				.character-list {
-					display: flex;
-					flex-wrap: wrap;
-					align-items: center;
-					gap: .4em;
-				}
-			}
-		}
-		.edit-buttons {
-			display: flex;
-			min-height: 3em;
-			.button-mnml {
-				flex-grow: 1;
-				margin: 0;
-				padding: .5em 0;
-			}
-			&.small-buttons .button-mnml {
-				font-size: 1.2em;
-			}
-			.button-mnml:hover {
-				font-weight: bold;
-				flex-grow: 1.5;
-			}
-			.save-button {
-				border-right: 1px solid var(--color-editing);
-				background-color: var(--color-highlight);
-				color: var(--color-highlight-text);
-			}
-			.cancel-button {
-			}
-			.remove-button {
-				border-left: 1px solid var(--color-editing);
-				background-color: var(--color-hitch);
-				color: var(--color-hitch-text);
-			}
-		}
-		.add-sfx-list {
-			display: flex;
-			flex-wrap: wrap;
-			gap: .4em;
-			.add-sfx {
-				/* display: inline-block; */
-			}
-		}
-		.create-sfx {
+		&.editing {
+			border-color: var(--color-highlight);
+			width: 100%;
 			display: flex;
 			flex-direction: column;
-			gap: .4em;
-			padding: 1em;
-				.add-sfx-title {
-					font-weight: bold;
+			gap: 1em;
+			.edit-setting-buttons {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 1px;
+				background-color: var(--color-border);
+				border-color: var(--color-border-hover);
+				overflow: hidden;
+				.button-mnml {
+					flex-grow: 1;
+					padding: 1em .4em;
+					background-color: var(--color-background);
+					&.active {
+						background-color: var(--color-editing);
+						color: var(--color-editing-text);
+					}
+					&:hover {
+						background-color: var(--color-highlight);
+						color: var(--color-highlight-text);
+					}
 				}
-				.add-sfx-description {
-					border-top: 1px solid var(--color-border);
-					max-width: 100%;
+				&.small-buttons .button-mnml {
+					font-size: 1.2em;
+					&.subtrait-icon.inactive {
+						font-size: 2em;
+						line-height: 0;
+					}
+				}
+			}
+			.location-restriction-container {
+				/* https://codepen.io/dp_lewis/pen/MWYgbOY */
+				border-radius: 25px;
+				border: 1px solid var(--color-border);
+				display: inline-flex;
+				overflow: hidden;
+				flex-wrap: wrap;
+				gap: 1px;
+				background-color: var(--color-border);
+				.location-restriction {
+					color: var(--color-text);
+					background-color: var(--color-background);
+					outline: none;
+					position: relative;
+					text-decoration: none;
+					transition: background 0.2s linear;
+					flex-grow: 1;
+					text-align: center;
+					/* padding: .4em 0; */
+					/* border-right: 1px solid var(--color-border); */
+					&:after,
+					&:before {
+						background-color: var(--color-background);
+						bottom: 0;
+						clip-path: polygon(50% 50%, -50% -50%, 0 100%);
+						content: "";
+						left: 100%;
+						position: absolute;
+						top: 0;
+						transition: background 0.2s linear;
+						width: 1.4em;
+						z-index: 1;
+					}
+					&:before {
+						background: var(--color-border);
+						margin-left: 2px;
+					}
+					&:last-child {
+						border-right: none;
+					}
+					&.enabled, &.enabled:after {
+						background-color: var(--color-highlight);
+						color: var(--color-highlight-text);
+					}
+					&.explicitly-enabled {
+						text-decoration: underline;
+					}
+					&.explicitly-disabled {
+						text-decoration: line-through;
+					}
+				}
+			}
+			.edit-statement {
+				position: relative;
+				.statement-edit {
+					font-size: 1.2em;
+					resize: vertical;
+					overflow: hidden;
+					padding-right: 1em;
+				}
+				.statement-length {
+					position: absolute;
+					right: 0;
+					top: 2px;
+					width: 3em;
+					text-align: center;
+					font-size: .8em;
+					text-shadow: var(--text-shadow);
+					background-image: linear-gradient(45deg, transparent 0%, var(--color-background) 100%);
+					&.exceeded {
+						color: red;
+					}
+				}
+				.statement-examples {
+					display: flex;
+					flex-direction: column;
+					align-items: flex-start;
+					max-width: fit-content;
+					width: 80%;
+					.statement-example {
+						padding: .4em 0;
+						border: 1px solid var(--color-border);
+						text-align: left;
+					}
+				}
+			}
+			.edit-notes {
+				.notes {
+					min-width: 100%;
+					max-width: fit-content;
 					min-height: 6em;
 				}
+			}
+			.show-character {
+				.show-character-list {
+					.character-list {
+						display: flex;
+						flex-wrap: wrap;
+						align-items: center;
+						gap: .4em;
+					}
+				}
+			}
+			.edit-buttons {
+				display: flex;
+				min-height: 3em;
+				.button-mnml {
+					flex-grow: 1;
+					margin: 0;
+					padding: .5em 0;
+				}
+				&.small-buttons .button-mnml {
+					font-size: 1.2em;
+				}
+				.button-mnml:hover {
+					font-weight: bold;
+					flex-grow: 1.5;
+				}
+				.save-button {
+					border-right: 1px solid var(--color-editing);
+					background-color: var(--color-highlight);
+					color: var(--color-highlight-text);
+				}
+				.cancel-button {
+				}
+				.remove-button {
+					border-left: 1px solid var(--color-editing);
+					background-color: var(--color-hitch);
+					color: var(--color-hitch-text);
+				}
+			}
+			.add-sfx-list {
+				display: flex;
+				flex-wrap: wrap;
+				gap: .4em;
+				.add-sfx {
+					/* display: inline-block; */
+				}
+			}
+			.create-sfx {
+				display: flex;
+				flex-direction: column;
+				gap: .4em;
+				padding: 1em;
+					.add-sfx-title {
+						font-weight: bold;
+					}
+					.add-sfx-description {
+						border-top: 1px solid var(--color-border);
+						max-width: 100%;
+						min-height: 6em;
+					}
+			}
 		}
 	}
 	.trait.clickable {
@@ -1481,7 +1481,6 @@
 	}
 	.with-statement .trait-name.label {
 		font-weight: bold;
-		font-size: .8em;
 		line-height: 1em;
 	}
 </style>
@@ -1526,8 +1525,11 @@
 			.sub-traits {
 				border-top: 1px solid var(--color-border);
 			}
+			&.with-statement {
+				/* font-size: .8em; */
+			}
 		}
-		.trait.d4.positive.inactive {
+		.trait.d4.positive.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(215deg,
 					var(--color-positive-die-4) -100%,
@@ -1547,7 +1549,7 @@
 				}
 			}
 		}
-		.trait.d6.positive.inactive {
+		.trait.d6.positive.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(215deg,
 					var(--color-positive-die-6) -100%,
@@ -1567,7 +1569,7 @@
 				}
 			}
 		}
-		.trait.d8.positive.inactive {
+		.trait.d8.positive.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(215deg,
 					var(--color-positive-die-8) -100%,
@@ -1587,7 +1589,7 @@
 				}
 			}
 		}
-		.trait.d10.positive.inactive {
+		.trait.d10.positive.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(215deg,
 					var(--color-positive-die-10) -100%,
@@ -1607,7 +1609,7 @@
 				}
 			}
 		}
-		.trait.d12.positive.inactive {
+		.trait.d12.positive.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(215deg,
 					var(--color-positive-die-12) -100%,
@@ -1627,7 +1629,7 @@
 				}
 			}
 		}
-		.trait.d4.negative.inactive {
+		.trait.d4.negative.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(45deg,
 					var(--color-negative-die-4) -100%,
@@ -1647,7 +1649,7 @@
 				}
 			}
 		}
-		.trait.d6.negative.inactive {
+		.trait.d6.negative.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(45deg,
 					var(--color-negative-die-6) -100%,
@@ -1667,7 +1669,7 @@
 				}
 			}
 		}
-		.trait.d8.negative.inactive {
+		.trait.d8.negative.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(45deg,
 					var(--color-negative-die-8) -100%,
@@ -1687,7 +1689,7 @@
 				}
 			}
 		}
-		.trait.d10.negative.inactive {
+		.trait.d10.negative.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(45deg,
 					var(--color-negative-die-10) -100%,
@@ -1707,7 +1709,7 @@
 				}
 			}
 		}
-		.trait.d12.negative.inactive {
+		.trait.d12.negative.inactive:not(.empty) {
 			.trait-inner {
 				background-image: linear-gradient(45deg,
 					var(--color-negative-die-12) -100%,
@@ -1748,7 +1750,7 @@
 			}
 		}
 		.trait.empty {
-			.trait-inner {
+			/* .trait-inner {
 				background-image: linear-gradient(45deg,
 					var(--color-background-soft) -100%,
 					var(--color-background) 50%);
@@ -1765,6 +1767,11 @@
 						var(--color-background-soft) -50%,
 						var(--color-background) 80%);
 				}
+			} */
+			text-shadow: var(--text-shadow);
+			box-shadow: 0 0 10px var(--color-background-mute);
+			&:hover {
+				background-color: var(--color-background-mute);
 			}
 		}
 		.trait.challenge {
@@ -1879,14 +1886,20 @@
 	}
 	.light {
 		.trait {
-			margin: .2em;
+			/* margin: 1px 0; */
 			/* margin-bottom: .8em; */
+			border-top: 1px solid var(--color-border);
+			border-bottom: 1px solid var(--color-border);
 			flex-grow: 1;
+			background-color: var(--color-background);
 			.descriptor {
 				flex-grow: 1;
 			}
 			.trait-name.label {
 				border-bottom: 1px dashed var(--color-border);
+			}
+			.explanation.label {
+				font-style: italic;
 			}
 			.statement {
 				font-family: 'Courier New', Courier, monospace;
@@ -1905,7 +1918,8 @@
 				}
 			}
 			.explanation,
-			.sfxs {
+			.sfxs,
+			.notes {
 				margin-left: 1.4em;
 			}
 			&.negative {
@@ -1949,6 +1963,12 @@
 		.trait.viewing {
 			border-bottom: 1px solid var(--color-border);
 			padding: 1em 0 2em 0;
+		}
+		.trait.with-statement {
+			.trait-name.label {
+				padding-top: .4em;
+				padding-left: 1em;
+			}
 		}
 		.trait.without-statement {
 			.trait-name.label {
