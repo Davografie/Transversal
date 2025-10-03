@@ -551,7 +551,6 @@
 							options_direction="right"
 							:show_name="false"
 							override_click
-							:is_active="entity.active"
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
 								overwrite_active = entity.id : overwrite_active = 'empty'" />
 						<NewEntityCard
@@ -586,7 +585,6 @@
 							options_direction="left"
 							:show_name="false"
 							override_click
-							:is_active="entity.active"
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
 								overwrite_active = entity.id : overwrite_active = 'empty'" />
 					</div>
@@ -819,7 +817,7 @@
 					gap: 1em;
 					.entity-card {
 						width: 50px;
-						height: 70px;
+						/* height: 70px; */
 					}
 				}
 			}
