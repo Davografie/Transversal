@@ -125,6 +125,7 @@
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0">
 						<template v-for="(entity, index) in entities" :key="entity.id" v-if="player.is_gm">
 							<EntityCard
+								class="entity-card"
 								:entity_id="entity.id"
 								override_click
 								@click_entity="click_character(entity)" />
@@ -136,6 +137,7 @@
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="(player.the_entity?.relations?.length ?? 0) > 0">
 						<template v-for="(relation, index) in player.the_entity?.relations?.filter(r => !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
 							<EntityCard
+								class="entity-card"
 								:entity_id="relation.toEntity?.id"
 								options_direction="none"
 								is_relationship
@@ -230,6 +232,9 @@
 						flex-direction: column;
 						padding: 1em;
 						gap: 1em;
+						.entity-card {
+							
+						}
 						&.vertical {
 							flex-direction: row;
 							flex-wrap: wrap;
