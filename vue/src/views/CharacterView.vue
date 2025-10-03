@@ -664,8 +664,8 @@
 				:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
 				visible
 				:location_key="character.location?.key"
-				:active="player.orientation == 'vertical' && set.id == active_traitset_id"
-				:next="player.orientation == 'vertical' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
+				:active="player.orientation == 'vertical' && set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
+				:next="player.traitset_defaults == 'ACTIVE' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
 				:location="false"
 				:relationship="false"
 				@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
