@@ -14,7 +14,7 @@
 	import TraitsetView from '@/views/TraitsetView.vue'
 	import SFXOverview from '@/views/SFXOverview.vue'
 	import RulesView from '@/views/RulesView.vue'
-	import ToggleButton from '@/components/ToggleButton.vue'
+	import ToggleButton from '@/components/UI/ToggleButton.vue'
 
 	const props = defineProps({
 		orientation: String // 'vertical' or 'horizontal'

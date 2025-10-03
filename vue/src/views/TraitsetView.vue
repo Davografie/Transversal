@@ -10,7 +10,7 @@
 	import Die from '@/components/Die.vue'
 	import DiePicker from '@/components/DiePicker.vue'
 	import LocationSelector from '@/components/LocationSelector.vue'
-	import ToggleButton from '@/components/ToggleButton.vue'
+	import ToggleButton from '@/components/UI/ToggleButton.vue'
 	import SFX from '@/components/SFX.vue'
 
 	import { useTraitset } from '@/composables/Traitset'

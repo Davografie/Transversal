@@ -10,7 +10,7 @@
 	import DiePicker from '@/components/DiePicker.vue'
 	import LocationSelector from '@/components/LocationSelector.vue'
 	import TraitSelector from '@/components/TraitSelector.vue'
-	import ToggleButton from '@/components/ToggleButton.vue'
+	import ToggleButton from '@/components/UI/ToggleButton.vue'
 	import Trait from '@/components/Trait.vue'
 	import SFX from '@/components/SFX.vue'
 	import { useTrait, rating_types } from '@/composables/Trait'

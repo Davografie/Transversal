@@ -10,7 +10,7 @@
 
 	const EntityCard = defineAsyncComponent(() => import('@/components/EntityCard.vue'))
 	import NewEntityCard from '@/components/NewEntityCard.vue'
-	import ToggleButton from '@/components/ToggleButton.vue'
+	import ToggleButton from '@/components/UI/ToggleButton.vue'
 	import { useEntityList } from '@/composables/EntityList'
 	import type { Entity as EntityType } from '@/interfaces/Types'
 
