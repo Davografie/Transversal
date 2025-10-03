@@ -58,7 +58,7 @@
             @click.stop="(e) => props.adding ? click_card(e) : null">
         <div class="sfx-title"
                 @click="click_card" :title="show_description ? 'collapse' : 'expand'">
-            {{ sfx?.name }}
+            ✨ {{ sfx?.name }}
             <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
         </div>
         <div class="sfx-description" v-if="show_description && sfx?.description"
@@ -73,7 +73,7 @@
 
 <style scoped>
     .sfx {
-        font-size: 1.2em;
+        /* font-size: 1.2em; */
         .sfx-title {
             white-space: nowrap;
             cursor: pointer;
