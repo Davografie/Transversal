@@ -320,8 +320,8 @@
 
 	function random_highlight() {
 		// randomly highlight a trait
-		if(traitset.value.traits?.length && traitset.value.traits?.length > 0) {
-			const trait = traitset.value.traits[Math.floor(Math.random() * traitset.value.traits.length)]
+		if(traits_to_display.value.length && traits_to_display.value.length > 0) {
+			const trait = traits_to_display.value[Math.floor(Math.random() * traits_to_display.value.length)]
 			if(trait.traitSettingId) {
 				highlighted_traits.value = [trait.traitSettingId]
 			}
@@ -329,7 +329,7 @@
 	}
 
 	const score = computed(() => {
-		return traitset.value.traits?.reduce((acc, cur) => {
+		return traits_to_display.value.reduce((acc, cur) => {
 			return acc + cur.rating?.map(r => [1,2,3,5,8][r-1] ?? 0).reduce((a, b) => a + b, 0)
 		}, 0) ?? 0
 	})
@@ -349,12 +349,19 @@
 			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
 	})
 	const search_potential_traits_visible = ref(false)
+	
 	const filter = ref('')
+	const filtering = ref(false)
 
 	const traits_to_display = computed(() => {
 		if(traitset.value.traits) {
 			let result = <TraitType[]>[]
-			const unique_traits = Array.from(new Set(traitset.value.traits.map((t) => t.name + ((!traitset.value.duplicates || t.inheritable) ? '' : (t.traitSetting?.statement ?? '')))))
+
+			// get unique traits
+			const unique_traits = Array.from(new Set(traitset.value.traits.map(
+				(t) => t.name + ((!traitset.value.duplicates || t.inheritable) ? '' : (t.traitSetting?.statement ?? '')))))
+
+			// for each unique trait, get the highest priority trait
 			unique_traits.forEach((ut) => {
 				const highest_priority_trait = traitset.value.traits.filter((t) => t.name + ((!traitset.value.duplicates || t.inheritable) ? '' : (t.traitSetting?.statement ?? '')) == ut)
 													.reduce((a, b) => (a?.traitSetting?.priority ?? -1) > (b?.traitSetting?.priority ?? -1) ? a : b)
@@ -362,13 +369,18 @@
 					result.push(highest_priority_trait)
 				}
 			})
-			if(filter.value) {
+
+			// if a text filter is set, filter the traits on: name, statement, notes
+			if(filter.value && result.length > 0) {
 				result = result.filter((t) => {
-					t.name.toLowerCase().includes(filter.value.toLowerCase())
-					|| t.traitSetting?.statement?.toLowerCase().includes(filter.value.toLowerCase())
-					|| t.traitSetting?.notes?.toLowerCase().includes(filter.value.toLowerCase())
+					return (
+						t.name.toLowerCase().includes(filter.value.toLowerCase())
+						|| (t.traitSetting?.statement ?? '').toLowerCase().includes(filter.value.toLowerCase())
+						|| (t.traitSetting?.notes ?? '').toLowerCase().includes(filter.value.toLowerCase())
+					)
 				})
 			}
+
 			return result
 		}
 		else {
@@ -403,7 +415,6 @@
 			<div class="trait-count" v-else-if="!show_traits">
 				{{ traitset.traits ? traits_to_display.length : '' }}
 			</div>
-			<div v-else></div>
 
 			<input type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
 				:value="player.small_buttons ? '✎' : '✎\nedit' + (edit_mode ? 'ing' : '') + ' traits'"
@@ -453,11 +464,11 @@
 					<div class="gm-info" v-if="player.is_gm">{{ traitset.id }}</div>
 					<div class="traitset-explainer" v-if="traitset.explainer" v-html="traitset.explainer"></div>
 					<div class="options">
-						<div class="traitset-filter" v-if="traitset.traits && traitset.traits.length > 0">
-							<input type="text" class="filter" v-model="filter" placeholder="filter" />
-							<input type="button" class="button"
+						<div class="traitset-filter button" v-if="traitset.traits && traitset.traits.length > 0">
+							<input type="text" class="filter" v-model="filter" placeholder="filter" v-if="filtering" />
+							<input type="button" class="button-mnml"
 								:value="'&#x1F50D;' + (player.small_buttons ? '' : '\nfilter')" title="filter"
-								@click.stop="" />
+								@click.stop="filtering = !filtering" />
 						</div>
 						<input type="button" class="button"
 							:value="'🎲' + (player.small_buttons ? '' : '\nrandom')"
@@ -518,13 +529,13 @@
 									|| limiter == 0
 								)
 							" />
-						<div class="trait-divider"
+						<!-- <div class="trait-divider"
 							v-if="
 								highlighted_traits.length > 0 &&
 								traitset.traits?.some((t) => t.requiredTraits && t.requiredTraits.length > 0) ?
 								highlighted_traits.includes(trait.id) && highlighted_traits.indexOf(trait.id) < highlighted_traits.length - 1 :
 								traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
-							"></div>
+							"></div> -->
 					</template>
 					<template v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
 							:key="trait.traitSettingId">
@@ -562,29 +573,30 @@
 									|| limiter == 0
 								)
 							" />
-						<div class="trait-divider"
+						<!-- <div class="trait-divider"
 							v-if="
 								highlighted_traits.length > 0 &&
 								traitset.traits?.some((t) => t.requiredTraits && t.requiredTraits.length > 0) ?
 								highlighted_traits.includes(trait.id) && highlighted_traits.indexOf(trait.id) < highlighted_traits.length - 1 :
 								traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
-							"></div>
+							"></div> -->
 					</template>
-					<input type="button" class="button add-trait-button"
-						v-if="
-							player.is_gm
-							|| (
-								player.is_player
-								&& player.player_character.id == props.entity_id
-							)
-							|| (props.relationship && props.extensible)
-							|| (props.location && props.extensible)
-							|| adding_trait
-						"
-						:value="adding_trait ?
-							player.small_buttons ? 'x' : 'stop adding trait x' :
-							player.small_buttons ? '+' : 'add trait +'"
-						@click="toggle_add_trait" />
+					<div class="add-trait" v-if="
+								player.is_gm
+								|| (
+									player.is_player
+									&& player.player_character.id == props.entity_id
+								)
+								|| (props.relationship && props.extensible)
+								|| (props.location && props.extensible && !props.hide_title)
+								|| adding_trait
+							">
+						<input type="button" class="button add-trait-button"
+							:value="adding_trait ?
+								player.small_buttons ? 'x' : 'stop adding trait x' :
+								player.small_buttons ? '+' : 'add trait +'"
+							@click="toggle_add_trait" />
+					</div>
 				</div>
 
 				<div class="add_trait" v-if="adding_trait">
@@ -668,13 +680,15 @@
 			width: 100%;
 		}
 		.set-title {
+			position: sticky;
+			top: 0;
 			text-align: center;
 			font-size: large;
 			cursor: pointer;
 			/* padding: .4em 0; */
 			justify-content: space-between;
 			display: flex;
-			z-index: 1;
+			z-index: 2;
 			gap: 1em;
 			.trait-count {
 				width: 3em;
@@ -746,6 +760,7 @@
 			border-bottom: 1px solid var(--color-border);
 			display: flex;
 			flex-wrap: wrap;
+			font-size: 0.8em;
 			.sfx-sparkles {
 				position: absolute;
 				left: .4em;
@@ -767,9 +782,14 @@
 		.traits {
 			display: block;
 			overflow: hidden;
-			.add-trait-button {
-				max-height: 2em;
-				background-color: var(--color-background-mute);
+			.add-trait {
+				flex-grow: 1 0;
+				display: flex;
+				align-items: end;
+				.add-trait-button {
+					max-height: 2em;
+					background-color: var(--color-background-mute);
+				}
 			}
 		}
 		.traits.hidden_title .explainer {
@@ -911,11 +931,6 @@
 		.edit-traits.active {
 			font-weight: bold;
 		}
-		&.editing-traits {
-			.entity-traits {
-				background-color: var(--color-editing-mute);
-			}
-		}
 	}
 	.traitset.active {
 		.set-title {
@@ -983,40 +998,48 @@
 			.entity-traits {
 				/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
 				flex-wrap: wrap;
-				flex-direction: column;
+				/* flex-direction: column; */
 				padding: .4em;
+				.add-trait {
+					justify-content: end;
+				}
 			}
 			.trait-divider {
 				display: none;
 			}
-		}
-		.traitset.active {
-			.set-title {
-				background-color: var(--color-highlight-mute);
-				color: var(--color-highlight-text);
-				text-shadow: none;
-			}
-		}
-		.traitset.inactive {
-			.set-title {
-				/* color: var(--color-text); */
-				background-color: var(--color-background-mute);
-				justify-content: space-between;
-				.title {
-					gap: 1em;
+			&.active {
+				.set-title {
+					background-color: var(--color-highlight-mute);
+					color: var(--color-highlight-text);
+					text-shadow: none;
 				}
 			}
-		}
-		.traitset.inactive.full {
-			box-shadow: 0 0 10px var(--color-highlight);
-			.trait-count,
-			.title .traitset-name {
-				color: var(--color-disabled);
-				text-shadow: 0 0 4px var(--color-highlight);
+			&.inactive {
+				.set-title {
+					/* color: var(--color-text); */
+					background-color: var(--color-background-mute);
+					justify-content: space-between;
+					.title {
+						gap: 1em;
+					}
+				}
 			}
-		}
-		.traitset.inactive.next {
-			border-top: 1px solid var(--color-border);
+			&.inactive.full {
+				box-shadow: 0 0 10px var(--color-highlight);
+				.trait-count,
+				.title .traitset-name {
+					color: var(--color-disabled);
+					text-shadow: 0 0 4px var(--color-highlight);
+				}
+			}
+			&.inactive.next {
+				border-top: 1px solid var(--color-border);
+			}
+			&.editing-traits {
+				.entity-traits {
+					background-color: var(--color-editing-mute);
+				}
+			}
 		}
 		.entity-traits {
 			display: flex;
@@ -1024,47 +1047,89 @@
 			padding: .2em;
 			gap: .4em;
 		}
-	}
-	.dark.has-image {
-		.traitset.active .set-title {
-			background-color: var(--color-background-mute);
-			color: var(--color-text);
+		&.has-image {
+			.traitset.active .set-title {
+				background-color: var(--color-background-mute);
+				color: var(--color-text);
+			}
+			.traitset.active .traits {
+				/* box-shadow: inset 0 0 20px var(--color-background-mute); */
+			}
 		}
-		.traitset.active .traits {
-			/* box-shadow: inset 0 0 20px var(--color-background-mute); */
-		}
-	}
-	.dark.editing {
-		.traitset.active .set-title {
-			background-color: var(--color-editing-mute);
-			color: var(--color-editing-text);
-		}
-		.traitset.active .traits {
-			box-shadow: inset 0 0 10px var(--color-editing-mute);
-			border: 1px solid var(--color-editing-mute);
+		&.editing {
+			.traitset.active .set-title {
+				background-color: var(--color-editing-mute);
+				color: var(--color-editing-text);
+			}
+			.traitset.active .traits {
+				box-shadow: inset 0 0 10px var(--color-editing-mute);
+				border: 1px solid var(--color-editing-mute);
+			}
 		}
 	}
 	.light {
-		.traitset.active {
-			border-top: 1px solid var(--color-border);
-			border-bottom: 1px solid var(--color-border);
+		.traitset {
 			.set-title {
 				background-color: var(--color-background);
-				border-bottom: 3px double var(--color-text);
+				/* color: var(--color-background); */
+				.trait-count {
+					display: flex;
+					justify-content: end;
+					align-items: center;
+				}
+				.traitset-name {
+					font-size: 1.4em;
+					padding: .4em 0;
+				}
+				.edit-traits {
+					background-color: var(--color-editing);
+					color: var(--color-editing-text);
+				}
 			}
-		}
-		.traitset.active.minimal {
-			border: none;
-		}
-		.traitset.inactive.next {
-			background-color: var(--color-background);
-			border-top: 1px solid var(--color-border);
-		}
-		.traitset.gm .set-title {
-			background-color: var(--color-highlight-mute);
-		}
-		.traitset.ts-complications .set-title {
-			background-color: var(--color-hitch-mute);
+			.entity-traits {
+				background-color: var(--color-border);
+				.add-trait {
+					background-color: var(--color-background);
+					color: var(--color-text);
+					justify-content: center;
+				}
+			}
+			&.active {
+				border-top: 1px solid var(--color-border);
+				border-bottom: 1px solid var(--color-border);
+				.set-title {
+					/* background-color: var(--color-background); */
+					border-bottom: 3px double var(--color-text);
+				}
+				.minimal {
+					border: none;
+				}
+			}
+			&.inactive {
+				.next {
+					background-color: var(--color-background);
+					border-top: 1px solid var(--color-border);
+				}
+			}
+			&.gm .set-title {
+				background-color: var(--color-highlight-mute);
+			}
+			&.ts-complications .set-title {
+				background-color: var(--color-hitch-mute);
+			}
+			&.editing-traits {
+				.entity-traits {
+					/* background-color: var(--color-editing); */
+					background-image: repeating-linear-gradient(
+						45deg,
+						var(--color-editing-mute) 0,
+						var(--color-editing-mute) 0.2em,
+						var(--color-background) 0.2em,
+						var(--color-background) 0.4em
+					);
+					padding: 0 1em;
+				}
+			}
 		}
 	}
 	.triptych {
