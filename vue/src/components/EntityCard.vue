@@ -497,6 +497,9 @@
 			.entity-type-icon {
 				text-shadow: none;
 			}
+			&.faded {
+				opacity: .6;
+			}
 		}
 		.entity-card.current,
 		.entity-card.active {
@@ -508,9 +511,6 @@
 		}
 		.entity-card:hover {
 			box-shadow: 0 0 10px var(--color-text);
-		}
-		&.faded {
-			opacity: .6;
 		}
 	}
 	.light {
