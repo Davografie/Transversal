@@ -908,7 +908,7 @@
 			<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
 					v-if="trait.ratingType != 'empty' && !edit_rating"
 					@click="(mode == 'editing' && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
-				<Rating v-if="trait.rating" :rating="trait.rating"
+				<Rating v-if="trait.rating" :rating="new_rating ?? trait.rating"
 					:rating-type="trait.ratingType"
 					@deplete-resource="deplete_resource"
 					@deplete-challenge="(d) => mode == 'editing' ? edit_rating = true : deplete_challenge(d)" />
