@@ -279,11 +279,12 @@
 	const polling_active = ref(props.polling ?? false)
 	
 	function polling() {
-		console.log("polling traitset " + traitset.value.name + " for entity " + props.entity_id)
-		if(polling_active.value) {
-			retrieve_traitset()
-			setTimeout(polling, 15000)
-		}
+		// console.log("polling traitset " + traitset.value.name + " for entity " + props.entity_id)
+		// if(polling_active.value) {
+		// 	retrieve_traitset()
+		// 	setTimeout(polling, 15000)
+		// }
+		console.log("traitset polling disabled")
 	}
 
 	polling_active.value ? polling() : null
@@ -320,7 +321,10 @@
 
 	function random_highlight() {
 		// randomly highlight a trait
-		if(traits_to_display.value.length && traits_to_display.value.length > 0) {
+		if(highlighted_traits.value.length > 0) {
+			highlighted_traits.value = []
+		}
+		else if(traits_to_display.value.length && traits_to_display.value.length > 0) {
 			const trait = traits_to_display.value[Math.floor(Math.random() * traits_to_display.value.length)]
 			if(trait.traitSettingId) {
 				highlighted_traits.value = [trait.traitSettingId]
@@ -357,18 +361,52 @@
 		if(traitset.value.traits) {
 			let result = <TraitType[]>[]
 
-			// get unique traits
-			const unique_traits = Array.from(new Set(traitset.value.traits.map(
-				(t) => t.name + ((!traitset.value.duplicates || t.inheritable) ? '' : (t.traitSetting?.statement ?? '')))))
+			const filtered_traits = traitset.value.traits.filter((trait) => {
+				return (
+					player.is_gm
+					|| props.relationship
+					|| (player.is_player && entity.value.entityType == 'character')
+					|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
+					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
+					|| props.tutorial
+				)
+			})
+
+			// console.log("filtered traits: " + JSON.stringify(filtered_traits))
+
+			if(filtered_traits.length == 0) {
+				return []
+			}
+
+			// get unique traits, by name and if it's not inheritable also statement
+			const unique_traits: string[] = Array.from(new Set(filtered_traits.map((t) =>
+				t.name + ((!traitset.value.duplicates || t.inheritable == true) ? '' : (t.traitSetting?.statement ?? ''))
+			)))
 
 			// for each unique trait, get the highest priority trait
 			unique_traits.forEach((ut) => {
-				const highest_priority_trait = traitset.value.traits.filter((t) => t.name + ((!traitset.value.duplicates || t.inheritable) ? '' : (t.traitSetting?.statement ?? '')) == ut)
-													.reduce((a, b) => (a?.traitSetting?.priority ?? -1) > (b?.traitSetting?.priority ?? -1) ? a : b)
+				const ut_traits = filtered_traits.filter((t) => {
+						return t.name + ((!traitset.value.duplicates || t.inheritable == true) ? '' : (t.traitSetting?.statement ?? '')) == ut
+						&& (
+							!t.traitSetting?.hidden
+							|| t.traitSetting.knownTo?.map((t) => t.id).includes(player.the_entity?.id ?? '')
+							|| player.the_entity?.id == t.traitSetting.fromEntity?.id
+						)
+					})
+				if(ut_traits.length == 0) {
+					// console.log("traitset duplicates: " + traitset.value.duplicates + ", no traits found for '" + ut + "'")
+					return
+				}
+				const highest_priority_trait = ut_traits.reduce((a, b) => (a?.traitSetting?.priority ?? -1) > (b?.traitSetting?.priority ?? -1) ? a : b)
 				if(highest_priority_trait) {
 					result.push(highest_priority_trait)
 				}
 			})
+
+			result.push(...filtered_traits.filter(t => {
+				!result.map(x => x.traitSettingId).includes(t.traitSettingId)
+				&& t.traitSetting?.fromEntity?.id == props.entity_id
+			}))
 
 			// if a text filter is set, filter the traits on: name, statement, notes
 			if(filter.value && result.length > 0) {
@@ -387,6 +425,13 @@
 			return []
 		}
 	})
+
+	const refreshing = ref(false)
+	function refresh() {
+		refreshing.value = true
+		retrieve_traitset()
+		setTimeout(() => refreshing.value = false, 1000)
+	}
 </script>
 
 <template>
@@ -402,24 +447,28 @@
 				{ 'editing-traits': edit_mode },
 				{ 'full': limiter > 0 && traits_in_dicepool.length == limiter },
 			]"
-			v-if="((traitset.traits && traitset.traits.length > 0) || props.visible) && ((player.is_player && !traitset.entityTypes?.includes('gm')) || player.is_gm)">
+			v-if="(
+					traits_to_display.length > 0
+					|| props.visible
+				)
+				&& (
+					player.is_gm
+					|| (
+						player.is_player
+						&& !traitset.entityTypes?.includes('gm')
+					)
+				)">
 
 		<div class="set-title" v-if="(!props.hide_title || player.editing || show_info)"
 				@click="toggle_traits"
 				v-touch:hold="title_longpress"
 				@click.right="title_longpress"
 				@contextmenu="(e) => e.preventDefault()">
-			<input type="button" class="button-mnml change-limit limit-decrease"
-				:value="player.small_buttons ? '⊖' : '⊖\ndecrease limit'"
-				@click.stop="change_limit(-1)" v-if="show_info" />
-			<div class="trait-count" v-else-if="!show_traits">
+			<div class="trait-count" v-if="!show_traits">
 				{{ traitset.traits ? traits_to_display.length : '' }}
 			</div>
-
-			<input type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
-				:value="player.small_buttons ? '✎' : '✎\nedit' + (edit_mode ? 'ing' : '') + ' traits'"
-				@click.stop="toggle_edit_mode" v-if="show_traits && !show_info" />
-				
+			<div v-else />
+			
 			<div class="title">
 				<div class="big-limiter" v-if="show_traits && props.active">
 					<span v-for="d of dice_in_dicepool" :key="d.id">
@@ -448,38 +497,64 @@
 				</span>
 			</div>
 
-			<input type="button" class="button-mnml change-limit limit-increase"
-				:value="player.small_buttons ? '⊕' : '⊕\nincrease limit'"
-				@click.stop="change_limit(1)" v-if="show_info" />
 			<div v-else></div>
 		</div>
 
 		<!-- <Transition name="traits-transition"> -->
 			<div class="traits" v-if="show_traits" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
-				<div class="traitset-info" v-if="!props.hide_title && (show_info || edit_mode) && (score || traitset.explainer)">
-					<div class="traitset-score" v-if="score" title="score">
-						{{ score }}
+				<div class="traitset-info" v-if="!props.hide_title">
+					<div class="options">
+						<div type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
+							@click.stop="toggle_edit_mode" v-if="show_traits && !show_info">
+							<div class="icon">✎</div>
+							<div class="label" v-if="!player.small_buttons">{{ 'edit' + (edit_mode ? 'ing' : '') + ' ' + traitset.name }}</div>
+						</div>
+						<div class="traitset-filter" :class="{ 'active': filtering }" v-if="traitset.traits && traitset.traits.length > 0">
+							<input type="text" class="filter" v-model="filter" placeholder="filter" v-if="filtering" />
+							<div class="button-mnml" title="filter"
+								@click.stop="filtering = !filtering">
+								<div class="icon">{{ filtering ? '✖' : '&#x1F50D;'}}</div>
+								<div class="label">{{ player.small_buttons ? '' : '\nfilter' }}</div>
+							</div>
+						</div>
+						<div class="button-mnml" :class="{ 'active': highlighted_traits.length > 0 }"
+								@click.stop="random_highlight">
+								<div class="icon">🎲</div>
+								<div class="label">{{ player.small_buttons ? '' : '\nrandom' }}</div>
+						</div>
+						<div class="button-mnml"
+							@click.stop="next_sort">
+							<div class="icon">⇅</div>
+							<div class="label">{{ player.small_buttons ? '' : '\n' + sorting.text }}</div>
+						</div>
+						<div class="button-mnml" :class="{ 'active': refreshing }" id="refresh-traitset"
+							@click.stop="refresh">
+							<div class="icon">🔄</div>
+							<div class="label">{{ player.small_buttons ? '' : '\nrefresh' }}</div>
+						</div>
+						<div class="traitset-limiter">
+							<div type="button" class="button-mnml change-limit limit-decrease"
+								@click.stop="change_limit(-1)">
+								<div class="icon">⊖</div>
+								<div class="label">decrease limit</div>
+							</div>
+							<div type="button" class="button-mnml change-limit limit-increase"
+								@click.stop="change_limit(1)">
+								<div class="icon">⊕</div>
+								<div class="label">increase limit</div>
+							</div>
+						</div>
+						<div class="button-mnml traitset-score" v-if="score" title="score">
+							<div class="icon">{{ score }}</div>
+							<div class="label" v-if="!player.small_buttons">score</div>
+						</div>
 					</div>
 					<div class="gm-info" v-if="player.is_gm">{{ traitset.id }}</div>
 					<div class="traitset-explainer" v-if="traitset.explainer" v-html="traitset.explainer"></div>
-					<div class="options">
-						<div class="traitset-filter button" v-if="traitset.traits && traitset.traits.length > 0">
-							<input type="text" class="filter" v-model="filter" placeholder="filter" v-if="filtering" />
-							<input type="button" class="button-mnml"
-								:value="'&#x1F50D;' + (player.small_buttons ? '' : '\nfilter')" title="filter"
-								@click.stop="filtering = !filtering" />
-						</div>
-						<input type="button" class="button"
-							:value="'🎲' + (player.small_buttons ? '' : '\nrandom')"
-							@click.stop="random_highlight" />
-						<input type="button" class="button"
-							:value="'⇅' + (player.small_buttons ? '' : '\n' + sorting.text)"
-							@click.stop="next_sort" />
-					</div>
 				</div>
 				<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0">
-					<div class="sfx-sparkles">✨</div>
+					<!-- <div class="sfx-sparkles">✨</div> -->
 					<template v-for="sfx in traitset.sfxs" :key="sfx.id">
 						<SFX :sfx_id="sfx.id"
 							@expand="expanded_sfx = sfx"
@@ -558,7 +633,7 @@
 							v-if="(player.is_gm
 								|| props.relationship
 								|| (player.is_player && entity.entityType == 'character')
-								|| (player.is_player && trait.traitSetting && trait.traitSetting.hidden == false)
+								|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
 								|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
 								|| props.tutorial)
 								&& (
@@ -594,7 +669,7 @@
 						<input type="button" class="button add-trait-button"
 							:value="adding_trait ?
 								player.small_buttons ? 'x' : 'stop adding trait x' :
-								player.small_buttons ? '+' : 'add trait +'"
+								player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
 							@click="toggle_add_trait" />
 					</div>
 				</div>
@@ -735,22 +810,32 @@
 			padding: .4em 2em;
 			min-height: 3em;
 			overflow: hidden;
-			.traitset-score {
-				font-size: 1.2em;
-				float: right;
-				padding: .4em 1em;
-				margin-left: .4em;
-			}
 			.traitset-explainer {
 				display: inline;
 			}
 			.options {
 				display: flex;
-				justify-content: flex-end;
+				justify-content: space-evenly;
 				flex-wrap: wrap;
 				max-width: 100%;
+				> div {
+					height: 4em;
+					/* border: 1px solid var(--color-border); */
+				}
 				.traitset-filter {
 					display: flex;
+					&.active {
+						background-color: var(--color-highlight-mute);
+						color: var(--color-highlight-text);
+					}
+				}
+				.traitset-limiter {
+					display: flex;
+					gap: .4em;
+				}
+				.traitset-score {
+					font-size: 1.2em;
+					padding: .4em 1em;
 				}
 			}
 		}
@@ -943,13 +1028,13 @@
 				font-weight: bold;
 				align-content: end;
 				flex-direction: column;
-				.traitset-name {
-					vertical-align: text-bottom;
-				}
 				.big-limiter {
 					line-height: 1em;
 					font-size: 2em;
 					text-align: center;
+				}
+				.traitset-name {
+					vertical-align: text-bottom;
 				}
 			}
 		}
@@ -984,7 +1069,9 @@
 				letter-spacing: .1em;
 			}
 			.traitset-info {
+				text-shadow: var(--text-shadow);
 				.traitset-score {
+					border: 1px solid var(--color-border);
 					box-shadow: inset 0 0 10px var(--color-background-mute);
 				}
 			}
@@ -1080,14 +1167,17 @@
 				.traitset-name {
 					font-size: 1.4em;
 					padding: .4em 0;
+					line-height: 0.4em;
 				}
-				.edit-traits {
+				.edit-traits.active {
 					background-color: var(--color-editing);
 					color: var(--color-editing-text);
 				}
 			}
 			.entity-traits {
 				background-color: var(--color-border);
+				display: flex;
+				flex-direction: column;
 				.add-trait {
 					background-color: var(--color-background);
 					color: var(--color-text);
@@ -1127,7 +1217,8 @@
 						var(--color-background) 0.2em,
 						var(--color-background) 0.4em
 					);
-					padding: 0 1em;
+					padding: 1em;
+					gap: 1em;
 				}
 			}
 		}
