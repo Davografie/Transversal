@@ -174,6 +174,7 @@
 				player.the_entity?.following &&
 				!location.value.entities?.map(e => e.id).includes(player.the_entity?.following.id ?? '')
 			) {
+				// changed player location
 				player.is_player ? player.retrieve_character() : player.retrieve_perspective()
 				console.log("changed player location during polling to " + player.the_entity?.location?.key)
 				router.push({ path: '/location/' + player.the_entity?.location?.key })
@@ -844,7 +845,7 @@
 				text-align: center;
 				position: relative;
 				font-size: 1.2em;
-				padding: .4em 0;
+				padding-top: .4em;
 				.edit-button {
 					position: absolute;
 					top: 0;
@@ -930,11 +931,12 @@
 		}
 		&.gm {
 			.zones {
-				padding: 3%;
+				/* padding: 3%; */
 				&>.attribute-body {
 					display: flex;
 					flex-wrap: wrap;
 					gap: 1em;
+					padding: 1em;
 					.zone {
 						min-height: 300px;
 						min-width: 300px;

@@ -315,7 +315,7 @@
 		}
 
 		.vertical.panel {
-			backdrop-filter: blur(5px);
+			/* backdrop-filter: blur(5px); */
 		}
 
 		div#dicepool-footer-container {
@@ -333,7 +333,7 @@
 				color: var(--color-text);
 			}
 			#charactersheet-container, #settings-container, #codex-container {
-				backdrop-filter: blur(5px);
+				/* backdrop-filter: blur(5px); */
 			}
 		}
 		&.landscape {

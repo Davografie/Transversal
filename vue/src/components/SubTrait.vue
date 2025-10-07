@@ -276,7 +276,6 @@
 
 <style scoped>
 	.sub-trait {
-		border-radius: 30px;
 		overflow: hidden;
 		border: 1px solid var(--color-border);
 		.neutral {
@@ -334,6 +333,13 @@
 			border-style: dashed;
 			border-width: 2px;
 		}
+	}
+</style>
+
+<style>
+.dark {
+	.sub-trait {
+		border-radius: 30px;
 		&.d4.negative {
 			/* background-image: linear-gradient(45deg, var(--color-negative-die-4) -60%, var(--color-background) 60%); */
 			box-shadow: inset 0 0 20px -6px var(--color-negative-die-4);
@@ -385,4 +391,5 @@
 			border-color: var(--color-positive-die-12);
 		}
 	}
+}
 </style>

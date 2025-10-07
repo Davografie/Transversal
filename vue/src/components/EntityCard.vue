@@ -277,7 +277,6 @@
 		padding: 0;
 		cursor: pointer;
 		width: 100px;
-		text-shadow: var(--text-shadow);
 		.options {
 			interpolate-size: allow-keywords;
 			position: absolute;
@@ -475,6 +474,7 @@
 		.entity-card {
 			border-radius: 200px;
 			box-shadow: 0 0 20px var(--color-background);
+			text-shadow: var(--text-shadow);
 			border: 1px solid var(--color-background-mute);
 			height: 100px;
 			.name {
@@ -553,6 +553,13 @@
 			&:hover {
 				.card-wrapper {
 					border: 3px solid var(--color-border-hover);
+				}
+			}
+			&.active {
+				background-color: var(--color-highlight);
+				.name {
+					background-color: var(--color-highlight);
+					color: var(--color-highlight-text);
 				}
 			}
 		}
