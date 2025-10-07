@@ -60,6 +60,23 @@ a {
 	border: none;
 	color: var(--color-text);
 	background-color: transparent;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	.icon {
+		font-size: 1.4em;
+		line-height: 1em;
+	}
+	.label {
+		font-size: .8em;
+		padding: 0 .2em;
+		line-height: 1em;
+	}
+	&.active {
+		background-color: var(--color-highlight-mute);
+		color: var(--color-highlight-text);
+	}
 }
 .button.active {
 	background-color: var(--color-highlight);

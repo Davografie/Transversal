@@ -523,102 +523,141 @@
 				</div>
 			</div>
 			<div id="character-buttons" :class="player.small_buttons ? 'small-buttons' : 'verbose-buttons'">
-				<input type="button" class="button-mnml" id="switch-gm"
-					:value="player.small_buttons ? entity_icons['gm'] : entity_icons['gm'] + '\nswitch to gm'"
+				<div class="button-mnml" id="switch-gm"
 					title="switch to gm"
 					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'"
-					@click="switch_gm" />
-				<input type="button" class="button-mnml" id="copy-id"
-					:value="player.small_buttons ? '#' : '#\ncopy ID'"
+					@click="switch_gm">
+					<div class="icon">{{ entity_icons['gm'] }}</div>
+					<div class="label" v-if="!player.small_buttons">switch to gm</div>
+				</div>
+				<div class="button-mnml" id="copy-id"
 					title="copy ID"
 					v-if="player.is_gm"
-					@click="copy_id" />
-				<input type="button" class="button-mnml" id="pick-character"
-					:value="player.small_buttons ? entity_icons[character.entityType] : entity_icons[character.entityType] + '\npick ' + character.entityType"
+					@click="copy_id">
+					<div class="icon">#</div>
+					<div class="label" v-if="!player.small_buttons">copy ID</div>
+				</div>
+				<div class="button-mnml" id="pick-character"
 					:title="'play as ' + character.name"
 					v-if="character.id != player.the_entity?.id && (player.is_gm || (character.entityType == 'character'))"
-					@click="pick_character" />
-				<input type="button" class="button-mnml" id="create-relation"
-					:value="player.small_buttons ? '🤝' : '🤝\ncreate relation'"
+					@click="pick_character">
+					<div class="icon">entity_icons[character.entityType]</div>
+					<div class="label" v-if="!player.small_buttons">pick {{character.entityType}}</div>
+				</div>
+				<div class="button-mnml" id="create-relation"
 					title="create relation"
 					v-if="character.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(character.id)"
-					@click="relate" />
-				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
-					:value="'🔁' + (player.small_buttons ? '' : '\nswitch entity')"
+					@click="relate">
+					<div class="icon">🤝</div>
+					<div class="label" v-if="!player.small_buttons">create relation</div>
+				</div>
+				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
 					title="switch entity"
 					v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
-					@click="toggle_quick_switch" />
-				<input type="button" class="button-mnml" id="archetype"
-					:value="character.isArchetype ? (player.small_buttons ? '◑' : '◑\nunarchetype') : (player.small_buttons ? '○' : '○\nmake archetype')"
+					@click="toggle_quick_switch">
+					<div class="icon">🔁</div>
+					<div class="label" v-if="!player.small_buttons">switch entity</div>
+				</div>
+				<div class="button-mnml" id="archetype"
 					:title="character.isArchetype ? 'unarchetype' : 'make archetype'"
 					v-if="player.is_gm"
-					@click="toggle_archetype" />
-				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
-					:value="player.small_buttons ? '⊛' : '⊛\n' + (entityOverviewType == 'INSTANCES' ? 'hide' : 'show') + ' instances'"
+					@click="toggle_archetype">
+					<div class="icon">{{ character.isArchetype ? '◑' : '○' }}</div>
+					<div class="label" v-if="!player.small_buttons">{{ character.isArchetype ? 'unarchetype' : 'make archetype' }}</div>
+				</div>
+				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
 					title="show instances"
 					v-if="character.isArchetype"
-					@click="show_instances" />
-				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'ARCHETYPES' }" id="show-archetypes"
-					:value="player.small_buttons ? '⊛' : '⊛\n' + (entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show') + ' archetypes'"
+					@click="show_instances">
+					<div class="icon">⊛</div>
+					<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'INSTANCES' ? 'hide' : 'show' }} instances</div>
+				</div>
+				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'ARCHETYPES' }" id="show-archetypes"
 					title="show archetypes"
-					@click="show_archetypes" />
-				<input type="button" class="button-mnml" id="clone-entity"
-					:value="player.small_buttons ? '⧉' : '⧉\nclone entity'"
+					@click="show_archetypes">
+					<div class="icon">⊛</div>
+					<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show' }} archetypes</div>
+				</div>
+				<div class="button-mnml" id="clone-entity"
 					title="clone entity"
 					v-if="character.isArchetype && player.is_gm"
-					@click="clone_entity()" />
-				<input type="button" class="button-mnml" id="hide-entity"
-					:value="character.hidden ? (player.small_buttons ? '🌑' : '🌑\nhiding entity') : player.small_buttons ? '🌕' : '🌕\nshowing entity'"
+					@click="clone_entity()">
+					<div class="icon">⧉</div>
+					<div class="label" v-if="!player.small_buttons">clone entity</div>
+				</div>
+				<div class="button-mnml" id="hide-entity"
 					title="hide entity"
 					v-if="player.is_gm && character.entityType != 'character'"
-					@click="hide_entity" />
-				<input type="button" class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
-					:value="player.small_buttons ? '👀' : '👀\nknown to'"
+					@click="hide_entity">
+					<div class="icon">{{ character.hidden ? '🌑' : '🌕' }}</div>
+					<div class="label" v-if="!player.small_buttons">{{ character.hidden ? 'showing entity' : 'hiding entity' }}</div>
+				</div>
+				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
 					title="show known to"
 					v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0"
-					@click="toggle_known_to" />
-				<input type="button" class="button-mnml" id="collapse-all-traitsets"
-					:value="(function() {
-						switch (player.traitset_defaults) {
-							case 'COLLAPSED':
-								return player.small_buttons ? '📕' : '📕\ncollapsed';
-							case 'ACTIVE':
-								return player.small_buttons ? '📑' : '📑\nactive';
-							case 'EXPANDED':
-								return player.small_buttons ? '📖' : '📖\nexpanded';
-							default:
-								return '';
-						}
-					})()"
+					@click="toggle_known_to">
+					<div class="icon">👀</div>
+					<div class="label" v-if="!player.small_buttons">known to</div>
+				</div>
+				<div class="button-mnml" id="all-traitsets-collapsed"
 					title="collapse all traitsets"
 					@click="cycle_traitset_defaults(false)"
-					@click.right.prevent="cycle_traitset_defaults(true)" />
-				<input type="button" class="button-mnml" id="delete-entity"
-					:value="player.small_buttons ? '🗑' : '🗑\ndelete entity'"
+					@click.right.prevent="cycle_traitset_defaults(true)"
+					v-if="player.traitset_defaults == 'COLLAPSED'">
+					<div class="icon">📕</div>
+					<div class="label" v-if="!player.small_buttons">collapsed</div>
+				</div>
+				<div class="button-mnml" id="only-active-traitset"
+					title="only show active traitset"
+					@click="cycle_traitset_defaults(false)"
+					@click.right.prevent="cycle_traitset_defaults(true)"
+					v-else-if="player.traitset_defaults == 'ACTIVE'">
+					<div class="icon">📑</div>
+					<div class="label" v-if="!player.small_buttons">active</div>
+				</div>
+				<div class="button-mnml" id="all-traitsets-expanded"
+					title="expand all traitsets"
+					@click="cycle_traitset_defaults(false)"
+					@click.right.prevent="cycle_traitset_defaults(true)"
+					v-else-if="player.traitset_defaults == 'EXPANDED'">
+					<div class="icon">📖</div>
+					<div class="label" v-if="!player.small_buttons">expanded</div>
+				</div>
+				<div class="button-mnml" id="delete-entity"
 					title="delete entity"
-					v-if="
-						player.is_gm
-						&& deletion == false
-						&& character.key != 'placeholder'
-						&& !['1', '2'].includes(character.key)"
-					@click="deletion = true" />
+					v-if="player.is_gm && character.key != 'placeholder' && !['1', '2'].includes(character.key) && deletion == false"
+					@click="deletion = true">
+					<div class="icon">🗑</div>
+					<div class="label" v-if="!player.small_buttons">delete entity</div>
+				</div>
 				<div id="delete-confirmation" v-if="deletion">
 					<label>🗑</label>
-					<input type="button" class="button-mnml verify-rmtree" id="verify-rmtree"
-						value="prune" title="delete recursively"
-						@click="entity_deletion(true)"
-						v-if="entity.entityType == 'location'" />
-					<input type="button" class="button-mnml verify" id="verify-delete"
-						value="yes" title="confirm and delete"
-						@click="entity_deletion(false)" />
-					<input type="button" class="button-mnml cancel" id="cancel-delete"
-						value="cancel" title="cancel deletion"
-						@click="deletion = false" />
+					<div class="button-mnml verify-rmtree" id="verify-rmtree"
+						title="delete recursively"
+						v-if="entity.entityType == 'location'"
+						@click="entity_deletion(true)">
+						<div class="icon">✔</div>
+						<div class="label">prune</div>
+					</div>
+					<div class="button-mnml verify" id="verify-delete"
+						title="confirm and delete"
+						@click="entity_deletion(false)">
+						<div class="icon">✔</div>
+						<div class="label">yes</div>
+					</div>
+					<div class="button-mnml cancel" id="cancel-delete"
+						title="cancel deletion"
+						@click="deletion = false">
+						<div class="icon">✗</div>
+						<div class="label">cancel</div>
+					</div>
 				</div>
-				<input type="button" class="button-mnml"
-					:value="player.small_buttons ? '⚙' : '⚙\nsettings'"
+				<div class="button-mnml" id="settings-button"
 					title="settings"
-					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
+					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })">
+					<div class="icon">⚙</div>
+					<div class="label" v-if="!player.small_buttons">settings</div>
+				</div>
 			</div>
 
 			<div id="character-quick-switch"
@@ -628,6 +667,7 @@
 					v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
+					:show_name="false"
 					@click_entity="switch_to_entity(entity_id)" />
 			</div>
 
@@ -664,7 +704,7 @@
 				:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
 				visible
 				:location_key="character.location?.key"
-				:active="player.orientation == 'vertical' && set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
+				:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
 				:next="player.traitset_defaults == 'ACTIVE' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
 				:location="false"
 				:relationship="false"
@@ -686,7 +726,7 @@
 			overflow-x: auto;
 			.entity-card {
 				width: 50px;
-				height: 70px;
+				height: 100px;
 			}
 		}
 		#character {
@@ -745,7 +785,7 @@
 					min-width: 15%;
 					img {
 						display: block;
-						width: 100%;
+						/* width: 100%; */
 						max-height: 240px;
 					}
 					#portrait-upload-wrapper {
