@@ -109,8 +109,9 @@
 	const held = ref(false)
 
 	// placeholders for mutating trait
-	const new_rating: Ref<DieType[]> = ref(trait.value.rating ?? [])
 	const new_ratingType: Ref<string> = ref(trait.value.ratingType ?? 'empty')
+	const new_rating: Ref<DieType[]> = ref(trait.value.rating ?? [])
+	const new_scaling: Ref<number> = ref(trait.value.traitSetting?.scaling ?? 0)
 	const new_statement: Ref<string> = ref(trait.value.statement ?? "")
 	const new_hidden: Ref<boolean> = ref(trait.value.traitSetting?.hidden ?? false)
 	const new_notes: Ref<string> = ref(trait.value.notes ?? "")
@@ -153,8 +154,9 @@
 	const can_edit = ref<boolean>(false)
 
 	function reset_temporary_attributes() {
-		new_rating.value = trait.value?.rating ?? []
 		new_ratingType.value = trait.value?.ratingType ?? 'empty'
+		new_rating.value = trait.value?.rating ?? []
+		new_scaling.value = trait.value?.traitSetting?.scaling ?? 0
 		new_statement.value = trait.value?.statement ?? ""
 		new_notes.value = trait.value?.notes ?? ""
 		new_sfxs.value = trait.value?.sfxs ?? []
@@ -247,6 +249,10 @@
 							}
 						}
 					}
+					// if the trait has scaling, edit the dicepool limit
+					if(trait.value.traitSetting?.scaling) {
+						change_result_limit(trait.value.traitSetting.scaling)
+					}
 					if(traitset_limit_reached.value) {
 						emit('next_traitset')
 					}
@@ -259,6 +265,9 @@
 							remove_traitsetting_dice(trait.value.traitSettingId ?? '')
 							remove_complication_by_traitsetting(trait.value.traitSettingId ?? '')
 						}
+					}
+					if(trait.value.traitSetting?.scaling) {
+						change_result_limit(-1 * trait.value.traitSetting.scaling)
 					}
 				}
 			}
@@ -454,6 +463,7 @@
 			overwrite_trait({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
+				'scaling': new_scaling.value,
 				'statement': new_statement.value,
 				'notes': new_notes.value,
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
@@ -466,6 +476,7 @@
 			mutate_trait_setting({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
+				'scaling': new_scaling.value,
 				'statement': new_statement.value,
 				'notes': new_notes.value,
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
@@ -490,6 +501,7 @@
 		mode.value = 'neutral'
 		transfer_resource_mode.value = false
 		edit_rating.value = false
+		new_rating.value = []
 		show_sfxs.value = false
 	}
 
@@ -543,6 +555,7 @@
 	const { sfx_list, create_sfx, retrieve_sfx_list } = useSFXList()
 
 	const edit_rating = ref(false)
+	const edit_scaling = ref(false)
 	const show_sfxs = ref(false)
 	const selected_sfx = ref<SFXType>({} as SFXType)
 	const expanded_sfx = ref<SFXType>({} as SFXType)
@@ -684,7 +697,7 @@
 	})
 
 	function steal() {
-		if(trait.value.ratingType == 'resource') {
+		if(trait.value.ratingType == 'resource' && new Set(trait.value.rating?.map(d => d.number_rating)).size > 1) {
 			transfer_resource_mode.value = !transfer_resource_mode.value
 		}
 		else if(player.the_entity && props.entity_id != player.the_entity?.id) {
@@ -703,6 +716,7 @@
 		copy_trait({
 			'ratingType': new_ratingType.value,
 			'rating': new_rating.value.map((r) => r.number_rating),
+			'scaling': new_scaling.value,
 			'statement': new_statement.value,
 			'notes': new_notes.value,
 			'sfxs': new_sfxs.value.map((sfx) => sfx.id),
@@ -779,8 +793,8 @@
 			props.filter &&
 			(
 				trait.value.name.toLowerCase().includes(props.filter.toLowerCase()) ||
-				trait.value.statement.toLowerCase().includes(props.filter.toLowerCase()) ||
-				trait.value.notes.toLowerCase().includes(props.filter.toLowerCase())
+				trait.value.statement?.toLowerCase().includes(props.filter.toLowerCase()) ||
+				trait.value.notes?.toLowerCase().includes(props.filter.toLowerCase())
 			)
 		) {
 			// if the filter string is contained in the name or statement of the trait
@@ -822,6 +836,7 @@
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
 				{ 'clickable': mode != 'editing' },
 				{ 'inherited': inherited },
+				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm },
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
@@ -908,7 +923,7 @@
 			<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
 					v-if="trait.ratingType != 'empty' && !edit_rating"
 					@click="(mode == 'editing' && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
-				<Rating v-if="trait.rating" :rating="new_rating ?? trait.rating"
+				<Rating v-if="trait.rating" :rating="new_rating.length > 0 ? new_rating : trait.rating"
 					:rating-type="trait.ratingType"
 					@deplete-resource="deplete_resource"
 					@deplete-challenge="(d) => mode == 'editing' ? edit_rating = true : deplete_challenge(d)" />
@@ -917,95 +932,101 @@
 
 		<div class="edit-trait" v-if="mode == 'editing'">
 			<div class="edit-setting-buttons" :class="{ 'small-buttons': player.small_buttons }">
-				<input type="button" class="button-mnml"
-					:value="player.small_buttons ? '#' : '#\ncopy ID'"
-					title="copy traitsetting id"
-					@click="copy_id"
-					v-if="player.is_gm" />
-				<input type="button" class="button-mnml"
-					:class="edit_statement ? 'active' : 'inactive'"
-					:value="edit_statement ?
-							'📄\ncancel' :
-							player.small_buttons ?
-								'📄' :
-								'📄\nstatement'"
-					v-if="!trait.statement && can_edit"
-					@click="() => {
-						edit_statement = !edit_statement;
-						new_statement = trait.statement ?? '';
-					}" />
-				<input type="button" class="button-mnml"
-					:class="edit_notes ? 'active' : 'inactive'"
-					:value="edit_notes ?
-							'📄\ncancel' :
-							player.small_buttons ?
-								'📄' :
-								'📄\nnotes'"
-					v-if="!trait.notes && can_edit"
-					@click="() => {
-						edit_notes = !edit_notes;
-						new_notes = trait.notes ?? '';
-					}" />
-				<input type="button" class="button-mnml"
-					:class="edit_rating ? 'active' : 'inactive'"
-					:value="player.small_buttons ? '🎲' :
-						edit_rating ? '🎲\ncancel' : '🎲\nrating'"
-					@click="edit_rating = !edit_rating"
-					v-if="can_edit" />
-				<input type="button" class="button-mnml subtrait-icon"
-					:class="add_subtraits ? 'active' : 'inactive'"
-					:value="add_subtraits ?
-							'⪽\ncancel' :
-							player.small_buttons ?
-								'⪽' :
-								'⪽\nadd subtrait'"
-					v-if="trait.possibleSubTraits
-						&& trait.possibleSubTraits?.filter((x) => !trait.subTraits?.map((y) => y.id).includes(x.id)).length > 0
-						&& can_edit"
-					@click="add_subtraits = !add_subtraits">
-				<input type="button" class="button-mnml"
-					:class="show_sfxs ? 'active' : 'inactive'"
-					:value="show_sfxs ?
-							'✨\ncancel' :
-							player.small_buttons ?
-								'✨' :
-								'✨\nadd sfx'"
-					@click="toggle_sfxs"
-					v-if="sfx_list && sfx_list?.length > 0 && can_edit" />
-				<input type="button" class="button-mnml"
-					:value="player.small_buttons ? '⧉' : '⧉\nduplicate trait'"
-					@click.stop="copy" />
-				<input type="button" class="button-mnml"
-					:class="transfer_resource_mode ? 'active' : 'inactive'"
-					:value="player.small_buttons ?
-						'🫳' : '🫳\n' + 'take ' + trait.name"
-					:title="'take ' + trait.name"
-					@click.stop="steal"
-					v-if="props.entity_id != player.the_entity?.id && !inherited" />
-				<input type="button" class="button-mnml"
-					:class="transfer_resource_mode ? 'active' : 'inactive'"
-					:value="player.small_buttons ?
-						'🫳' : '🫳\n' + 'drop ' + trait.name"
-					:title="'drop ' + trait.name"
-					@click.stop="steal"
-					v-if="props.entity_id == player.the_entity?.id && !inherited && props.traitset_types?.includes('location')" />
-				<input type="button" class="button-mnml"
-					:class="show_pc_visible ? 'active' : 'inactive'"
-					:value="player.small_buttons ? '🧠' : '🧠\nshow PC'"
-					@click.stop="show_pc_visible ? show_pc_visible = false : show_pcs()"
-					@click.right="toggle_show_pc_visible"
-					v-touch:hold="toggle_show_pc_visible"
-					@contextmenu="(e) => e.preventDefault()"
-					v-if="player.is_gm && can_edit" />
-				<input type="button" class="button-mnml"
-					:class="restrict_location ? 'active' : 'inactive'"
-					:value="restrict_location ?
-							'🗺\ncancel' :
-							player.small_buttons ?
-								'🗺' :
-								'🗺\nrestrict by location'"
-					@click="restrict_location = !restrict_location"
-					v-if="can_edit && !props.entity_id?.startsWith('Relations/')" />
+				<div class="button-mnml"
+						title="copy traitsetting id"
+						@click="copy_id"
+						v-if="player.is_gm">
+					<div class="icon">#</div>
+					<div class="label" v-if="!player.small_buttons">copy ID</div>
+				</div>
+				<div class="button-mnml"
+						:class="edit_statement ? 'active' : 'inactive'"
+						v-if="!trait.statement && can_edit"
+						@click="() => {
+							edit_statement = !edit_statement;
+							new_statement = trait.statement ?? '';
+						}">
+					<div class="icon">📄</div>
+					<div class="label" v-if="!player.small_buttons">{{ edit_statement ? 'cancel' : 'statement' }}</div>
+				</div>
+				<div class="button-mnml"
+						:class="edit_notes ? 'active' : 'inactive'"
+						v-if="!trait.notes && can_edit"
+						@click="() => {
+							edit_notes = !edit_notes;
+							new_notes = trait.notes ?? '';
+						}">
+					<div class="icon">📄</div>
+					<div class="label" v-if="!player.small_buttons">{{ edit_notes ? 'cancel' : 'notes' }}</div>
+				</div>
+				<div class="button-mnml"
+						:class="edit_rating ? 'active' : 'inactive'"
+						@click="edit_rating = !edit_rating"
+						v-if="can_edit">
+					<div class="icon">🎲</div>
+					<div class="label" v-if="!player.small_buttons">{{ edit_rating ? 'cancel' : 'rating' }}</div>
+				</div>
+				<div class="button-mnml"
+						:class="edit_scaling ? 'active' : 'inactive'"
+						@click="edit_scaling = !edit_scaling"
+						v-if="can_edit">
+					<div class="icon">📈</div>
+					<div class="label" v-if="!player.small_buttons">{{ edit_scaling ? 'cancel' : 'scaling' }}</div>
+				</div>
+				<div class="button-mnml subtrait-icon"
+						:class="add_subtraits ? 'active' : 'inactive'"
+						v-if="trait.possibleSubTraits
+							&& trait.possibleSubTraits?.filter((x) => !trait.subTraits?.map((y) => y.id).includes(x.id)).length > 0
+							&& can_edit"
+						@click="add_subtraits = !add_subtrait">
+					<div class="icon">⪽</div>
+					<div class="label" v-if="!player.small_buttons">{{ add_subtraits ? 'cancel' : 'add subtrait' }}</div>
+				</div>
+				<div class="button-mnml"
+						:class="show_sfxs ? 'active' : 'inactive'"
+						@click="toggle_sfxs"
+						v-if="sfx_list && sfx_list?.length > 0 && can_edit">
+					<div class="icon">✨</div>
+					<div class="label" v-if="!player.small_buttons">{{ show_sfxs ? 'cancel' : 'add sfx' }}</div>
+				</div>
+				<div class="button-mnml"
+						@click.stop="copy">
+					<div class="icon">⧉</div>
+					<div class="label" v-if="!player.small_buttons">duplicate trait</div>
+				</div>
+				<div class="button-mnml"
+						:class="transfer_resource_mode ? 'active' : 'inactive'"
+						:title="'take ' + trait.name"
+						@click.stop="steal"
+					v-if="props.entity_id != player.the_entity?.id && !inherited">
+					<div class="icon">🫳</div>
+					<div class="label" v-if="!player.small_buttons">take {{ trait.name }}</div>
+				</div>
+				<div class="button-mnml"
+						:class="transfer_resource_mode ? 'active' : 'inactive'"
+						:title="'drop ' + trait.name"
+						@click.stop="steal"
+						v-if="props.entity_id == player.the_entity?.id && !inherited && props.traitset_types?.includes('location')">
+					<div class="icon">🫳</div>
+					<div class="label" v-if="!player.small_buttons">drop {{ trait.name }}</div>
+				</div>
+				<div class="button-mnml"
+						:class="show_pc_visible ? 'active' : 'inactive'"
+						@click.stop="show_pc_visible ? show_pc_visible = false : show_pcs()"
+						@click.right="toggle_show_pc_visible"
+						v-touch:hold="toggle_show_pc_visible"
+						@contextmenu="(e) => e.preventDefault()"
+						v-if="player.is_gm && can_edit">
+					<div class="icon">🧠</div>
+					<div class="label" v-if="!player.small_buttons">show PC</div>
+				</div>
+				<div class="button-mnml"
+						:class="restrict_location ? 'active' : 'inactive'"
+						@click="restrict_location = !restrict_location"
+						v-if="can_edit && !props.entity_id?.startsWith('Relations/')">
+					<div class="icon">🗺</div>
+					<div class="label" v-if="!player.small_buttons">{{ restrict_location ? 'cancel' : 'restrict by location' }}</div>
+				</div>
 			</div>
 
 			<div class="edit-rating edit-attribute" v-if="edit_rating">
@@ -1015,6 +1036,12 @@
 					:rating="new_rating"
 					@change-rating="(rating_type: string, rating: DieType[]) => change_rating(rating_type, rating)"
 					@cancel="edit_rating = false" />
+			</div>
+
+			<div class="edit-scaling edit-attribute" v-if="edit_scaling">
+				<input type="button" class="button" value="-" @click="new_scaling = (new_scaling - 1) < 0 ? 0 : new_scaling - 1" />
+				<span>{{ new_scaling }}</span>
+				<input type="button" class="button" value="+" @click="new_scaling = new_scaling + 1" />
 			</div>
 
 			<div class="edit-notes edit-attribute" v-if="edit_notes">
@@ -1084,6 +1111,41 @@
 			</div>
 		</div>
 
+		<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
+			<!-- <div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div> -->
+			<div class="sfx-list">
+				<template v-for="(sfx, i) in (mode == 'editing' ? new_sfxs : trait.sfxs)" :key="sfx.id">
+					<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
+						@expand="expanded_sfx = sfx"
+						@collapse="expanded_sfx = {} as SFXType"
+						@activate="selected_sfx = sfx; click_trait()"
+						@remove="remove_sfx(sfx.id)"
+						:editing="mode == 'editing'"
+						:adding="false"
+						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
+					<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
+				</template>
+			</div>
+			<div class="add-sfx" v-if="mode == 'editing' && trait.possibleSfxs">
+				<div class="add-sfx-list">
+					<template v-for="(sfx, i) in trait.possibleSfxs.filter((sfx) => !new_sfxs.map((x) => x.id).includes(sfx.id))" :key="sfx.id">
+						<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
+							:editing="mode == 'editing'" @add="add_sfx(sfx)" adding />
+						<!-- <span class="sfx-divider" v-if="i < (sfx_list?.length ?? 0) - 1">/</span> -->
+					</template>
+					<input type="button" class="button add-sfx-title"
+						@click.stop="toggle_add_sfx" :value="show_add_sfx ? 'X' : '+'" />
+				</div>
+				<div class="create-sfx" v-if="show_add_sfx">
+					<input type="text" class="add-sfx-name" placeholder="name" v-model="new_sfx_name" />
+					<textarea type="text" class="add-sfx-description" placeholder="description" v-model="new_sfx_description" />
+					<input type="button" class="button" value="create"
+						@click="create_new_sfx"
+						v-if="new_sfx_name && new_sfx_description" />
+				</div>
+			</div>
+		</div>
+
 		<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0">
 			<div class="section-icon">⪽</div>
 			<div>
@@ -1124,41 +1186,6 @@
 							@click_subtrait="click_subtrait(subtrait)"
 							@remove_subtrait="remove_subtrait(subtrait)" />
 					</template>
-				</div>
-			</div>
-		</div>
-
-		<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
-			<!-- <div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div> -->
-			<div class="sfx-list">
-				<template v-for="(sfx, i) in (mode == 'editing' ? new_sfxs : trait.sfxs)" :key="sfx.id">
-					<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
-						@expand="expanded_sfx = sfx"
-						@collapse="expanded_sfx = {} as SFXType"
-						@activate="selected_sfx = sfx; click_trait()"
-						@remove="remove_sfx(sfx.id)"
-						:editing="mode == 'editing'"
-						:adding="false"
-						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
-					<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
-				</template>
-			</div>
-			<div class="add-sfx" v-if="mode == 'editing' && trait.possibleSfxs">
-				<div class="add-sfx-list">
-					<template v-for="(sfx, i) in trait.possibleSfxs.filter((sfx) => !new_sfxs.map((x) => x.id).includes(sfx.id))" :key="sfx.id">
-						<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
-							:editing="mode == 'editing'" @add="add_sfx(sfx)" adding />
-						<!-- <span class="sfx-divider" v-if="i < (sfx_list?.length ?? 0) - 1">/</span> -->
-					</template>
-					<input type="button" class="button add-sfx-title"
-						@click.stop="toggle_add_sfx" :value="show_add_sfx ? 'X' : '+'" />
-				</div>
-				<div class="create-sfx" v-if="show_add_sfx">
-					<input type="text" class="add-sfx-name" placeholder="name" v-model="new_sfx_name" />
-					<textarea type="text" class="add-sfx-description" placeholder="description" v-model="new_sfx_description" />
-					<input type="button" class="button" value="create"
-						@click="create_new_sfx"
-						v-if="new_sfx_name && new_sfx_description" />
 				</div>
 			</div>
 		</div>
@@ -1408,7 +1435,7 @@
 				.notes {
 					min-width: 100%;
 					max-width: fit-content;
-					min-height: 6em;
+					min-height: 12em;
 				}
 			}
 			.show-character {
@@ -1528,204 +1555,216 @@
 			&.with-statement {
 				/* font-size: .8em; */
 			}
-		}
-		.trait.d4.positive.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(215deg,
-					var(--color-positive-die-4) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-positive-die-4);
-			border-right: 1px solid var(--color-positive-die-4);
-			border-color: var(--color-positive-die-4);
-			.sfxs {
-				border-top: 1px solid var(--color-positive-die-4);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(215deg,
-						var(--color-positive-die-4) -50%,
-						var(--color-background) 80%);
+			&.inactive {
+				&.positive {
+					&.d4:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(215deg,
+								var(--color-positive-die-4) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-positive-die-4);
+						border-right: 1px solid var(--color-positive-die-4);
+						border-color: var(--color-positive-die-4);
+						.sfxs {
+							border-top: 1px solid var(--color-positive-die-4);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(215deg,
+									var(--color-positive-die-4) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d6:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(215deg,
+								var(--color-positive-die-6) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-positive-die-6);
+						border-right: 1px solid var(--color-positive-die-6);
+						border-color: var(--color-positive-die-6);
+						.sfxs {
+							border-top: 1px solid var(--color-positive-die-6);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(215deg,
+									var(--color-positive-die-6) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d8:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(215deg,
+								var(--color-positive-die-8) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-positive-die-8);
+						border-right: 1px solid var(--color-positive-die-8);
+						border-color: var(--color-positive-die-8);
+						.sfxs {
+							border-top: 1px solid var(--color-positive-die-8);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(215deg,
+									var(--color-positive-die-8) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d10:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(215deg,
+								var(--color-positive-die-10) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-positive-die-10);
+						border-right: 1px solid var(--color-positive-die-10);
+						border-color: var(--color-positive-die-10);
+						.sfxs {
+							border-top: 1px solid var(--color-positive-die-10);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(215deg,
+									var(--color-positive-die-10) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d12:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(215deg,
+								var(--color-positive-die-12) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-positive-die-12);
+						border-right: 1px solid var(--color-positive-die-12);
+						border-color: var(--color-positive-die-12);
+						.sfxs {
+							border-top: 1px solid var(--color-positive-die-12);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(215deg,
+									var(--color-positive-die-12) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
 				}
-			}
-		}
-		.trait.d6.positive.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(215deg,
-					var(--color-positive-die-6) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-positive-die-6);
-			border-right: 1px solid var(--color-positive-die-6);
-			border-color: var(--color-positive-die-6);
-			.sfxs {
-				border-top: 1px solid var(--color-positive-die-6);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(215deg,
-						var(--color-positive-die-6) -50%,
-						var(--color-background) 80%);
+				&.negative {
+					&.d4:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(45deg,
+								var(--color-negative-die-4) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-negative-die-4);
+						border-right: 1px solid var(--color-negative-die-4);
+						border-color: var(--color-negative-die-4);
+						.sfxs {
+							border-top: 1px solid var(--color-negative-die-4);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(45deg,
+									var(--color-negative-die-4) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d6:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(45deg,
+								var(--color-negative-die-6) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-negative-die-6);
+						border-right: 1px solid var(--color-negative-die-6);
+						border-color: var(--color-negative-die-6);
+						.sfxs {
+							border-top: 1px solid var(--color-negative-die-6);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(45deg,
+									var(--color-negative-die-6) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d8:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(45deg,
+								var(--color-negative-die-8) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-negative-die-8);
+						border-right: 1px solid var(--color-negative-die-8);
+						border-color: var(--color-negative-die-8);
+						.sfxs {
+							border-top: 1px solid var(--color-negative-die-8);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(45deg,
+									var(--color-negative-die-8) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d10:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(45deg,
+								var(--color-negative-die-10) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-negative-die-10);
+						border-right: 1px solid var(--color-negative-die-10);
+						border-color: var(--color-negative-die-10);
+						.sfxs {
+							border-top: 1px solid var(--color-negative-die-10);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(45deg,
+									var(--color-negative-die-10) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
+					&.d12:not(.empty) {
+						.trait-inner {
+							background-image: linear-gradient(45deg,
+								var(--color-negative-die-12) -100%,
+								var(--color-background) 50%);
+						}
+						border-left: 1px solid var(--color-negative-die-12);
+						border-right: 1px solid var(--color-negative-die-12);
+						border-color: var(--color-negative-die-12);
+						.sfxs {
+							border-top: 1px solid var(--color-negative-die-12);
+						}
+						&:hover {
+							.trait-inner {
+								background-image: linear-gradient(45deg,
+									var(--color-negative-die-12) -50%,
+									var(--color-background) 80%);
+							}
+						}
+					}
 				}
-			}
-		}
-		.trait.d8.positive.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(215deg,
-					var(--color-positive-die-8) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-positive-die-8);
-			border-right: 1px solid var(--color-positive-die-8);
-			border-color: var(--color-positive-die-8);
-			.sfxs {
-				border-top: 1px solid var(--color-positive-die-8);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(215deg,
-						var(--color-positive-die-8) -50%,
-						var(--color-background) 80%);
-				}
-			}
-		}
-		.trait.d10.positive.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(215deg,
-					var(--color-positive-die-10) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-positive-die-10);
-			border-right: 1px solid var(--color-positive-die-10);
-			border-color: var(--color-positive-die-10);
-			.sfxs {
-				border-top: 1px solid var(--color-positive-die-10);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(215deg,
-						var(--color-positive-die-10) -50%,
-						var(--color-background) 80%);
-				}
-			}
-		}
-		.trait.d12.positive.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(215deg,
-					var(--color-positive-die-12) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-positive-die-12);
-			border-right: 1px solid var(--color-positive-die-12);
-			border-color: var(--color-positive-die-12);
-			.sfxs {
-				border-top: 1px solid var(--color-positive-die-12);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(215deg,
-						var(--color-positive-die-12) -50%,
-						var(--color-background) 80%);
-				}
-			}
-		}
-		.trait.d4.negative.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(45deg,
-					var(--color-negative-die-4) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-negative-die-4);
-			border-right: 1px solid var(--color-negative-die-4);
-			border-color: var(--color-negative-die-4);
-			.sfxs {
-				border-top: 1px solid var(--color-negative-die-4);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(45deg,
-						var(--color-negative-die-4) -50%,
-						var(--color-background) 80%);
-				}
-			}
-		}
-		.trait.d6.negative.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(45deg,
-					var(--color-negative-die-6) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-negative-die-6);
-			border-right: 1px solid var(--color-negative-die-6);
-			border-color: var(--color-negative-die-6);
-			.sfxs {
-				border-top: 1px solid var(--color-negative-die-6);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(45deg,
-						var(--color-negative-die-6) -50%,
-						var(--color-background) 80%);
-				}
-			}
-		}
-		.trait.d8.negative.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(45deg,
-					var(--color-negative-die-8) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-negative-die-8);
-			border-right: 1px solid var(--color-negative-die-8);
-			border-color: var(--color-negative-die-8);
-			.sfxs {
-				border-top: 1px solid var(--color-negative-die-8);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(45deg,
-						var(--color-negative-die-8) -50%,
-						var(--color-background) 80%);
-				}
-			}
-		}
-		.trait.d10.negative.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(45deg,
-					var(--color-negative-die-10) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-negative-die-10);
-			border-right: 1px solid var(--color-negative-die-10);
-			border-color: var(--color-negative-die-10);
-			.sfxs {
-				border-top: 1px solid var(--color-negative-die-10);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(45deg,
-						var(--color-negative-die-10) -50%,
-						var(--color-background) 80%);
-				}
-			}
-		}
-		.trait.d12.negative.inactive:not(.empty) {
-			.trait-inner {
-				background-image: linear-gradient(45deg,
-					var(--color-negative-die-12) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-negative-die-12);
-			border-right: 1px solid var(--color-negative-die-12);
-			border-color: var(--color-negative-die-12);
-			.sfxs {
-				border-top: 1px solid var(--color-negative-die-12);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(45deg,
-						var(--color-negative-die-12) -50%,
-						var(--color-background) 80%);
+				&.hidden {
+					.trait-inner {
+						box-shadow: inset 0 0 20px var(--color-disabled);
+						padding: 10px;
+					}
 				}
 			}
 		}
@@ -1770,9 +1809,7 @@
 			} */
 			text-shadow: var(--text-shadow);
 			box-shadow: 0 0 10px var(--color-background-mute);
-			&:hover {
-				background-color: var(--color-background-mute);
-			}
+			background-color: var(--color-background-mute);
 		}
 		.trait.challenge {
 			--border-width: 1px;
@@ -1930,54 +1967,53 @@
 					margin: 3px -1px !important;
 				}
 			}
+			&.active {
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+				.statement {
+					background-color: var(--color-highlight);
+					color: var(--color-highlight-text);
+					font-size: 1.8em;
+				}
+			}
+			&.editing {
+				background-color: var(--color-editing);
+				border-top: 2px dotted var(--color-border);
+				border-bottom: 2px dotted var(--color-border);
+				.edit-trait {
+					.edit-setting-buttons {
+						border: 1px dashed var(--color-border);
+						.divider {
+							border-left: 1px dashed var(--color-border);
+						}
+					}
+				}
+				.edit-buttons {
+					border-top: 1px dashed var(--color-border);
+				}
+			}
+			&.viewing {
+				border-bottom: 1px solid var(--color-border);
+				padding: 1em 0 2em 0;
+			}
+			&.with-statement {
+				.trait-name.label {
+					padding-top: .4em;
+					padding-left: 1em;
+				}
+			}
+			&.without-statement {
+				.trait-name.label {
+					font-size: 1.6em;
+					padding-left: 1em;
+				}
+			}
+			&.dim {
+				display: none;
+			}
 		}
 		.trait-divider {
 			margin: .8em 0;
-		}
-		.trait.active {
-			background-color: var(--color-highlight);
-			color: var(--color-highlight-text);
-			.statement {
-				background-color: var(--color-highlight);
-				color: var(--color-highlight-text);
-				font-size: 1.8em;
-			}
-		}
-		.trait.editing {
-			background-color: var(--color-editing);
-			border-top: 2px dotted var(--color-border);
-			border-bottom: 2px dotted var(--color-border);
-			padding-top: .8em;
-			.edit-trait {
-				.edit-setting-buttons {
-					border: 1px dashed var(--color-border);
-					.divider {
-						border-left: 1px dashed var(--color-border);
-					}
-				}
-			}
-			.edit-buttons {
-				border-top: 1px dashed var(--color-border);
-			}
-		}
-		.trait.viewing {
-			border-bottom: 1px solid var(--color-border);
-			padding: 1em 0 2em 0;
-		}
-		.trait.with-statement {
-			.trait-name.label {
-				padding-top: .4em;
-				padding-left: 1em;
-			}
-		}
-		.trait.without-statement {
-			.trait-name.label {
-				font-size: 1.6em;
-				padding-left: 1em;
-			}
-		}
-		.trait.dim {
-			display: none;
 		}
 	}
 </style>

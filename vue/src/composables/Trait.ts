@@ -67,6 +67,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				}
 				traitSettingId
 				traitSetting {
+					scaling
 					locationsEnabled
 					locationsDisabled
 					knownTo {
@@ -205,6 +206,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					id
 					ratingType
 					rating
+					scaling
 					statement
 					notes
 					sfxs {

@@ -272,6 +272,7 @@ class TraitSetting(ObjectType):
 	notes = String()
 	rating_type = String()
 	rating = List(String)
+	scaling = Int()
 	locations_enabled = List(String)
 	locations_disabled = List(String)
 	sfxs = List(lambda: SFX)
@@ -288,6 +289,7 @@ class TraitSetting(ObjectType):
 			parent.notes = traitsetting.get('notes')
 			parent.rating_type = traitsetting.get('rating_type')
 			parent.rating = traitsetting.get('rating')
+			parent.scaling = traitsetting.get('scaling')
 			parent.locations_enabled = traitsetting.get('locations_enabled')
 			parent.locations_disabled = traitsetting.get('locations_disabled')
 			parent.sfxs_ids = traitsetting.get('sfxs')
@@ -369,6 +371,11 @@ class TraitSetting(ObjectType):
 		else:
 			return None
 
+	def resolve_scaling(parent, info):
+		if parent.scaling is None:
+			TraitSetting._hydrate_traitsetting(parent, info)
+		return parent.scaling
+
 	def resolve_locations_enabled(parent, info):
 		print(f"\nresolve_locations_enabled:\tparent:\n{parent}")
 		if parent.locations_enabled is not None:
@@ -428,6 +435,7 @@ class TraitSetting(ObjectType):
 class TraitSettingInput(InputObjectType):
 	rating_type = String(required=False)
 	rating = List(Int, required=False)
+	scaling = Int(required=False)
 	resource = Boolean(required=False)
 	statement = String(required=False)
 	notes = String(required=False)
@@ -519,7 +527,8 @@ class MutateTraitSetting(Mutation):
 								'_from': entity_id,
 								'_to': trait_setting.get('_to'),
 								**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
-								'rating': [die_type]
+								'rating': [die_type],
+								'hidden': False
 							}
 							# print(f"MutateTraitSetting:\tnew pocket: { new_doc }")
 							db.collection('TraitSettings').insert(new_doc)
