@@ -31,7 +31,7 @@ setInterval(() => {
 	console.log('GC')
 	apolloClient.cache.gc()
 	// apolloClient.cache.reset()
-}, 30000)
+}, 60000)
 
 import { DefaultApolloClient } from '@vue/apollo-composable'
 

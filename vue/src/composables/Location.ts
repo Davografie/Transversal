@@ -281,7 +281,7 @@ export function useLocation(init?: Location, location_key?: string) {
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
 					{ locationKey: location_key },
-					{ fetchPolicy: 'no-cache' }
+					{ fetchPolicy: 'network-only' }
 				)
 			)
 			watch(result, (newResult) => {
