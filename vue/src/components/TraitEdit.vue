@@ -350,9 +350,11 @@
 				
 				<h2 @click="toggle_instances">instances</h2>
 				<div class="instances" v-if="instances && show_instances">
-					<Trait v-for="instance in instances" :key="instance"
+					<Trait v-for="instance in instances" :key="instance.id"
 						:trait_id="trait.id"
-						:trait_setting_id="instance"
+						:trait_setting_id="instance.id"
+						:entity_id="instance.fromEntity?.id"
+						@refetch="retrieve_instances"
 					/>
 				</div>
 
