@@ -58,13 +58,14 @@
 		entity,
 		set_entity_id,
 		retrieve_small_entity,
+		retrieve_entity,
 		retrieve_instances,
 		clone_entity,
 		create_relation,
 		prune_location,
 		update_entity
 	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
-	retrieve_small_entity()
+	retrieve_entity()
 
 	const {
 		location,
@@ -227,7 +228,7 @@
 			set_character_key(newKey)
 			retrieve_character()
 			set_entity_id('Entities/' + newKey)
-			retrieve_small_entity()
+			retrieve_entity()
 
 			nextTick(() => character_wrapper.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
 			switching_entities.value = false
@@ -498,9 +499,12 @@
 							<a v-else @click="player.set_perspective_location(character.location)">{{ character.location?.name }} ⬇</a>
 							<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
 								instance of 
-								<!-- <RouterLink :to="'/Entity/' + character.archetype.key">
-									{{ character.archetype.name }}
-								</RouterLink> -->
+								<EntityCard
+									v-for="archetype in entity.archetypes"
+									:entity_id="archetype.id"
+									override_click
+									@click_entity="emit('show_entity', archetype.id)"
+									/>
 								<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
 							</div>
 						</div>
@@ -541,7 +545,7 @@
 					:title="'play as ' + character.name"
 					v-if="character.id != player.the_entity?.id && (player.is_gm || (character.entityType == 'character'))"
 					@click="pick_character">
-					<div class="icon">entity_icons[character.entityType]</div>
+					<div class="icon">{{ entity_icons[character.entityType] }}</div>
 					<div class="label" v-if="!player.small_buttons">pick {{character.entityType}}</div>
 				</div>
 				<div class="button-mnml" id="create-relation"
