@@ -469,7 +469,8 @@
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
 				'locationsEnabled': new_locationsEnabled.value,
 				'locationsDisabled': new_locationsDisabled.value,
-				'inheritedAs': trait.value.traitSetting?.id ?? trait.value.traitSettingId ?? props.trait_setting_id
+				'inheritedAs': trait.value.traitSetting?.id ?? trait.value.traitSettingId ?? props.trait_setting_id,
+				'hidden': new_hidden.value
 			})
 		}
 		else {
@@ -481,7 +482,8 @@
 				'notes': new_notes.value,
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
 				'locationsEnabled': new_locationsEnabled.value,
-				'locationsDisabled': new_locationsDisabled.value
+				'locationsDisabled': new_locationsDisabled.value,
+				'hidden': new_hidden.value
 			})
 		}
 	}
@@ -857,7 +859,6 @@
 							{{ trait.name }}
 						</span>
 						<span class="label" v-if="mode == 'editing'
-								&& inherited
 								&& trait.traitSetting?.fromEntity?.name">
 							{{ ' from ' + trait.traitSetting?.fromEntity?.name }}
 						</span>
@@ -978,7 +979,7 @@
 						v-if="trait.possibleSubTraits
 							&& trait.possibleSubTraits?.filter((x) => !trait.subTraits?.map((y) => y.id).includes(x.id)).length > 0
 							&& can_edit"
-						@click="add_subtraits = !add_subtrait">
+						@click="add_subtraits = !add_subtraits">
 					<div class="icon">⪽</div>
 					<div class="label" v-if="!player.small_buttons">{{ add_subtraits ? 'cancel' : 'add subtrait' }}</div>
 				</div>
