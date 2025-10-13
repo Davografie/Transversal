@@ -10,10 +10,21 @@
 		entity_type: string
 	}>()
 
-	const { entity, retrieve_entity, set_archetype, unset_archetype } = useEntity(undefined, props.entity_id)
-	const { entities, retrieve_archetypes } = useEntityList(undefined, props.entity_type)
+	const {
+		entity,
+		retrieve_small_entity,
+		retrieve_archetypes: retrieve_entity_archetypes,
+		set_archetype,
+		unset_archetype
+	} = useEntity(undefined, props.entity_id)
 
-	retrieve_entity()
+	const {
+		entities,
+		retrieve_archetypes
+	} = useEntityList(undefined, props.entity_type)
+
+	retrieve_small_entity()
+	retrieve_entity_archetypes()
 	retrieve_archetypes(props.entity_type)
 
 	const selected_archetype = ref<string | null>(entity.value.archetype?.id ?? null)
@@ -29,7 +40,7 @@
 			unset_archetype(archetype_id)
 		}
 		setTimeout(() => {
-			retrieve_entity()
+			retrieve_entity_archetypes()
 		}, 200)
 	}
 
@@ -53,15 +64,18 @@
 
 <template>
 	<div class="archetype-picker">
-		<!-- <select v-model="selected_archetype" @change="select_archetype">
-			<option :value="null">None</option>
-			<option v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id)" :key="archetype.id" :value="archetype.id">{{ archetype.name }}</option>
-		</select> -->
 		<EntityCard
 			class="entity-card"
-			v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id)" :key="archetype.id"
+			v-for="archetype in entity.archetypes" :key="archetype.id"
 			:entity_id="archetype.id"
-			:entity="archetype"
+			:is_active="true"
+			@click="select_archetype(archetype.id)"
+			override_click
+			show_archetypes />
+		<EntityCard
+			class="entity-card"
+			v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id && !entity.archetypes?.map(archetype => archetype.id).includes(archetype.id))" :key="archetype.id"
+			:entity_id="archetype.id"
 			:is_active="selected_archetypes.includes(archetype.id)"
 			@click="select_archetype(archetype.id)"
 			override_click

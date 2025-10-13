@@ -220,6 +220,35 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
+	function retrieve_archetypes() {
+
+		const archetypes_query = gql`query EntityArchetypes($entityId: ID) {
+			entities(key: $entityId) {
+				archetypes {
+					id
+					entityType
+					name
+				}
+			}
+		}`
+
+		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
+			const { result } = provideApolloClient(apolloClient)(
+				() => useQuery(
+					archetypes_query,
+					{ entityId: entity_id },
+					{ fetchPolicy: 'cache-and-network' }
+				)
+			)
+			watch(result, () => {
+				entity.value = {
+					...entity.value,
+					...result.value.entities[0]
+				}
+			})
+		}
+	}
+
 	function retrieve_instances() {
 		/* if current entity is an archetype, retrieve all entities with that archetype */
 		const instances_query = gql`query EntityInstances($entityId: ID) {
@@ -449,6 +478,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		retrieve_small_entity,
 		retrieve_relations,
 		retrieve_followers,
+		retrieve_archetypes,
 		retrieve_instances,
 		update_entity,
 		activate_entity,
