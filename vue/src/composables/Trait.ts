@@ -32,7 +32,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 	const trait_id = ref(_trait_id)
 	const trait_setting_id = ref(_trait_setting_id)
 	const entity_id = ref(_entity_id)
-	const instances: Ref<string[]> = ref([])
+	const instances: Ref<TraitSetting[]> = ref([])
 
 	function retrieve_trait() {
 		const query_get_trait = gql`query TraitByID($traitId: ID) {
@@ -272,6 +272,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			traits(traitId: $traitId) {
 				traitSettings {
 					id
+					fromEntity {
+						id
+					}
 				}
 			}
 		}`
@@ -285,7 +288,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			)
 			watch(result, (newResult) => {
 				if(newResult) {
-					instances.value = newResult.traits[0].traitSettings.map((traitSetting: TraitSetting) => traitSetting.id)
+					instances.value = newResult.traits[0].traitSettings
 				}
 			})
 		}
