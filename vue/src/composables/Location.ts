@@ -265,13 +265,7 @@ export function useLocation(init?: Location, location_key?: string) {
 					name
 					entityType
 					isArchetype
-					... on Character {
-						available
-					}
 					hidden
-					knownTo {
-						id
-					}
 					active
 				}
 			}
@@ -281,7 +275,7 @@ export function useLocation(init?: Location, location_key?: string) {
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
 					{ locationKey: location_key },
-					{ fetchPolicy: 'network-only' }
+					{ fetchPolicy: 'no-cache' }
 				)
 			)
 			watch(result, (newResult) => {
