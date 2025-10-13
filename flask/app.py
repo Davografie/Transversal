@@ -418,11 +418,9 @@ class TraitSetting(ObjectType):
 
 	def resolve_hidden(parent, info):
 		if parent.id and parent.hidden is None:
-			result = db.collection('TraitSettings').get(parent.id).get('hidden')
-			if result is not None:
-				return result
-			else:
-				return False
+			TraitSetting._hydrate_traitsetting(parent, info)
+		if parent.hidden is not None:
+			return parent.hidden
 		else:
 			return False
 
@@ -4009,7 +4007,7 @@ def imagegen(entity_key, force):
 
 			hierarchy = retrieve_hierarchy(location.get('_id'))
 			for loc in hierarchy:
-				if entity_type in ["npc", "asset"]:
+				if entity_type in ["npc"]:
 					prompt += f" (located in { loc.get('name') }, " + re.sub(r'\([^)]*\)', '', loc.get('description'))
 				loc_trait_settings = db.collection('TraitSettings').find({'_from': loc.get('_id')})
 				for lts in loc_trait_settings:
@@ -4023,7 +4021,10 @@ def imagegen(entity_key, force):
 					elif trait.get('name') == 'negative imagen':
 						negative += ", " + lts.get('statement') if lts.get('statement') else ""
 						negative += ", " + lts.get('notes') if lts.get('notes') else ""
-			strength = 0.4
+					elif trait.get('name') == 'appearance' and entity_type in ["npc", "asset"]:
+						prompt += ", " + lts.get('statement') if lts.get('statement') else ""
+						prompt += ", " + lts.get('notes') if lts.get('notes') else ""
+			strength = 1.4
 			strength_list = []
 			for loc in hierarchy:
 				strength *= 0.6
@@ -4034,6 +4035,7 @@ def imagegen(entity_key, force):
 					prompt += f":{str(strength_list[i])}"
 					if i < len(strength_list) - 1:
 						prompt += ")"
+				prompt += ")"
 			# prompt += "), "
 			if len(positive_imagen) > 0:
 				prompt += ", (" + ", ".join(positive_imagen) + ":0.8)"
@@ -4114,7 +4116,8 @@ def imagegen(entity_key, force):
 									genres.append(lt[1])
 								elif lt[0] == "negative imagen":
 									negative += ", " + lt[1]
-							prompt += " (" + location_name + ", " + location_description
+							prompt += " (" + location_name
+							# prompt += ", " + location_description
 						else:
 							lts = l[2]
 							for lt in lts:
