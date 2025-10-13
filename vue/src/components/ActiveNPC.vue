@@ -107,16 +107,30 @@
 
 	// when the player wants to follow the entity instead of transversing themselves
 	const followable = computed(() => {
-		return player.the_entity?.following?.id != entity.value.id	// already following
-			&& player.the_entity?.id != entity.value.id				// can't follow yourself
-			&& entity.value.following?.id != player.the_entity?.id	// can't follow that which follows you
-			&& player.the_entity?.entityType != 'location'			// locations can't follow
-			&& !(
-				player.is_player
-				&& entity.value.location != player.the_entity?.location
-				&& entity.value.entityType != 'location'
-			)			// GM can follow from distance, players can't
-			&& !entity.value.isArchetype							// archetypes aren't actually part of the environment (yet)
+		return (		// exclusive
+				player.the_entity?.following?.id != entity.value.id		// already following
+				&& player.the_entity?.id != entity.value.id				// can't follow yourself
+				&& entity.value.following?.id != player.the_entity?.id	// can't follow that which follows you
+				&& player.the_entity?.entityType != 'location'			// locations can't follow
+				&& !(
+					player.is_player
+					&& entity.value.location?.id != player.the_entity?.location?.id
+					&& entity.value.entityType != 'location'
+				)														// GM can follow from distance, players can't
+				&& !entity.value.isArchetype							// archetypes aren't actually part of the environment (yet)
+			)
+			&& (		// inclusive
+				player.is_gm
+				|| (
+					player.is_player
+					&& entity.value.location?.id == player.the_entity?.location?.id
+					&& entity.value.entityType != 'location'
+				)														// player can follow characters, NPC's and assets from the same location
+				|| (
+					player.is_player
+					&& entity.value.entityType == 'location'
+				)														// fast-travel to locations
+			)
 	})
 
 	function click_follow() {
