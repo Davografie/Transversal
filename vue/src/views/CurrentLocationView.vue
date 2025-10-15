@@ -291,7 +291,7 @@
 	}
 	.light {
 		.container {
-			background-attachment: scroll;
+			background-size: cover;
 			#parent-location-wrapper {
 				text-shadow: none;
 				.parent-location-header {
