@@ -55,14 +55,14 @@
                 show_description ? 'expanded' : 'collapsed',
                 props.adding ? 'adding' : 'playing',
             ]"
-            @click.stop="(e) => props.adding ? click_card(e) : null">
+            @click="(e) => props.adding ? click_card(e) : null">
         <div class="sfx-title"
                 @click="click_card" :title="show_description ? 'collapse' : 'expand'">
             ✨ {{ sfx?.name }}
             <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
         </div>
         <div class="sfx-description" v-if="show_description && sfx?.description"
-            v-html="rendered_description" @click.stop="props.adding ? click_card($event) : activate" title="play">
+            v-html="rendered_description" @click="props.adding ? click_card($event) : activate" title="play">
         </div>
         <input type="button" class="button" value="add" @click.stop="add" 
             v-if="show_description && props.adding" />
