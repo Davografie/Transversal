@@ -37,7 +37,9 @@
         }
     }
     function activate() {
-        emit('activate', sfx.value)
+        if(!props.adding) {
+            emit('activate', sfx.value)
+        }
     }
     function add() {
         show_description.value = false
@@ -56,13 +58,12 @@
                 props.adding ? 'adding' : 'playing',
             ]"
             @click="(e) => props.adding ? click_card(e) : null">
-        <div class="sfx-title"
-                @click="click_card" :title="show_description ? 'collapse' : 'expand'">
+        <div class="sfx-title" :title="show_description ? 'collapse' : 'expand'">
             ✨ {{ sfx?.name }}
             <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
         </div>
         <div class="sfx-description" v-if="show_description && sfx?.description"
-            v-html="rendered_description" @click="props.adding ? click_card($event) : activate" title="play">
+            v-html="rendered_description" @click="activate" title="play">
         </div>
         <input type="button" class="button" value="add" @click.stop="add" 
             v-if="show_description && props.adding" />
