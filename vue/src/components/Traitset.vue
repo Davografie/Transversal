@@ -500,6 +500,18 @@
 
 				<div class="traitset-info" v-if="!props.hide_title">
 					<div class="options">
+						<div class="traitset-limiter">
+							<div type="button" class="button-mnml change-limit limit-decrease"
+								@click.stop="change_limit(-1)">
+								<div class="icon">⊖</div>
+								<div class="label">decrease limit</div>
+							</div>
+							<div type="button" class="button-mnml change-limit limit-increase"
+								@click.stop="change_limit(1)">
+								<div class="icon">⊕</div>
+								<div class="label">increase limit</div>
+							</div>
+						</div>
 						<div type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
 							@click.stop="toggle_edit_mode" v-if="show_traits && !show_info">
 							<div class="icon">✎</div>
@@ -527,18 +539,6 @@
 							@click.stop="refresh">
 							<div class="icon">🔄</div>
 							<div class="label">{{ player.small_buttons ? '' : '\nrefresh' }}</div>
-						</div>
-						<div class="traitset-limiter">
-							<div type="button" class="button-mnml change-limit limit-decrease"
-								@click.stop="change_limit(-1)">
-								<div class="icon">⊖</div>
-								<div class="label">decrease limit</div>
-							</div>
-							<div type="button" class="button-mnml change-limit limit-increase"
-								@click.stop="change_limit(1)">
-								<div class="icon">⊕</div>
-								<div class="label">increase limit</div>
-							</div>
 						</div>
 						<div class="button-mnml traitset-score" v-if="score" title="score">
 							<div class="icon">{{ score }}</div>
