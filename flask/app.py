@@ -3872,7 +3872,7 @@ def imagegen(entity_key, force):
 		"wuxia": "setting/ChineseWuXia",
 		"modern": "import/ModernCartoon-Gudarzi",
 		"fantasy": "import/FantasyIllustration",
-		"scifi": "setting/ScifiEnvironment",
+		"scifi": "setting/SydMead-v1",
 		"alien": "setting/PaintedWorld-v2",
 		"space": "setting/LauraSpaceXploration",
 		"urban": "import/arcstyle",
