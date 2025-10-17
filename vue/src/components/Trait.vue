@@ -922,7 +922,7 @@
 
 
 			<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
-					v-if="trait.ratingType != 'empty' && !edit_rating"
+					v-if="trait.ratingType != 'empty'"
 					@click="(mode == 'editing' && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
 				<Rating v-if="trait.rating" :rating="new_rating.length > 0 ? new_rating : trait.rating"
 					:rating-type="trait.ratingType"
@@ -1155,6 +1155,7 @@
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
 							:editing_trait="mode == 'editing'"
+							:edit_mode="props.edit_mode"
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
 							@click_subtrait="click_subtrait(subtrait)"
@@ -1169,6 +1170,7 @@
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
 							:editing_trait="mode == 'editing'"
+							:edit_mode="props.edit_mode"
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
 							@click_subtrait="click_subtrait(subtrait)"
@@ -1182,6 +1184,7 @@
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
 							:editing_trait="mode == 'editing'"
+							:edit_mode="props.edit_mode"
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
 							@click_subtrait="click_subtrait(subtrait)"
