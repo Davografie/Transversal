@@ -24,19 +24,22 @@ from graphene import Interface, ObjectType, InputObjectType, Mutation, Field, ID
 # https://docs.python-arango.com/en/main/
 from arango import ArangoClient
 
+import redis
+
 import transversal as tv
 from imagegen import generate_image
 
 app = Flask(__name__)
 CORS(app)
 
-logging.basicConfig(
-	level=logging.INFO,
-	format='%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s',
-	datefmt='%Y-%m-%d %H:%M:%S'
-)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+logger.addHandler(stream_handler)
 
 logger.info("Starting server")
 
@@ -49,6 +52,9 @@ arango_port = "8529"
 arango_username = "root"
 arango_password = os.environ.get("ARANGO_ROOT_PASSWORD")
 arango_db = "transversal"
+
+r = redis.Redis(host='redis', port=6379)
+logger.info(f"Redis connection established.")
 
 # session variables
 dicepool_limit = -1
@@ -292,7 +298,17 @@ class TraitSetting(ObjectType):
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
 		if parent.id:
-			traitsetting = db.collection('TraitSettings').get(parent.id)
+			if not r.exists(parent.id):
+				logger.info("TraitSettings not in Redis")
+				traitsetting = db.collection('TraitSettings').get(parent.id)
+				r.sadd('TraitSettings', parent.id)
+				r.hset(parent.id, mapping=traitsetting)
+				logger.info("TraitSettings added to Redis")
+				logger.info(r.hgetall(parent.id))
+			else:
+				logger.info("TraitSettings in Redis")
+				logger.info(r.hgetall(parent.id))
+			traitsetting = r.hgetall(parent.id)
 			parent.statement = traitsetting.get('statement')
 			parent.notes = traitsetting.get('notes')
 			parent.rating_type = traitsetting.get('rating_type')
