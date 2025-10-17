@@ -1,25 +1,41 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useTraitset } from '@/composables/Traitset'
-const props = defineProps<{
-    traitset_id: string,
-	selected_traits?: string[],
-}>()
-const emit = defineEmits(['toggle_subtrait', 'toggle_subtraitset'])
-const { traitset, retrieve_traitset } = useTraitset(undefined, props.traitset_id, undefined, undefined)
-retrieve_traitset()
-const show_traits = ref(false)
-const trait_count = computed(() => props.selected_traits?.filter(x => traitset?.value.traits?.map(y => y.id).includes(x)).length)
+	import { ref, computed } from 'vue'
+	import { useTraitset } from '@/composables/Traitset'
+
+	const props = defineProps<{
+		traitset_id: string,
+		traitset_name?: string,
+		selected_traits?: string[],
+		selected_count?: number
+	}>()
+
+	const emit = defineEmits([
+		'toggle_subtrait',
+		'toggle_subtraitset'
+	])
+
+	const { traitset, retrieve_traitset } = useTraitset(undefined, props.traitset_id, undefined, undefined)
+
+	
+	const show_traits = ref(false)
+	function toggle_show_traits() {
+		show_traits.value = !show_traits.value
+		if(show_traits.value) {
+			retrieve_traitset()
+		}
+	}
+
+	const trait_count = computed(() => props.selected_traits?.filter(x => traitset?.value.traits?.map(y => y.id).includes(x)).length)
 </script>
 
 <template>
     <div class="traitset-selector" :class="{'sub-traitset': traitset?.entityTypes?.includes('subtrait')}">
-		<div class="header" @click="show_traits = !show_traits">
+		<div class="header" @click="toggle_show_traits">
 			<div class="amount">
-				{{ (trait_count ?? 0) > 0 ? trait_count : '' }}
+				{{ props.selected_count ?? trait_count ?? 0 }}
 			</div>
 			<div class="traitset-name">
-				{{ traitset?.name }}
+				{{ props.traitset_name ?? traitset?.name }}
 			</div>
 		</div>
 		<div class="trait all" :class="{'selected': traitset.traits?.every(t => props.selected_traits?.includes(t.id))}"

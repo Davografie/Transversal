@@ -187,18 +187,20 @@
 	retrieve_traits()
 	const show_subtraits = ref(false)
 	const new_subtraits = ref<TraitType[]>([])
+	const show_linking_subtraits = ref(false)
 	function toggle_show_subtraits() {
 		retrieve_traitsets()
 		show_subtraits.value = !show_subtraits.value
 		new_subtraits.value = trait.value.possibleSubTraits ?? []
 	}
+
 	function toggle_subtrait(subtrait: TraitType) {
 		if(new_subtraits.value.map(x => x.id).includes(subtrait.id)) {
 			const i = new_subtraits.value.findIndex(x => x.id == subtrait.id)
-			new_subtraits.value = [...new_subtraits.value.slice(0, i), ...new_subtraits.value.slice(i + 1)]
+			new_subtraits.value = [...new Set([...new_subtraits.value.slice(0, i), ...new_subtraits.value.slice(i + 1)])]
 		}
 		else {
-			new_subtraits.value = [...new_subtraits.value, subtrait]
+			new_subtraits.value = [...new Set([...new_subtraits.value, subtrait])]
 		}
 		mutate_trait({
 			possibleSubTraits: new_subtraits.value.map(x => x.id)
@@ -206,12 +208,16 @@
 			retrieve_trait()
 		})
 	}
+
 	function toggle_subtraitset(ts: TraitsetType) {
 		if(ts.traits?.every(t => new_subtraits.value.map(x => x.id).includes(t.id))) {
 			new_subtraits.value = new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id))
 		}
 		else {
-			new_subtraits.value = [...new_subtraits.value, ...ts.traits ?? []]
+			new_subtraits.value = [
+				...new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id)),
+				...ts.traits ?? []
+			]
 		}
 		new_subtraits.value = [...new Set(new_subtraits.value)]
 
@@ -397,11 +403,26 @@
 
 				<h2 @click="toggle_show_subtraits">possible sub-traits</h2>
 				<div class="sub-traits" v-show="show_subtraits">
-					<TraitSelector v-for="ts in traitsets" :key="ts.id"
-						:traitset_id="ts.id"
-						:selected_traits="trait.possibleSubTraits?.map(x => x.id)"
-						@toggle_subtrait="toggle_subtrait"
-						@toggle_subtraitset="(traitset: TraitsetType) => toggle_subtraitset(traitset)" />
+					<h3>subtrait traitsets</h3>
+					<div>
+						<TraitSelector v-for="ts in traitsets.filter(ts => ts.entityTypes?.includes('subtrait'))" :key="ts.id"
+							:traitset_id="ts.id"
+							:traitset_name="ts.name"
+							:selected_traits="trait.possibleSubTraits?.map(x => x.id)"
+							:selected_count="trait.possibleSubTraits?.map(pst => pst.traitset?.id).filter(id => id == ts.id).length"
+							@toggle_subtrait="toggle_subtrait"
+							@toggle_subtraitset="(traitset: TraitsetType) => toggle_subtraitset(traitset)" />
+					</div>
+					<h3 @click="show_linking_subtraits = !show_linking_subtraits">allow linked subtraits</h3>
+					<div v-if="show_linking_subtraits">
+						<TraitSelector v-for="ts in traitsets.filter(ts => !ts.entityTypes?.includes('subtrait'))" :key="ts.id"
+							:traitset_id="ts.id"
+							:traitset_name="ts.name"
+							:selected_traits="trait.possibleSubTraits?.map(x => x.id)"
+							:selected_count="trait.possibleSubTraits?.map(pst => pst.traitset?.id).filter(id => id == ts.id).length"
+							@toggle_subtrait="toggle_subtrait"
+							@toggle_subtraitset="(traitset: TraitsetType) => toggle_subtraitset(traitset)" />
+					</div>
 					<!-- <input type="button" class="button" :value="subtrait.name" v-for="subtrait in potential_sub_traits"
 						:class="{ 'active': trait.possibleSubTraits?.map(x => x.id).includes(subtrait.id) }"
 						@click="toggle_subtrait(subtrait)" /> -->

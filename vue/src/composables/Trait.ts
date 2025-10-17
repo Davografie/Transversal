@@ -48,6 +48,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				possibleSubTraits {
 					id
 					name
+					traitset {
+						id
+					}
 				}
 				sfxs {
 					id
