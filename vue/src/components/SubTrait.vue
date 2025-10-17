@@ -188,6 +188,7 @@
 			'ratingType': new_rating_type.value,
 			'rating': new_rating.value.map(die => die.number_rating)
 		})
+		retrieve_trait()
 	}
 
 	function save_subtrait() {
