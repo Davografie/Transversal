@@ -211,7 +211,7 @@
 				|| (e.entityType == 'character' && e.active)
 				|| (
 					e.entityType == 'npc' && (
-						!e.hidden
+						e.hidden === false
 						|| e.knownTo?.map(kt => kt.id).includes(player.player_character?.id ?? '')
 						|| e.active
 					)

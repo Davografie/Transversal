@@ -267,6 +267,9 @@ export function useLocation(init?: Location, location_key?: string) {
 					isArchetype
 					hidden
 					active
+					knownTo {
+						id
+					}
 				}
 			}
 		}`
