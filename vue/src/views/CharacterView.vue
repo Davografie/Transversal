@@ -1,6 +1,6 @@
 <script setup lang="ts">
 	import { marked } from 'marked'
-	import { ref, watch, inject, computed, onMounted, nextTick } from 'vue'
+	import { ref, type Ref, watch, inject, computed, onMounted, nextTick } from 'vue'
 	import { useRoute, useRouter } from 'vue-router'
 	import { useFetch, useElementSize } from '@vueuse/core'
 
@@ -130,7 +130,7 @@
 
 
 	// entity portrait
-	const file_upload = ref()
+	const file_upload: Ref<File | null> = ref(null)
 	const portrait_img = ref(null)
 
 	const portrait_updated = ref(false)
@@ -152,6 +152,7 @@
 
 	function cancel_portrait_edit() {
 		editing_portrait.value = false
+		file_upload.value = null
 	}
 
 	function handle_fileupload(event: any) {
@@ -460,9 +461,12 @@
 						@contextmenu="(e) => e.preventDefault()" />
 					<div id="portrait-upload-wrapper" v-if="editing_portrait">
 						<div id="portrait-upload" class="portrait-edit-segment">
-							<input type="file" id="file" @change="handle_fileupload"
-								v-if="!portrait_updated" />
-							<input type="button" id="fileupload" class="button" value="upload"
+							<input type="file" id="file-upload" @change="handle_fileupload"
+								v-show="false" />
+							<label for="file-upload" id="file-upload-label" v-if="!portrait_updated">
+								{{ file_upload ? file_upload.name : 'upload'}}
+							</label>
+							<input type="button" id="upload-file" class="button-mnml" value="upload"
 								@click="submit_fileupload"
 								v-if="file_upload && !portrait_updated" />
 						</div>
@@ -470,7 +474,7 @@
 							CANCEL
 						</div>
 						<div id="generate-portrait" class="portrait-edit-segment">
-							<input type="button" class="button" value="generate!"
+							<input type="button" class="button-mnml" id="generate-portrait-button" value="imagen"
 								@click="imagen" v-if="!character.imagened || player.is_gm" />
 						</div>
 					</div>
@@ -797,21 +801,48 @@
 						top: 0;
 						height: 100%;
 						min-height: 20px;
+						max-height: 240px;
 						max-width: 180px;
+						width: 100%;
 						display: flex;
 						flex-direction: column;
 						#portrait-upload {
 							background-image: linear-gradient(to top, var(--color-background) 0, var(--color-background-mute) 10%, transparent 50%);
-							#file {
+							width: 100%;
+							#file-upload-label {
 								background-color: var(--color-background-mute);
+								height: 100%;
+								width: 100%;
+								display: flex;
+								justify-content: center;
+								align-items: center;
+								cursor: pointer;
+								font-size: 1.4em;
+							}
+							#upload-file {
+								background-color: var(--color-highlight);
+								color: var(--color-highlight-text);
+								cursor: pointer;
+								width: 100%;
+								padding: .4em 0;
+								font-size: 1.2em;
 							}
 						}
 						.limiter {
 							background-color: var(--color-background-mute);
 							cursor: pointer;
+							padding: .8em 0;
 						}
 						#generate-portrait {
 							background-image: linear-gradient(to bottom, var(--color-background) 0, var(--color-background-mute) 10%, transparent 50%);
+							#generate-portrait-button {
+								background-color: var(--color-highlight-mute);
+								color: var(--color-highlight-text);
+								cursor: pointer;
+								width: 100%;
+								height: 100%;
+								font-size: 1.4em;
+							}
 						}
 						.portrait-edit-segment {
 							flex-grow: 1;
@@ -959,9 +990,15 @@
 			#character-details {
 				padding: 0 .4em;
 			}
-			#character-portrait img {
-				border: 3px double var(--color-text);
-				margin: 1em;
+			#character-portrait {
+				padding: 1em;
+				img, #portrait-upload-wrapper {
+					border: 3px double var(--color-text);
+				}
+				#portrait-upload-wrapper {
+					top: 1em !important;
+					width: calc(100% - 2em) !important;
+				}
 			}
 			#traitsets {
 				border-top: 1px solid var(--color-border);
