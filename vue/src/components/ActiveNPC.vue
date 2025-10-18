@@ -99,7 +99,6 @@
 			create_relation(player.player_character.id)
 			setTimeout(() => player.retrieve_relations(), 100)
 		}
-		retrieve_small_entity()
 		setTimeout(() => {
 			set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id ?? '')
 		}, 200)
