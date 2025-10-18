@@ -36,7 +36,7 @@ CORS(app)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - line %(lineno)d - %(message)s')
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
@@ -170,12 +170,12 @@ class UpdateSession(Mutation):
 			active_entities = db.collection('Entities').find({'active': True, 'type': 'character'})
 			for entity in active_entities:
 				entity['active'] = False
-				db.collection('Entities').update(entity)
+				update_doc('Entities', entity)
 
 			stuck_on_imagening = db.collection('Entities').find({'imagening': True})
 			for entity in stuck_on_imagening:
 				entity['imagening'] = False
-				db.collection('Entities').update(entity)
+				update_doc('Entities', entity)
 
 		if session_input.new_session or session_input.next_scene:
 			scene_rev = uuid4()
@@ -183,7 +183,7 @@ class UpdateSession(Mutation):
 			active_entities = db.collection('Entities').find({'active': True, 'type': 'npc'})
 			for entity in active_entities:
 				entity['active'] = False
-				db.collection('Entities').update(entity)
+				update_doc('Entities', entity)
 
 		if session_input.new_session or session_input.next_scene or session_input.next_beat:
 			beat_rev = uuid4()
@@ -235,7 +235,7 @@ class UpdateSFX(Mutation):
 			sfx['name'] = name
 		if description:
 			sfx['description'] = description
-		db.collection('SFXs').update(sfx)
+		update_doc('SFXs', sfx)
 		return UpdateSFX(sfx=SFX(id=id, name=name, description=description))
 
 class DeleteSFX(Mutation):
@@ -255,7 +255,7 @@ class DeleteSFX(Mutation):
 			for result in results:
 				new_sfxs = result.get('possible_sfxs')
 				new_sfxs.remove(id)
-				db.collection('Traits').update(result, {'possible_sfxs': new_sfxs})
+				update_doc('Traits', result, {'possible_sfxs': new_sfxs})
 			# Remove SFX from all TraitSettings
 			query = f"""FOR ts IN TraitSettings
 				FILTER '{ id }' IN ts.sfxs
@@ -264,7 +264,7 @@ class DeleteSFX(Mutation):
 			for result in results:
 				new_sfxs = result.get('sfxs')
 				new_sfxs.remove(id)
-				db.collection('TraitSettings').update(result, {'sfxs': new_sfxs})
+				update_doc('TraitSettings', result, {'sfxs': new_sfxs})
 			db.collection('SFXs').delete(id)
 			return DeleteSFX(success=True, message="SFX deleted")
 		except Exception as e:
@@ -279,7 +279,7 @@ absolute_default_trait_setting = {
 	'sfxs': []
 }
 
-def get_doc_by_id(collection_name, doc_id):
+def get_doc_by_id(collection_name: str, doc_id: str):
 	"""
 	Helper function to get a document by ID from a collection and store it in Redis.
 	@param collection_name: Name of the collection
@@ -295,6 +295,19 @@ def get_doc_by_id(collection_name, doc_id):
 		doc = {k: v for k, v in doc.items() if v is not None}
 		serialized = serialize_doc(doc)
 		r.hset(doc_id, mapping=serialized)
+	return doc
+
+def update_doc(collection_name: str, doc: dict):
+	"""
+	Helper function to update a document in a collection and update it in Redis.
+	@param collection_name: Name of the collection
+	@param doc: Document data
+	@return: Updated document data
+	"""
+	logger.info(f"update_doc:\tcollection: { collection_name }\tdoc: { doc }")
+	db.collection(collection_name).update(doc)
+	serialized = serialize_doc(doc)
+	r.hset(doc.get('_id'), mapping=serialized)
 	return doc
 	
 
@@ -513,108 +526,83 @@ class MutateTraitSetting(Mutation):
 		entity_id: ID of entity to add trait setting to
 		die_type: for transferring resources
 		"""
-		try:
-			trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
-			if trait_setting is None and entity_id is not None:
-				trait_setting = db.collection('TraitSettings').insert({**trait_setting_input, '_from': entity_id})
-			elif trait_setting is not None and trait_setting.get('_from').startswith('Entities/'):
-				# check if the setting is for an archetype,
-				# in which case, all instances of that archetype with the same settings
-				# should also be updated
-				# entity = get_doc_by_id('Entities', trait_setting.get('_from'))
-				# if entity is not None \
-				# 		and entity.get('_id').startswith('Entities/') \
-				# 		and get_doc_by_id('Entities', entity.get('_id')).get('is_archetype'):
-				# 	# logger.info(f"MutateTraitSetting:\tentity is archetype, updating instances")
-				# 	instances = db.collection('Entities').find({'is_archetype': False, 'archetype_id': entity.get('_id')})
-				# 	for instance in instances:
-				# 		old_trait_setting = db.collection('TraitSettings').find({'_from': instance.get('_id'), '_to': trait_setting.get('_to')})
-				# 		if not old_trait_setting.empty():
-				# 			old_trait_setting = [doc for doc in old_trait_setting][0]
-				# 			db.collection('TraitSettings').update_match({
-				# 				'_from': instance.get('_id'),
-				# 				'_to': trait_setting.get('_to'),
-				# 				'rating_type': old_trait_setting.get('rating_type'),
-				# 				'rating': old_trait_setting.get('rating'),
-				# 				'statement': old_trait_setting.get('statement'),
-				# 				'notes': old_trait_setting.get('notes'),
-				# 				'locations_enabled': old_trait_setting.get('locations_enabled'),
-				# 				'locations_disabled': old_trait_setting.get('locations_disabled'),
-				# 				'sfxs': old_trait_setting.get('sfxs')
-				# 			}, trait_setting_input)
-				# 		else:
-				# 			db.collection('TraitSettings').insert({
-				# 				'_from': instance.get('_id'),
-				# 				'_to': trait_setting.get('_to'),
-				# 				**trait_setting_input
-				# 			})
+		# try:
+		trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
+		if trait_setting is None and entity_id is not None:
+			trait_setting = db.collection('TraitSettings').insert({**trait_setting_input, '_from': entity_id})
+		elif trait_setting is not None and trait_setting.get('_from').startswith('Entities/'):
 
+			# transfering a trait
+			if entity_id is not None and trait_setting.get('_from') != entity_id:
 
-				# transfering a trait
-				if entity_id is not None and trait_setting.get('_from') != entity_id:
+				# transferring resources happens per die
+				if trait_setting.get('rating_type') == 'resource' and die_type is not None:
+					# take out one die of the type from the original resource's rating
+					new_rating = trait_setting.get('rating').copy()
+					new_rating.remove(die_type)
+					trait_setting = { **trait_setting, 'rating': new_rating }
 
-					# transferring resources happens per die
-					if trait_setting.get('rating_type') == 'resource' and die_type is not None:
-						# take out one die of the type from the original resource's rating
-						new_rating = trait_setting.get('rating').copy()
-						new_rating.remove(die_type)
-						trait_setting = { **trait_setting, 'rating': new_rating }
+					# needed query to compare "" statement with null statement
+					query = f"""FOR setting IN TraitSettings
+					FILTER setting._from == '{ entity_id }'
+					FILTER setting._to == '{ trait_setting.get('_to') }'
+					FILTER TRIM(setting.statement) == TRIM('{ trait_setting.get('statement') }')
+					RETURN setting"""
+					pockets = db.aql.execute(query)
+					if not pockets.empty():
+						to_pocket = [doc for doc in pockets][0]
+						to_pocket['rating'] = to_pocket.get('rating') + [die_type]
+						# logger.info(f"MutateTraitSetting:\tto_pocket: { to_pocket }")
+						update_doc('TraitSettings', to_pocket)
+					else:
+						new_doc = {
+							'_from': entity_id,
+							'_to': trait_setting.get('_to'),
+							**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
+							'rating': [die_type],
+							'hidden': False
+						}
+						# logger.info(f"MutateTraitSetting:\tnew pocket: { new_doc }")
+						db.collection('TraitSettings').insert(new_doc)
 
-						# needed query to compare "" statement with null statement
-						query = f"""FOR setting IN TraitSettings
-						FILTER setting._from == '{ entity_id }'
-						FILTER setting._to == '{ trait_setting.get('_to') }'
-						FILTER TRIM(setting.statement) == TRIM('{ trait_setting.get('statement') }')
-						RETURN setting"""
-						pockets = db.aql.execute(query)
-						if not pockets.empty():
-							to_pocket = [doc for doc in pockets][0]
-							to_pocket['rating'] = to_pocket.get('rating') + [die_type]
-							# logger.info(f"MutateTraitSetting:\tto_pocket: { to_pocket }")
-							db.collection('TraitSettings').update(to_pocket)
-						else:
-							new_doc = {
-								'_from': entity_id,
-								'_to': trait_setting.get('_to'),
-								**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
-								'rating': [die_type],
-								'hidden': False
-							}
-							# logger.info(f"MutateTraitSetting:\tnew pocket: { new_doc }")
-							db.collection('TraitSettings').insert(new_doc)
+				# if it's not a resource, but instead an asset, the entire asset is transferred at once
+				elif get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset') == 'Traitsets/3':
+					trait_setting = { **trait_setting, '_from': entity_id }
 
-					# if it's not a resource, but instead an asset, the entire asset is transferred at once
-					elif get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset') == 'Traitsets/3':
-						trait_setting = { **trait_setting, '_from': entity_id }
-
-				# then update the actual setting
-				if trait_setting_input is not None and trait_setting_input.get('teach_to') is None:
-					trait_setting = {
-						'_id': trait_setting.get('_id'),
-						'_from': trait_setting.get('_from'),
-						'_to': trait_setting.get('_to'),
-						**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
-						**trait_setting_input
-					}
-				elif trait_setting_input is not None \
-						and trait_setting_input.get('teach_to') is not None \
-						and get_doc_by_id('Entities', trait_setting_input.get('teach_to')).get('type') == 'character':
-					trait_setting = {
-						'_id': trait_setting.get('_id'),
-						'_from': trait_setting.get('_from'),
-						'_to': trait_setting.get('_to'),
-						**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
-						'known_to': list(set(trait_setting.get('known_to', []) + [trait_setting_input.get('teach_to')]))
-					}
-				db.collection('TraitSettings').update(trait_setting)
-			else:
-				if trait_setting_input is not None:
-					trait_setting = {**trait_setting, **trait_setting_input}
-				db.collection('TraitSettings').update(trait_setting)
-			return MutateTraitSetting(trait=Trait(trait_setting_id=trait_setting.get('_id')))
-		except Exception as e:
-			# logger.info(e)
-			return MutateTraitSetting(message=f"MutateTraitSetting failed: {str(e)}")
+			# then update the actual setting
+			if trait_setting_input is not None and trait_setting_input.get('teach_to') is None:
+				trait_setting = {
+					'_id': trait_setting.get('_id'),
+					'_from': trait_setting.get('_from'),
+					'_to': trait_setting.get('_to'),
+					**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
+					**trait_setting_input
+				}
+			elif trait_setting_input is not None \
+					and trait_setting_input.get('teach_to') is not None \
+					and get_doc_by_id('Entities', trait_setting_input.get('teach_to')).get('type') == 'character':
+				trait_setting = {
+					'_id': trait_setting.get('_id'),
+					'_from': trait_setting.get('_from'),
+					'_to': trait_setting.get('_to'),
+					**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
+					'known_to': list(set(trait_setting.get('known_to', []) + [trait_setting_input.get('teach_to')]))
+				}
+			update_doc('TraitSettings', trait_setting)
+		else:
+			if trait_setting_input is not None:
+				trait_setting = {
+					'_id': trait_setting.get('_id'),
+					'_from': trait_setting.get('_from'),
+					'_to': trait_setting.get('_to'),
+					**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
+					**trait_setting_input
+				}
+			update_doc('TraitSettings', trait_setting)
+		return MutateTraitSetting(trait=Trait(trait_setting_id=trait_setting.get('_id')))
+		# except Exception as e:
+		# 	logger.info(e)
+		# 	return MutateTraitSetting(message=f"MutateTraitSetting failed: {str(e)}")
 
 class CloneTraitSetting(Mutation):
 	class Arguments:
@@ -1082,7 +1070,7 @@ class MutateTrait(Mutation):
 
 			trait = {**trait, **trait_input}
 
-		db.collection('Traits').update(trait)
+		update_doc('Traits', trait)
 		return MutateTrait(trait=Trait(id=trait.get('_id')))
 
 class AssignTrait(Mutation):
@@ -1354,7 +1342,7 @@ class AssignSubTrait(Mutation):
 				for shortcut_trait in shortcut_traits:
 					trait['shortcut_traits'].append(shortcut_trait.get('_id'))
 				trait['shortcut_traits'] = list(set(trait.get('shortcut_traits')))
-				db.collection('TraitSettings').update(trait)
+				update_doc('TraitSettings', trait)
 				return AssignSubTrait(trait=Trait(id=subtrait_id, trait_setting_id=trait_setting_id))
 
 class UnassignSubTrait(Mutation):
@@ -1373,7 +1361,7 @@ class UnassignSubTrait(Mutation):
 			if trait is not None and 'shortcut_traits' in trait and subtrait_setting_id in trait.get('shortcut_traits'):
 				# logger.info(f"UnassignSubTrait:\t{ trait }")
 				trait['shortcut_traits'].remove(subtrait_setting_id)
-				db.collection('TraitSettings').update(trait)
+				update_doc('TraitSettings', trait)
 			else:
 				db.collection('TraitSettings').delete(subtrait_setting_id)
 			return UnassignSubTrait(success=True)
@@ -1842,7 +1830,7 @@ class MutateTraitset(Mutation):
 			if traitset_settings is not None:
 				for setting in traitset_settings:
 					if setting.get('dicepool_limit') < traitset_input.get('dicepool_limit'):
-						db.collection('TraitsetSettings').update(setting, {'dicepool_limit': traitset_input.get('dicepool_limit')})
+						update_doc('TraitsetSettings', setting, {'dicepool_limit': traitset_input.get('dicepool_limit')})
 		
 		if 'sfxs' in traitset_input:
 			# remove old sfxs from traitset settings if removed from traitset
@@ -1853,7 +1841,7 @@ class MutateTraitset(Mutation):
 						# then remove them from the traitset settings
 						for setting in traitset_settings:
 							if sfx in setting.get('sfxs'):
-								db.collection('TraitsetSettings').update(setting, {'sfxs': [s for s in setting.get('sfxs') if s != sfx]})
+								update_doc('TraitsetSettings', setting, {'sfxs': [s for s in setting.get('sfxs') if s != sfx]})
 
 			# add new sfxs to traitset settings if added to traitset and not yet present in traitset settings
 			if traitset_settings is not None and ts.get('sfxs') is not None:
@@ -1861,10 +1849,10 @@ class MutateTraitset(Mutation):
 					if sfx not in ts.get('sfxs'):
 						for setting in traitset_settings:
 							if sfx not in setting.get('sfxs'):
-								db.collection('TraitsetSettings').update(setting, {'sfxs': setting.get('sfxs') + [sfx]})
+								update_doc('TraitsetSettings', setting, {'sfxs': setting.get('sfxs') + [sfx]})
 
 		ts = {**ts, **traitset_input}
-		db.collection('Traitsets').update(ts)
+		update_doc('Traitsets', ts)
 		return MutateTraitset(traitset=Traitset(id=ts.get('_id')), message="Traitset updated")
 
 class DeleteTraitset(Mutation):
@@ -1925,7 +1913,7 @@ class UpdateTraitsetDefault(Mutation):
 				default_trait_settings = db.collection('TraitSettings').find({'_from': trait.get('_id'), '_to': 'Traits/1'})
 				for default_trait_setting in default_trait_settings:
 					default_trait_setting['hidden'] = default_settings.hidden
-					db.collection('TraitSettings').update(default_trait_setting)
+					update_doc('TraitSettings', default_trait_setting)
 		# logger.info("Updating default trait setting for traitset: ", traitset_id, " to: ", default_settings)
 		if db.collection('TraitSettings').find({'_from': traitset_id, '_to': 'Traits/1'}).count() == 1:
 			db.collection('TraitSettings').update_match(
@@ -2030,7 +2018,7 @@ class UpdateTraitsetSetting(Mutation):
 
 		if tss:
 			tss = { **tss, **traitset_setting_input }
-			db.collection('TraitsetSettings').update(tss)
+			update_doc('TraitsetSettings', tss)
 			return UpdateTraitsetSetting(traitset_setting=TraitsetSetting(id=traitset_setting_id))
 		else:
 			db.collection('TraitsetSettings').insert(
@@ -2462,7 +2450,7 @@ class Entity(Interface):
 			elif entity.get('type') == 'faction':
 				result.append(Faction(id=entity_id))
 		if changed:
-			db.collection('Entities').update({'_id': parent.id, 'known_to': known_to})
+			update_doc('Entities', {'_id': parent.id, 'known_to': known_to})
 		return result
 
 class EntityInput(InputObjectType):
@@ -2546,12 +2534,12 @@ class UpdateEntity(Mutation):
 			if entity.get('_id') not in known_to:
 				known_to.append(entity.get('_id'))
 			location_doc['known_to'] = list(set(known_to))
-			db.collection('Entities').update(location_doc)
+			update_doc('Entities', location_doc)
 		elif (location or (entity_input and entity_input.get('location'))) and entity.get('type') == 'location':
 			zones = db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'super'})
 			zone = [doc for doc in zones][0]
 			zone['_to'] = location or entity_input.pop('location')
-			db.collection('Relations').update(zone)
+			update_doc('Relations', zone)
 		# logger.info(f"UpdateEntity.mutate:\t3\tchanges: { changes }")
 		if following is not None:
 			changes['location'] = following
@@ -2574,7 +2562,7 @@ class UpdateEntity(Mutation):
 			**(entity_input if entity_input is not None else {})
 		}
 		# logger.info(f"UpdateEntity.mutate:\t6\tentity: { entity }")
-		db.collection('Entities').update(entity)
+		update_doc('Entities', entity)
 		if(entity.get('type') == 'location'):
 			return UpdateEntity(entity=Location(id=entity.get('_id'), entity_type=entity.get('type')))
 		elif(entity.get('type') in ['character', 'gm']):
@@ -2716,14 +2704,14 @@ class DeleteEntity(Mutation):
 					# thus we can delete it
 					db.collection('TraitSettings').delete(doc['_id'])
 				else:
-					db.collection('TraitSettings').update(doc)
+					update_doc('TraitSettings', doc)
 			query = f"""FOR s IN TraitSettings
 						FILTER { entity_id } IN s.locations_disabled
 						RETURN s"""
 			cursor = db.aql.execute(query)
 			for doc in cursor:
 				doc['locations_disabled'].remove(entity_id)
-				db.collection('TraitSettings').update(doc)
+				update_doc('TraitSettings', doc)
 			
 			# and all traitset settings
 			traitset_settings = db.collection('TraitsetSettings').find({'_from': entity_id})
@@ -2856,12 +2844,12 @@ class CreateOrUpdateCharacter(Mutation):
 			if character_doc:
 				# logger.info("updating character: ", input)
 				character_doc.update(input)
-				db.collection('Entities').update(character_doc)
+				update_doc('Entities', character_doc)
 				if (location_id := input.get('location')) is not None:
 					# logger.info(f"CreateOrUpdateCharacter:\tlocation_id: { location_id }")
 					loc_doc = get_doc_by_id('Entities', location_id)
 					loc_doc['known_to'] = list(set((loc_doc.get('known_to') or []) + [character_doc.get('_id')]))
-					db.collection('Entities').update(loc_doc)
+					update_doc('Entities', loc_doc)
 			else:
 				raise Exception('Character not found')
 		else:
@@ -2979,7 +2967,7 @@ class Location(ObjectType):
 					if entity.get('known_to') is None:
 						entity['known_to'] = []
 					entity['known_to'].append(other_entity.get('_id'))
-			db.collection('Entities').update(entity)
+			update_doc('Entities', entity)
 
 		result = []
 		for entity in entities:
@@ -3044,7 +3032,7 @@ class UpdateLocation(Mutation):
 				**loc,
 				**location_input
 			}
-			db.collection('Entities').update(loc)
+			update_doc('Entities', loc)
 		return UpdateLocation(location=Location(id=loc['_id']))
 
 
@@ -3139,7 +3127,7 @@ class UpdateRelation(Mutation):
 	def mutate(self, info, id, favorite):
 		relation = get_doc_by_id('Relations', id)
 		relation['favorite'] = favorite
-		db.collection('Relations').update(relation)
+		update_doc('Relations', relation)
 		return UpdateRelation(relation=Relation(id=id, favorite=favorite))
 
 class DeleteRelation(Mutation):
@@ -3702,7 +3690,7 @@ def pick_character(uuid, character):
 	
 	character_doc = get_doc_by_id('Entities', character)
 	character_doc['active'] = True
-	db.collection('Entities').update(character_doc)
+	update_doc('Entities', character_doc)
 
 	return { "success": False }
 
@@ -4283,7 +4271,7 @@ def imagegen(entity_key, force):
 		)
 		entity['imagening'] = True
 		entity['imagened'] = False
-		db.collection('Entities').update(entity)
+		update_doc('Entities', entity)
 		return jsonify({ "success": True })
 	else:
 		return jsonify({ "success": False })
@@ -4351,7 +4339,7 @@ def save_image(filepath, entity_key, location_key=None):
 	entity = get_doc_by_id('Entities', entity_key)
 	entity['imagening'] = False
 	entity['imagened'] = True
-	db.collection('Entities').update(entity)
+	update_doc('Entities', entity)
 
 	return jsonify({"success": True})
 
