@@ -304,6 +304,7 @@ def update_doc(collection_name: str, doc: dict):
 	@param doc: Document data
 	@return: Updated document data
 	"""
+	doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
 	logger.info(f"update_doc:\tcollection: { collection_name }\tdoc: { doc }")
 	db.collection(collection_name).update(doc)
 	serialized = serialize_doc(doc)
