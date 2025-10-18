@@ -5,6 +5,7 @@ from uuid import uuid4
 import pandas as pd
 import datetime
 import random
+import json
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -201,10 +202,10 @@ class SFX(ObjectType):
 	description = String()
 
 	def resolve_name(parent, info):
-		return db.collection('SFXs').get(parent.id)['name']
+		return get_doc_by_id('SFXs', parent.id)['name']
 
 	def resolve_description(parent, info):
-		return db.collection('SFXs').get(parent.id)['description']
+		return get_doc_by_id('SFXs', parent.id)['description']
 
 class CreateSFX(Mutation):
 	class Arguments:
@@ -229,7 +230,7 @@ class UpdateSFX(Mutation):
 	sfx = Field(lambda: SFX)
 
 	def mutate(self, info, id, name=None, description=None):
-		sfx = db.collection('SFXs').get(id)
+		sfx = get_doc_by_id('SFXs', id)
 		if name:
 			sfx['name'] = name
 		if description:
@@ -278,6 +279,43 @@ absolute_default_trait_setting = {
 	'sfxs': []
 }
 
+def get_doc_by_id(collection_name, doc_id):
+	"""
+	Helper function to get a document by ID from a collection and store it in Redis.
+	@param collection_name: Name of the collection
+	@param doc_id: ID of the document
+	@return: Document data
+	"""
+	# first check if the doc is in redis
+	if r.exists(doc_id):
+		stored = r.hgetall(doc_id)
+		doc = deserialize_doc(stored)
+	else:
+		doc = db.collection(collection_name).get(doc_id)
+		doc = {k: v for k, v in doc.items() if v is not None}
+		serialized = serialize_doc(doc)
+		r.hset(doc_id, mapping=serialized)
+	return doc
+	
+
+def serialize_doc(doc):
+	serialized = {}
+	for k, v in doc.items():
+		if isinstance(v, (list, bool)):
+			serialized[k] = json.dumps(v)
+		else:
+			serialized[k] = str(v)
+	return serialized
+
+def deserialize_doc(stored):
+	doc = {}
+	for k, v in stored.items():
+		try:
+			doc[k.decode('utf-8')] = json.loads(v.decode('utf-8'))
+		except json.JSONDecodeError:
+			doc[k.decode('utf-8')] = v.decode('utf-8')
+	return doc
+
 class TraitSetting(ObjectType):
 	id = ID()
 	trait = Field(lambda: Trait)
@@ -298,17 +336,7 @@ class TraitSetting(ObjectType):
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
 		if parent.id:
-			if not r.exists(parent.id):
-				logger.info("TraitSettings not in Redis")
-				traitsetting = db.collection('TraitSettings').get(parent.id)
-				r.sadd('TraitSettings', parent.id)
-				r.hset(parent.id, mapping=traitsetting)
-				logger.info("TraitSettings added to Redis")
-				logger.info(r.hgetall(parent.id))
-			else:
-				logger.info("TraitSettings in Redis")
-				logger.info(r.hgetall(parent.id))
-			traitsetting = r.hgetall(parent.id)
+			traitsetting = get_doc_by_id('TraitSettings', parent.id)
 			parent.statement = traitsetting.get('statement')
 			parent.notes = traitsetting.get('notes')
 			parent.rating_type = traitsetting.get('rating_type')
@@ -323,7 +351,7 @@ class TraitSetting(ObjectType):
 		if parent.trait:
 			return parent.trait
 		elif parent.id:
-			return Trait(id=db.collection('TraitSettings').get(parent.id)['_to'])
+			return Trait(id=get_doc_by_id('TraitSettings', parent.id).get('_to'))
 		else:
 			return None
 
@@ -331,9 +359,9 @@ class TraitSetting(ObjectType):
 		if parent.from_entity and parent.from_entity.id is not None:
 			return parent.from_entity
 		elif parent.id:
-			entity_id = db.collection('TraitSettings').get(parent.id).get('_from')
+			entity_id = get_doc_by_id('TraitSettings', parent.id).get('_from')
 			if entity_id.startswith('Entities/'):
-				entity_type = db.collection('Entities').get(entity_id).get('type')
+				entity_type = get_doc_by_id('Entities', entity_id).get('type')
 				if entity_type == 'character':
 					return Character(id=entity_id)
 				elif entity_type in ['npc', 'gm']:
@@ -345,9 +373,9 @@ class TraitSetting(ObjectType):
 				elif entity_type == 'faction':
 					return Faction(id=entity_id)
 			elif entity_id.startswith('Relations/'):
-				entity_id = db.collection('Relations').get(entity_id).get('_from')
+				entity_id = get_doc_by_id('Relations', entity_id).get('_from')
 				if entity_id.startswith('Entities/'):
-					entity_type = db.collection('Entities').get(entity_id).get('type')
+					entity_type = get_doc_by_id('Entities', entity_id).get('type')
 					if entity_type in ['character', 'gm']:
 						return Character(id=entity_id)
 					elif entity_type == 'npc':
@@ -367,7 +395,7 @@ class TraitSetting(ObjectType):
 		if parent.statement:
 			return parent.statement
 		if parent.id:
-			return db.collection('TraitSettings').get(parent.id).get('statement')
+			return get_doc_by_id('TraitSettings', parent.id).get('statement')
 		else:
 			return None
 
@@ -375,7 +403,7 @@ class TraitSetting(ObjectType):
 		if parent.notes:
 			return parent.notes
 		elif parent.id:
-			return db.collection('TraitSettings').get(parent.id).get('notes')
+			return get_doc_by_id('TraitSettings', parent.id).get('notes')
 		else:
 			return None
 
@@ -383,7 +411,7 @@ class TraitSetting(ObjectType):
 		if parent.rating_type:
 			return parent.rating_type
 		if parent.id:
-			return db.collection('TraitSettings').get(parent.id).get('rating_type')
+			return get_doc_by_id('TraitSettings', parent.id).get('rating_type')
 		else:
 			return None
 
@@ -391,7 +419,7 @@ class TraitSetting(ObjectType):
 		if parent.rating != None:
 			return parent.rating
 		if parent.id:
-			return db.collection('TraitSettings').get(parent.id).get('rating')
+			return get_doc_by_id('TraitSettings', parent.id).get('rating')
 		else:
 			return None
 
@@ -405,7 +433,7 @@ class TraitSetting(ObjectType):
 		if parent.locations_enabled is not None:
 			return parent.locations_enabled
 		if parent.id:
-			return db.collection('TraitSettings').get(parent.id).get('locations_enabled')
+			return get_doc_by_id('TraitSettings', parent.id).get('locations_enabled')
 		else:
 			return None
 		
@@ -413,7 +441,7 @@ class TraitSetting(ObjectType):
 		if parent.locations_disabled is not None:
 			return parent.locations_disabled
 		if parent.id:
-			return db.collection('TraitSettings').get(parent.id).get('locations_disabled')
+			return get_doc_by_id('TraitSettings', parent.id).get('locations_disabled')
 		else:
 			return None
 
@@ -421,19 +449,19 @@ class TraitSetting(ObjectType):
 		if parent.sfxs != None:
 			return parent.sfxs
 		if parent.id:
-			sfxs = db.collection('TraitSettings').get(parent.id).get('sfxs')
+			sfxs = get_doc_by_id('TraitSettings', parent.id).get('sfxs')
 			if sfxs is not None:
 				return [SFX(id=sfx) for sfx in sfxs]
 		else:
 			return []
 
 	def resolve_sfxs_ids(parent, info):
-		if db.collection('TraitSettings').get(parent.id).get('sfxs') is not None:
-			return db.collection('TraitSettings').get(parent.id).get('sfxs')
+		if get_doc_by_id('TraitSettings', parent.id).get('sfxs') is not None:
+			return get_doc_by_id('TraitSettings', parent.id).get('sfxs')
 
 	def resolve_known_to(parent, info):
 		if parent.id:
-			characters = db.collection('TraitSettings').get(parent.id).get('known_to')
+			characters = get_doc_by_id('TraitSettings', parent.id).get('known_to')
 			if characters is None:
 				return []
 			return [Character(id=character) for character in characters]
@@ -486,17 +514,17 @@ class MutateTraitSetting(Mutation):
 		die_type: for transferring resources
 		"""
 		try:
-			trait_setting = db.collection('TraitSettings').get(trait_setting_id)
+			trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
 			if trait_setting is None and entity_id is not None:
 				trait_setting = db.collection('TraitSettings').insert({**trait_setting_input, '_from': entity_id})
 			elif trait_setting is not None and trait_setting.get('_from').startswith('Entities/'):
 				# check if the setting is for an archetype,
 				# in which case, all instances of that archetype with the same settings
 				# should also be updated
-				# entity = db.collection('Entities').get(trait_setting.get('_from'))
+				# entity = get_doc_by_id('Entities', trait_setting.get('_from'))
 				# if entity is not None \
 				# 		and entity.get('_id').startswith('Entities/') \
-				# 		and db.collection('Entities').get(entity.get('_id')).get('is_archetype'):
+				# 		and get_doc_by_id('Entities', entity.get('_id')).get('is_archetype'):
 				# 	# logger.info(f"MutateTraitSetting:\tentity is archetype, updating instances")
 				# 	instances = db.collection('Entities').find({'is_archetype': False, 'archetype_id': entity.get('_id')})
 				# 	for instance in instances:
@@ -556,7 +584,7 @@ class MutateTraitSetting(Mutation):
 							db.collection('TraitSettings').insert(new_doc)
 
 					# if it's not a resource, but instead an asset, the entire asset is transferred at once
-					elif db.collection('Traits').get(trait_setting.get('_to')).get('traitset') == 'Traitsets/3':
+					elif get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset') == 'Traitsets/3':
 						trait_setting = { **trait_setting, '_from': entity_id }
 
 				# then update the actual setting
@@ -570,7 +598,7 @@ class MutateTraitSetting(Mutation):
 					}
 				elif trait_setting_input is not None \
 						and trait_setting_input.get('teach_to') is not None \
-						and db.collection('Entities').get(trait_setting_input.get('teach_to')).get('type') == 'character':
+						and get_doc_by_id('Entities', trait_setting_input.get('teach_to')).get('type') == 'character':
 					trait_setting = {
 						'_id': trait_setting.get('_id'),
 						'_from': trait_setting.get('_from'),
@@ -596,7 +624,7 @@ class CloneTraitSetting(Mutation):
 	trait = Field(lambda: Trait)
 
 	def mutate(root, info, trait_setting_id=None, trait_setting_input=None):
-		trait_setting = db.collection('TraitSettings').get(trait_setting_id)
+		trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
 
 		new_trait_settings = { key: value for key, value in trait_setting.items() if not key.startswith('_') }
 		if trait_setting_input is not None:
@@ -657,10 +685,10 @@ class Trait(ObjectType):
 	@classmethod
 	def _hydrate_trait(cls, parent, info):
 		if parent.id:
-			trait = db.collection('Traits').get(parent.id)
+			trait = get_doc_by_id('Traits', parent.id)
 		if parent.trait_setting_id:
-			trait_id = db.collection('TraitSettings').get(parent.trait_setting_id).get('_to')
-			trait = db.collection('Traits').get(trait_id)
+			trait_id = get_doc_by_id('TraitSettings', parent.trait_setting_id).get('_to')
+			trait = get_doc_by_id('Traits', trait_id)
 		parent.traitset_id = trait.get('traitset')
 		parent.id = trait.get('_id')
 		parent.name = trait.get('name')
@@ -671,7 +699,7 @@ class Trait(ObjectType):
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
 		if parent.trait_setting_id:
-			traitsetting = db.collection('TraitSettings').get(parent.trait_setting_id)
+			traitsetting = get_doc_by_id('TraitSettings', parent.trait_setting_id)
 			parent.statement = traitsetting.get('statement')
 			parent.notes = traitsetting.get('notes')
 			parent.rating_type = traitsetting.get('rating_type')
@@ -684,44 +712,44 @@ class Trait(ObjectType):
 			return parent.id
 		elif parent.trait_setting_id:
 			# Trait initialized with traitsetting
-			parent.id = db.collection('TraitSettings').get(parent.trait_setting_id).get('_to')
+			parent.id = get_doc_by_id('TraitSettings', parent.trait_setting_id).get('_to')
 			return parent.id
 		else:
 			raise Exception("trait_setting is None 1")
 
 	def resolve_name(parent, info):
 		# logger.info(f"\nTrait.resolve_name:\ttrait:\n'{ parent }'")
-		if parent.name:
-			return parent.name
-		else:
-			Trait._hydrate_trait(parent, info)
-			return parent.name
-		result = db.collection('Traits').get(parent.id).get('name')
+		# if parent.name:
+		# 	return parent.name
+		# else:
+		# 	Trait._hydrate_trait(parent, info)
+		# 	return parent.name
+		result = get_doc_by_id('Traits', parent.id).get('name')
 		return result
 
 	def resolve_explanation(parent, info):
 		# logger.info(f"resolve_explanation:\ttrait: '{ parent.id }'")
-		result = db.collection('Traits').get(parent.id).get('explanation')
+		result = get_doc_by_id('Traits', parent.id).get('explanation')
 		return result
 
 	def resolve_traitset_id(parent, info):
-		return db.collection('Traits').get(parent.id).get('traitset')
+		return get_doc_by_id('Traits', parent.id).get('traitset')
 
 	def resolve_traitset(parent, info):
 		# logger.info("resolving traitset for trait: ", parent.id)
-		return Traitset(id=db.collection('Traits').get(parent.id).get('traitset'))
+		return Traitset(id=get_doc_by_id('Traits', parent.id).get('traitset'))
 
 	def resolve_required_traits(parent, info):
 		# logger.info("resolve_required_traits:\ttrait: ", parent.id)
 		if parent.id is None and parent.trait_setting_id:
-			parent.id = db.collection('TraitSettings').get(parent.trait_setting_id).get('_to')
-		required_traits = db.collection('Traits').get(parent.id).get('required_traits') or []
+			parent.id = get_doc_by_id('TraitSettings', parent.trait_setting_id).get('_to')
+		required_traits = get_doc_by_id('Traits', parent.id).get('required_traits') or []
 		return [Trait(id=trait) for trait in required_traits]
 
 	def resolve_location_restricted(parent, info):
 		if not parent.location_restricted:
 			Trait._hydrate_trait(parent, info)
-		return parent.location_restricted or db.collection('Traitsets').get(parent.traitset_id).get('location_restricted')
+		return parent.location_restricted or get_doc_by_id('Traitsets', parent.traitset_id).get('location_restricted')
 
 	def resolve_trait_setting(parent, info):
 		if parent.trait_setting:
@@ -751,7 +779,7 @@ class Trait(ObjectType):
 		if parent.statement:
 			return parent.statement
 		elif parent.trait_setting_id:
-			trait_setting = db.collection('TraitSettings').get(parent.trait_setting_id)
+			trait_setting = get_doc_by_id('TraitSettings', parent.trait_setting_id)
 			parent.statement = trait_setting.get('statement')
 			parent.rating_type = trait_setting.get('rating_type')
 			parent.rating = trait_setting.get('rating')
@@ -786,7 +814,7 @@ class Trait(ObjectType):
 		if parent.notes:
 			return parent.notes
 		elif parent.trait_setting_id:
-			trait_setting = db.collection('TraitSettings').get(parent.trait_setting_id)
+			trait_setting = get_doc_by_id('TraitSettings', parent.trait_setting_id)
 			parent.statement = trait_setting.get('statement')
 			parent.notes = trait_setting.get('notes')
 			parent.rating_type = trait_setting.get('rating_type')
@@ -797,7 +825,7 @@ class Trait(ObjectType):
 		if parent.rating_type:
 			return parent.rating_type
 		elif parent.trait_setting_id:
-			trait_setting = db.collection('TraitSettings').get(parent.trait_setting_id)
+			trait_setting = get_doc_by_id('TraitSettings', parent.trait_setting_id)
 			parent.statement = trait_setting.get('statement')
 			parent.notes = trait_setting.get('notes')
 			parent.rating_type = trait_setting.get('rating_type')
@@ -810,7 +838,7 @@ class Trait(ObjectType):
 		if parent.rating:
 			return parent.rating
 		elif parent.trait_setting_id:
-			trait_setting = db.collection('TraitSettings').get(parent.trait_setting_id)
+			trait_setting = get_doc_by_id('TraitSettings', parent.trait_setting_id)
 			parent.statement = trait_setting.get('statement')
 			parent.rating_type = trait_setting.get('rating_type')
 			parent.rating = trait_setting.get('rating')
@@ -821,13 +849,13 @@ class Trait(ObjectType):
 	def resolve_sfxs(parent, info):
 		if parent.trait_setting_id:
 			# logger.info("resolve_sfxs:\ttrait_setting: ", parent.trait_setting_id)
-			sfxs = db.collection('TraitSettings').get(parent.trait_setting_id).get('sfxs')
+			sfxs = get_doc_by_id('TraitSettings', parent.trait_setting_id).get('sfxs')
 			if sfxs is not None:
 				return [SFX(id=sfx) for sfx in sfxs]
 		return []
 
 	def resolve_possible_sfxs(parent, info):
-		trait = db.collection('Traits').get(parent.id)
+		trait = get_doc_by_id('Traits', parent.id)
 		return [SFX(id=sfx) for sfx in trait.get('possible_sfxs') or []]
 
 	def resolve_inheritable(parent, info):
@@ -843,7 +871,7 @@ class Trait(ObjectType):
 			if default_trait_setting:
 				return TraitSetting(id=default_trait_setting.get('_id'))
 			else:
-				traitset_id = db.collection('Traits').get(parent.id).get('traitset')
+				traitset_id = get_doc_by_id('Traits', parent.id).get('traitset')
 				default_traitset_settings = db.collection('TraitSettings').find({'_from': traitset_id, '_to': 'Traits/1'})
 				default_trait_setting = [doc for doc in default_traitset_settings][0] if default_traitset_settings.count() == 1 else None
 				if default_trait_setting:
@@ -863,9 +891,9 @@ class Trait(ObjectType):
 
 	def resolve_entities(parent, info):
 		if parent.trait_setting_id:
-			entity_id = db.collection('TraitSettings').get(parent.trait_setting_id).get('_from')
+			entity_id = get_doc_by_id('TraitSettings', parent.trait_setting_id).get('_from')
 			if entity_id.startswith('Entities/'):
-				entity_type = db.collection('Entities').get(entity_id).get('type')
+				entity_type = get_doc_by_id('Entities', entity_id).get('type')
 				if entity_type == 'character':
 					return [Character(id=entity_id)]
 				elif entity_type == 'npc':
@@ -885,7 +913,7 @@ class Trait(ObjectType):
 			for setting in traitsettings:
 				entity_id = setting.get('_from')
 				if entity_id.startswith('Entities/'):
-					entity_type = db.collection('Entities').get(entity_id).get('type')
+					entity_type = get_doc_by_id('Entities', entity_id).get('type')
 					if entity_type == 'character':
 						entities.append(Character(id=entity_id))
 					elif entity_type == 'npc':
@@ -924,22 +952,22 @@ class Trait(ObjectType):
 		return [Trait(id=doc.get('_to'), trait_setting_id=doc.get('_id')) for doc in result]
 
 	def resolve_possible_sub_traits(parent, info):
-		if parent.id.startswith('Traits/') and (possible_sub_traits := db.collection('Traits').get(parent.id).get('possible_sub_traits')):
+		if parent.id.startswith('Traits/') and (possible_sub_traits := get_doc_by_id('Traits', parent.id).get('possible_sub_traits')):
 			result = []
 			for sub_trait in possible_sub_traits:
-				traitset_id = db.collection('Traits').get(sub_trait).get('traitset')
+				traitset_id = get_doc_by_id('Traits', sub_trait).get('traitset')
 				# sub-traitsets
-				if 'subtrait' in db.collection('Traitsets').get(traitset_id).get('entity_types'):
+				if 'subtrait' in get_doc_by_id('Traitsets', traitset_id).get('entity_types'):
 					result.append(Trait(id=sub_trait))
 				# entity traits
 				elif info.context.get('entity_id'):
 					traits = db.collection('TraitSettings').find({ '_from': info.context.get('entity_id'), '_to': sub_trait })
-					entity = db.collection('Entities').get(info.context.get('entity_id'))
+					entity = get_doc_by_id('Entities', info.context.get('entity_id'))
 					traits = filter_trait_settings_by_location(traits, retrieve_location(entity).get('_id'))
 					for trait in traits:
 						result.append(Trait(id=trait.get('_to'), trait_setting_id=trait.get('_id')))
 				elif info.context.get('trait_setting_id'):
-					entity_id = db.collection('TraitSettings').get(info.context.get('trait_setting_id')).get('_from')
+					entity_id = get_doc_by_id('TraitSettings', info.context.get('trait_setting_id')).get('_from')
 					traits = db.collection('TraitSettings').find({ '_from': entity_id, '_to': sub_trait })
 					for trait in traits:
 						result.append(Trait(id=trait.get('_to'), trait_setting_id=trait.get('_id')))
@@ -1038,14 +1066,14 @@ class MutateTrait(Mutation):
 
 	def mutate(root, info, trait_id=None, trait_input=None):
 		"""either change trait defaults, or change trait settings for an entity"""
-		trait = db.collection('Traits').get(trait_id)
+		trait = get_doc_by_id('Traits', trait_id)
 		if trait_input is not None:
 			if trait_input.get('required_traits') is not None:
 				for required_trait in trait_input.get('required_traits'):
 					try:
 						db.collection('Traits').has(required_trait)
 					except:
-						if(setting := db.collection('TraitSettings').get(required_trait)):
+						if(setting := get_doc_by_id('TraitSettings', required_trait)):
 							trait_input['required_traits'].remove(required_trait)
 							trait_input['required_traits'].append(setting['_to'])
 			
@@ -1102,7 +1130,7 @@ class AssignTrait(Mutation):
 		# retrieving default traitset setting
 		if cursor.empty():
 			query = f"""FOR traitsetting IN TraitSettings
-				FILTER traitsetting._from == '{ db.collection('Traits').get(trait_id)['traitset'] }'
+				FILTER traitsetting._from == '{ get_doc_by_id('Traits', trait_id)['traitset'] }'
 				FILTER traitsetting._to == 'Traits/1'
 				RETURN {{
 					'_id': traitsetting._id,
@@ -1175,10 +1203,10 @@ class AssignTrait(Mutation):
 			})
 
 		# if the entity doesn't have traitset settings yet, create it
-		trait = db.collection('Traits').get(trait_id)
+		trait = get_doc_by_id('Traits', trait_id)
 		traitset_settings = db.collection('TraitsetSettings').find({ '_from': entity_id, '_to': trait.get('traitset') })
 		if traitset_settings.empty():
-			traitset = db.collection('Traitsets').get(trait.get('traitset'))
+			traitset = get_doc_by_id('Traitsets', trait.get('traitset'))
 			db.collection('TraitsetSettings').insert({
 				'_from': entity_id,
 				'_to': trait.get('traitset'),
@@ -1188,7 +1216,7 @@ class AssignTrait(Mutation):
 		# if the entity was an archetype,
 		# also add the trait to entities based on that archetype
 		# that don't yet have the trait
-		# if entity_id.startswith('Entities/') and db.collection('Entities').get(entity_id).get('is_archetype'):
+		# if entity_id.startswith('Entities/') and get_doc_by_id('Entities', entity_id).get('is_archetype'):
 		# 	for entity in db.collection('Entities').find({'archetype_id': entity_id}):
 		# 		if db.collection('TraitSettings').find({
 		# 			'_from': entity.get('_id'),
@@ -1205,7 +1233,7 @@ class AssignTrait(Mutation):
 		# 			'_from': entity.get('_id'),
 		# 			'_to': trait.get('traitset')
 		# 		}).empty():
-		# 			traitset = db.collection('Traitsets').get(trait.get('traitset'))
+		# 			traitset = get_doc_by_id('Traitsets', trait.get('traitset'))
 		# 			db.collection('TraitsetSettings').insert({
 		# 				'_from': entity.get('_id'),
 		# 				'_to': trait.get('traitset'),
@@ -1241,8 +1269,8 @@ class AssignSubTrait(Mutation):
 		"""
 		global absolute_default_trait_setting
 
-		traitset_id = db.collection('Traits').get(subtrait_id).get('traitset')
-		traitset = db.collection('Traitsets').get(traitset_id)
+		traitset_id = get_doc_by_id('Traits', subtrait_id).get('traitset')
+		traitset = get_doc_by_id('Traitsets', traitset_id)
 
 		if 'subtrait' in traitset.get('entity_types'):
 			# get the default trait setting for this subtrait
@@ -1256,7 +1284,7 @@ class AssignSubTrait(Mutation):
 			else:
 				# if the subtrait doesn't have a default trait setting, use the default
 				# trait setting for the traitset that the subtrait is in
-				traitset_id = db.collection('Traits').get(subtrait_id).get('traitset')
+				traitset_id = get_doc_by_id('Traits', subtrait_id).get('traitset')
 				traitset_settings = db.collection('TraitsetSettings').find({ '_from': traitset_id, '_to': 'Traits/1' })
 				if not traitset_settings.empty():
 					default_trait_setting = [doc for doc in traitset_settings][0]
@@ -1273,9 +1301,9 @@ class AssignSubTrait(Mutation):
 						default_trait_setting = absolute_default_trait_setting
 
 			# check if entity was archetype and given entity ID is not the archetype
-			traitsetting = db.collection('TraitSettings').get(trait_setting_id)
+			traitsetting = get_doc_by_id('TraitSettings', trait_setting_id)
 			from_entity_id = traitsetting.get('_from')
-			if from_entity_id.startswith('Entities/') and db.collection('Entities').get(from_entity_id).get('is_archetype') and entity_id and from_entity_id != entity_id:
+			if from_entity_id.startswith('Entities/') and get_doc_by_id('Entities', from_entity_id).get('is_archetype') and entity_id and from_entity_id != entity_id:
 				# if so copy the original trait setting for the given entity
 				new_traitsetting = db.collection('TraitSettings').insert({
 					'_from': entity_id,
@@ -1316,7 +1344,7 @@ class AssignSubTrait(Mutation):
 				raise Exception("Subtrait already assigned")
 		else:
 			# maybe assign entity trait as shortcut subtrait
-			entity_id = info.context.get('entity_id') or (trait := db.collection('TraitSettings').get(trait_setting_id)).get('_from')
+			entity_id = info.context.get('entity_id') or (trait := get_doc_by_id('TraitSettings', trait_setting_id)).get('_from')
 			if not (shortcut_traits := db.collection('TraitSettings').find({
 				'_from': entity_id,
 				'_to': subtrait_id
@@ -1340,7 +1368,7 @@ class UnassignSubTrait(Mutation):
 	def mutate(root, info, trait_setting_id=None, subtrait_setting_id=None):
 		# logger.info(f"UnassignSubTrait:\t{ trait_setting_id }")
 		if trait_setting_id is not None:
-			trait = db.collection('TraitSettings').get(trait_setting_id)
+			trait = get_doc_by_id('TraitSettings', trait_setting_id)
 
 			if trait is not None and 'shortcut_traits' in trait and subtrait_setting_id in trait.get('shortcut_traits'):
 				# logger.info(f"UnassignSubTrait:\t{ trait }")
@@ -1361,10 +1389,10 @@ class UnassignTrait(Mutation):
 
 	def mutate(root, info, trait_setting_id=None):
 		# logger.info(f"UnassignTrait:\t{ trait_setting_id }")
-		trait_setting = db.collection('TraitSettings').get(trait_setting_id)
+		trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
 		# check the instances of the archetype
 		if trait_setting.get('_from').startswith('Entities/'):
-			archetype = db.collection('Entities').get(trait_setting.get('_from'))
+			archetype = get_doc_by_id('Entities', trait_setting.get('_from'))
 			if archetype.get('is_archetype'):
 				instances = db.collection('Relations').find({'_to': archetype.get('_id'), 'type': 'archetype'})
 				if not instances.empty():
@@ -1451,7 +1479,7 @@ class Traitset(ObjectType):
 
 	@classmethod
 	def _hydrate(cls, parent, info):
-		traitset = db.collection('Traitsets').get(parent.id)
+		traitset = get_doc_by_id('Traitsets', parent.id)
 		parent.key = traitset.get('_key')
 		parent.name = traitset.get('name')
 		parent.explainer = traitset.get('explainer')
@@ -1466,35 +1494,35 @@ class Traitset(ObjectType):
 			Traitset._hydrate(parent, info)
 		if parent.key:
 			return parent.key
-		return db.collection('Traitsets').get(parent.id).get('_key')
+		return get_doc_by_id('Traitsets', parent.id).get('_key')
 
 	def resolve_name(parent, info):
 		if not parent.name:
 			Traitset._hydrate(parent, info)
 		if parent.name:
 			return parent.name
-		return db.collection('Traitsets').get(parent.id).get('name')
+		return get_doc_by_id('Traitsets', parent.id).get('name')
 
 	def resolve_explainer(parent, info):
 		if not parent.explainer:
 			Traitset._hydrate(parent, info)
 		if parent.explainer:
 			return parent.explainer
-		return db.collection('Traitsets').get(parent.id).get('explainer')
+		return get_doc_by_id('Traitsets', parent.id).get('explainer')
 
 	def resolve_entity_types(parent, info):
 		if not parent.entity_types:
 			Traitset._hydrate(parent, info)
 		if parent.entity_types:
 			return parent.entity_types
-		return db.collection('Traitsets').get(parent.id).get('entity_types')
+		return get_doc_by_id('Traitsets', parent.id).get('entity_types')
 
 	def resolve_location_restricted(parent, info):
 		if not parent.location_restricted:
 			Traitset._hydrate(parent, info)
 		if parent.location_restricted is not None:
 			return parent.location_restricted
-		return db.collection('Traitsets').get(parent.id).get('location_restricted') or False
+		return get_doc_by_id('Traitsets', parent.id).get('location_restricted') or False
 
 	def resolve_limit(parent, info):
 		if info.context.get('entity_id') is not None:
@@ -1505,24 +1533,24 @@ class Traitset(ObjectType):
 					return traitset_setting.get('dicepool_limit')
 		if parent.limit:
 			return parent.limit
-		return db.collection('Traitsets').get(parent.id).get('dicepool_limit')
+		return get_doc_by_id('Traitsets', parent.id).get('dicepool_limit')
 
 	def resolve_order(parent, info):
 		if parent.order:
 			return parent.order
-		return db.collection('Traitsets').get(parent.id).get('order')
+		return get_doc_by_id('Traitsets', parent.id).get('order')
 
 	def resolve_duplicates(parent, info):
 		if parent.duplicates:
 			return parent.duplicates
-		return db.collection('Traitsets').get(parent.id).get('duplicates')
+		return get_doc_by_id('Traitsets', parent.id).get('duplicates')
 
 	def resolve_traits(parent, info):
 		if parent.traits:
 			return parent.traits
 		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Entities/'):
 			# logger.info(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")
-			entity = db.collection('Entities').get(info.context.get('entity_id'))
+			entity = get_doc_by_id('Entities', info.context.get('entity_id'))
 
 			# traits for location are inherited, so special query
 			if entity is not None and entity.get('type') == 'location':
@@ -1701,7 +1729,7 @@ class Traitset(ObjectType):
 			return []
 
 	def resolve_sfxs(parent, info):
-		sfxs = db.collection('Traitsets').get(parent.id).get('sfxs')
+		sfxs = get_doc_by_id('Traitsets', parent.id).get('sfxs')
 		if sfxs is not None:
 			return [SFX(id=sfx) for sfx in sfxs]
 		else:
@@ -1805,7 +1833,7 @@ class MutateTraitset(Mutation):
 	message = String()
 
 	def mutate(self, info, traitset_id=None, traitset_input=None):
-		ts = db.collection('Traitsets').get(traitset_id)
+		ts = get_doc_by_id('Traitsets', traitset_id)
 		traitset_settings = db.collection('TraitsetSettings').find({'_to': traitset_id}) if traitset_id is not None else None
 
 		# rename limit to dicepool_limit
@@ -1946,9 +1974,9 @@ class TraitsetSetting(ObjectType):
 	sfxs = List(lambda: SFX)
 
 	def resolve_entity(parent, info):
-		entity_id = db.collection('TraitsetSettings').get(parent.id).get('_from')
+		entity_id = get_doc_by_id('TraitsetSettings', parent.id).get('_from')
 		if entity_id.startswith('Entities/'):
-			entity = db.collection('Entities').get(entity_id)
+			entity = get_doc_by_id('Entities', entity_id)
 			if entity.get('type') == 'character':
 				return Character(id=entity_id)
 			elif entity.get('type') == 'npc':
@@ -1963,14 +1991,14 @@ class TraitsetSetting(ObjectType):
 			return None
 	
 	def resolve_traitset(parent, info):
-		traitset_id = db.collection('TraitsetSettings').get(parent.id).get('_to')
+		traitset_id = get_doc_by_id('TraitsetSettings', parent.id).get('_to')
 		return Traitset(id=traitset_id)
 
 	def resolve_limit(parent, info):
-		return db.collection('TraitsetSettings').get(parent.id).get('dicepool_limit')
+		return get_doc_by_id('TraitsetSettings', parent.id).get('dicepool_limit')
 
 	def resolve_sfxs(parent, info):
-		sfx_ids = db.collection('TraitsetSettings').get(parent.id).get('sfxs')
+		sfx_ids = get_doc_by_id('TraitsetSettings', parent.id).get('sfxs')
 		if sfx_ids is not None:
 			return [SFX(id=sfx) for sfx in sfx_ids]
 		else:
@@ -1994,7 +2022,7 @@ class UpdateTraitsetSetting(Mutation):
 			tss = db.collection('TraitsetSettings').find({'_from': entity_id, '_to': traitset_id})
 			tss = next((doc for doc in tss), None)
 		else:
-			tss = db.collection('TraitsetSettings').get(traitset_setting_id)
+			tss = get_doc_by_id('TraitsetSettings', traitset_setting_id)
 
 		# rename limit to dicepool_limit
 		if 'limit' in traitset_setting_input:
@@ -2083,7 +2111,7 @@ class Entity(Interface):
 		if hasattr(parent, '_hydrated'):
 			return
 		
-		entity = db.collection('Entities').get(parent.id)
+		entity = get_doc_by_id('Entities', parent.id)
 		parent.key = entity.get('_key')
 		parent.name = entity.get('name')
 		parent.description = entity.get('description')
@@ -2115,12 +2143,12 @@ class Entity(Interface):
 		location_key = None
 		if not parent.location:
 			if parent.entity_type != 'location':
-				location_id = db.collection('Entities').get(parent.id).get('location')
-				location = db.collection('Entities').get(location_id)
+				location_id = get_doc_by_id('Entities', parent.id).get('location')
+				location = get_doc_by_id('Entities', location_id)
 				if location.get('type') != 'location':
 					# if following
 					location_id = location.get('location')
-					location = db.collection('Entities').get(location_id)
+					location = get_doc_by_id('Entities', location_id)
 				parent.location = Location(id=location.get('_id'), key=location.get('_key'))
 				location_hierarchy = retrieve_hierarchy(parent.location.id)
 				if len(location_hierarchy) > 1:
@@ -2131,7 +2159,7 @@ class Entity(Interface):
 				parents = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'super' })]
 				if len(parents) > 0:
 					location_id = parents[0]
-					location = db.collection('Entities').get(location_id)
+					location = get_doc_by_id('Entities', location_id)
 					parent.location = Location(id=location.get('_id'), key=location.get('_key'))
 					location_hierarchy = retrieve_hierarchy(parent.location.id)
 					if len(location_hierarchy) > 1:
@@ -2177,10 +2205,10 @@ class Entity(Interface):
 						return Portrait(path=f"{parent.location.key}/", size="original", ext=ext)
 					else:
 						return None
-				# elif (archetype_id := db.collection('Entities').get(parent.id).get('archetype_id')) is not None:
+				# elif (archetype_id := get_doc_by_id('Entities', parent.id).get('archetype_id')) is not None:
 				elif not db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' }).empty():
 					archetype_id = [rel.get('_to') for rel in db.collection('Relations').find({ '_from': parent.id, 'type': 'archetype' })][0]
-					archetype = db.collection('Entities').get(archetype_id)
+					archetype = get_doc_by_id('Entities', archetype_id)
 					if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/{location_key}/original{ext}"):
 						# return f"{archetype.get('_key')}/{location_key}/original{ext}"
 						return Portrait(path=f"{archetype.get('_key')}/{location_key}/", size="original", ext=ext)
@@ -2194,23 +2222,23 @@ class Entity(Interface):
 
 	def resolve_imagening(parent, info):
 		"""prevents the user from running image generation while busy"""
-		return db.collection('Entities').get(parent.id).get('imagening')
+		return get_doc_by_id('Entities', parent.id).get('imagening')
 
 	def resolve_imagened(parent, info):
 		""""""
 		if parent.entity_type is None:
-			entity = db.collection('Entities').get(parent.id)
+			entity = get_doc_by_id('Entities', parent.id)
 			parent.entity_type = entity.get('type')
 			parent.name = entity.get('name') if entity.get('name') is not None else parent.name
 			parent.description = entity.get('description') if entity.get('description') is not None else parent.description
 		if parent.entity_type == 'character':
 			if parent.location is None:
-				location_id = db.collection('Entities').get(parent.id).get('location')
-				location = db.collection('Entities').get(location_id)
+				location_id = get_doc_by_id('Entities', parent.id).get('location')
+				location = get_doc_by_id('Entities', location_id)
 				if location.get('type') != 'location':
 					# if following
 					location_id = location.get('location')
-					location = db.collection('Entities').get(location_id)
+					location = get_doc_by_id('Entities', location_id)
 				parent.location = Location(id=location.get('_id'), name=location.get('name'), description=location.get('description'))
 				location_hierarchy = retrieve_hierarchy(parent.location.id)
 				if len(location_hierarchy) > 1:
@@ -2249,7 +2277,7 @@ class Entity(Interface):
 					)"""
 		cursor = db.aql.execute(query)
 		trait_settings = [doc for doc in cursor]
-		location = retrieve_location(db.collection('Entities').get(parent.id))
+		location = retrieve_location(get_doc_by_id('Entities', parent.id))
 		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(trait_settings)} trait settings, now filtering by location { location.get('name') }")
 		filtered_trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 		unique_traitsets = []
@@ -2284,7 +2312,7 @@ class Entity(Interface):
 		return [Traitset(id=traitset) for traitset in unique_traitsets]		
 
 	def resolve_location(parent, info):
-		entity = db.collection('Entities').get(parent.id)
+		entity = get_doc_by_id('Entities', parent.id)
 		location = retrieve_location(entity)
 		if location.get('_id') is not None:
 			return Location(id=location.get('_id'))
@@ -2292,10 +2320,10 @@ class Entity(Interface):
 			return None
 
 	def resolve_following(parent, info):
-		loc_id = db.collection('Entities').get(parent.id).get('location')
+		loc_id = get_doc_by_id('Entities', parent.id).get('location')
 		if not loc_id:
 			return None
-		loc = db.collection('Entities').get(loc_id)
+		loc = get_doc_by_id('Entities', loc_id)
 		if loc.get('type') == 'asset':
 			return Asset(id=loc.get('_id'))
 		elif loc.get('type') == 'character':
@@ -2344,11 +2372,11 @@ class Entity(Interface):
 		return parent.is_archetype
 
 	def resolve_archetype(parent, info):
-		# archetype_id = db.collection('Entities').get(parent.id).get('archetype_id')
+		# archetype_id = get_doc_by_id('Entities', parent.id).get('archetype_id')
 		if not (archetypes := db.collection('Relations').find({'_from': parent.id, 'type': 'archetype'})).empty():
 			archetype_id = [archetype.get('_to') for archetype in archetypes][0]
 			if archetype_id is not None:
-				archetype = db.collection('Entities').get(archetype_id)
+				archetype = get_doc_by_id('Entities', archetype_id)
 				if archetype.get('type') == 'character':
 					return Character(id=archetype_id)
 				elif archetype.get('type') == 'npc':
@@ -2366,7 +2394,7 @@ class Entity(Interface):
 		for archetype in archetypes:
 			archetype_id = archetype.get('_to')
 			if archetype_id is not None:
-				archetype = db.collection('Entities').get(archetype_id)
+				archetype = get_doc_by_id('Entities', archetype_id)
 				if archetype.get('type') == 'character':
 					result.append(Character(id=archetype_id))
 				elif archetype.get('type') == 'npc':
@@ -2416,11 +2444,11 @@ class Entity(Interface):
 		return parent.hidden or False
 
 	def resolve_known_to(parent, info):
-		known_to = db.collection('Entities').get(parent.id).get('known_to', [])
+		known_to = get_doc_by_id('Entities', parent.id).get('known_to', [])
 		result = []
 		changed = False
 		for entity_id in known_to:
-			entity = db.collection('Entities').get(entity_id)
+			entity = get_doc_by_id('Entities', entity_id)
 			if entity is None:
 				known_to.remove(entity_id)
 				changed = True
@@ -2499,7 +2527,7 @@ class UpdateEntity(Mutation):
 	entity = Field(lambda: Entity)
 
 	def mutate(root, info, key, entity_input=None, name=None, location=None, following=None, favorite=None, is_archetype=None, active=None):
-		entity = db.collection('Entities').get(key)
+		entity = get_doc_by_id('Entities', key)
 		# logger.info(f"UpdateEntity.mutate:\t0\tparameters:\t{ locals() }")
 		changes = {}
 		if name is not None:
@@ -2509,7 +2537,7 @@ class UpdateEntity(Mutation):
 		if (location or (entity_input and entity_input.get('location'))) and entity.get('type') != 'location':
 			changes['location'] = location or entity_input.pop('location')
 			# logger.info(f"UpdateEntity.mutate:\t1\tchanges: { changes }")
-			location_doc = db.collection('Entities').get(changes.get('location'))
+			location_doc = get_doc_by_id('Entities', changes.get('location'))
 			
 			# if the entity changes to a location,
 			# especially if that location is 'hidden'
@@ -2572,7 +2600,7 @@ class InstantiateArchetype(Mutation):
 	message = String()
 
 	def mutate(root, info, key, name=None):
-		archetype = db.collection('Entities').get(key)
+		archetype = get_doc_by_id('Entities', key)
 		new_entity = {key: value for key, value in archetype.items() if not key.startswith('_')}
 		# new_entity['archetype_id'] = archetype.get('_id')
 		new_entity['is_archetype'] = False
@@ -2709,7 +2737,7 @@ class DeleteEntity(Mutation):
 			db.collection('Entities').delete(entity_id)
 
 		try:
-			current_entity = db.collection('Entities').get(key)
+			current_entity = get_doc_by_id('Entities', key)
 
 			# if the entity is a location and only this location needs removing
 			# then all entities in that location need their location updated
@@ -2796,13 +2824,13 @@ class Character(ObjectType):
 
 	def resolve_available(parent, info):
 		if parent.key is None:
-			parent.key = db.collection('Entities').get(parent.id).get('_key')
+			parent.key = get_doc_by_id('Entities', parent.id).get('_key')
 		if parent.is_archetype is None:
-			parent.is_archetype = db.collection('Entities').get(parent.id).get('is_archetype')
+			parent.is_archetype = get_doc_by_id('Entities', parent.id).get('is_archetype')
 		return parent.key not in [d['character'] for d in session_characters] and not parent.is_archetype
 
 	def resolve_pp(parent, info):
-		return db.collection('Entities').get(parent.id).get('pp')
+		return get_doc_by_id('Entities', parent.id).get('pp')
 
 class CharacterInput(InputObjectType):
 	name = String(required=False)
@@ -2824,14 +2852,14 @@ class CreateOrUpdateCharacter(Mutation):
 		# logger.info("mutating character: ", key, " input: ", input)
 
 		if key:
-			character_doc = db.collection('Entities').get(key)
+			character_doc = get_doc_by_id('Entities', key)
 			if character_doc:
 				# logger.info("updating character: ", input)
 				character_doc.update(input)
 				db.collection('Entities').update(character_doc)
 				if (location_id := input.get('location')) is not None:
 					# logger.info(f"CreateOrUpdateCharacter:\tlocation_id: { location_id }")
-					loc_doc = db.collection('Entities').get(location_id)
+					loc_doc = get_doc_by_id('Entities', location_id)
 					loc_doc['known_to'] = list(set((loc_doc.get('known_to') or []) + [character_doc.get('_id')]))
 					db.collection('Entities').update(loc_doc)
 			else:
@@ -2907,7 +2935,7 @@ class Location(ObjectType):
 		return [Location(id=doc) for doc in cursor]
 
 	def resolve_flavortext(parent, info):
-		return db.collection('Entities').get(parent.id).get('description')
+		return get_doc_by_id('Entities', parent.id).get('description')
 
 	def resolve_zones(parent, info):
 		# zones = db.collection('Entities').find({'type': 'location', 'location': parent.id})
@@ -3010,7 +3038,7 @@ class UpdateLocation(Mutation):
 
 	def mutate(self, info, key, location_input=None):
 		# id = 'Entities' + key
-		loc = db.collection('Entities').get(key)
+		loc = get_doc_by_id('Entities', key)
 		if location_input:
 			loc = {
 				**loc,
@@ -3029,8 +3057,8 @@ class Relation(ObjectType):
 	favorite = Boolean()
 
 	def resolve_from_entity(parent, info):
-		entity_id = db.collection('Relations').get(parent.id).get('_from')
-		entity_type = db.collection('Entities').get(entity_id).get('type')
+		entity_id = get_doc_by_id('Relations', parent.id).get('_from')
+		entity_type = get_doc_by_id('Entities', entity_id).get('type')
 		# logger.info("Relation.resolve_entity:\tentity_id: ", entity_id, "\tentity_type: ", entity_type)
 		if entity_type == 'location':
 			return Location(id=entity_id)
@@ -3046,8 +3074,8 @@ class Relation(ObjectType):
 			raise Exception("unknown entity type: ", entity_id)
 
 	def resolve_to_entity(parent, info):
-		entity_id = db.collection('Relations').get(parent.id).get('_to')
-		entity_type = db.collection('Entities').get(entity_id).get('type')
+		entity_id = get_doc_by_id('Relations', parent.id).get('_to')
+		entity_type = get_doc_by_id('Entities', entity_id).get('type')
 		# logger.info("Relation.resolve_entity:\tentity_id: ", entity_id, "\tentity_type: ", entity_type)
 		if entity_type == 'location':
 			return Location(id=entity_id)
@@ -3079,7 +3107,7 @@ RETURN {{ trait: trait._id, traitsetting: traitsetting._id }}"""
 		return result
 
 	def resolve_favorite(parent, info):
-		return db.collection('Relations').get(parent.id).get('favorite')
+		return get_doc_by_id('Relations', parent.id).get('favorite')
 
 class CreateRelation(Mutation):
 	class Arguments:
@@ -3109,7 +3137,7 @@ class UpdateRelation(Mutation):
 	relation = Field(lambda: Relation)
 
 	def mutate(self, info, id, favorite):
-		relation = db.collection('Relations').get(id)
+		relation = get_doc_by_id('Relations', id)
 		relation['favorite'] = favorite
 		db.collection('Relations').update(relation)
 		return UpdateRelation(relation=Relation(id=id, favorite=favorite))
@@ -3156,7 +3184,7 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').get_many([char.get('character') for char in session_characters])
 			return [Character(id = doc['_id']) for doc in cursor]
 		else:
-			character = db.collection('Entities').get(key)
+			character = get_doc_by_id('Entities', key)
 			info.context['entity_id'] = character['_id']
 			return [Character(id = character['_id'])]
 
@@ -3166,7 +3194,7 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').find({'type': 'faction'})
 			return [Faction(id = doc['_id']) for doc in cursor]
 		else:
-			faction = db.collection('Entities').get(key)
+			faction = get_doc_by_id('Entities', key)
 			info.context['entity_id'] = faction['_id']
 			return [Faction(id = faction['_id'])]
 
@@ -3176,7 +3204,7 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').find({'type': 'asset'})
 			return [Asset(id = doc['_id']) for doc in cursor]
 		else:
-			asset = db.collection('Entities').get(key)
+			asset = get_doc_by_id('Entities', key)
 			info.context['entity_id'] = asset['_id']
 			return [Asset(id = asset['_id'])]
 
@@ -3186,7 +3214,7 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').find({'type': 'npc'})
 			return [NPC(id = doc['_id']) for doc in cursor]
 		else:
-			npc = db.collection('Entities').get(key)
+			npc = get_doc_by_id('Entities', key)
 			info.context['entity_id'] = npc['_id']
 			return [NPC(id = npc['_id'])]
 
@@ -3243,7 +3271,7 @@ class Query(ObjectType):
 			else:
 				raise Exception("unknown entity type: ", entity_type)
 		elif key is not None:
-			entity = db.collection('Entities').get(key)
+			entity = get_doc_by_id('Entities', key)
 			info.context['entity_id'] = entity['_id']
 			if entity.get('type') in ['character', 'gm']:
 				return [Character(id = entity['_id'])]
@@ -3307,7 +3335,7 @@ class Query(ObjectType):
 		# retrieve a specific trait
 		if trait_setting_id is not None:
 			info.context['trait_setting_id'] = trait_setting_id
-			trait_setting = db.collection('TraitSettings').get(trait_setting_id)
+			trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
 			# check if it is a trait default
 			if trait_setting is not None and trait_id is not None and trait_setting.get('_from') == trait_id and trait_setting.get('_to') == 'Traits/1':
 				return [Trait(id=trait_id, trait_setting_id=trait_setting_id)]
@@ -3343,7 +3371,7 @@ class Query(ObjectType):
 		# return all of a traitset's traits that the given entity doesn't already have
 		# and only ones they can learn (this needs work like the traitset traits logic)
 		elif traitset_id is not None and entity_id is not None and potential_only is True:
-			traitset = db.collection('Traitsets').get(traitset_id)
+			traitset = get_doc_by_id('Traitsets', traitset_id)
 			query = f"""LET entity_id = '{ entity_id }'
 
 				LET location = (
@@ -3416,7 +3444,7 @@ class Query(ObjectType):
 	sfxs = List(SFX, sfx_id=ID(required=False))
 	def resolve_sfxs(parent, info, sfx_id=None):
 		if sfx_id is not None:
-			doc = db.collection('SFXs').get(sfx_id)
+			doc = get_doc_by_id('SFXs', sfx_id)
 			return [SFX(id=sfx_id, name = doc['name'], description = doc['description'])]
 		else:
 			# cursor = db.collection('SFXs').all()
@@ -3439,7 +3467,7 @@ class Query(ObjectType):
 				for doc in cursor
 			]
 		else:
-			location_id = db.collection('Entities').get(key).get('_id')
+			location_id = get_doc_by_id('Entities', key).get('_id')
 			info.context['entity_id'] = location_id
 			result = Location(id=location_id)
 			# logger.info(result)
@@ -3551,7 +3579,7 @@ def filter_trait_settings_by_location(trait_settings, location_id):
 						break
 		if not determined and trait_setting.get('_from') is not None and not trait_setting.get('_from').startswith('Traitsets'):
 			# logger.info("filter_trait_settings_by_location:\n\tChecking traitset default setting")
-			traitset_id = db.collection('Traits').get(trait_setting.get('_to')).get('traitset')
+			traitset_id = get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset')
 			traitset_setting = db.collection('TraitSettings').find({ '_from': traitset_id, '_to': 'Traits/1' })
 			if not traitset_setting.empty():
 				traitset_setting = [doc for doc in traitset_setting][0]
@@ -3586,14 +3614,14 @@ def retrieve_location(entity):
 	if entity.get('type') != 'location':
 		# if the entity is not a location, get the location from its location attribute
 		location_id = entity.get('location')
-		location = db.collection('Entities').get(location_id)
+		location = get_doc_by_id('Entities', location_id)
 		if location.get('type') != 'location':
 			# if the location is not a location, get the location from its location attribute
 			location = retrieve_location(location)
 	elif entity.get('_id') != 'Entities/2':
 		# if the entity is a location, get the location from its super relations
 		location_id = [doc.get('_to') for doc in db.collection('Relations').find({ '_from': entity.get('_id'), 'type': 'super' })][0]
-		location = db.collection('Entities').get(location_id)
+		location = get_doc_by_id('Entities', location_id)
 	else:
 		location = entity
 	return location
@@ -3672,7 +3700,7 @@ def pick_character(uuid, character):
 				sc["character"] = character
 				return { "success": True }
 	
-	character_doc = db.collection('Entities').get(character)
+	character_doc = get_doc_by_id('Entities', character)
 	character_doc['active'] = True
 	db.collection('Entities').update(character_doc)
 
@@ -3931,7 +3959,7 @@ def imagegen(entity_key, force):
 	lora2_weight = 0.4
 	genres = []
 
-	entity = db.collection('Entities').get(entity_key)
+	entity = get_doc_by_id('Entities', entity_key)
 
 	if not entity.get('imagening') or force == "true":
 
@@ -3939,14 +3967,14 @@ def imagegen(entity_key, force):
 		location_key = None
 		if entity_type != "location":
 			location_id = entity.get('location')
-			location = db.collection('Entities').get(location_id)
+			location = get_doc_by_id('Entities', location_id)
 			if entity.get('type') != 'location':
 				if location.get('type') == 'location':
 					location_key = location.get('_key')
 				else:
 					# if entity is following
 					location_id = location.get('location')
-					location = db.collection('Entities').get(location_id)
+					location = get_doc_by_id('Entities', location_id)
 					location_key = location.get('_key')
 				hierarchy = retrieve_hierarchy(location_id)
 				if len(hierarchy) > 1:
@@ -3977,14 +4005,14 @@ def imagegen(entity_key, force):
 			prompt = ""
 
 		if entity_type in ["character", "npc", "asset", "gm"]:
-			entity = db.collection('Entities').get(entity_key)
+			entity = get_doc_by_id('Entities', entity_key)
 			location = retrieve_location(entity)
 			trait_settings = [doc for doc in db.collection('TraitSettings').find({'_from': entity.get('_id')})]
 			archetype_trait_settings = []
 
 			archetype_ids = [archetype.get('_to') for archetype in db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'archetype'})]
 			while archetype_ids:
-				archetype = db.collection('Entities').get(archetype_ids[0])
+				archetype = get_doc_by_id('Entities', archetype_ids[0])
 				archetype_trait_settings += [doc for doc in db.collection('TraitSettings').find({'_from': archetype.get('_id')})]
 				archetype_ids = [archetype.get('_to') for archetype in db.collection('Relations').find({'_from': archetype.get('_id'), 'type': 'archetype'})]
 
@@ -3993,15 +4021,15 @@ def imagegen(entity_key, force):
 			traits = []
 			for trait_setting in trait_settings:
 				trait_id = trait_setting.get('_to')
-				trait = db.collection('Traits').get(trait_id)
+				trait = get_doc_by_id('Traits', trait_id)
 				subtrait_ids = db.collection('TraitSettings').find({'_from': trait_setting.get('_id')})
 				subtraits = []
 				for subtrait_id in subtrait_ids:
-					subtrait = db.collection('Traits').get(subtrait_id.get('_to'))
+					subtrait = get_doc_by_id('Traits', subtrait_id.get('_to'))
 					subtraits.append(subtrait)
 				trait['subtraits'] = subtraits
 				traitset_id = trait.get('traitset')
-				traitset = db.collection('Traitsets').get(traitset_id)
+				traitset = get_doc_by_id('Traitsets', traitset_id)
 				traits.append((traitset, trait, trait_setting))
 
 			prompt += "("
@@ -4048,7 +4076,7 @@ def imagegen(entity_key, force):
 				loc_trait_settings = db.collection('TraitSettings').find({'_from': loc.get('_id')})
 				for lts in loc_trait_settings:
 					trait_id = lts.get('_to')
-					trait = db.collection('Traits').get(trait_id)
+					trait = get_doc_by_id('Traits', trait_id)
 					if trait.get('name') == 'genre':
 						genres.append(lts.get('statement'))
 					elif trait.get('name') == 'positive imagen':
@@ -4320,7 +4348,7 @@ def save_image(filepath, entity_key, location_key=None):
 	image_large.save(os.path.join(entity_folder, f"large{file_extension.lower()}"))
 	image_without_exif.save(os.path.join(entity_folder, f"original{file_extension.lower()}"))
 
-	entity = db.collection('Entities').get(entity_key)
+	entity = get_doc_by_id('Entities', entity_key)
 	entity['imagening'] = False
 	entity['imagened'] = True
 	db.collection('Entities').update(entity)
