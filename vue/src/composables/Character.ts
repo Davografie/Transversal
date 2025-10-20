@@ -214,7 +214,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 			console.log('deleting character: ' + character.value.key)
 			mutate({
 				"key": character.value.key
-				})
+			})
 		}
 	}
 

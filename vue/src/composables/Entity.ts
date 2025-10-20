@@ -46,7 +46,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function retrieve_entity() {
 		console.log("retrieving entity: ", entity_id)
 		const query = gql`query FullEntity($entityId: ID) {
-			entities(key: $entityId) {
+			entities(entityId: $entityId) {
 				key
 				id
 				name
@@ -120,7 +120,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function retrieve_small_entity() {
 
 		const small_entity_query = gql`query SmallEntity($entityId: ID) {
-			entities(key: $entityId) {
+			entities(entityId: $entityId) {
 				key
 				id
 				name
@@ -162,7 +162,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function retrieve_relations() {
 
 		const relations_query = gql`query EntityRelations($entityId: ID) {
-			entities(key: $entityId) {
+			entities(entityId: $entityId) {
 				relations {
 					id
 					toEntity {
@@ -194,7 +194,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function retrieve_followers() {
 
 		const followers_query = gql`query EntityFollowers($entityId: ID) {
-			entities(key: $entityId) {
+			entities(entityId: $entityId) {
 				followers {
 					id
 					entityType
@@ -223,7 +223,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function retrieve_archetypes() {
 
 		const archetypes_query = gql`query EntityArchetypes($entityId: ID) {
-			entities(key: $entityId) {
+			entities(entityId: $entityId) {
 				archetypes {
 					id
 					entityType
@@ -252,7 +252,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function retrieve_instances() {
 		/* if current entity is an archetype, retrieve all entities with that archetype */
 		const instances_query = gql`query EntityInstances($entityId: ID) {
-			entities(key: $entityId) {
+			entities(entityId: $entityId) {
 				instances {
 					id
 					entityType

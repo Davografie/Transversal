@@ -287,6 +287,9 @@ def get_doc_by_id(collection_name: str, doc_id: str):
 	@return: Document data
 	"""
 	# first check if the doc is in redis
+	# throw an exception if doc_id is convertible to a number
+	if isinstance(doc_id, (int, float)) or (isinstance(doc_id, str) and re.fullmatch(r'[+-]?\d+(\.\d+)?', doc_id.strip())):
+		raise Exception("doc_id must not be a bare numeric value; provide a full Arango document id like 'Collection/123'")
 	if r.exists(doc_id):
 		stored = r.hgetall(doc_id)
 		doc = deserialize_doc(stored)
@@ -2534,7 +2537,7 @@ class UpdateEntity(Mutation):
 	entity = Field(lambda: Entity)
 
 	def mutate(root, info, key, entity_input=None, name=None, location=None, following=None, favorite=None, is_archetype=None, active=None):
-		entity = get_doc_by_id('Entities', key)
+		entity = get_doc_by_id('Entities', 'Entities/' + key)
 		# logger.info(f"UpdateEntity.mutate:\t0\tparameters:\t{ locals() }")
 		changes = {}
 		if name is not None:
@@ -2618,7 +2621,7 @@ class InstantiateArchetype(Mutation):
 	message = String()
 
 	def mutate(root, info, key, name=None):
-		archetype = get_doc_by_id('Entities', key)
+		archetype = get_doc_by_id('Entities', 'Entities/' + key)
 		new_entity = {key: value for key, value in archetype.items() if not key.startswith('_')}
 		# new_entity['archetype_id'] = archetype.get('_id')
 		new_entity['is_archetype'] = False
@@ -2755,7 +2758,7 @@ class DeleteEntity(Mutation):
 			db.collection('Entities').delete(entity_id)
 
 		try:
-			current_entity = get_doc_by_id('Entities', key)
+			current_entity = get_doc_by_id('Entities', 'Entities/' + key)
 
 			# if the entity is a location and only this location needs removing
 			# then all entities in that location need their location updated
@@ -2870,7 +2873,7 @@ class CreateOrUpdateCharacter(Mutation):
 		# logger.info("mutating character: ", key, " input: ", input)
 
 		if key:
-			character_doc = get_doc_by_id('Entities', key)
+			character_doc = get_doc_by_id('Entities', 'Entities/' + key)
 			if character_doc:
 				# logger.info("updating character: ", input)
 				character_doc.update(input)
@@ -3056,7 +3059,7 @@ class UpdateLocation(Mutation):
 
 	def mutate(self, info, key, location_input=None):
 		# id = 'Entities' + key
-		loc = get_doc_by_id('Entities', key)
+		loc = get_doc_by_id('Entities', 'Entities/' + key)
 		if location_input:
 			loc = {
 				**loc,
@@ -3212,7 +3215,7 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').find({'type': 'faction'})
 			return [Faction(id = doc['_id']) for doc in cursor]
 		else:
-			faction = get_doc_by_id('Entities', key)
+			faction = get_doc_by_id('Entities', 'Entities/' + key)
 			info.context['entity_id'] = faction['_id']
 			return [Faction(id = faction['_id'])]
 
@@ -3222,7 +3225,7 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').find({'type': 'asset'})
 			return [Asset(id = doc['_id']) for doc in cursor]
 		else:
-			asset = get_doc_by_id('Entities', key)
+			asset = get_doc_by_id('Entities', 'Entities/' + key)
 			info.context['entity_id'] = asset['_id']
 			return [Asset(id = asset['_id'])]
 
@@ -3232,18 +3235,19 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').find({'type': 'npc'})
 			return [NPC(id = doc['_id']) for doc in cursor]
 		else:
-			npc = get_doc_by_id('Entities', key)
+			npc = get_doc_by_id('Entities', 'Entities/' + key)
 			info.context['entity_id'] = npc['_id']
 			return [NPC(id = npc['_id'])]
 
 	entities = List(Entity,
 				 key=ID(required=False),
+				 entity_id=ID(required=False),
 				 entity_type=String(required=False),
 				 search=String(required=False),
 				 is_archetype=Boolean(required=False))
-	def resolve_entities(parent, info, key=None, entity_type=None, search=None, is_archetype=None):
+	def resolve_entities(parent, info, key=None, entity_id=None, entity_type=None, search=None, is_archetype=None):
 		# logger.info("entity resolver, for key: ", key)
-		if not key and not entity_type:
+		if not key and not entity_id and not entity_type:
 			query = "FOR e IN Entities "
 			if search:
 				query += "FILTER LOWER(e.name) LIKE LOWER('%" + search + "%') "
@@ -3266,7 +3270,7 @@ class Query(ObjectType):
 				elif entity['type'] == 'location':
 					result.append(Location(id = entity['_id']))
 			return result
-		elif not key and entity_type is not None:
+		elif not key and not entity_id and entity_type is not None:
 			query = "FOR e IN Entities "
 			if search:
 				query += "FILTER LOWER(e.name) LIKE LOWER('%" + search + "%') "
@@ -3288,8 +3292,11 @@ class Query(ObjectType):
 				return [NPC(id = doc['_id']) for doc in entities]
 			else:
 				raise Exception("unknown entity type: ", entity_type)
-		elif key is not None:
-			entity = get_doc_by_id('Entities', key)
+		elif key is not None or entity_id is not None:
+			if key is not None:
+				entity = get_doc_by_id('Entities', 'Entities/' + key)
+			else:
+				entity = get_doc_by_id('Entities', entity_id)
 			info.context['entity_id'] = entity['_id']
 			if entity.get('type') in ['character', 'gm']:
 				return [Character(id = entity['_id'])]
@@ -3485,7 +3492,7 @@ class Query(ObjectType):
 				for doc in cursor
 			]
 		else:
-			location_id = get_doc_by_id('Entities', key).get('_id')
+			location_id = get_doc_by_id('Entities', 'Entities/' + key).get('_id')
 			info.context['entity_id'] = location_id
 			result = Location(id=location_id)
 			# logger.info(result)
@@ -3703,22 +3710,22 @@ def get_location(id):
 	result = adb.db.fetchDocument(f"Entities/{id}").getStore()
 	return result
 
-@app.route("/pick-character/<uuid>/<character>", methods = ['POST'])
-def pick_character(uuid, character):
-	if uuid not in [d['uuid'] for d in session_characters] and character not in [d['character'] for d in session_characters]:
+@app.route("/pick-character/<uuid>/<characterkey>", methods = ['POST'])
+def pick_character(uuid, characterkey):
+	if uuid not in [d['uuid'] for d in session_characters] and characterkey not in [d['character'] for d in session_characters]:
 		session_characters.append({
 			"uuid": uuid,
-			"character": character
+			"character": characterkey
 		})
 		return { "success": True }
 
-	elif character not in [d['character'] for d in session_characters]:
+	elif characterkey not in [d['character'] for d in session_characters]:
 		for sc in session_characters:
 			if sc["uuid"] == uuid:
-				sc["character"] = character
+				sc["character"] = characterkey
 				return { "success": True }
 	
-	character_doc = get_doc_by_id('Entities', character)
+	character_doc = get_doc_by_id('Entities', 'Entities/' + characterkey)
 	character_doc['active'] = True
 	update_doc('Entities', character_doc)
 
@@ -3977,7 +3984,7 @@ def imagegen(entity_key, force):
 	lora2_weight = 0.4
 	genres = []
 
-	entity = get_doc_by_id('Entities', entity_key)
+	entity = get_doc_by_id('Entities', 'Entities/' + entity_key)
 
 	if not entity.get('imagening') or force == "true":
 
@@ -4023,7 +4030,7 @@ def imagegen(entity_key, force):
 			prompt = ""
 
 		if entity_type in ["character", "npc", "asset", "gm"]:
-			entity = get_doc_by_id('Entities', entity_key)
+			entity = get_doc_by_id('Entities', 'Entities/' + entity_key)
 			location = retrieve_location(entity)
 			trait_settings = [doc for doc in db.collection('TraitSettings').find({'_from': entity.get('_id')})]
 			archetype_trait_settings = []
@@ -4369,7 +4376,7 @@ def save_image(filepath, entity_key, location_key=None):
 	image_large.save(os.path.join(entity_folder, f"large{file_extension.lower()}"))
 	image_without_exif.save(os.path.join(entity_folder, f"original{file_extension.lower()}"))
 
-	entity = get_doc_by_id('Entities', entity_key)
+	entity = get_doc_by_id('Entities', 'Entities/' + entity_key)
 	entity['imagening'] = False
 	entity['imagened'] = True
 	update_doc('Entities', entity)
