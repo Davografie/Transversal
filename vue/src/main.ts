@@ -5,7 +5,8 @@ import { createApp, provide, h } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedState from 'pinia-plugin-persistedstate'
 
-import { ApolloClient, createHttpLink, InMemoryCache } from '@apollo/client/core'
+import { ApolloClient, createHttpLink, InMemoryCache, ApolloLink } from '@apollo/client/core'
+import { visit } from 'graphql'
 
 import App from './App.vue'
 import router from './router'
@@ -18,11 +19,30 @@ const httpLink = createHttpLink({
 })
 
 // Cache implementation
+// Create a link that removes any __typename fields from the outgoing query AST
+// to mimic the previous behavior of addTypename: false.
+const stripTypenameLink = new ApolloLink((operation, forward) => {
+	if (operation.query) {
+		operation.query = visit(operation.query, {
+			Field(node) {
+				if (node.name.value === '__typename') {
+					return null
+				}
+				return undefined
+			},
+		})
+	}
+	return forward(operation)
+})
+
+// compose the final link: strip __typename first, then send over HTTP
+const link = ApolloLink.from([stripTypenameLink, httpLink])
+
 const cache = new InMemoryCache()
 
 // Create the apollo client
 const apolloClient = new ApolloClient({
-	link: httpLink,
+	link,
 	cache,
 	// connectToDevTools: true, // disable for production !!
 })
