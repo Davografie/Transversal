@@ -142,6 +142,7 @@ export interface Traitset {
     locationRestricted?: boolean
     limit?: number
     order?: number
+    initialXp?: number
     duplicates?: boolean
     traits?: Trait[]
     sfxs?: SFX[]
