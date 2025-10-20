@@ -18,7 +18,7 @@ const httpLink = createHttpLink({
 })
 
 // Cache implementation
-const cache = new InMemoryCache({ addTypename: false })
+const cache = new InMemoryCache()
 
 // Create the apollo client
 const apolloClient = new ApolloClient({
