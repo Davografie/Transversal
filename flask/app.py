@@ -304,11 +304,14 @@ def update_doc(collection_name: str, doc: dict):
 	@param doc: Document data
 	@return: Updated document data
 	"""
-	doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
 	logger.info(f"update_doc:\tcollection: { collection_name }\tdoc: { doc }")
-	db.collection(collection_name).update(doc)
+
+	db_doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
+	db.collection(collection_name).update(db_doc)
+
 	serialized = serialize_doc(doc)
 	r.hset(doc.get('_id'), mapping=serialized)
+
 	return doc
 	
 
@@ -1113,7 +1116,9 @@ class AssignTrait(Mutation):
 					'hidden': traitsetting.hidden,
 					{
 						"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']" if trait_setting_input.get('known_to') else ''
-					}
+					},
+					'statement': traitsetting.statement,
+					'notes': traitsetting.notes
 				}}"""
 		cursor = db.aql.execute(query)
 		# retrieving default traitset setting
@@ -1133,7 +1138,9 @@ class AssignTrait(Mutation):
 					'hidden': traitsetting.hidden,
 					{
 						"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']" if trait_setting_input.get('known_to') else ''
-					}
+					},
+					'statement': traitsetting.statement,
+					'notes': traitsetting.notes
 				}}"""
 			cursor = db.aql.execute(query)
 		# retrieving global default setting
@@ -1152,7 +1159,9 @@ class AssignTrait(Mutation):
 						'hidden': traitsetting.hidden,
 						{
 							"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']" if trait_setting_input.get('known_to') else ''
-						}
+						},
+						'statement': traitsetting.statement,
+						'notes': traitsetting.notes
 					}}"""
 			cursor = db.aql.execute(query)
 		if not cursor.empty():
@@ -1464,6 +1473,7 @@ class Traitset(ObjectType):
 	default_trait_setting = Field(lambda: TraitSetting)
 	# character = Field(lambda: Character)
 	score = Int()
+	initial_xp = Int()
 	traitset_setting = Field(lambda: TraitsetSetting)
 
 	@classmethod
@@ -1731,6 +1741,12 @@ class Traitset(ObjectType):
 			setting = db.collection('TraitSettings').find({'_from': 'Traits/1', '_to': 'Traits/1'})
 		return [TraitSetting(id=setting['_id']) for setting in setting][0]
 
+	def resolve_initial_xp(parent, info):
+		traitset = get_doc_by_id('Traitsets', parent.id)
+		if traitset.get('initial_xp') is not None:
+			return traitset.get('initial_xp')
+		return 0
+
 	def resolve_score(parent, info):
 		logging.warning("traitset\tscore:\tusing deprecated function")
 		if info.context.get('entity_id') is not None:
@@ -1809,6 +1825,7 @@ class TraitsetInput(InputObjectType):
 	entity_types = List(String)
 	location_restricted = Boolean(required=False)
 	limit = Int(required=False)
+	initial_xp = Int(required=False)
 	order = Int(required=False)
 	duplicates = Boolean(required=False)
 	sfxs = List(ID)
@@ -2174,7 +2191,8 @@ class Entity(Interface):
 		elif os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}"):
 			logger.info("Resolving image 4: ", parent.key)
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{parent.key}")[0]
-			logger.info("old_file: ", old_file)
+			logger.info("old_file: ")
+			logger.info(old_file)
 			ext = os.path.splitext(old_file)[1]
 			# os.rename(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", f"{app.config['IMAGEN_FOLDER']}/{parent.key}/original.jpg")
 			save_image(f"{app.config['IMAGEN_FOLDER']}/{parent.key}/{old_file}", parent.key)
@@ -2535,25 +2553,33 @@ class UpdateEntity(Mutation):
 			if entity.get('_id') not in known_to:
 				known_to.append(entity.get('_id'))
 			location_doc['known_to'] = list(set(known_to))
+
 			update_doc('Entities', location_doc)
+
 		elif (location or (entity_input and entity_input.get('location'))) and entity.get('type') == 'location':
 			zones = db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'super'})
 			zone = [doc for doc in zones][0]
 			zone['_to'] = location or entity_input.pop('location')
 			update_doc('Relations', zone)
+
 		# logger.info(f"UpdateEntity.mutate:\t3\tchanges: { changes }")
 		if following is not None:
 			changes['location'] = following
+
 		if favorite is not None:
 			changes['favorite'] = favorite
+
 		if is_archetype is not None:
 			changes['is_archetype'] = is_archetype
+
 		if active is not None:
 			changes['active'] = active
+
 		# logger.info(f"UpdateEntity.mutate:\t4\tchanges: { changes }")
 		if entity_input is not None and entity_input.get('show_to') is not None:
 			known_to = set(entity.get('known_to', []) + entity_input.pop('show_to', []))
 			changes['known_to'] = list(known_to)
+
 		# logger.info(f"UpdateEntity.mutate:\t5\tchanges: { changes }")
 		entity = {
 			'_key': key,
@@ -2562,8 +2588,11 @@ class UpdateEntity(Mutation):
 			**changes,
 			**(entity_input if entity_input is not None else {})
 		}
+
 		# logger.info(f"UpdateEntity.mutate:\t6\tentity: { entity }")
+
 		update_doc('Entities', entity)
+
 		if(entity.get('type') == 'location'):
 			return UpdateEntity(entity=Location(id=entity.get('_id'), entity_type=entity.get('type')))
 		elif(entity.get('type') in ['character', 'gm']):
@@ -3173,7 +3202,7 @@ class Query(ObjectType):
 			cursor = db.collection('Entities').get_many([char.get('character') for char in session_characters])
 			return [Character(id = doc['_id']) for doc in cursor]
 		else:
-			character = get_doc_by_id('Entities', key)
+			character = get_doc_by_id('Entities', 'Entities/' + key)
 			info.context['entity_id'] = character['_id']
 			return [Character(id = character['_id'])]
 
@@ -3843,7 +3872,7 @@ def upload_file(entity_key):
 	# logger.info("received request to upload file")
 	file = request.files['file']
 	file_extension = os.path.splitext(file.filename)[1]
-	entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], entity_key)
+	entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key))
 	# logger.info("entity_folder: ", entity_folder)
 	if not os.path.exists(entity_folder):
 		# logger.info("creating folder: ", entity_folder)
@@ -3881,10 +3910,10 @@ def upload_file(entity_key):
 		new_height_large = max_size_large
 		new_width_large = int((new_height_large / height) * width)
 		image_large = image_large.resize((new_width_large, new_height_large))
-	image_small.save(os.path.join(app.config['UPLOAD_FOLDER'], entity_key, f"small{ file_extension.lower() }"))
-	image_mini.save(os.path.join(app.config['UPLOAD_FOLDER'], entity_key, f"mini{ file_extension.lower() }"))
-	image_large.save(os.path.join(app.config['UPLOAD_FOLDER'], entity_key, f"large{ file_extension.lower() }"))
-	image_without_exif.save(os.path.join(app.config['UPLOAD_FOLDER'], entity_key, f"original{ file_extension.lower() }"))
+	image_small.save(os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), f"small{ file_extension.lower() }"))
+	image_mini.save(os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), f"mini{ file_extension.lower() }"))
+	image_large.save(os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), f"large{ file_extension.lower() }"))
+	image_without_exif.save(os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), f"original{ file_extension.lower() }"))
 	return jsonify({ "success": True })
 
 @app.route("/upload/<entity_key>/<location_key>", methods = ['POST'])
@@ -3892,7 +3921,7 @@ def upload_file_location(entity_key, location_key):
 	# logger.info("received request to upload file")
 	file = request.files['file']
 	file_extension = os.path.splitext(file.filename)[1]
-	entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], entity_key, location_key)
+	entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), str(location_key))
 	# logger.info("entity_folder: ", entity_folder)
 	if not os.path.exists(entity_folder):
 		# logger.info("creating folder: ", entity_folder)
@@ -3903,12 +3932,12 @@ def upload_file_location(entity_key, location_key):
 	hierarchy = retrieve_hierarchy('Entities/' + location_key)
 	# logger.info("hierarchy: ", hierarchy)
 	location_key = hierarchy[-2].get('_key')
-	path = os.path.join(app.config['UPLOAD_FOLDER'], entity_key, location_key, f"original{ file_extension.lower() }")
+	path = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), location_key, f"original{ file_extension.lower() }")
 	# logger.info("image path: ", path)
 	if not os.path.exists(os.path.dirname(path)):
 		os.makedirs(os.path.dirname(path))
 	image.save(path)
-	save_image(path, entity_key, location_key)
+	save_image(path, str(entity_key), str(location_key))
 	return jsonify({ "success": True })
 
 @app.route("/imagen/<entity_key>/<force>", methods = ['POST'])
@@ -4169,6 +4198,9 @@ def imagegen(entity_key, force):
 									genres.append(lt[1])
 								elif lt[0] == "negative imagen":
 									negative += ", " + lt[1]
+								elif lt[0] == "appearance":
+									location_name += ", " + lt[1] if lt[1] else ""
+									location_name += ", " + lt[2] if lt[2] else ""
 							prompt += " (" + location_name
 							# prompt += ", " + location_description
 						else:
@@ -4325,9 +4357,9 @@ def save_image(filepath, entity_key, location_key=None):
 
 	# Create entity folder for saving if it doesn't exist
 	if not location_key:
-		entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], entity_key)
+		entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key))
 	else:
-		entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], entity_key, location_key)
+		entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), str(location_key))
 	if not os.path.exists(entity_folder):
 		os.makedirs(entity_folder)
 
