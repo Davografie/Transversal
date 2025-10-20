@@ -161,9 +161,9 @@
 
 	function submit_fileupload() {
 		if(file_upload.value) {
-			console.log("uploading file: " + file_upload.value.name)
 			let url = API_URL + "upload/" + character.value.key
 			if(character.value.location) url += "/" + character.value.location.key
+			console.log("uploading file: " + file_upload.value.name + " to url: " + url)
 			const formData = new FormData()
 			formData.append('file', file_upload.value)
 			interface API_result {

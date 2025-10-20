@@ -36,9 +36,29 @@ CORS(app)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - line %(lineno)d - %(message)s')
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - line %(lineno)d - %(message)s')
 stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
+
+class ColorFormatter(logging.Formatter):
+	def format(self, record):
+		# ANSI escape code for bright cyan
+		CYAN = "\033[96m"
+		RESET = "\033[0m"
+		original_msg = super().format(record)
+		# Only color the actual message part
+		if record.msg:
+			msg_str = str(record.getMessage())
+			colored_msg = f"{CYAN}{msg_str}{RESET}"
+			# Replace only the message part in the formatted string
+			return original_msg.replace(msg_str, colored_msg, 1)
+		return original_msg
+
+log_formatter = ColorFormatter(
+	"%(asctime)s [%(levelname)s] %(name)s/%(funcName)s(%(lineno)d): %(message)s",
+	datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+stream_handler.setFormatter(log_formatter)
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logger.addHandler(stream_handler)
 
@@ -3925,22 +3945,22 @@ def upload_file(entity_key):
 
 @app.route("/upload/<entity_key>/<location_key>", methods = ['POST'])
 def upload_file_location(entity_key, location_key):
-	# logger.info("received request to upload file")
+	logger.info("received request to upload file")
 	file = request.files['file']
 	file_extension = os.path.splitext(file.filename)[1]
 	entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), str(location_key))
-	# logger.info("entity_folder: ", entity_folder)
+	logger.info("entity_folder: " + entity_folder)
 	if not os.path.exists(entity_folder):
-		# logger.info("creating folder: ", entity_folder)
+		logger.info("creating folder: " + entity_folder)
 		os.makedirs(entity_folder)
 	# filename = f"{ entity_id }{ file_extension }"
 	# filename = secure_filename(file.filename)
 	image = Image.open(file)
 	hierarchy = retrieve_hierarchy('Entities/' + location_key)
-	# logger.info("hierarchy: ", hierarchy)
+	logger.info("hierarchy: " + str(hierarchy))
 	location_key = hierarchy[-2].get('_key')
 	path = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), location_key, f"original{ file_extension.lower() }")
-	# logger.info("image path: ", path)
+	logger.info("image path: " + path)
 	if not os.path.exists(os.path.dirname(path)):
 		os.makedirs(os.path.dirname(path))
 	image.save(path)
