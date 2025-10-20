@@ -118,6 +118,7 @@
 			}
 			show_traits.value = !show_traits.value
 			highlighted_traits.value = []
+			// here should emit scroll-to this traitset
 		}
 	}
 
@@ -861,7 +862,8 @@
 		}
 		.traits {
 			display: block;
-			overflow: hidden;
+			height: auto;
+			overflow-y: auto;
 			.add-trait {
 				flex-grow: 1 0;
 				display: flex;
@@ -1054,10 +1056,13 @@
 <style>
 	.dark {
 		.traitset {
-			flex-grow: 1;
+			scroll-snap-align: start;
+			max-height: 80vh;
+			overflow-y: auto;
+			flex-grow: 1 0;
 			border: 1px solid var(--color-border);
 			border-radius: 10px;
-			overflow: hidden;
+			/* overflow: hidden; */
 			backdrop-filter: blur(5px);
 			box-shadow: inset 0 0 10px var(--color-background-mute);
 			.set-title {
@@ -1094,6 +1099,7 @@
 					background-color: var(--color-highlight-mute);
 					color: var(--color-highlight-text);
 					text-shadow: none;
+					font-size: 2em;
 				}
 			}
 			&.inactive {
