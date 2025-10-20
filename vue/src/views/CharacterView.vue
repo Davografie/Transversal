@@ -875,6 +875,8 @@
 				display: flex;
 				flex-wrap: wrap;
 				width: 100%;
+				position: sticky;
+				top: 0;
 				#delete-confirmation {
 					display: flex;
 					flex-grow: 1;
@@ -936,6 +938,8 @@
 <style>
 	.dark {
 		#entity-wrapper {
+			scroll-snap-type: y mandatory;
+			scroll-padding: 2em;
 			/* backdrop-filter: blur(5px); */
 			#character-details {
 				background-color: var(--color-background-mute);
@@ -943,6 +947,7 @@
 				/* border-radius: 50px 30px 30px 50px; */
 				max-height: 240px;
 				height: v-bind(portraitHeight + 'px');
+				scroll-snap-align: start;
 				#character-portrait img {
 					/* border-radius: 30px 0 0 30px; */
 					/* border: 1px solid var(--color-background); */

@@ -483,3 +483,13 @@
 	}
 }
 </style>
+
+<style>
+.dark {
+	#traitset-view {
+		#traitset-settings {
+			text-shadow: var(--text-shadow);
+		}
+	}
+}
+</style>
