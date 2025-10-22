@@ -49,6 +49,34 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 		}
 	}
 
+	function retrieve_entity_traits() {
+		if(apolloClient) {
+			const query_get_entity_traits = gql`
+				query EntityTraits($entityId: ID) {
+					entities(entityId: $entityId) {
+						traits {
+							id
+							name
+							explanation
+							traitSetting {
+								id
+							}
+						}
+					}
+				}`
+
+			const args = { "entityId": entity_id }
+			console.log("retrieving entity traits for entity_id: " + entity_id + " with args: " + JSON.stringify(args))
+			const { result } = provideApolloClient(apolloClient)(
+				() => useQuery(query_get_entity_traits, args, { fetchPolicy: 'no-cache' })
+			)
+			watch(result, () => {
+				console.log("entity traits result: " + JSON.stringify(result.value.entities[0].traits))
+				traits.value = result.value.entities[0].traits
+			})
+		}
+	}
+
 	function retrieve_potential_traits() {
 		if(apolloClient) {
 			const query_get_potential_entity_traits_for_traitset = gql`
@@ -85,5 +113,10 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 		}
 	}
 
-	return { traits, retrieve_traits, retrieve_potential_traits }
+	return {
+		traits,
+		retrieve_traits,
+		retrieve_entity_traits,
+		retrieve_potential_traits
+	}
 }

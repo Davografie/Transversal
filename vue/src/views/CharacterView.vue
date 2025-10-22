@@ -11,6 +11,7 @@
 	
 	import PP from '@/components/PP.vue'
 	import Traitset from '@/components/Traitset.vue'
+	import AllTraits from '@/components/AllTraits.vue'
 	import EntityCard from '@/components/EntityCard.vue'
 	import ArchetypePicker from '@/components/ArchetypePicker.vue'
 
@@ -675,7 +676,6 @@
 					v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
-					:show_name="false"
 					@click_entity="switch_to_entity(entity_id)" />
 			</div>
 
@@ -701,6 +701,9 @@
 					@click_entity="click_instance(entity.id)" />
 			</div>
 		</div>
+		<!-- <div id="all-traits-wrapper">
+			<AllTraits v-if="character.id" :entity_id="character.id" />
+		</div> -->
 		<div id="traitsets" v-if="character.traitsets">
 			<Traitset
 				v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
