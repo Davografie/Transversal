@@ -1059,7 +1059,7 @@
 			scroll-snap-align: start;
 			max-height: 80vh;
 			overflow-y: auto;
-			flex-grow: 1 0;
+			flex-grow: 1;
 			border: 1px solid var(--color-border);
 			border-radius: 10px;
 			/* overflow: hidden; */
@@ -1067,6 +1067,13 @@
 			box-shadow: inset 0 0 10px var(--color-background-mute);
 			.set-title {
 				letter-spacing: .1em;
+				.limiter {
+					padding-right: .6em;
+					align-items: start;
+					span {
+						line-height: 1.4em;
+					}
+				}
 			}
 			.traitset-info {
 				text-shadow: var(--text-shadow);
