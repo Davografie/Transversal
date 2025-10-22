@@ -108,6 +108,174 @@ db = client.db(
 )
 logger.info("ArangoDB connection established")
 
+
+def get_doc_by_id(collection_name: str, doc_id: str):
+	"""
+	Helper function to get a document by ID from a collection and store it in Redis.
+	@param collection_name: Name of the collection
+	@param doc_id: ID of the document
+	@return: Document data
+	"""
+	# first check if the doc is in redis
+	# throw an exception if doc_id is convertible to a number
+	if isinstance(doc_id, (int, float)) or (isinstance(doc_id, str) and re.fullmatch(r'[+-]?\d+(\.\d+)?', doc_id.strip())):
+		raise Exception("doc_id must not be a bare numeric value; provide a full Arango document id like 'Collection/123'")
+	if r.exists(doc_id):
+		stored = r.hgetall(doc_id)
+		doc = deserialize_doc(stored)
+	else:
+		doc = db.collection(collection_name).get(doc_id)
+		doc = {k: v for k, v in doc.items() if v is not None}
+		serialized = serialize_doc(doc)
+		r.hset(doc_id, mapping=serialized)
+	return doc
+
+def update_doc(collection_name: str, doc: dict):
+	"""
+	Helper function to update a document in a collection and update it in Redis.
+	@param collection_name: Name of the collection
+	@param doc: Document data
+	@return: Updated document data
+	"""
+	db_doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
+	db.collection(collection_name).update(db_doc)
+
+	serialized = serialize_doc(doc)
+	r.hset(doc.get('_id'), mapping=serialized)
+
+	return doc
+
+def serialize_doc(doc):
+	serialized = {}
+	for k, v in doc.items():
+		if isinstance(v, (list, bool)):
+			serialized[k] = json.dumps(v)
+		else:
+			serialized[k] = str(v)
+	return serialized
+
+def deserialize_doc(stored):
+	doc = {}
+	for k, v in stored.items():
+		try:
+			doc[k.decode('utf-8')] = json.loads(v.decode('utf-8'))
+		except json.JSONDecodeError:
+			doc[k.decode('utf-8')] = v.decode('utf-8')
+	return doc
+
+
+def filter_trait_settings_by_location(trait_settings, location_id):
+	"""
+	Systematically filters out traits restricted by the location hierarchy.
+
+	Args:
+		trait_settings (list): A list of ArangoDB trait setting (TraitSettings) documents.
+		location_id (str): The ID of the location to be used for filtering.
+
+	Returns:
+		list: Filtered list of trait settings.
+	"""
+	result = []
+	# logger.info(f"filter_trait_settings_by_location:\n\ttrait_settings: {[trait_setting.get('_id') for trait_setting in trait_settings]}")
+	hierarchy_ids = [location.get('_id') for location in retrieve_hierarchy(location_id)]
+	# logger.info(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
+	for trait_setting in trait_settings:
+		# logger.info(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting.get('_id')}")
+		determined = False
+		for location_id in hierarchy_ids:
+			# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in enabled locations")
+			if trait_setting.get('locations_enabled') and location_id in trait_setting.get('locations_enabled'):
+				result.append(trait_setting)
+				determined = True
+				# logger.info("filter_trait_settings_by_location:\n\tTrait setting enabled at this location, added to result")
+				break
+			elif trait_setting.get('locations_disabled') and location_id in trait_setting.get('locations_disabled'):
+				determined = True
+				# logger.info("filter_trait_settings_by_location:\n\tTrait setting disabled at this location, not added")
+				break
+		if not determined and trait_setting.get('_to') is not None and trait_setting.get('_to') != 'Traits/1':
+			# logger.info("filter_trait_settings_by_location:\n\tChecking default trait setting")
+			default_trait_setting = db.collection('TraitSettings').find({ '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
+			if not default_trait_setting.empty():
+				default_trait_setting = [doc for doc in default_trait_setting][0]
+				for location_id in hierarchy_ids:
+					# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in default enabled locations")
+					if default_trait_setting.get('locations_enabled') and location_id in default_trait_setting.get('locations_enabled'):
+						result.append(trait_setting)
+						determined = True
+						# logger.info("filter_trait_settings_by_location:\n\tDefault trait setting enabled, added to result")
+						break
+					elif default_trait_setting.get('locations_disabled') and location_id in default_trait_setting.get('locations_disabled'):
+						determined = True
+						# logger.info("filter_trait_settings_by_location:\n\tDefault trait setting disabled, not added")
+						break
+		if not determined and trait_setting.get('_from') is not None and not trait_setting.get('_from').startswith('Traitsets'):
+			# logger.info("filter_trait_settings_by_location:\n\tChecking traitset default setting")
+			traitset_id = get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset')
+			traitset_setting = db.collection('TraitSettings').find({ '_from': traitset_id, '_to': 'Traits/1' })
+			if not traitset_setting.empty():
+				traitset_setting = [doc for doc in traitset_setting][0]
+				for location_id in hierarchy_ids:
+					# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in traitset enabled locations")
+					if traitset_setting.get('locations_enabled') and location_id in traitset_setting.get('locations_enabled'):
+						result.append(trait_setting)
+						determined = True
+						# logger.info("filter_trait_settings_by_location:\n\tTraitset default setting enabled, added to result")
+						break
+					elif traitset_setting.get('locations_disabled') and location_id in traitset_setting.get('locations_disabled'):
+						determined = True
+						# logger.info("filter_trait_settings_by_location:\n\tTraitset default setting disabled, not added")
+						break
+		if not determined:
+			result.append(trait_setting)
+			# logger.info("filter_trait_settings_by_location:\n\tNo location restrictions, added trait setting to result")
+			# logger.info(f"filter_trait_settings_by_location:\n\tNo location restrictions, ignoring trait setting")
+			# break
+	return result
+
+def retrieve_location(entity):
+	"""
+	Retrieves the location of an entity.
+
+	Args:
+		entity (dict): The entity to retrieve the location for.
+
+	Returns:
+		dict: The location of the entity.
+	"""
+	if entity.get('type') != 'location':
+		# if the entity is not a location, get the location from its location attribute
+		location_id = entity.get('location')
+		location = get_doc_by_id('Entities', location_id)
+		if location.get('type') != 'location':
+			# if the location is not a location, get the location from its location attribute
+			location = retrieve_location(location)
+	elif entity.get('_id') != 'Entities/2':
+		# if the entity is a location, get the location from its super relations
+		location_id = [doc.get('_to') for doc in db.collection('Relations').find({ '_from': entity.get('_id'), 'type': 'super' })][0]
+		location = get_doc_by_id('Entities', location_id)
+	else:
+		location = entity
+	return location
+
+def retrieve_hierarchy(location_id):
+	"""
+	Retrieves the hierarchy of a location.
+
+	Args:
+		location_id (str): The ID of the location to retrieve the hierarchy for.
+
+	Returns:
+		list: A list of dictionaries representing the hierarchy of the location.
+	"""
+	query = f"""FOR v, e, p IN 0..20 OUTBOUND "{ location_id }" Relations
+				FILTER p.edges[*].type ALL == 'super'
+				RETURN v"""
+	cursor = db.aql.execute(query)
+	return [doc for doc in cursor]
+
+
+
 class Player(ObjectType):
 	uuid = ID()
 	name = String()
@@ -299,62 +467,6 @@ absolute_default_trait_setting = {
 	'sfxs': []
 }
 
-def get_doc_by_id(collection_name: str, doc_id: str):
-	"""
-	Helper function to get a document by ID from a collection and store it in Redis.
-	@param collection_name: Name of the collection
-	@param doc_id: ID of the document
-	@return: Document data
-	"""
-	# first check if the doc is in redis
-	# throw an exception if doc_id is convertible to a number
-	if isinstance(doc_id, (int, float)) or (isinstance(doc_id, str) and re.fullmatch(r'[+-]?\d+(\.\d+)?', doc_id.strip())):
-		raise Exception("doc_id must not be a bare numeric value; provide a full Arango document id like 'Collection/123'")
-	if r.exists(doc_id):
-		stored = r.hgetall(doc_id)
-		doc = deserialize_doc(stored)
-	else:
-		doc = db.collection(collection_name).get(doc_id)
-		doc = {k: v for k, v in doc.items() if v is not None}
-		serialized = serialize_doc(doc)
-		r.hset(doc_id, mapping=serialized)
-	return doc
-
-def update_doc(collection_name: str, doc: dict):
-	"""
-	Helper function to update a document in a collection and update it in Redis.
-	@param collection_name: Name of the collection
-	@param doc: Document data
-	@return: Updated document data
-	"""
-	logger.info(f"update_doc:\tcollection: { collection_name }\tdoc: { doc }")
-
-	db_doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
-	db.collection(collection_name).update(db_doc)
-
-	serialized = serialize_doc(doc)
-	r.hset(doc.get('_id'), mapping=serialized)
-
-	return doc
-	
-
-def serialize_doc(doc):
-	serialized = {}
-	for k, v in doc.items():
-		if isinstance(v, (list, bool)):
-			serialized[k] = json.dumps(v)
-		else:
-			serialized[k] = str(v)
-	return serialized
-
-def deserialize_doc(stored):
-	doc = {}
-	for k, v in stored.items():
-		try:
-			doc[k.decode('utf-8')] = json.loads(v.decode('utf-8'))
-		except json.JSONDecodeError:
-			doc[k.decode('utf-8')] = v.decode('utf-8')
-	return doc
 
 class TraitSetting(ObjectType):
 	id = ID()
@@ -1138,11 +1250,12 @@ class AssignTrait(Mutation):
 					'sfxs': traitsetting.sfxs,
 					'hidden': traitsetting.hidden,
 					{
-						"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']" if trait_setting_input.get('known_to') else ''
-					},
+						"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']," if trait_setting_input.get('known_to') else ''
+					}
 					'statement': traitsetting.statement,
 					'notes': traitsetting.notes
 				}}"""
+		logger.info(f"AssignTrait:\tquerying for trait default:\n{ query }")
 		cursor = db.aql.execute(query)
 		# retrieving default traitset setting
 		if cursor.empty():
@@ -1160,8 +1273,8 @@ class AssignTrait(Mutation):
 					'sfxs': traitsetting.sfxs,
 					'hidden': traitsetting.hidden,
 					{
-						"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']" if trait_setting_input.get('known_to') else ''
-					},
+						"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']," if trait_setting_input.get('known_to') else ''
+					}
 					'statement': traitsetting.statement,
 					'notes': traitsetting.notes
 				}}"""
@@ -1181,8 +1294,8 @@ class AssignTrait(Mutation):
 						'sfxs': traitsetting.sfxs,
 						'hidden': traitsetting.hidden,
 						{
-							"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']" if trait_setting_input.get('known_to') else ''
-						},
+							"'known_to': ['" + "', '".join(trait_setting_input.get('known_to', [])) + "']," if trait_setting_input.get('known_to') else ''
+						}
 						'statement': traitsetting.statement,
 						'notes': traitsetting.notes
 					}}"""
@@ -2339,7 +2452,13 @@ class Entity(Interface):
 			if traitset_id not in unique_traitsets:
 				unique_traitsets.append(traitset_id)
 		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
-		return [Traitset(id=traitset) for traitset in unique_traitsets]		
+		return [Traitset(id=traitset) for traitset in unique_traitsets]
+	
+	def resolve_traits(parent, info):
+		trait_settings = db.collection('TraitSettings').find({'_from': parent.id})
+		location = retrieve_location(get_doc_by_id('Entities', parent.id))
+		filtered_trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
+		return [Trait(id=setting.get('_to')) for setting in filtered_trait_settings]
 
 	def resolve_location(parent, info):
 		entity = get_doc_by_id('Entities', parent.id)
@@ -3576,117 +3695,6 @@ app.add_url_rule('/graphql', view_func=GraphQLView.as_view(
 	graphiql=True,
 ))
 
-
-def filter_trait_settings_by_location(trait_settings, location_id):
-	"""
-	Systematically filters out traits restricted by the location hierarchy.
-
-	Args:
-		trait_settings (list): A list of ArangoDB trait setting (TraitSettings) documents.
-		location_id (str): The ID of the location to be used for filtering.
-
-	Returns:
-		list: Filtered list of trait settings.
-	"""
-	result = []
-	# logger.info(f"filter_trait_settings_by_location:\n\ttrait_settings: {[trait_setting.get('_id') for trait_setting in trait_settings]}")
-	hierarchy_ids = [location.get('_id') for location in retrieve_hierarchy(location_id)]
-	# logger.info(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
-	for trait_setting in trait_settings:
-		# logger.info(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting.get('_id')}")
-		determined = False
-		for location_id in hierarchy_ids:
-			# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in enabled locations")
-			if trait_setting.get('locations_enabled') and location_id in trait_setting.get('locations_enabled'):
-				result.append(trait_setting)
-				determined = True
-				# logger.info("filter_trait_settings_by_location:\n\tTrait setting enabled at this location, added to result")
-				break
-			elif trait_setting.get('locations_disabled') and location_id in trait_setting.get('locations_disabled'):
-				determined = True
-				# logger.info("filter_trait_settings_by_location:\n\tTrait setting disabled at this location, not added")
-				break
-		if not determined and trait_setting.get('_to') is not None and trait_setting.get('_to') != 'Traits/1':
-			# logger.info("filter_trait_settings_by_location:\n\tChecking default trait setting")
-			default_trait_setting = db.collection('TraitSettings').find({ '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
-			if not default_trait_setting.empty():
-				default_trait_setting = [doc for doc in default_trait_setting][0]
-				for location_id in hierarchy_ids:
-					# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in default enabled locations")
-					if default_trait_setting.get('locations_enabled') and location_id in default_trait_setting.get('locations_enabled'):
-						result.append(trait_setting)
-						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tDefault trait setting enabled, added to result")
-						break
-					elif default_trait_setting.get('locations_disabled') and location_id in default_trait_setting.get('locations_disabled'):
-						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tDefault trait setting disabled, not added")
-						break
-		if not determined and trait_setting.get('_from') is not None and not trait_setting.get('_from').startswith('Traitsets'):
-			# logger.info("filter_trait_settings_by_location:\n\tChecking traitset default setting")
-			traitset_id = get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset')
-			traitset_setting = db.collection('TraitSettings').find({ '_from': traitset_id, '_to': 'Traits/1' })
-			if not traitset_setting.empty():
-				traitset_setting = [doc for doc in traitset_setting][0]
-				for location_id in hierarchy_ids:
-					# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in traitset enabled locations")
-					if traitset_setting.get('locations_enabled') and location_id in traitset_setting.get('locations_enabled'):
-						result.append(trait_setting)
-						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tTraitset default setting enabled, added to result")
-						break
-					elif traitset_setting.get('locations_disabled') and location_id in traitset_setting.get('locations_disabled'):
-						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tTraitset default setting disabled, not added")
-						break
-		if not determined:
-			result.append(trait_setting)
-			# logger.info("filter_trait_settings_by_location:\n\tNo location restrictions, added trait setting to result")
-			# logger.info(f"filter_trait_settings_by_location:\n\tNo location restrictions, ignoring trait setting")
-			# break
-	return result
-
-def retrieve_location(entity):
-	"""
-	Retrieves the location of an entity.
-
-	Args:
-		entity (dict): The entity to retrieve the location for.
-
-	Returns:
-		dict: The location of the entity.
-	"""
-	if entity.get('type') != 'location':
-		# if the entity is not a location, get the location from its location attribute
-		location_id = entity.get('location')
-		location = get_doc_by_id('Entities', location_id)
-		if location.get('type') != 'location':
-			# if the location is not a location, get the location from its location attribute
-			location = retrieve_location(location)
-	elif entity.get('_id') != 'Entities/2':
-		# if the entity is a location, get the location from its super relations
-		location_id = [doc.get('_to') for doc in db.collection('Relations').find({ '_from': entity.get('_id'), 'type': 'super' })][0]
-		location = get_doc_by_id('Entities', location_id)
-	else:
-		location = entity
-	return location
-
-def retrieve_hierarchy(location_id):
-	"""
-	Retrieves the hierarchy of a location.
-
-	Args:
-		location_id (str): The ID of the location to retrieve the hierarchy for.
-
-	Returns:
-		list: A list of dictionaries representing the hierarchy of the location.
-	"""
-	query = f"""FOR v, e, p IN 0..20 OUTBOUND "{ location_id }" Relations
-				FILTER p.edges[*].type ALL == 'super'
-				RETURN v"""
-	cursor = db.aql.execute(query)
-	return [doc for doc in cursor]
-
 # REST API
 
 from pyArango.connection import Connection
@@ -4197,7 +4205,7 @@ def imagegen(entity_key, force):
 				if doc['description']:
 					prompt = f"({ doc['description'] }), "
 
-				if len(doc.get('zones')) > 0:
+				if len(doc.get('zones')) > 1:
 					prompt += f"the different zones in { name } are ((" + ":0.4) and (".join([zone[0] + ", " + zone[1] for zone in doc['zones'][1:]]) + "):0.8), "
 
 				if len(doc['traits']) > 0:
