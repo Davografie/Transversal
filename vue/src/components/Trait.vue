@@ -103,7 +103,12 @@
 	} = useLocation(undefined, props.location_key)
 
 	// enable/disable trait edit mode
-	const mode = ref('neutral')
+	enum Mode {
+		Neutral = 'neutral',
+		Editing = 'editing',
+		Viewing = 'viewing'
+	}
+	const mode = ref<Mode>(Mode.Neutral)
 
 	// true for longtaps so that normal taps/clicks don't trigger
 	const held = ref(false)
@@ -141,7 +146,7 @@
 		edit_rating.value = false
 		add_subtraits.value = false
 		show_sfxs.value = false
-		mode.value = 'editing'
+		mode.value = Mode.Editing
 		if(
 			player.is_gm
 			|| props.entity_id == player.player_character.id
@@ -170,7 +175,7 @@
 			// switch_to_editing()
 		}
 		else {
-			mode.value = 'neutral'
+			mode.value = Mode.Neutral
 		}
 	})
 
@@ -183,7 +188,7 @@
 			// && !(props.highlight_root_id && !props.highlighted && !trait.value.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? ''))
 		) {
 			// when the player is in edit mode they can change the trait
-			if (props.edit_mode && mode.value != 'editing') {
+			if (props.edit_mode && mode.value != Mode.Editing) {
 				switch_to_editing()
 			}
 			// otherwise add the trait to the dicepool
@@ -191,7 +196,7 @@
 				// traits without rating have no business here
 				trait.value.rating
 				// clicking the trait while editing shouldn't do anything
-				&& mode.value != 'editing'
+				&& mode.value != Mode.Editing
 				&& !player.editing
 				// resources have a special function
 				&& !['resource', 'empty'].includes(trait.value.ratingType ?? '')
@@ -276,7 +281,7 @@
 				// traits without rating have no business here
 				trait.value.rating
 				// clicking the trait while editing shouldn't do anything
-				&& mode.value != 'editing'
+				&& mode.value != Mode.Editing
 				&& !player.editing
 				// resources have a special function
 				&& trait.value.ratingType == 'resource'
@@ -307,7 +312,7 @@
 	}
 
 	function click_subtrait(subtrait: Trait) {
-		if (player.editing && mode.value != 'editing') {
+		if (player.editing && mode.value != Mode.Editing) {
 			click_trait()
 		}
 		
@@ -380,7 +385,7 @@
 		held.value = true
 		console.log("longtap")
 		if(
-			mode.value != 'editing'
+			mode.value != Mode.Editing
 			// && (
 			//	// disable trait editing for traits that aren't yours
 			// 	player.is_gm
@@ -395,7 +400,7 @@
 
 	function deplete_resource(dc: DieType) {
 		if(
-			mode.value != 'editing'
+			mode.value != Mode.Editing
 			&& trait.value.rating?.map((d) => d.id).includes(dc.id)
 			&& inAddingPhase.value
 		) {
@@ -414,15 +419,15 @@
 				add_complication(_.clone(dc))
 			}
 		}
-		else if(mode.value == 'editing' && !transfer_resource_mode.value) {
+		else if(mode.value == Mode.Editing && !transfer_resource_mode.value) {
 			edit_rating.value = true
 		}
-		else if(mode.value == 'editing' && transfer_resource_mode.value && player.the_entity && props.entity_id != player.the_entity?.id) {
+		else if(mode.value == Mode.Editing && transfer_resource_mode.value && player.the_entity && props.entity_id != player.the_entity?.id) {
 			// take resource from environment
 			console.log("take resource from environment: " + JSON.stringify(dc))
 			transfer_resource(player.the_entity.id, dc)
 		}
-		else if(mode.value == 'editing' && transfer_resource_mode.value && player.the_entity && player.the_entity.location?.id && props.entity_id == player.the_entity?.id) {
+		else if(mode.value == Mode.Editing && transfer_resource_mode.value && player.the_entity && player.the_entity.location?.id && props.entity_id == player.the_entity?.id) {
 			// put resource into envirnment
 			transfer_resource(player.the_entity.location.id, dc)
 		}
@@ -490,7 +495,7 @@
 
 	function submit_changes() {
 		change_trait()
-		mode.value = 'neutral'
+		mode.value = Mode.Neutral
 		edit_rating.value = false
 		show_sfxs.value = false
 		setTimeout(() => {
@@ -500,7 +505,7 @@
 
 	function cancel_edit() {
 		retrieve_trait()
-		mode.value = 'neutral'
+		mode.value = Mode.Neutral
 		transfer_resource_mode.value = false
 		edit_rating.value = false
 		new_rating.value = []
@@ -614,7 +619,7 @@
 
 	watch(() => player.editing, (newVal) => {
 		if (!newVal) {
-			mode.value = 'neutral';
+			mode.value = Mode.Neutral;
 		}
 	})
 
@@ -836,7 +841,7 @@
 				props.highlighted || trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'highlighted' : '',
 				// dim all traits that don't have highlight when highlight is set
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
-				{ 'clickable': mode != 'editing' },
+				{ 'clickable': mode != Mode.Editing },
 				{ 'inherited': inherited },
 				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm },
 			]"
@@ -858,7 +863,7 @@
 						<span>
 							{{ trait.name }}
 						</span>
-						<span class="label" v-if="mode == 'editing'
+						<span class="label" v-if="mode == Mode.Editing
 								&& trait.traitSetting?.fromEntity?.name">
 							{{ ' from ' + trait.traitSetting?.fromEntity?.name }}
 						</span>
@@ -874,10 +879,10 @@
 						player.viewing"
 					v-html="marked(trait.explanation ?? '')">
 				</div>
-				<div class="statement" v-if="trait.statement && mode != 'editing'"
+				<div class="statement" v-if="trait.statement && mode != Mode.Editing"
 					v-html="rendered_statement" />
 
-				<div class="edit-statement edit-attribute" v-if="edit_statement && mode == 'editing'">
+				<div class="edit-statement edit-attribute" v-if="edit_statement && mode == Mode.Editing">
 					<div class="edit-statement-1">
 						<input type="text" name="text-statement" ref="text-statement"
 							class="statement statement-edit"
@@ -903,12 +908,12 @@
 				</div>
 				<div class="notes" v-html="marked.parse(trait.notes)"
 					v-if="trait.notes
-					&& mode != 'editing'
+					&& mode != Mode.Editing
 					&& (player.is_gm
 						|| props.entity_id == player.player_character.id
 						|| props.entity_id?.startsWith('Relations/')
 					)" />
-				<div v-if="mode == 'viewing' || player.viewing" class="label">
+				<div v-if="mode == Mode.Viewing || player.viewing" class="label">
 					<div v-if="trait.requiredTraits && trait.requiredTraits?.length > 0">
 						required traits:
 						<ul>
@@ -923,15 +928,15 @@
 
 			<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
 					v-if="trait.ratingType != 'empty'"
-					@click="(mode == 'editing' && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
+					@click="(mode == Mode.Editing && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
 				<Rating v-if="trait.rating" :rating="new_rating.length > 0 ? new_rating : trait.rating"
 					:rating-type="trait.ratingType"
 					@deplete-resource="deplete_resource"
-					@deplete-challenge="(d) => mode == 'editing' ? edit_rating = true : deplete_challenge(d)" />
+					@deplete-challenge="(d) => mode == Mode.Editing ? edit_rating = true : deplete_challenge(d)" />
 			</div>
 		</div>
 
-		<div class="edit-trait" v-if="mode == 'editing'">
+		<div class="edit-trait" v-if="mode == Mode.Editing">
 			<div class="edit-setting-buttons" :class="{ 'small-buttons': player.small_buttons }">
 				<div class="button-mnml"
 						title="copy traitsetting id"
@@ -1053,7 +1058,7 @@
 			<div class="add-sub-traits edit-attribute"
 					v-if="trait.possibleSubTraits
 						&& trait.possibleSubTraits?.filter((x) => !trait.subTraits?.map((y) => y.id).includes(x.id)).length > 0
-						&& mode == 'editing'
+						&& mode == Mode.Editing
 						&& add_subtraits">
 				<span>add sub-trait:</span>
 				<input type="button" class="button"
@@ -1115,23 +1120,23 @@
 		<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
 			<!-- <div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div> -->
 			<div class="sfx-list">
-				<template v-for="(sfx, i) in (mode == 'editing' ? new_sfxs : trait.sfxs)" :key="sfx.id">
+				<template v-for="(sfx, i) in (mode == Mode.Editing ? new_sfxs : trait.sfxs)" :key="sfx.id">
 					<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
 						@expand="expanded_sfx = sfx"
 						@collapse="expanded_sfx = {} as SFXType"
 						@activate="selected_sfx = sfx; click_trait()"
 						@remove="remove_sfx(sfx.id)"
-						:editing="mode == 'editing'"
+						:editing="mode == Mode.Editing"
 						:adding="false"
 						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
 					<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
 				</template>
 			</div>
-			<div class="add-sfx" v-if="mode == 'editing' && trait.possibleSfxs">
+			<div class="add-sfx" v-if="mode == Mode.Editing && trait.possibleSfxs">
 				<div class="add-sfx-list">
 					<template v-for="(sfx, i) in trait.possibleSfxs.filter((sfx) => !new_sfxs.map((x) => x.id).includes(sfx.id))" :key="sfx.id">
 						<SFX :sfx_id="sfx.id" :trait-setting-id="trait.traitSettingId"
-							:editing="mode == 'editing'" @add="add_sfx(sfx)" adding />
+							:editing="mode == Mode.Editing" @add="add_sfx(sfx)" adding />
 						<!-- <span class="sfx-divider" v-if="i < (sfx_list?.length ?? 0) - 1">/</span> -->
 					</template>
 					<input type="button" class="button add-sfx-title"
@@ -1154,7 +1159,7 @@
 					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) > 0)" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
-							:editing_trait="mode == 'editing'"
+							:editing_trait="mode == Mode.Editing"
 							:edit_mode="props.edit_mode"
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
@@ -1169,7 +1174,7 @@
 					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) == 0)" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
-							:editing_trait="mode == 'editing'"
+							:editing_trait="mode == Mode.Editing"
 							:edit_mode="props.edit_mode"
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
@@ -1183,7 +1188,7 @@
 					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) < 0)" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
-							:editing_trait="mode == 'editing'"
+							:editing_trait="mode == Mode.Editing"
 							:edit_mode="props.edit_mode"
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
@@ -1194,7 +1199,7 @@
 			</div>
 		</div>
 
-		<div class="edit-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == 'editing'">
+		<div class="edit-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == Mode.Editing">
 			<input  type="button" class="button-mnml save-button"
 				:value="player.small_buttons ? '💾' : '💾' + (inherited ? 'overwrite' : 'save') + ' trait'"
 				@click.stop="submit_changes"
