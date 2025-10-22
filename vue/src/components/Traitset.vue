@@ -373,7 +373,7 @@
 				)
 			})
 
-			console.log("filtered traits: " + JSON.stringify(filtered_traits))
+			// console.log("filtered traits: " + JSON.stringify(filtered_traits))
 
 			if(filtered_traits.length == 0) {
 				return []
@@ -390,7 +390,7 @@
 						return t.name + ((!traitset.value.duplicates || t.inheritable == true) ? '' : (t.traitSetting?.statement ?? '')) == ut
 					})
 				if(ut_traits.length == 0) {
-					console.log("traitset duplicates: " + traitset.value.duplicates + ", no traits found for '" + ut + "'")
+					// console.log("traitset duplicates: " + traitset.value.duplicates + ", no traits found for '" + ut + "'")
 					return
 				}
 				const highest_priority_trait = ut_traits.reduce((a, b) => (a?.traitSetting?.priority ?? -1) > (b?.traitSetting?.priority ?? -1) ? a : b)
