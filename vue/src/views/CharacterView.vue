@@ -599,7 +599,7 @@
 					v-if="player.is_gm && character.entityType != 'character'"
 					@click="hide_entity">
 					<div class="icon">{{ character.hidden ? '🌑' : '🌕' }}</div>
-					<div class="label" v-if="!player.small_buttons">{{ character.hidden ? 'showing entity' : 'hiding entity' }}</div>
+					<div class="label" v-if="!player.small_buttons">{{ character.hidden ? 'hiding entity' : 'showing entity' }}</div>
 				</div>
 				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
 					title="show known to"
