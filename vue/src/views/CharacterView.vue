@@ -679,7 +679,7 @@
 					@click_entity="switch_to_entity(entity_id)" />
 			</div>
 
-			<ArchetypePicker v-if="entityOverviewType == 'ARCHETYPES'" :entity_id="character.id" :entity_type="character.entityType" />
+			<ArchetypePicker v-if="entityOverviewType == 'ARCHETYPES'" :entity_id="character.id" :entity_type="character.entityType" :location_id="entity.location?.id" />
 
 			<div id="character-known-to" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0">
 				<div class="info">

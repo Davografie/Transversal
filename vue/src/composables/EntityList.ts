@@ -48,16 +48,20 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 		}
 	}
 
-	function retrieve_archetypes(entity_type?: string) {
-		const get_archetypes_query = gql`query Archetypes($entityType: String, $isArchetype: Boolean) {
-			entities(entityType: $entityType, isArchetype: $isArchetype) {
+	function retrieve_archetypes(entity_type?: string, location_id?: string) {
+		const get_archetypes_query = gql`query Archetypes($entityType: String, $locationId: ID, $isArchetype: Boolean) {
+			entities(entityType: $entityType, locationId: $locationId, isArchetype: $isArchetype) {
 				key
 				id
 				name
 				entityType
 			}
 		}`
-		const variables = { "entityType": entity_type, "isArchetype": true }
+		const variables = {
+			"entityType": entity_type,
+			"locationId": location_id,
+			"isArchetype": true
+		}
 		if(apolloClient) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{entities: Entity[]}>(

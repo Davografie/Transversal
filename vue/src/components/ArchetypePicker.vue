@@ -8,6 +8,7 @@
 	const props = defineProps<{
 		entity_id: string
 		entity_type: string
+		location_id?: string
 	}>()
 
 	const {
@@ -25,7 +26,7 @@
 
 	retrieve_small_entity()
 	retrieve_entity_archetypes()
-	retrieve_archetypes(props.entity_type)
+	retrieve_archetypes(props.entity_type, props.location_id)
 
 	const selected_archetype = ref<string | null>(entity.value.archetype?.id ?? null)
 	const selected_archetypes = ref<string[]>(entity.value.archetypes?.map(archetype => archetype.id) ?? [])

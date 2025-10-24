@@ -3383,15 +3383,20 @@ class Query(ObjectType):
 				 entity_id=ID(required=False),
 				 entity_type=String(required=False),
 				 search=String(required=False),
-				 is_archetype=Boolean(required=False))
-	def resolve_entities(parent, info, key=None, entity_id=None, entity_type=None, search=None, is_archetype=None):
+				 is_archetype=Boolean(required=False),
+				 location_id=ID(required=False))
+	def resolve_entities(parent, info, key=None, entity_id=None, entity_type=None, search=None, is_archetype=None, location_id=None):
 		# logger.info("entity resolver, for key: ", key)
+		if location_id is not None:
+			hierarchy = retrieve_hierarchy(location_id)
 		if not key and not entity_id and not entity_type:
 			query = "FOR e IN Entities "
 			if search:
 				query += "FILTER LOWER(e.name) LIKE LOWER('%" + search + "%') "
 			if is_archetype:
 				query += "FILTER e.is_archetype == true "
+			if location_id is not None:
+				query += f"""FILTER e.location IN ['{ "', '".join([loc.get('_id') for loc in hierarchy]) }'] """
 			query += """SORT POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
 			RETURN e"""
 			cursor = db.aql.execute(query)
@@ -3415,9 +3420,12 @@ class Query(ObjectType):
 				query += "FILTER LOWER(e.name) LIKE LOWER('%" + search + "%') "
 			if is_archetype:
 				query += "FILTER e.is_archetype == true "
+			if location_id is not None:
+				query += f"""FILTER e.location IN ['{ "', '".join([loc.get('_id') for loc in hierarchy]) }'] """
 			query += f"""FILTER e.type == '{ entity_type }'
 			SORT e.name ASC
 			RETURN e"""
+			logger.info("resolve_entities:\tquery: ", query)
 			entities = db.aql.execute(query)
 			if entity_type  in ['character', 'gm']:
 				return [Character(id = doc['_id']) for doc in entities]
