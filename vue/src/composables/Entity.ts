@@ -453,7 +453,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					success
 				}
 			}`
-		if(apolloClient && entity.value.archetype) {
+		if(apolloClient && (entity.value.archetype || entity.value.archetypes)) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query_delete_relation))
 			console.log('unsetting archetype of ' + entity.value.name)
 			mutate({
