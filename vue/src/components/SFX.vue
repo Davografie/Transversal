@@ -8,8 +8,9 @@
     const props = defineProps<{
         sfx_id: string,
         traitSettingId?: string,
-        adding?: boolean
-        editing?: boolean
+        adding?: boolean,
+        editing?: boolean,
+        expanded?: boolean
     }>()
 
     const emit = defineEmits([
@@ -25,10 +26,9 @@
     const rendered_description = computed(() => 
         sfx.value.description ? marked.parse(sfx.value.description) : ''
     )
-    function click_card(event: MouseEvent) {
+    function click_card() {
         console.log('click card')
         if(player.editing && !props.editing) return
-        event.stopPropagation()
         show_description.value = !show_description.value
         if(show_description.value) {
             emit('expand')
@@ -49,7 +49,7 @@
         show_description.value = false
         emit('remove')
     }
-    const show_description = ref(!props.adding)
+    const show_description = ref(props.expanded && !props.adding)
 </script>
 
 <template>
@@ -57,7 +57,7 @@
                 show_description ? 'expanded' : 'collapsed',
                 props.adding ? 'adding' : 'playing',
             ]"
-            @click="(e) => props.adding ? click_card(e) : null">
+            @click.stop="click_card">
         <div class="sfx-title" :title="show_description ? 'collapse' : 'expand'">
             ✨ {{ sfx?.name }}
             <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->

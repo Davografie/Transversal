@@ -104,6 +104,7 @@
 
 	// enable/disable trait edit mode
 	enum Mode {
+		Small = 'small',
 		Neutral = 'neutral',
 		Editing = 'editing',
 		Viewing = 'viewing'
@@ -909,6 +910,7 @@
 				<div class="notes" v-html="marked.parse(trait.notes)"
 					v-if="trait.notes
 					&& mode != Mode.Editing
+					&& mode != Mode.Small
 					&& (player.is_gm
 						|| props.entity_id == player.player_character.id
 						|| props.entity_id?.startsWith('Relations/')
@@ -1128,6 +1130,7 @@
 						@remove="remove_sfx(sfx.id)"
 						:editing="mode == Mode.Editing"
 						:adding="false"
+						:expanded="mode != Mode.Small"
 						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
 					<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
 				</template>
