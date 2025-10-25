@@ -12,6 +12,7 @@
 	import PP from '@/components/PP.vue'
 	import Traitset from '@/components/Traitset.vue'
 	import AllTraits from '@/components/AllTraits.vue'
+	import Wizard from '@/components/general/Wizard.vue'
 	import EntityCard from '@/components/EntityCard.vue'
 	import ArchetypePicker from '@/components/ArchetypePicker.vue'
 
@@ -700,6 +701,9 @@
 					override_click
 					@click_entity="click_instance(entity.id)" />
 			</div>
+		</div>
+		<div>
+			<Wizard />
 		</div>
 		<!-- <div id="all-traits-wrapper">
 			<AllTraits v-if="character.id" :entity_id="character.id" />
