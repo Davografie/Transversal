@@ -381,6 +381,7 @@
 											<DieComponent
 												:class="{ 'editing': editing_die && die.id == editing_die.id }"
 												:die="die"
+												size="5em"
 												is_choice
 												in_pool
 												v-touch:hold="()=>longtap_die(die)"
@@ -650,6 +651,16 @@
 				height: 100%;
 				padding: 1em;
 				line-height: 1em;
+				#chosen-dice-wrapper {
+					display: flex;
+					flex-wrap: wrap;
+					justify-content: center;
+					align-items: center;
+					gap: .4em;
+					height: 100%;
+					max-height: 60vh;
+					overflow-y: auto;
+				}
 				.die.editing {
 					border: 1px solid red;
 				}
@@ -665,6 +676,8 @@
 					justify-content: space-evenly;
 					align-items: space-evenly;
 					max-width: 200px;
+					width: 100%;
+					height: 100%;
 					.die {
 						margin: .4em;
 						cursor: crosshair;
@@ -729,6 +742,10 @@
 </style>
 
 <style>
+	#dicepool .die {
+		height: 5em;
+		width: 5em;
+	}
 	.landscape {
 		#dicepool {
 			border-left: 1px solid var(--color-border);

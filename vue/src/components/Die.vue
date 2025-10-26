@@ -9,7 +9,8 @@
 		die: Die,
 		amount?: number,
 		is_choice?: boolean,
-		in_pool?: boolean
+		in_pool?: boolean,
+		size?: string
 	}>()
 	
 	const render_result = computed(() => {
@@ -38,6 +39,10 @@
 		else {
 			return false
 		}
+	})
+
+	const dom_size = computed(() => {
+		return props.size ? props.size : '2.8em'
 	})
 </script>
 
@@ -98,6 +103,23 @@
 </template>
 
 <style scoped>
+	.die {
+		display: inline-block;
+		min-height: v-bind(dom_size);
+		min-width: v-bind(dom_size);
+		position: relative;
+		text-align: center;
+		line-height: 0;
+		overflow: visible;
+		text-shadow: none;
+		z-index: 1;
+		&.positive {
+			font-family: var(--dice-font-positive);
+		}
+		&.negative {
+			font-family: var(--dice-font-negative);
+		}
+	}
 	.die.d4.positive svg {
 		.shape {
 			fill: var(--color-positive-die-4);
@@ -236,23 +258,6 @@
 			stroke-width: 2px;
 			stroke-linejoin: round;
 			stroke-linecap: round;
-		}
-	}
-	.die {
-		display: inline-block;
-		height: 2.8em;
-		width: 2.8em;
-		position: relative;
-		text-align: center;
-		line-height: 0;
-		overflow: visible;
-		text-shadow: none;
-		z-index: 1;
-		&.positive {
-			font-family: var(--dice-font-positive);
-		}
-		&.negative {
-			font-family: var(--dice-font-negative);
 		}
 	}
 	.die.result.RESULT, .die.effect.EFFECT {
