@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, type Ref, watch } from 'vue'
+	import { ref, type Ref, watch, computed, onMounted } from 'vue'
 	import _ from 'lodash'
 	import { v4 as uuidv4 } from 'uuid'
 
@@ -10,6 +10,7 @@
 	import { usePlayer } from '@/stores/Player'
 	
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
+import { templateRef, useElementBounding, useWindowScroll } from '@vueuse/core'
 
 	const dicepoolStore = useDicepoolStore()
 
@@ -21,7 +22,9 @@
 		show_effects?: boolean,
 		preview?: boolean,
 		dialogue?: boolean,
-		negative?: boolean
+		negative?: boolean,
+		roller?: boolean,
+		size?: string,
 	}>()
 
 	const emit = defineEmits(['change-die', 'cancel'])
@@ -127,41 +130,102 @@
 	}
 
 	const sign = ref(props.negative || (props.die?.number_rating ?? props.dice?.reduce((a, b) => a + b.number_rating, 0) ?? 0) < 0 ? '-' : '+')
+
+	const dom_size = computed(() => {
+		if(props.roller) {
+			return props.size ?? '100%'
+		}
+		return 'auto'
+	})
+
+	const die_picker = ref()
+	const y_die_picker = useElementBounding(die_picker).top
+	const positive_d12 = ref()
+	const y_positive_d12 = useElementBounding(positive_d12).top
+	const positive_d10 = ref()
+	const y_positive_d10 = useElementBounding(positive_d10).top
+	const positive_d8 = ref()
+	const y_positive_d8 = useElementBounding(positive_d8).top
+	const positive_d6 = ref()
+	const y_positive_d6 = useElementBounding(positive_d6).top
+	const positive_d4 = ref()
+	const y_positive_d4 = useElementBounding(positive_d4).top
+	const negative_d4 = ref()
+	const y_negative_d4 = useElementBounding(negative_d4).top
+	const negative_d6 = ref()
+	const y_negative_d6 = useElementBounding(negative_d6).top
+	const negative_d8 = ref()
+	const y_negative_d8 = useElementBounding(negative_d8).top
+	const negative_d10 = ref()
+	const y_negative_d10 = useElementBounding(negative_d10).top
+	const negative_d12 = ref()
+	const y_negative_d12 = useElementBounding(negative_d12).top
+	
+	const die_element = computed(() => (props.die?.number_rating ?? 0) > 0 ? 'positive_' + props.die?.rating : 'negative_' + props.die?.rating)
+	const die_top = computed(() => {
+		switch(die_element.value) {
+			case 'positive_d12': return y_positive_d12.value
+			case 'positive_d10': return y_positive_d10.value
+			case 'positive_d8': return y_positive_d8.value
+			case 'positive_d6': return y_positive_d6.value
+			case 'positive_d4': return y_positive_d4.value
+			case 'negative_d4': return y_negative_d4.value
+			case 'negative_d6': return y_negative_d6.value
+			case 'negative_d8': return y_negative_d8.value
+			case 'negative_d10': return y_negative_d10.value
+			case 'negative_d12': return y_negative_d12.value
+			default: return 0
+		}
+	})
+
+	onMounted(() => {
+		console.log("DiePicker mounted")
+		if(props.roller) {
+			// scroll die_picker to props.die DOM element
+			console.log("Die element: " + die_element)
+			const dom_die_picker = document.getElementById('die_picker')
+			const targetOffset = die_top.value - y_die_picker.value
+			console.log("Die top: " + die_top.value + ", Die picker top: " + y_die_picker.value + ", Target offset: " + targetOffset)
+			die_picker.value.scrollTo({ top: targetOffset, behavior: 'smooth' })
+		}
+	})
 </script>
 
 <template>
 	<div class="die-picker" :class="[
-				props.custom ? 'vertical' : 'horizontal',
-				sign == '-' ? 'negative' : 'positive'
-			]">
+				props.custom || props.roller ? 'vertical' : 'horizontal',
+				sign == '-' ? 'negative' : 'positive',
+				props.roller ? 'roller' : ''
+			]"
+			ref="die_picker">
 		<div class="die-picker-wrapper" :class="{ 'small-buttons': player.small_buttons }">
 			<div class="dice">
 				<span v-if="resource">add dice</span>
 				<!-- <div class="negative-positive-indicator">±</div> -->
-				<div class="negative-dice" v-if="!props.custom && sign == '-'">
-					<span class="negative-positive-indicator button-mnml" @click="sign = '+'">{{ sign }}</span>
-					<Die class="pickable-die" :die="{rating: 'd12', number_rating: -5}" @click.stop="pick_die(-5)" />
-					<Die class="pickable-die" :die="{rating: 'd10', number_rating: -4}" @click.stop="pick_die(-4)" />
-					<Die class="pickable-die" :die="{rating: 'd8', number_rating: -3}" @click.stop="pick_die(-3)" />
-					<Die class="pickable-die" :die="{rating: 'd6', number_rating: -2}" @click.stop="pick_die(-2)" />
-					<Die class="pickable-die" :die="{rating: 'd4', number_rating: -1}" @click.stop="pick_die(-1)" />
+				<div class="positive-dice" v-if="sign == '+' || props.roller">
+					<span class="negative-positive-indicator button-mnml" @click="sign = '-'" v-if="!props.custom && !props.roller">{{ sign }}</span>
+					<!-- <span v-if="!props.custom" class="negative-positive-indicator">+</span> -->
+					<Die class="pickable-die" ref="positive_d12" :die="{rating: 'd12', number_rating: 5}" @click.stop="pick_die(5)" />
+					<Die class="pickable-die" ref="positive_d10" :die="{rating: 'd10', number_rating: 4}" @click.stop="pick_die(4)" />
+					<Die class="pickable-die" ref="positive_d8" :die="{rating: 'd8', number_rating: 3}" @click.stop="pick_die(3)" />
+					<Die class="pickable-die" ref="positive_d6" :die="{rating: 'd6', number_rating: 2}" @click.stop="pick_die(2)" />
+					<Die class="pickable-die" ref="positive_d4" :die="{rating: 'd4', number_rating: 1}" @click.stop="pick_die(1)" />
+				</div>
+				<div class="negative-dice" v-if="(!props.custom && sign == '-') || props.roller">
+					<span class="negative-positive-indicator button-mnml" @click="sign = '+'" v-if="!props.roller">{{ sign }}</span>
+					<Die class="pickable-die" ref="negative_d4" :die="{rating: 'd4', number_rating: -1}" @click.stop="pick_die(-1)" />
+					<Die class="pickable-die" ref="negative_d6" :die="{rating: 'd6', number_rating: -2}" @click.stop="pick_die(-2)" />
+					<Die class="pickable-die" ref="negative_d8" :die="{rating: 'd8', number_rating: -3}" @click.stop="pick_die(-3)" />
+					<Die class="pickable-die" ref="negative_d10" :die="{rating: 'd10', number_rating: -4}" @click.stop="pick_die(-4)" />
+					<Die class="pickable-die" ref="negative_d12" :die="{rating: 'd12', number_rating: -5}" @click.stop="pick_die(-5)" />
 					<!-- <span class="negative-positive-indicator">-</span> -->
 				</div>
-				<div class="positive-dice" v-if="sign == '+'">
-					<span class="negative-positive-indicator button-mnml" @click="sign = '-'" v-if="!props.custom">{{ sign }}</span>
-					<!-- <span v-if="!props.custom" class="negative-positive-indicator">+</span> -->
-					<Die class="pickable-die" :die="{rating: 'd4', number_rating: 1}" @click.stop="pick_die(1)" />
-					<Die class="pickable-die" :die="{rating: 'd6', number_rating: 2}" @click.stop="pick_die(2)" />
-					<Die class="pickable-die" :die="{rating: 'd8', number_rating: 3}" @click.stop="pick_die(3)" />
-					<Die class="pickable-die" :die="{rating: 'd10', number_rating: 4}" @click.stop="pick_die(4)" />
-					<Die class="pickable-die" :die="{rating: 'd12', number_rating: 5}" @click.stop="pick_die(5)" />
-				</div>
-				<span v-if="resource">remove dice</span>
+				<span v-if="resource && !props.roller">remove dice</span>
 				<div class="current-rating" v-if="!props.custom && props.preview">
 					<input type="button" id="multiple-button" class="button multiple" :value="multiple ? '●●●' : '○●○'" @click.stop="multiple = !multiple" v-if="!props.custom" />
 					<Die v-for="(d, index) in return_rating" :key="d.id" :die="d" @click.stop="remove_die(index)" v-if="multiple" />
 				</div>
-				<div class="effect" v-if="!resource && props.die && show_effects">
+				<div class="effect" v-if="!resource && props.die && show_effects && !props.roller">
 					<input type="button" class="button-mnml" :value="player.small_buttons ? '▼' : '▼\nstep down'" @click.stop="step_down(); submit()" />
 					<input type="button" class="button-mnml" :value="player.small_buttons ? '⇊' : '⇊\nsplit'" @click.stop="split(); submit()" />
 					<input type="button" class="button-mnml" :value="player.small_buttons ? '⧉' : '⧉\ndouble'" @click.stop="double(); submit()" />
@@ -169,7 +233,7 @@
 					<input type="button" class="button-mnml cancel" :value="player.small_buttons ? 'x' : 'x\ncancel'" @click.stop="return_rating = [props.die]; submit()" />
 				</div>
 			</div>
-			<div class="buttons" v-if="props.dice && props.dialogue">
+			<div class="buttons" v-if="props.dice && props.dialogue && !props.roller">
 				<input type="button" class="button-mnml submit" value="✓" @click.stop="submit()" v-if="!props.custom" />
 				<input type="button" class="button-mnml cancel" value="x" @click.stop="emit('cancel')" v-if="!props.custom" />
 			</div>
@@ -258,6 +322,16 @@
 				display: flex;
 				flex-direction: column;
 				justify-content: space-evenly;
+			}
+		}
+		&.roller {
+			height: v-bind(dom_size);
+			width: v-bind(dom_size);
+			overflow-y: auto;
+			overflow-x: hidden;
+			scroll-snap-type: y mandatory;
+			.pickable-die {
+				scroll-snap-align: center;
 			}
 		}
 	}

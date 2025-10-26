@@ -379,6 +379,7 @@
 									<div id="simple-dice" v-else>
 										<template v-for="die in dicepool.interactive_dice.value" :key="die.id">
 											<DieComponent
+												v-if="die.id != editing_die?.id"
 												:class="{ 'editing': editing_die && die.id == editing_die.id }"
 												:die="die"
 												size="5em"
@@ -388,6 +389,13 @@
 												@click.stop="()=>click_die(die)"
 												@click.right="()=>longtap_die(die)"
 												@contextmenu.prevent="(e) => e.preventDefault()" />
+											<DiePicker
+												v-if="die.id == editing_die?.id"
+												roller
+												size="5em"
+												@change-die="(r) => edit_die(r)"
+												:die="editing_die"
+												@cancel="editing_die = undefined; editing = false" show_effects :custom="false" />
 										</template>
 									</div>
 								</div>
