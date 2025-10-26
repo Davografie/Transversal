@@ -20,7 +20,8 @@
 		editing_trait?: boolean,
 		edit_mode?: boolean,
 		entity_id?: string,
-		parent_traitset_id?: string
+		parent_traitset_id?: string,
+		parent_traitsetting_id?: string,
 	}>()
 
 	const emit = defineEmits([
@@ -83,6 +84,9 @@
 			}
 		}
 		else {
+			if(!check_trait(props.parent_traitsetting_id ?? '')) {
+				emit('click_subtrait')
+			}
 			if(trait.value.rating) {
 				if(
 					trait.value.ratingType == 'static'
@@ -108,8 +112,13 @@
 						}
 					}
 					else {
-						remove_traitsetting_dice(trait.value.traitSettingId ?? '')
-						remove_complication_by_traitsetting(trait.value.traitSettingId ?? '')
+						// remove positive dice from the dicepool and negative dice from complications
+						if(trait.value.rating.some((d) => d.number_rating > 0)) {
+							remove_traitsetting_dice(trait.value.traitSettingId ?? '')
+						}
+						else if(trait.value.rating.some((d) => d.number_rating < 0)) {
+							remove_complication_by_traitsetting(trait.value.traitSettingId ?? '')
+						}
 					}
 				}
 				else if(
@@ -125,7 +134,6 @@
 			if(traitset_limit_reached.value) {
 				emit('next_traitset')
 			}
-			// emit('click_subtrait')
 		}
 	}
 
@@ -349,8 +357,11 @@
 				}
 			}
 		}
-		&.active .neutral .trait-name {
-			font-weight: bold;
+		&.active {
+			background-color: var(--color-highlight-mute);
+			.neutral .trait-name {
+				font-weight: bold;
+			}
 		}
 		&.static {
 			border-style: solid;

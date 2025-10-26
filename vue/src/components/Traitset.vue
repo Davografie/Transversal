@@ -564,7 +564,7 @@
 						|| (player.is_player && player.player_character.id == props.entity_id)
 						|| (props.relationship && props.extensible)
 						|| (props.location && props.extensible)">
-					<template v-for="trait in traits_to_display.filter(t => highlighted_traits.includes(t.traitSettingId))"
+					<template class="highlighted-traits" v-for="trait in traits_to_display.filter(t => highlighted_traits.includes(t.traitSettingId))"
 							:key="trait.traitSettingId">
 						<Trait
 							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
@@ -608,7 +608,7 @@
 								traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
 							"></div> -->
 					</template>
-					<template v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
+					<template class="not-highlighted-traits" v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
 							:key="trait.traitSettingId">
 						<Trait
 							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
@@ -634,10 +634,11 @@
 								|| props.tutorial)
 								&& (
 									(
-										traits_in_dicepool.length == limiter
+										traits_in_dicepool.length >= limiter
 										&& (
 											traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
-											|| traits_in_dicepool.map((t: DieType) => t.traitsettingId).some((id) => trait.subTraits?.some((st) => st.traitSettingId == id))
+											|| traits_in_dicepool.map((t: DieType) => t.traitsettingId)
+												.some((traitsettingId) => trait.subTraits?.some((st) => st.traitSettingId == traitsettingId))
 										)
 									)
 									|| traitset_dice(traitset.id).length < limiter
@@ -653,14 +654,16 @@
 							"></div> -->
 					</template>
 					<div class="add-trait" v-if="
-								player.is_gm
-								|| (
-									player.is_player
-									&& player.player_character.id == props.entity_id
-								)
-								|| (props.relationship && props.extensible)
-								|| (props.location && props.extensible && !props.hide_title)
-								|| adding_trait
+								(
+									player.is_gm
+									|| (
+										player.is_player
+										&& player.player_character.id == props.entity_id
+									)
+									|| (props.relationship && props.extensible)
+									|| (props.location && props.extensible && !props.hide_title)
+									|| adding_trait
+								) && traits_in_dicepool.length < limiter
 							">
 						<input type="button" class="button add-trait-button"
 							:value="adding_trait ?

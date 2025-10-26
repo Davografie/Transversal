@@ -182,6 +182,7 @@
 
 	function click_trait() {
 		/* add trait to dicepool */
+		console.log("click_trait")
 		if(
 			// long pressing the trait enables viewing mode
 			!held.value
@@ -268,8 +269,8 @@
 					remove_complication_by_traitsetting(props.trait_setting_id ?? '')
 					if(trait.value.subTraits && trait.value.subTraits?.length > 0) {
 						for(const subtrait of trait.value.subTraits) {
-							remove_traitsetting_dice(trait.value.traitSettingId ?? '')
-							remove_complication_by_traitsetting(trait.value.traitSettingId ?? '')
+							remove_traitsetting_dice(subtrait.traitSettingId ?? '')
+							remove_complication_by_traitsetting(subtrait.traitSettingId ?? '')
 						}
 					}
 					if(trait.value.traitSetting?.scaling) {
@@ -295,8 +296,7 @@
 			}
 			// an exception to remove subtraits when the trait is empty
 			else if(
-				trait.value.ratingType == 'empty'
-				&& check_trait(trait.value.traitSettingId ?? '')
+				check_trait(trait.value.traitSettingId ?? '')
 				&& trait.value.subTraits
 				&& trait.value.subTraits?.length > 0
 			) {
@@ -312,8 +312,12 @@
 		}
 	}
 
-	function click_subtrait(subtrait: Trait) {
-		if (player.editing && mode.value != Mode.Editing) {
+	function click_subtrait(subtrait: Trait, cascade?: boolean) {
+		/* add subtrait to dicepool */
+		console.log("click_subtrait", traitset_limit_reached.value)
+		if (!traitset_limit_reached.value // dicepool limit is not reached
+			|| (player.editing && mode.value != Mode.Editing)
+		) {
 			click_trait()
 		}
 		
@@ -1158,7 +1162,7 @@
 		<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0">
 			<div class="section-icon">⪽</div>
 			<div>
-				<div class="sub-traits-list">
+				<div class="sub-traits-list positive">
 					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) > 0)" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
@@ -1166,14 +1170,15 @@
 							:edit_mode="props.edit_mode"
 							:entity_id="props.entity_id"
 							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-							@click_subtrait="click_subtrait(subtrait)"
+							:parent_traitsetting_id="trait.traitSetting?.id ?? trait.traitSettingId"
+							@click_subtrait="click_subtrait(subtrait, true)"
 							@next_traitset="emit('next_traitset')"
 							@remove_subtrait="remove_subtrait(subtrait)" />
 					</template>
 				</div>
 			</div>
 			<div>
-				<div class="sub-traits-list">
+				<div class="sub-traits-list neutral">
 					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) == 0)" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
@@ -1187,7 +1192,7 @@
 				</div>
 			</div>
 			<div>
-				<div class="sub-traits-list">
+				<div class="sub-traits-list negative">
 					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) < 0)" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
