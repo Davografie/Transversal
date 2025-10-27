@@ -663,7 +663,10 @@
 									|| (props.relationship && props.extensible)
 									|| (props.location && props.extensible && !props.hide_title)
 									|| adding_trait
-								) && traits_in_dicepool.length < limiter
+								) && (
+									traits_in_dicepool.length < limiter
+									|| traits_in_dicepool.length == 0
+								)
 							">
 						<input type="button" class="button add-trait-button"
 							:value="adding_trait ?
