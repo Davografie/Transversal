@@ -2457,6 +2457,11 @@ class Entity(Interface):
 	def resolve_traits(parent, info):
 		trait_settings = db.collection('TraitSettings').find({'_from': parent.id})
 		location = retrieve_location(get_doc_by_id('Entities', parent.id))
+		archetype_ids = db.collection('Relations').find({'_from': parent.id, 'type': 'archetype'})
+		for archetype in archetype_ids:
+			archetype_trait_settings = db.collection('TraitSettings').find({'_from': archetype.get('_to')})
+			for ats in archetype_trait_settings:
+				trait_settings.append(ats)
 		filtered_trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 		return [Trait(id=setting.get('_to')) for setting in filtered_trait_settings]
 
@@ -3543,6 +3548,8 @@ class Query(ObjectType):
 		# return all of a traitset's traits that the given entity doesn't already have
 		# and only ones they can learn (this needs work like the traitset traits logic)
 		elif traitset_id is not None and entity_id is not None and potential_only is True:
+			trait_settings = db.collection('TraitSettings').find({'_from': entity_id})
+			archetype_ids = [doc.get('_to') for doc in db.collection('Relations').find({'_from': entity_id, 'type': 'archetype'})]
 			traitset = get_doc_by_id('Traitsets', traitset_id)
 			query = f"""LET entity_id = '{ entity_id }'
 
