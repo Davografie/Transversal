@@ -784,9 +784,13 @@
 		}
 		&.hidden {
 			&.is-not-expanded {
+				box-shadow: inset 0 0 30px var(--color-text);
+				/* border: 2px solid var(--color-text); */
+				opacity: 0.5;
 				>.location-component-wrapper >.title .location-name {
-					text-shadow: 0 0 3px var(--color-text);
-					color: transparent;
+					/* text-shadow: 0 0 3px var(--color-text);
+					color: transparent; */
+					/* text-shadow: 0 0 50px var(--color-background), 0 0 50px var(--color-background), 0 0 100px var(--color-background); */
 				}
 			}
 			&.is-expanded {
