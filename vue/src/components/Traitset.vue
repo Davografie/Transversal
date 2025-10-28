@@ -463,7 +463,9 @@
 			<div class="trait-count" v-if="!show_traits">
 				{{ traitset.traits ? traits_to_display.length : '' }}
 			</div>
-			<div v-else />
+			<div v-else class="button-mnml" @click.stop="toggle_info">
+				<span class="icon">ℹ️</span>
+			</div>
 			
 			<div class="title">
 				<div class="big-limiter" v-if="show_traits && props.active">
@@ -499,7 +501,7 @@
 		<!-- <Transition name="traits-transition"> -->
 			<div class="traits" v-if="show_traits" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
-				<div class="traitset-info" v-if="!props.hide_title">
+				<div class="traitset-info" v-if="!props.hide_title && show_info">
 					<div class="options">
 						<div class="traitset-limiter">
 							<div type="button" class="button-mnml change-limit limit-decrease"
@@ -514,7 +516,7 @@
 							</div>
 						</div>
 						<div type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
-							@click.stop="toggle_edit_mode" v-if="show_traits && !show_info">
+							@click.stop="toggle_edit_mode" v-if="show_traits">
 							<div class="icon">✎</div>
 							<div class="label" v-if="!player.small_buttons">{{ 'edit' + (edit_mode ? 'ing' : '') + ' ' + traitset.name }}</div>
 						</div>
@@ -1075,7 +1077,7 @@
 				letter-spacing: .1em;
 				.limiter {
 					padding-right: .6em;
-					align-items: start;
+					align-items: center;
 					span {
 						line-height: 1.4em;
 					}
