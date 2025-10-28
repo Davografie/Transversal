@@ -437,22 +437,6 @@
 		</div>
 		<div id="character" v-if="character" ref="character_wrapper">
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
-			<div id="entity-name-wrapper" :class="{ 'editing': editing_name_type }">
-				<input type="text" id="entity-name" class="header" v-model="new_name" v-if="editing_name_type" />
-				<select name="entity-type" id="entity-type" v-model="new_entityType" v-if="editing_name_type && player.is_gm">
-					<option value="character">Character</option>
-					<option value="npc">NPC</option>
-					<option value="asset">Asset</option>
-					<option value="faction">Faction</option>
-					<option value="location">Location</option>
-					<option value="gm">GM</option>
-				</select>
-				<input type="button" class="button" :value="player.small_buttons ? '💾' : '💾 save'"
-					@click="update_name_type"
-					v-if="(player.editing || editing_name_type) && (character.name != new_name || character.entityType != new_entityType)" />
-				<input type="button" class="button" :value="player.small_buttons ? '✖' : '✖ cancel'"
-					@click="editing_name_type = false" v-if="editing_name_type" />
-			</div>
 			<div id="character-details">
 				<div id="character-portrait" ref="portrait_img">
 					<img :src="img_link_small"
@@ -487,6 +471,22 @@
 							v-if="!editing_name_type">
 						{{ character.name }}
 					</h1>
+					<div id="entity-name-wrapper" :class="{ 'editing': editing_name_type }">
+						<input type="text" id="entity-name" class="header" v-model="new_name" v-if="editing_name_type" />
+						<select name="entity-type" id="entity-type" v-model="new_entityType" v-if="editing_name_type && player.is_gm">
+							<option value="character">Character</option>
+							<option value="npc">NPC</option>
+							<option value="asset">Asset</option>
+							<option value="faction">Faction</option>
+							<option value="location">Location</option>
+							<option value="gm">GM</option>
+						</select>
+						<input type="button" class="button" :value="player.small_buttons ? '💾' : '💾 save'"
+							@click="update_name_type"
+							v-if="(player.editing || editing_name_type) && (character.name != new_name || character.entityType != new_entityType)" />
+						<input type="button" class="button" :value="player.small_buttons ? '✖' : '✖ cancel'"
+							@click="editing_name_type = false" v-if="editing_name_type" />
+					</div>
 					<div id="plot_points">
 						<PP class="plot_point" v-for="i in character.pp" v-if="character.pp && character.pp <= 5" :key="i" @click="decrease_pp" />
 						<PP class="plot_point" v-else-if="character.pp" :amount="character.pp" @click="decrease_pp" />
