@@ -674,6 +674,9 @@
 				new_locationsDisabled.value = [...new Set(['Entities/2', parent_location?.id, ...new_disabled ?? []])]
 			}
 			change_trait()
+			setTimeout(() => {
+				retrieve_trait()
+			}, 200)
 		}
 	}
 
