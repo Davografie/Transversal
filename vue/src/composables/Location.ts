@@ -23,17 +23,23 @@ export function useLocation(init?: Location, location_key?: string) {
 	const location: Ref<Location> = ref(placeholder_location)
 	const characters: Ref<Character[]> = ref([])    // the characters active at this location
 	const transversable: Ref<Location[]> = ref([])  // the locations accessible from this location, only available for current location
+	const location_id: Ref<string|undefined> = ref('Entities/' + location_key)
 
 	function set_location_key(key: string) {
 		location_key = key
+		if(location_key.startsWith('Entities/')) {
+			location_id.value = location_key
+		} else {
+			location_id.value = 'Entities/' + location_key
+		}
 		retrieve_small_location()
 	}
 
 	function retrieve_location() {
 		// console.log('retrieving location: ' + location_key)
 		if(location_key && location_key != 'placeholder') {
-			const get_location_query = gql`query FullLocation($locationKey: ID) {
-				locations(key: $locationKey) {
+			const get_location_query = gql`query FullLocation($locationId: ID) {
+				locations(locationId: $locationId) {
 					id
 					key
 					parent {
@@ -102,7 +108,7 @@ export function useLocation(init?: Location, location_key?: string) {
 				const { result } = provideApolloClient(apolloClient)(
 					() => useQuery<{locations: Location[]}>(
 						get_location_query,
-						{ locationKey: location_key },
+						{ locationId: location_id.value ?? 'Entities/' + location_key },
 						{ fetchPolicy: 'cache-and-network' }
 					)
 				)
@@ -121,8 +127,8 @@ export function useLocation(init?: Location, location_key?: string) {
 	}
 
 	function retrieve_parents() {
-		const get_location_query = gql`query LocationParents($locationKey: ID) {
-			locations(key: $locationKey) {
+		const get_location_query = gql`query LocationParents($locationId: ID) {
+			locations(locationId: $locationId) {
 				parent {
 					key
 					id
@@ -139,7 +145,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
-					{ locationKey: location_key },
+					{ locationId: location_id.value ?? 'Entities/' + location_key },
 					{ fetchPolicy: 'cache-and-network' }
 				)
 			)
@@ -156,8 +162,8 @@ export function useLocation(init?: Location, location_key?: string) {
 	}
 
 	function retrieve_transversables() {
-		const get_location_query = gql`query LocationTransversables($locationKey: ID) {
-			locations(key: $locationKey) {
+		const get_location_query = gql`query LocationTransversables($locationId: ID) {
+			locations(locationId: $locationId) {
 				transversables {
 					key
 					id
@@ -169,7 +175,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
-					{ locationKey: location_key },
+					{ locationId: location_id.value ?? 'Entities/' + location_key },
 					{ fetchPolicy: 'cache-and-network' }
 				)
 			)
@@ -185,8 +191,8 @@ export function useLocation(init?: Location, location_key?: string) {
 	}
 
 	function retrieve_zones() {
-		const get_location_query = gql`query LocationZones($locationKey: ID) {
-			locations(key: $locationKey) {
+		const get_location_query = gql`query LocationZones($locationId: ID) {
+			locations(locationId: $locationId) {
 				zones {
 					key
 					id
@@ -198,7 +204,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
-					{ locationKey: location_key },
+					{ locationId: location_id.value ?? 'Entities/' + location_key },
 					// { fetchPolicy: 'no-cache' }
 				)
 			)
@@ -214,8 +220,8 @@ export function useLocation(init?: Location, location_key?: string) {
 	}
 
 	function retrieve_small_location() {
-		const get_location_query = gql`query SmallLocation($locationKey: ID) {
-			locations(key: $locationKey) {
+		const get_location_query = gql`query SmallLocation($locationId: ID) {
+			locations(locationId: $locationId) {
 				id
 				key
 				name
@@ -237,7 +243,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
-					{ locationKey: location_key },
+					{ locationId: location_id.value ?? 'Entities/' + location_key },
 					{ fetchPolicy: 'cache-and-network' }
 				)
 			)
@@ -257,8 +263,8 @@ export function useLocation(init?: Location, location_key?: string) {
 	}
 
 	function retrieve_presence() {
-		const get_location_query = gql`query Presence($locationKey: ID) {
-			locations(key: $locationKey) {
+		const get_location_query = gql`query Presence($locationId: ID) {
+			locations(locationId: $locationId) {
 				entities {
 					key
 					id
@@ -277,7 +283,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
-					{ locationKey: location_key },
+					{ locationId: 'Entities/' + location_key },
 					{ fetchPolicy: 'no-cache' }
 				)
 			)
@@ -290,8 +296,8 @@ export function useLocation(init?: Location, location_key?: string) {
 	}
 
 	function retrieve_neighboring_presence() {
-		const get_location_query = gql`query NeighboringPresence($locationKey: ID) {
-				locations(key: $locationKey) {
+		const get_location_query = gql`query NeighboringPresence($locationId: ID) {
+				locations(locationId: $locationId) {
 					name
 					zones {
 						id
@@ -326,7 +332,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{locations: Location[]}>(
 					get_location_query,
-					{ locationKey: location_key },
+					{ locationId: location_id.value ?? 'Entities/' + location_key },
 					{ fetchPolicy: 'cache-and-network' }
 				)
 			)
@@ -354,8 +360,8 @@ export function useLocation(init?: Location, location_key?: string) {
 		description?: string,
 	}) {
 		/* changes to name, flavortext */
-		const update_location_query = gql`mutation UpdateLocation($key: ID!, $locationInput: LocationInput) {
-				updateLocation(key: $key, locationInput: $locationInput) {
+		const update_location_query = gql`mutation UpdateLocation($locationId: ID!, $locationInput: LocationInput) {
+				updateLocation(locationId: $locationId, locationInput: $locationInput) {
 					location {
 						id
 					}
@@ -366,7 +372,7 @@ export function useLocation(init?: Location, location_key?: string) {
 				() => useMutation(update_location_query)
 			)
 			mutate({
-				key: location.value.id,
+				locationId: location.value.id,
 				locationInput: input
 			})
 		}
@@ -408,7 +414,7 @@ export function useLocation(init?: Location, location_key?: string) {
 	function import_entity(entity_id: string) {
 		/* change an entity's location */
 		const query_import_entity = gql`mutation ImportEntity($entityId: ID!, $locationId: ID!) {
-			updateEntity(location: $locationId, key: $entityId) {
+			updateEntity(location: $locationId, entityId: $entityId) {
 				entity {
 					id
 				}
@@ -460,8 +466,8 @@ export function useLocation(init?: Location, location_key?: string) {
 
 	function set_location_visibility(hide?: boolean) {
 		console.log('set_location_visibility: ' + (hide ?? !location.value.hidden))
-		const query = gql`mutation HideLocation($key: ID!, $entityInput: EntityInput) {
-			updateEntity(key: $key, entityInput: $entityInput) {
+		const query = gql`mutation HideLocation($locationId: ID!, $entityInput: EntityInput) {
+			updateEntity(locationId: $locationId, entityInput: $entityInput) {
 				entity {
 					id
 				}

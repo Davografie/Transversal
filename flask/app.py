@@ -2669,7 +2669,7 @@ class CreateEntity(Mutation):
 
 class UpdateEntity(Mutation):
 	class Arguments:
-		key = ID(required=True)
+		entity_id = ID(required=True)
 		name = String()
 		location = ID()
 		following = ID()
@@ -2680,8 +2680,8 @@ class UpdateEntity(Mutation):
 
 	entity = Field(lambda: Entity)
 
-	def mutate(root, info, key, entity_input=None, name=None, location=None, following=None, favorite=None, is_archetype=None, active=None):
-		entity = get_doc_by_id('Entities', 'Entities/' + str(key))
+	def mutate(root, info, entity_id, entity_input=None, name=None, location=None, following=None, favorite=None, is_archetype=None, active=None):
+		entity = get_doc_by_id('Entities', entity_id)
 		# logger.info(f"UpdateEntity.mutate:\t0\tparameters:\t{ locals() }")
 		changes = {}
 		if name is not None:
@@ -2729,8 +2729,7 @@ class UpdateEntity(Mutation):
 
 		# logger.info(f"UpdateEntity.mutate:\t5\tchanges: { changes }")
 		entity = {
-			'_key': key,
-			'_id': entity.get('_id'),
+			'_id': entity_id,
 			**{key: value for key, value in entity.items() if not key.startswith('_')},
 			**changes,
 			**(entity_input if entity_input is not None else {})
@@ -3196,14 +3195,14 @@ class CreateLocation(Mutation):
 
 class UpdateLocation(Mutation):
 	class Arguments:
-		key = ID(required=True)
+		location_id = ID(required=True)
 		location_input = LocationInput(required=False)
 
 	location = Field(Location)
 
-	def mutate(self, info, key, location_input=None):
+	def mutate(self, info, location_id, location_input=None):
 		# id = 'Entities' + key
-		loc = get_doc_by_id('Entities', 'Entities/' + str(key))
+		loc = get_doc_by_id('Entities', location_id)
 		if location_input:
 			loc = {
 				**loc,
@@ -3636,17 +3635,16 @@ class Query(ObjectType):
 				for doc in cursor
 			]
 
-	locations = List(Location, key=ID(required=False))
-	def resolve_locations(parent, info, key=None):
+	locations = List(Location, location_id=ID(required=False))
+	def resolve_locations(parent, info, location_id=None):
 		# logger.info("Query.resolve_locations:\tkey: ", key)
-		if not key:
+		if not location_id:
 			cursor = db.collection('Entities').find({'type': 'location'})
 			return [
 				Location(id=doc['_id'], name = doc['name'])
 				for doc in cursor
 			]
 		else:
-			location_id = get_doc_by_id('Entities', 'Entities/' + str(key)).get('_id')
 			info.context['entity_id'] = location_id
 			result = Location(id=location_id)
 			# logger.info(result)

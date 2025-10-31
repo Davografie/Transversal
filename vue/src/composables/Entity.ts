@@ -280,8 +280,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 
 	function update_entity(input: EntityInput) {
 		/* post character changes to the server */
-		const query_update_entity = gql`mutation UpdateEntity($key: ID!, $entityInput: EntityInput) {
-			updateEntity(key: $key, entityInput: $entityInput) {
+		const query_update_entity = gql`mutation UpdateEntity($entityId: ID!, $entityInput: EntityInput) {
+			updateEntity(entityId: $entityId, entityInput: $entityInput) {
 				entity {
 					id
 					entityType
@@ -291,7 +291,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		if(apolloClient) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_update_entity))
 			mutate({
-				"key": entity.value.key,
+				"entityId": entity_id ?? entity.value.id,
 				"entityInput": input
 			})
 		}
@@ -299,18 +299,18 @@ export function useEntity(init?: Entity, entity_id?: string) {
 
 	function activate_entity() {
 		/* post character changes to the server */
-		const query_update_entity = gql`mutation ActivateEntity($key: ID!, $active: Boolean) {
-			updateEntity(key: $key, active: $active) {
+		const query_update_entity = gql`mutation ActivateEntity($entityId: ID!, $active: Boolean) {
+			updateEntity(entityId: $entityId, active: $active) {
 				entity {
 					id
 					entityType
 				}
 			}
 		}`
-		if(apolloClient && entity.value.key) {
+		if(apolloClient && (entity_id || entity.value.id)) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_update_entity))
 			mutate({
-				"key": entity.value.key,
+				"entityId": entity_id ?? entity.value.id,
 				"active": true
 			})
 		}
@@ -318,8 +318,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 
 	function deactivate_entity(entity_key?: string) {
 		/* post character changes to the server */
-		const query_update_entity = gql`mutation DeactivateEntity($key: ID!, $active: Boolean) {
-			updateEntity(key: $key, active: $active) {
+		const query_update_entity = gql`mutation DeactivateEntity($entityId: ID!, $active: Boolean) {
+			updateEntity(entityId: $entityId, active: $active) {
 				entity {
 					id
 					entityType
@@ -329,7 +329,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		if(apolloClient && entity) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_update_entity))
 			mutate({
-				"key": entity_key ?? entity.value.key,
+				"entityId": entity_id ?? entity.value.id,
 				"active": false
 			})
 		}
@@ -338,8 +338,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	async function clone_entity(name?: string) {
 		/* post character changes to the server */
 		console.log('cloning character: ' + entity.value.key)
-		const query_clone_entity = gql`mutation CloneEntity($key: ID!${ name ? ', $name: String' : '' }) {
-			instantiateArchetype(key: $key${ name ? ', name: $name' : '' }) {
+		const query_clone_entity = gql`mutation CloneEntity($entityId: ID!${ name ? ', $name: String' : '' }) {
+			instantiateArchetype(entityId: $entityId${ name ? ', name: $name' : '' }) {
 				entity {
 					id
 					key
@@ -350,7 +350,12 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		if(apolloClient) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_clone_entity))
 			console.log('cloning character: ' + entity.value.key)
-			const variables = name ? { "key": entity.value.key, "name": name } : { "key": entity.value.key }
+			const variables = name ? {
+				"entityId": entity_id ?? entity.value.id,
+				"name": name
+			} : {
+				"entityId": entity_id ?? entity.value.id,
+			}
 			await mutate(variables).then((result) => {
 				console.log('clone_entity result', result)
 			})
@@ -360,8 +365,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function delete_entity() {
 		/* post character changes to the server */
 		console.log('deleting character: ' + entity.value.key)
-		const query_delete_entity = gql`mutation DeleteEntity($key: ID!) {
-			deleteEntity(key: $key) {
+		const query_delete_entity = gql`mutation DeleteEntity($entityId: ID!) {
+			deleteEntity(entityId: $entityId) {
 				success
 			}
 		}`
@@ -369,7 +374,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_delete_entity))
 			console.log('deleting character: ' + entity.value.key)
 			mutate({
-				"key": entity.value.key
+				"entityId": entity_id ?? entity.value.id,
 			})
 		}
 	}
@@ -377,8 +382,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	function prune_location() {
 		/* post character changes to the server */
 		console.log('pruning location: ' + entity.value.key)
-		const query_prune_location = gql`mutation PruneLocation($key: ID!, $rmtree: Boolean) {
-			deleteEntity(key: $key, rmtree: $rmtree) {
+		const query_prune_location = gql`mutation PruneLocation($entityId: ID!, $rmtree: Boolean) {
+			deleteEntity(entityId: $entityId, rmtree: $rmtree) {
 				message
 				success
 			}
@@ -387,7 +392,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_prune_location))
 			console.log('pruning location: ' + entity.value.key)
 			mutate({
-				"key": entity.value.key,
+				"entityId": entity_id ?? entity.value.id,
 				"rmtree": true
 			})
 		}
