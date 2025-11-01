@@ -2,7 +2,7 @@
 	import { marked } from 'marked'
 	import { ref, type Ref, watch, inject, computed, onMounted, nextTick } from 'vue'
 	import { useRoute, useRouter } from 'vue-router'
-	import { useFetch, useElementSize } from '@vueuse/core'
+	import { useFetch, useElementSize, useScroll } from '@vueuse/core'
 
 	import { usePlayer } from '@/stores/Player'
 	import { useCharacter } from '@/composables/Character'
@@ -214,8 +214,10 @@
 	const { height: portraitHeight, width: portraitWidth } = useElementSize(portrait_img)
 	const detail_height = computed(() => portrait_img.value ? portraitHeight.value * 0.9 : 200)
 	const entity_wrapper = ref()
-	const character_wrapper = ref()
 	const { width: entity_width } = useElementSize(entity_wrapper)
+	const character_wrapper = ref()
+	const { y: scrollY } = useScroll(character_wrapper)
+	const character_wrapper_max_scroll_y = computed(() => character_wrapper.value ? character_wrapper.value.scrollHeight - character_wrapper.value.offsetHeight : 0)
 	const banner_width = computed(() => (props.windowWidth ?? entity_width.value) - portraitWidth.value)
 
 
@@ -427,6 +429,7 @@
 	function click_instance(entity_id: string) {
 		emit('show_entity', entity_id)
 	}
+
 </script>
 
 <template>
@@ -435,102 +438,103 @@
 			<img id="portrait_large" v-if="character.image && show_image"
 				:src="img_link_large" />
 		</div>
-		<div id="character" v-if="character" ref="character_wrapper">
-			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
-			<div id="character-details">
-				<div id="character-portrait" ref="portrait_img">
-					<img :src="img_link_small"
-						v-touch:hold="longpress_portrait"
-						@click.right="longpress_portrait"
-						@click="click_portrait"
-						@contextmenu="(e) => e.preventDefault()" />
-					<div id="portrait-upload-wrapper" v-if="editing_portrait">
-						<div id="portrait-upload" class="portrait-edit-segment">
-							<input type="file" id="file-upload" @change="handle_fileupload"
-								v-show="false" />
-							<label for="file-upload" id="file-upload-label" v-if="!portrait_updated">
-								{{ file_upload ? file_upload.name : 'upload'}}
-							</label>
-							<input type="button" id="upload-file" class="button-mnml" value="upload"
-								@click="submit_fileupload"
-								v-if="file_upload && !portrait_updated" />
-						</div>
-						<div class="limiter" @click="cancel_portrait_edit">
-							CANCEL
-						</div>
-						<div id="generate-portrait" class="portrait-edit-segment">
-							<input type="button" class="button-mnml" id="generate-portrait-button" value="imagen"
-								@click="imagen" v-if="!character.imagened || player.is_gm" />
-						</div>
+		<div id="character-details">
+			<div id="character-portrait" ref="portrait_img">
+				<img :src="img_link_small"
+					v-touch:hold="longpress_portrait"
+					@click.right="longpress_portrait"
+					@click="click_portrait"
+					@contextmenu="(e) => e.preventDefault()" />
+				<div id="portrait-upload-wrapper" v-if="editing_portrait">
+					<div id="portrait-upload" class="portrait-edit-segment">
+						<input type="file" id="file-upload" @change="handle_fileupload"
+							v-show="false" />
+						<label for="file-upload" id="file-upload-label" v-if="!portrait_updated">
+							{{ file_upload ? file_upload.name : 'upload'}}
+						</label>
+						<input type="button" id="upload-file" class="button-mnml" value="upload"
+							@click="submit_fileupload"
+							v-if="file_upload && !portrait_updated" />
 					</div>
-				</div>
-				<div id="character-banner">
-					<h1 v-touch:hold="longpress_name"
-							@click.right="longpress_name"
-							@contextmenu="(e) => e.preventDefault()"
-							v-if="!editing_name_type">
-						{{ character.name }}
-					</h1>
-					<div id="entity-name-wrapper" :class="{ 'editing': editing_name_type }">
-						<input type="text" id="entity-name" class="header" v-model="new_name" v-if="editing_name_type" />
-						<select name="entity-type" id="entity-type" v-model="new_entityType" v-if="editing_name_type && player.is_gm">
-							<option value="character">Character</option>
-							<option value="npc">NPC</option>
-							<option value="asset">Asset</option>
-							<option value="faction">Faction</option>
-							<option value="location">Location</option>
-							<option value="gm">GM</option>
-						</select>
-						<input type="button" class="button" :value="player.small_buttons ? '💾' : '💾 save'"
-							@click="update_name_type"
-							v-if="(player.editing || editing_name_type) && (character.name != new_name || character.entityType != new_entityType)" />
-						<input type="button" class="button" :value="player.small_buttons ? '✖' : '✖ cancel'"
-							@click="editing_name_type = false" v-if="editing_name_type" />
+					<div class="limiter" @click="cancel_portrait_edit">
+						CANCEL
 					</div>
-					<div id="plot_points">
-						<PP class="plot_point" v-for="i in character.pp" v-if="character.pp && character.pp <= 5" :key="i" @click="decrease_pp" />
-						<PP class="plot_point" v-else-if="character.pp" :amount="character.pp" @click="decrease_pp" />
-						<div id="add_pp" @click="increase_pp">
-							<span>{{ player.small_buttons ? '+' : '+☯' }}</span>
-							<span class="label" v-if="!player.small_buttons">add plot point</span>
-						</div>
+					<div id="generate-portrait" class="portrait-edit-segment">
+						<input type="button" class="button-mnml" id="generate-portrait-button" value="imagen"
+							@click="imagen" v-if="!character.imagened || player.is_gm" />
 					</div>
-
-					<div id="character-description">
-						<div id="character-meta" v-if="player.is_gm">
-							{{ character.isArchetype ? 'archetype ' : '' }}
-							{{ character.entityType }} located in
-							<span v-if="!character.location || player.the_entity?.id == character.id">{{ character.location?.name }}</span>
-							<a v-else @click="player.set_perspective_location(character.location)">{{ character.location?.name }} ⬇</a>
-							<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
-								instance of 
-								<EntityCard
-									v-for="archetype in entity.archetypes"
-									:entity_id="archetype.id"
-									override_click
-									@click_entity="emit('show_entity', archetype.id)"
-									/>
-								<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
-							</div>
-						</div>
-						<div id="character-description-text"
-							v-html="description"
-							v-if="!editing_description"
-							v-touch:hold="longpress_description"
-							@click.right="longpress_description"
-							@contextmenu="(e) => e.preventDefault()" />
-						<textarea id="character-description-text"
-							v-model="new_description"
-							v-if="editing_description" />
-					</div>
-					<input type="button" class="button" :value="'save ' + character.entityType"
-						@click="click_save"
-						v-if="editing_description" />
-					<input type="button" class="button" value="cancel"
-						@click="editing_description = false"
-						v-if="editing_description" />
 				</div>
 			</div>
+			<div id="character-banner">
+				<h1 v-touch:hold="longpress_name"
+						@click.right="longpress_name"
+						@contextmenu="(e) => e.preventDefault()"
+						v-if="!editing_name_type">
+					{{ character.name }}
+				</h1>
+				<div id="entity-name-wrapper" :class="{ 'editing': editing_name_type }">
+					<input type="text" id="entity-name" class="header" v-model="new_name" v-if="editing_name_type" />
+					<select name="entity-type" id="entity-type" v-model="new_entityType" v-if="editing_name_type && player.is_gm">
+						<option value="character">Character</option>
+						<option value="npc">NPC</option>
+						<option value="asset">Asset</option>
+						<option value="faction">Faction</option>
+						<option value="location">Location</option>
+						<option value="gm">GM</option>
+					</select>
+					<input type="button" class="button" :value="player.small_buttons ? '💾' : '💾 save'"
+						@click="update_name_type"
+						v-if="(player.editing || editing_name_type) && (character.name != new_name || character.entityType != new_entityType)" />
+					<input type="button" class="button" :value="player.small_buttons ? '✖' : '✖ cancel'"
+						@click="editing_name_type = false" v-if="editing_name_type" />
+				</div>
+				<div id="plot_points">
+					<PP class="plot_point" v-for="i in character.pp" v-if="character.pp && character.pp <= 5" :key="i" @click="decrease_pp" />
+					<PP class="plot_point" v-else-if="character.pp" :amount="character.pp" @click="decrease_pp" />
+					<div id="add_pp" @click="increase_pp">
+						<span>{{ player.small_buttons ? '+' : '+☯' }}</span>
+						<span class="label" v-if="!player.small_buttons">add plot point</span>
+					</div>
+				</div>
+
+				<div id="character-description">
+					<div id="character-meta" v-if="player.is_gm">
+						{{ character.isArchetype ? 'archetype ' : '' }}
+						{{ character.entityType }} located in
+						<span v-if="!character.location || player.the_entity?.id == character.id">{{ character.location?.name }}</span>
+						<a v-else @click="player.set_perspective_location(character.location)">{{ character.location?.name }} ⬇</a>
+						<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
+							instance of 
+							<EntityCard
+								v-for="archetype in entity.archetypes"
+								:entity_id="archetype.id"
+								override_click
+								@click_entity="emit('show_entity', archetype.id)"
+								/>
+							<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
+						</div>
+					</div>
+					<div id="character-description-text"
+						v-html="description"
+						v-if="!editing_description"
+						v-touch:hold="longpress_description"
+						@click.right="longpress_description"
+						@contextmenu="(e) => e.preventDefault()" />
+					<textarea id="character-description-text"
+						v-model="new_description"
+						v-if="editing_description" />
+				</div>
+				<input type="button" class="button" :value="'save ' + character.entityType"
+					@click="click_save"
+					v-if="editing_description" />
+				<input type="button" class="button" value="cancel"
+					@click="editing_description = false"
+					v-if="editing_description" />
+			</div>
+		</div>
+		<div id="character" v-if="character" ref="character_wrapper">
+			<!-- <div id="character-details-spacer" /> -->
+			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
 			<div id="character-buttons" :class="player.small_buttons ? 'small-buttons' : 'verbose-buttons'">
 				<div class="button-mnml" id="switch-gm"
 					title="switch to gm"
@@ -700,29 +704,29 @@
 					override_click
 					@click_entity="click_instance(entity.id)" />
 			</div>
+			<div id="traitsets" v-if="character.traitsets">
+				<Traitset
+					v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
+					:key="set.id + character.key"
+					:traitset_id="set.id"
+					:entity_id="character.id"
+					:limit="set.limit"
+					:expanded="((set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE') || player.traitset_defaults == 'EXPANDED') && player.traitset_defaults != 'COLLAPSED'"
+					:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
+					visible
+					:location_key="character.location?.key"
+					:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
+					:next="player.traitset_defaults == 'ACTIVE' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
+					:location="false"
+					:relationship="false"
+					@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
+					@set_traitset="active_traitset_id = set.id"
+					@unset_traitset="active_traitset_id = ''" />
+			</div>
 		</div>
 		<!-- <div id="all-traits-wrapper">
 			<AllTraits v-if="character.id" :entity_id="character.id" />
 		</div> -->
-		<div id="traitsets" v-if="character.traitsets">
-			<Traitset
-				v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
-				:key="set.id + character.key"
-				:traitset_id="set.id"
-				:entity_id="character.id"
-				:limit="set.limit"
-				:expanded="((set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE') || player.traitset_defaults == 'EXPANDED') && player.traitset_defaults != 'COLLAPSED'"
-				:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
-				visible
-				:location_key="character.location?.key"
-				:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
-				:next="player.traitset_defaults == 'ACTIVE' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
-				:location="false"
-				:relationship="false"
-				@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
-				@set_traitset="active_traitset_id = set.id"
-				@unset_traitset="active_traitset_id = ''" />
-		</div>
 		<div class="bottom-scroll-space"></div>
 	</div>
 </template>
@@ -740,6 +744,120 @@
 				height: 100px;
 			}
 		}
+		#character-details {
+			display: flex;
+			align-items: center;
+			position: sticky;
+			top: 0;
+			z-index: 2;
+			#character-banner {
+				overflow: scroll;
+				flex-grow: 1;
+				height: 100%;
+				#plot_points {
+					text-align: center;
+					display: inline-flex;
+					justify-content: space-between;
+					border-radius: 20px;
+					border: 1px solid var(--color-border);
+					margin-left: 1em;
+					#add_pp {
+						/* background-color: var(--color-background-mute); */
+						padding: .4em .8em;
+						border: none;
+						margin: 0;
+						display: flex;
+						flex-direction: column;
+						span.label {
+							font-size: .8em;
+						}
+					}
+				}
+				#character-description {
+					#character-meta, #character-description-text {
+						padding-left: .4em;
+					}
+					#character-description-text {
+						min-height: v-bind((detail_height * .5) + 'px');
+						max-height: v-bind(detail_height + 'px');
+						width: 100%;
+						max-height: 200px;
+						overflow-y: scroll;
+					}
+				}
+			}
+			#character-portrait {
+				position: relative;
+				text-align: center;
+				min-height: 100px;
+				width: fit-content;
+				min-width: 15%;
+				img {
+					display: block;
+					/* width: 100%; */
+					max-height: 240px;
+				}
+				#portrait-upload-wrapper {
+					position: absolute;
+					top: 0;
+					height: 100%;
+					min-height: 20px;
+					max-height: 240px;
+					max-width: 180px;
+					width: 100%;
+					display: flex;
+					flex-direction: column;
+					#portrait-upload {
+						background-image: linear-gradient(to top, var(--color-background) 0, var(--color-background-mute) 10%, transparent 50%);
+						width: 100%;
+						#file-upload-label {
+							background-color: var(--color-background-mute);
+							height: 100%;
+							width: 100%;
+							display: flex;
+							justify-content: center;
+							align-items: center;
+							cursor: pointer;
+							font-size: 1.4em;
+						}
+						#upload-file {
+							background-color: var(--color-highlight);
+							color: var(--color-highlight-text);
+							cursor: pointer;
+							width: 100%;
+							padding: .4em 0;
+							font-size: 1.2em;
+						}
+					}
+					.limiter {
+						background-color: var(--color-background-mute);
+						cursor: pointer;
+						padding: .8em 0;
+					}
+					#generate-portrait {
+						background-image: linear-gradient(to bottom, var(--color-background) 0, var(--color-background-mute) 10%, transparent 50%);
+						#generate-portrait-button {
+							background-color: var(--color-highlight-mute);
+							color: var(--color-highlight-text);
+							cursor: pointer;
+							width: 100%;
+							height: 100%;
+							font-size: 1.4em;
+						}
+					}
+					.portrait-edit-segment {
+						flex-grow: 1;
+						display: flex;
+						justify-content: center;
+						align-items: center;
+					}
+					#portrait-upload {
+						display: flex;
+						flex-direction: column;
+					}
+				}
+			}
+		}
 		#character {
 			position: relative;
 			#entity-name-wrapper.editing {
@@ -747,117 +865,6 @@
 				#entity-name {
 					flex-grow: 1;
 					font-size: 1.2em;
-				}
-			}
-			#character-details {
-				display: flex;
-				align-items: center;
-				#character-banner {
-					overflow: scroll;
-					flex-grow: 1;
-					height: 100%;
-					#plot_points {
-						text-align: center;
-						display: inline-flex;
-						justify-content: space-between;
-						border-radius: 20px;
-						border: 1px solid var(--color-border);
-						margin-left: 1em;
-						#add_pp {
-							/* background-color: var(--color-background-mute); */
-							padding: .4em .8em;
-							border: none;
-							margin: 0;
-							display: flex;
-							flex-direction: column;
-							span.label {
-								font-size: .8em;
-							}
-						}
-					}
-					#character-description {
-						#character-meta, #character-description-text {
-							padding-left: .4em;
-						}
-						#character-description-text {
-							min-height: v-bind((detail_height * .5) + 'px');
-							max-height: v-bind(detail_height + 'px');
-							width: 100%;
-							max-height: 200px;
-							overflow-y: scroll;
-						}
-					}
-				}
-				#character-portrait {
-					position: relative;
-					text-align: center;
-					min-height: 100px;
-					width: fit-content;
-					min-width: 15%;
-					img {
-						display: block;
-						/* width: 100%; */
-						max-height: 240px;
-					}
-					#portrait-upload-wrapper {
-						position: absolute;
-						top: 0;
-						height: 100%;
-						min-height: 20px;
-						max-height: 240px;
-						max-width: 180px;
-						width: 100%;
-						display: flex;
-						flex-direction: column;
-						#portrait-upload {
-							background-image: linear-gradient(to top, var(--color-background) 0, var(--color-background-mute) 10%, transparent 50%);
-							width: 100%;
-							#file-upload-label {
-								background-color: var(--color-background-mute);
-								height: 100%;
-								width: 100%;
-								display: flex;
-								justify-content: center;
-								align-items: center;
-								cursor: pointer;
-								font-size: 1.4em;
-							}
-							#upload-file {
-								background-color: var(--color-highlight);
-								color: var(--color-highlight-text);
-								cursor: pointer;
-								width: 100%;
-								padding: .4em 0;
-								font-size: 1.2em;
-							}
-						}
-						.limiter {
-							background-color: var(--color-background-mute);
-							cursor: pointer;
-							padding: .8em 0;
-						}
-						#generate-portrait {
-							background-image: linear-gradient(to bottom, var(--color-background) 0, var(--color-background-mute) 10%, transparent 50%);
-							#generate-portrait-button {
-								background-color: var(--color-highlight-mute);
-								color: var(--color-highlight-text);
-								cursor: pointer;
-								width: 100%;
-								height: 100%;
-								font-size: 1.4em;
-							}
-						}
-						.portrait-edit-segment {
-							flex-grow: 1;
-							display: flex;
-							justify-content: center;
-							align-items: center;
-						}
-						#portrait-upload {
-							display: flex;
-							flex-direction: column;
-						}
-					}
 				}
 			}
 			#archetype-instances {
@@ -878,8 +885,8 @@
 				display: flex;
 				flex-wrap: wrap;
 				width: 100%;
-				position: sticky;
-				top: 0;
+				/* position: sticky; */
+				/* top: 0; */
 				#delete-confirmation {
 					display: flex;
 					flex-grow: 1;
@@ -943,14 +950,20 @@
 		#entity-wrapper {
 			scroll-snap-type: y mandatory;
 			scroll-padding: 2em;
+			display: flex;
+			flex-direction: column;
 			/* backdrop-filter: blur(5px); */
 			#character-details {
 				background-color: var(--color-background-mute);
 				/* margin: 0 1em; */
 				/* border-radius: 50px 30px 30px 50px; */
 				max-height: 240px;
-				height: v-bind(portraitHeight + 'px');
+				/* height: v-bind(portraitHeight + 'px'); */
 				scroll-snap-align: start;
+				/* position: fixed; */
+				/* top: 0; */
+				/* z-index: 2; */
+				box-shadow: 0 0 10px var(--color-background);
 				#character-portrait img {
 					/* border-radius: 30px 0 0 30px; */
 					/* border: 1px solid var(--color-background); */
@@ -970,26 +983,38 @@
 					}
 				}
 			}
-			#character-buttons {
-				.button-mnml {
-					text-shadow: var(--text-shadow);
-					backdrop-filter: blur(5px);
-					box-shadow: inset 0 0 10px var(--color-background-mute);
-					border: 1px solid var(--color-border);
-					padding: .2em 1em;
+			#character {
+				overflow-y: auto;
+				height: calc(100vh - v-bind(detail_height) + 'px' - 4em);
+				/* margin-top: v-bind(portraitHeight + 'px'); */
+				scroll-snap-type: y mandatory;
+				scroll-padding: 2em;
+				#character-details-spacer {
+					height: v-bind(detail_height + 'px');
+					scroll-snap-align: start;
 				}
-			}
-			#traitsets {
-				/* border-top: 1px solid var(--color-background); */
-				display: flex;
-				flex-wrap: wrap;
-				align-items: start;
-				justify-content: space-between;
-				gap: 2em;
-				padding: 1em;
-			}
-			&.horizontal {
-				background-image: linear-gradient(to left, var(--color-background-mute) 0, transparent 20px, transparent 100%);
+				#character-buttons {
+					scroll-snap-align: start;
+					.button-mnml {
+						text-shadow: var(--text-shadow);
+						backdrop-filter: blur(5px);
+						box-shadow: inset 0 0 10px var(--color-background-mute);
+						border: 1px solid var(--color-border);
+						padding: .2em 1em;
+					}
+				}
+				#traitsets {
+					/* border-top: 1px solid var(--color-background); */
+					display: flex;
+					flex-wrap: wrap;
+					align-items: start;
+					justify-content: space-between;
+					gap: 2em;
+					padding: 1em;
+				}
+				&.horizontal {
+					background-image: linear-gradient(to left, var(--color-background-mute) 0, transparent 20px, transparent 100%);
+				}
 			}
 		}
 	}
