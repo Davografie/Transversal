@@ -96,56 +96,55 @@
 							<p>You can see info and edit the traitset limit by right-clicking or longpressing the title.</p>
 							<p>You can decrease and increase the traitset limit by pressing the ⊖ and ⊕ buttons.</p>
 							<b>Trait</b>
-							<p>Traits consist of:
-								<ul>
-									<li>
-										<p class="li-name">name</p>
-									</li>
-									<li>
-										<p class="li-name">statement</p>
-										<p class="li-description">a description of max 7 words</p>
-									</li>
-									<li>
-										<p class="li-name">notes</p>
-										<p class="li-description">a longer description</p>
-									</li>
-									<li>
-										<p class="li-name">rating</p>
-										<p class="li-description">one or more dice</p>
-										<p class="li-description">with a type of:</p>
-										<ul>
-											<li>
-												<p class="li-name">empty</p>
-												<p class="li-description">no dice</p>
-											</li>
-											<li>
-												<p class="li-name">static</p>
-												<p class="li-description">a constant value</p>
-											</li>
-											<li>
-												<p class="li-name">challenge</p>
-												<p class="li-description">represents a clock</p>
-											</li>
-											<li>
-												<p class="li-name">resource</p>
-												<p class="li-description">dice that represent the character's resources</p>
-											</li>
-										</ul>
-									</li>
-									<li>
-										<p class="li-name">SFX's</p>
-										<p class="li-description">an exception of the rules with: limit, cost, effect</p>
-									</li>
-									<li>
-										<p class="li-name">sub-traits</p>
-										<p class="li-description">traits within traits</p>
-									</li>
-									<li>
-										<p class="li-name">location restriction</p>
-										<p class="li-description">limits traits to specific locations</p>
-									</li>
-								</ul>
-							</p>
+							<p>Traits consist of:</p>
+							<ul>
+								<li>
+									<p class="li-name">name</p>
+								</li>
+								<li>
+									<p class="li-name">statement</p>
+									<p class="li-description">a description of max 7 words</p>
+								</li>
+								<li>
+									<p class="li-name">notes</p>
+									<p class="li-description">a longer description</p>
+								</li>
+								<li>
+									<p class="li-name">rating</p>
+									<p class="li-description">one or more dice</p>
+									<p class="li-description">with a type of:</p>
+									<ul>
+										<li>
+											<p class="li-name">empty</p>
+											<p class="li-description">no dice</p>
+										</li>
+										<li>
+											<p class="li-name">static</p>
+											<p class="li-description">a constant value</p>
+										</li>
+										<li>
+											<p class="li-name">challenge</p>
+											<p class="li-description">represents a clock</p>
+										</li>
+										<li>
+											<p class="li-name">resource</p>
+											<p class="li-description">dice that represent the character's resources</p>
+										</li>
+									</ul>
+								</li>
+								<li>
+									<p class="li-name">SFX's</p>
+									<p class="li-description">an exception of the rules with: limit, cost, effect</p>
+								</li>
+								<li>
+									<p class="li-name">sub-traits</p>
+									<p class="li-description">traits within traits</p>
+								</li>
+								<li>
+									<p class="li-name">location restriction</p>
+									<p class="li-description">limits traits to specific locations</p>
+								</li>
+							</ul>
 							<p>You can edit a trait by right-clicking or longpressing it.</p>
 							<p>Add traits by clicking the + button at the bottom of the traitset.</p>
 						</div>
@@ -270,61 +269,65 @@
 					<div id="dice" class="rule" v-if="show_dice">
 						<div id="die-types">
 							<table>
-								<tr class="header">
-									<td>dice</td>
-									<td>effect</td>
-									<td>trait rating</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: -5, rating: 'd12' }" /></td>
-									<td>catastrophe</td>
-									<td>debilitating</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: -4, rating: 'd10' }" /></td>
-									<td>disaster</td>
-									<td>threatening</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: -3, rating: 'd8' }" /></td>
-									<td>major</td>
-									<td>challenging</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: -2, rating: 'd6' }" /></td>
-									<td>minor</td>
-									<td>obstacle</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: -1, rating: 'd4' }" /></td>
-									<td>irrelevant</td>
-									<td>annoyance</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: 1, rating: 'd4' }" /></td>
-									<td>partial</td>
-									<td>novice</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: 2, rating: 'd6' }" /></td>
-									<td>normal</td>
-									<td>trained</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: 3, rating: 'd8' }" /></td>
-									<td>great</td>
-									<td>expert</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: 4, rating: 'd10' }" /></td>
-									<td>astounding</td>
-									<td>master</td>
-								</tr>
-								<tr>
-									<td><Die :die="{ number_rating: 5, rating: 'd12' }" /></td>
-									<td>epic</td>
-									<td>visionary</td>
-								</tr>
+								<thead>
+									<tr class="header">
+										<td>dice</td>
+										<td>effect</td>
+										<td>trait rating</td>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td><Die :die="{ number_rating: -5, rating: 'd12' }" /></td>
+										<td>catastrophe</td>
+										<td>debilitating</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: -4, rating: 'd10' }" /></td>
+										<td>disaster</td>
+										<td>threatening</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: -3, rating: 'd8' }" /></td>
+										<td>major</td>
+										<td>challenging</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: -2, rating: 'd6' }" /></td>
+										<td>minor</td>
+										<td>obstacle</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: -1, rating: 'd4' }" /></td>
+										<td>irrelevant</td>
+										<td>annoyance</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: 1, rating: 'd4' }" /></td>
+										<td>partial</td>
+										<td>novice</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: 2, rating: 'd6' }" /></td>
+										<td>normal</td>
+										<td>trained</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: 3, rating: 'd8' }" /></td>
+										<td>great</td>
+										<td>expert</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: 4, rating: 'd10' }" /></td>
+										<td>astounding</td>
+										<td>master</td>
+									</tr>
+									<tr>
+										<td><Die :die="{ number_rating: 5, rating: 'd12' }" /></td>
+										<td>epic</td>
+										<td>visionary</td>
+									</tr>
+								</tbody>
 							</table>
 						</div>
 						<div id="mutate_die_wrapper" :class="{ 'wrapper-active': show_mutate_die }">
