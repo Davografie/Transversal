@@ -9,11 +9,14 @@
 	import SFX from '@/components/SFX.vue'
 	import TraitEdit from '@/components/TraitEdit.vue'
 	import TraitLabel from '@/components/TraitLabel.vue'
+
 	import { useTraitset, SORTING } from '@/composables/Traitset'
 	import { useTraitList } from '@/composables/TraitList'
+	import { view_modes } from '@/composables/Trait'
 	import { useLocation } from '@/composables/Location'
 	import { useEntity } from '@/composables/Entity'
 	import { die_shapes } from '@/composables/Die'
+
 	import type { SFX as SFXType, Trait as TraitType, Die as DieType } from '@/interfaces/Types'
 
 	import { usePlayer } from '@/stores/Player'
@@ -158,6 +161,8 @@
 
 	const { location, retrieve_parents } = useLocation(undefined, props.location_key)
 
+	const add_multiple_traits = ref(false)
+
 	function assign_trait_to_entity(trait: TraitType) {
 		if(
 			props.entity_id
@@ -180,9 +185,11 @@
 		else {
 			console.error("Can't assign trait to entity: " + props.entity_id)
 		}
-		if(player.is_player) {
+		if(!add_multiple_traits.value) {
 			adding_trait.value = false
 		}
+		// if(player.is_player) {
+		// }
 		trait_search.value = ""
 		setTimeout(() => retrieve_potential_traits(), 200)
 		setTimeout(() => retrieve_traitset(), 200)
@@ -428,12 +435,22 @@
 		retrieve_traitset()
 		setTimeout(() => refreshing.value = false, 1000)
 	}
+
+	const extended = computed(() => {
+		return (
+			got_traits_to_show
+			|| ((props.extensible || show_info || edit_mode || traitset.traits?.length == 0) && player.is_gm)
+			|| (player.is_player && player.player_character.id == props.entity_id)
+			|| (props.relationship && props.extensible)
+			|| (props.location && props.extensible)
+		)
+	})
 </script>
 
 <template>
 	<div class="traitset"
 			:class="[
-				props.active && show_traits ? 'active' : 'inactive',
+				props.active || show_traits ? 'active' : 'inactive',
 				{ 'editing': player.editing },
 				{ 'next': props.next },
 				'ts-' + traitset.name?.replace(' ', '-').toLowerCase(),
@@ -443,6 +460,7 @@
 				{ 'editing-traits': edit_mode },
 				{ 'full': limiter > 0 && traits_in_dicepool.length == limiter },
 			]"
+			:id="'ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + props.entity_id.substring(props.entity_id.indexOf('/') + 1)"
 			v-if="(
 					traits_to_display.length > 0
 					|| props.visible
@@ -459,7 +477,8 @@
 				@click="toggle_traits"
 				v-touch:hold="title_longpress"
 				@click.right="title_longpress"
-				@contextmenu="(e) => e.preventDefault()">
+				@contextmenu="(e) => e.preventDefault()"
+				:class="{ 'extended': extended }">
 			<div class="trait-count" v-if="!show_traits">
 				{{ traitset.traits ? traits_to_display.length : '' }}
 			</div>
@@ -468,14 +487,14 @@
 			</div>
 			
 			<div class="title">
-				<div class="big-limiter" v-if="show_traits && props.active">
+				<!-- <div class="big-limiter" v-if="show_traits && props.active">
 					<span v-for="d of dice_in_dicepool" :key="d.id">
 						{{ die_shapes[d.rating + (d.number_rating >= 0 ? '_active' : '_inactive')] }}
 					</span>
 					<span v-if="limiter - traits_in_dicepool.length > 0" v-for="i in limiter - traits_in_dicepool.length" :key="i">
 						{{ die_shapes.default_inactive }}
 					</span>
-				</div>
+				</div> -->
 
 				<span class="traitset-name header">
 					{{ (traitset.name?.toUpperCase() ?? '') }}
@@ -486,7 +505,7 @@
 				</span>
 
 			</div>
-			<div class="limiter" v-if="!show_traits || !props.active">
+			<div class="limiter" v-if="!show_traits || props.active">
 				<span v-if="limiter - traits_in_dicepool.length > 0" v-for="i in limiter - traits_in_dicepool.length" :key="i">
 					{{ die_shapes.default_inactive }}
 				</span>
@@ -498,257 +517,275 @@
 			<div v-else></div>
 		</div>
 
-		<!-- <Transition name="traits-transition"> -->
-			<div class="traits" v-if="show_traits" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
-				<div class="traitset-info" v-if="!props.hide_title && show_info">
-					<div class="options">
-						<div class="traitset-limiter">
-							<div type="button" class="button-mnml change-limit limit-decrease"
-								@click.stop="change_limit(-1)">
-								<div class="icon">⊖</div>
-								<div class="label">decrease limit</div>
-							</div>
-							<div type="button" class="button-mnml change-limit limit-increase"
-								@click.stop="change_limit(1)">
-								<div class="icon">⊕</div>
-								<div class="label">increase limit</div>
-							</div>
-						</div>
-						<div type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
-							@click.stop="toggle_edit_mode" v-if="show_traits">
-							<div class="icon">✎</div>
-							<div class="label" v-if="!player.small_buttons">{{ 'edit' + (edit_mode ? 'ing' : '') + ' ' + traitset.name }}</div>
-						</div>
-						<div class="traitset-filter" :class="{ 'active': filtering }" v-if="traitset.traits && traitset.traits.length > 0">
-							<input type="text" class="filter" v-model="filter" placeholder="filter" v-if="filtering" />
-							<div class="button-mnml" title="filter"
-								@click.stop="filtering = !filtering">
-								<div class="icon">{{ filtering ? '✖' : '&#x1F50D;'}}</div>
-								<div class="label">{{ player.small_buttons ? '' : '\nfilter' }}</div>
-							</div>
-						</div>
-						<div class="button-mnml" :class="{ 'active': highlighted_traits.length > 0 }"
-								@click.stop="random_highlight">
-								<div class="icon">🎲</div>
-								<div class="label">{{ player.small_buttons ? '' : '\nrandom' }}</div>
-						</div>
-						<div class="button-mnml"
-							@click.stop="next_sort">
-							<div class="icon">⇅</div>
-							<div class="label">{{ player.small_buttons ? '' : '\n' + sorting.text }}</div>
-						</div>
-						<div class="button-mnml" :class="{ 'active': refreshing }" id="refresh-traitset"
-							@click.stop="refresh">
-							<div class="icon">🔄</div>
-							<div class="label">{{ player.small_buttons ? '' : '\nrefresh' }}</div>
-						</div>
-						<div class="button-mnml traitset-score" v-if="score" title="score">
-							<div class="icon">{{ score }}</div>
-							<div class="label" v-if="!player.small_buttons">score</div>
-						</div>
+		<div class="traitset-info" v-if="!props.hide_title && show_info">
+			<div class="options">
+				<div class="traitset-limiter">
+					<div type="button" class="button-mnml change-limit limit-decrease"
+						@click.stop="change_limit(-1)">
+						<div class="icon">⊖</div>
+						<div class="label">decrease limit</div>
 					</div>
-					<div class="gm-info" v-if="player.is_gm">{{ traitset.id }}</div>
-					<div class="traitset-explainer" v-if="traitset.explainer" v-html="traitset.explainer"></div>
-				</div>
-				<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0">
-					<!-- <div class="sfx-sparkles">✨</div> -->
-					<template v-for="sfx in traitset.sfxs" :key="sfx.id">
-						<SFX :sfx_id="sfx.id"
-							@expand="expanded_sfx = sfx"
-							@collapse="expanded_sfx = {} as SFXType"
-							v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
-					</template>
-				</div>
-
-				<div class="entity-traits" v-if="got_traits_to_show
-						|| ((props.extensible || show_info || edit_mode || traitset.traits?.length == 0) && player.is_gm)
-						|| (player.is_player && player.player_character.id == props.entity_id)
-						|| (props.relationship && props.extensible)
-						|| (props.location && props.extensible)">
-					<template class="highlighted-traits" v-for="trait in traits_to_display.filter(t => highlighted_traits.includes(t.traitSettingId))"
-							:key="trait.traitSettingId">
-						<Trait
-							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
-							:trait_id="trait.id"
-							:traitset_id="traitset.id"
-							:trait_setting_id="trait.traitSettingId"
-							:entity_id="props.entity_id"
-							:highlight_root_id="root_highlight_id"
-							:location_key="props.location_key"
-							:traitset_limit="limiter"
-							:edit_mode="edit_mode"
-							:filter="filter"
-							:traitset_types="traitset.entityTypes"
-							@refetch="retrieve_traitset"
-							@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
-							@set_highlight="highlight_traits"
-							@kill_highlight="kill_highlight_traits"
-							v-if="(player.is_gm
-								|| props.relationship
-								|| (player.is_player && entity.entityType == 'character')
-								|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
-								|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
-								|| props.tutorial)
-								&& (
-									(
-										traits_in_dicepool.length == limiter
-										&& (
-											traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
-											|| traits_in_dicepool.map((t: DieType) => t.traitsettingId).some((id) => trait.subTraits?.some((st) => st.traitSettingId == id))
-										)
-									)
-									|| traitset_dice(traitset.id).length < limiter
-									|| limiter == 0
-								)
-							" />
-						<!-- <div class="trait-divider"
-							v-if="
-								highlighted_traits.length > 0 &&
-								traitset.traits?.some((t) => t.requiredTraits && t.requiredTraits.length > 0) ?
-								highlighted_traits.includes(trait.id) && highlighted_traits.indexOf(trait.id) < highlighted_traits.length - 1 :
-								traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
-							"></div> -->
-					</template>
-					<template class="not-highlighted-traits" v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
-							:key="trait.traitSettingId">
-						<Trait
-							:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
-							:trait_id="trait.id"
-							:traitset_id="traitset.id"
-							:trait_setting_id="trait.traitSettingId"
-							:entity_id="props.entity_id"
-							:highlight_root_id="root_highlight_id"
-							:location_key="props.location_key"
-							:traitset_limit="limiter"
-							:edit_mode="edit_mode"
-							:filter="filter"
-							:traitset_types="traitset.entityTypes"
-							@refetch="retrieve_traitset"
-							@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
-							@set_highlight="highlight_traits"
-							@kill_highlight="kill_highlight_traits"
-							v-if="(player.is_gm
-								|| props.relationship
-								|| (player.is_player && entity.entityType == 'character')
-								|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
-								|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
-								|| props.tutorial)
-								&& (
-									(
-										traits_in_dicepool.length >= limiter
-										&& (
-											traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
-											|| traits_in_dicepool.map((t: DieType) => t.traitsettingId)
-												.some((traitsettingId) => trait.subTraits?.some((st) => st.traitSettingId == traitsettingId))
-										)
-									)
-									|| traitset_dice(traitset.id).length < limiter
-									|| limiter == 0
-								)
-							" />
-						<!-- <div class="trait-divider"
-							v-if="
-								highlighted_traits.length > 0 &&
-								traitset.traits?.some((t) => t.requiredTraits && t.requiredTraits.length > 0) ?
-								highlighted_traits.includes(trait.id) && highlighted_traits.indexOf(trait.id) < highlighted_traits.length - 1 :
-								traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
-							"></div> -->
-					</template>
-					<div class="add-trait" v-if="
-								(
-									player.is_gm
-									|| (
-										player.is_player
-										&& player.player_character.id == props.entity_id
-									)
-									|| (props.relationship && props.extensible)
-									|| (props.location && props.extensible && !props.hide_title)
-									|| adding_trait
-								) && (
-									traits_in_dicepool.length < limiter
-									|| traits_in_dicepool.length == 0
-								)
-							">
-						<input type="button" class="button add-trait-button"
-							:value="adding_trait ?
-								player.small_buttons ? 'x' : 'stop adding trait x' :
-								player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
-							@click="toggle_add_trait" />
+					<div type="button" class="button-mnml change-limit limit-increase"
+						@click.stop="change_limit(1)">
+						<div class="icon">⊕</div>
+						<div class="label">increase limit</div>
 					</div>
 				</div>
-
-				<div class="add_trait" v-if="adding_trait">
-
-
-					<div v-if="potential_traits.length == 0" class="no-results">no available traits to add</div>
-					
-					<div class="trait-list">
-						<div class="trait-search" v-if="search_potential_traits_visible || potential_traits.length == 0">
-							<input class="trait-search-query" type="text" placeholder="find trait"
-								v-model="trait_search" autocomplete="off" />
-							<input type="button" class="button create-trait-button"
-								:value="'create ' + trait_search"
-								v-if="trait_search.length > 0
-									&& traits.filter(
-										t => t.name.toLowerCase() == trait_search.toLowerCase()
-									).length == 0
-									&& player.is_gm"
-								@click="add_trait" />
-						</div>
-						<div class="search-potential-trait-toggle" :class="search_potential_traits_visible ? 'active' : 'inactive'" v-if="potential_traits.length > 0">
-							<div class="button" @click="search_potential_traits_visible = true" v-if="!search_potential_traits_visible">search for trait</div>
-							<div class="button" @click="search_potential_traits_visible = false" v-else>x</div>
-						</div>
-						<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
-							<div class="button potential-trait"
-									:class="[trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
-											trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn',
-										trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating.map((r) => r.number_rating)[0] > 0 ?
-											'positive' : 'negative']"
-									@click="assign_trait_to_entity(trait)"
-									@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
-									@contextmenu="(e) => e.preventDefault()">
-								<div class="trait-description">
-									<div class="trait-name">{{ trait.name }}</div>
-									<div class="trait-explanation"
-										v-html="marked(trait.explanation ?? '')"></div>
-								</div>
-								<span class="trait-rating">
-									{{ trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.active)[0] : '' }}
-								</span>
-							</div>
-							<TraitEdit :trait_id="trait.id" :trait_name="trait.name" :expanded="true" v-if="player.is_gm && editing_potential_traits.includes(trait.id)" />
-						</template>
+				<div type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
+					@click.stop="toggle_edit_mode" v-if="show_traits">
+					<div class="icon">✎</div>
+					<div class="label" v-if="!player.small_buttons">{{ 'edit' + (edit_mode ? 'ing' : '') + ' ' + traitset.name }}</div>
+				</div>
+				<div class="traitset-filter" :class="{ 'active': filtering }" v-if="traitset.traits && traitset.traits.length > 0">
+					<input type="text" class="filter" v-model="filter" placeholder="filter" v-if="filtering" />
+					<div class="button-mnml" title="filter"
+						@click.stop="filtering = !filtering">
+						<div class="icon">{{ filtering ? '✖' : '&#x1F50D;'}}</div>
+						<div class="label">{{ player.small_buttons ? '' : '\nfilter' }}</div>
 					</div>
-
-					<div class="unavailable-traits-title" @click="show_unavailable_traits = !show_unavailable_traits">
-						{{ show_unavailable_traits ? 'hide unavailable traits' : 'show unavailable traits' }}
-					</div>
-					<div class="trait-list" v-if="show_unavailable_traits">
-						<template v-for="trait in all_traits.sort((t1, t2) => t1.name.localeCompare(t2.name)).filter(t => t.name.toLowerCase().includes(trait_search.toLowerCase()))" :key="trait.id">
-							<div class="button excluded-trait" :class="trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn'"
-									v-if="
-										!potential_traits.map(t => t.id).includes(trait.id)
-									"
-									@click="player.is_gm ? assign_trait_to_entity(trait) : null"
-									@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
-									@contextmenu="(e) => e.preventDefault()">
-								<div class="trait-description">
-									<div class="trait-name">{{ trait.name }}</div>
-									<div class="trait-explanation"
-										v-html="marked(trait.explanation ?? '')"></div>
-								</div>
-								<span class="trait-rating">
-									{{ trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.active)[0] : '' }}
-								</span>
-							</div>
-							<TraitEdit :trait_id="trait.id" :trait_name="trait.name" :expanded="true" v-if="editing_potential_traits.includes(trait.id)" />
-						</template>
-					</div>
+				</div>
+				<div class="button-mnml" :class="{ 'active': highlighted_traits.length > 0 }"
+						@click.stop="random_highlight">
+						<div class="icon">🎲</div>
+						<div class="label">{{ player.small_buttons ? '' : '\nrandom' }}</div>
+				</div>
+				<div class="button-mnml"
+					@click.stop="next_sort">
+					<div class="icon">⇅</div>
+					<div class="label">{{ player.small_buttons ? '' : '\n' + sorting.text }}</div>
+				</div>
+				<div class="button-mnml" :class="{ 'active': refreshing }" id="refresh-traitset"
+					@click.stop="refresh">
+					<div class="icon">🔄</div>
+					<div class="label">{{ player.small_buttons ? '' : '\nrefresh' }}</div>
+				</div>
+				<!-- <input type="button" class="button add-trait-button"
+					:value="adding_trait ?
+						player.small_buttons ? 'x' : 'stop adding trait x' :
+						player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
+					@click="toggle_add_trait" /> -->
+				<div class="button-mnml add-trait-button" :class="{ 'active': adding_trait }"
+					@click.stop="toggle_add_trait">
+					<div class="icon">{{ adding_trait ? '✖' : '+' }}</div>
+					<div class="label" v-if="!player.small_buttons && !adding_trait">add {{ traitset.name }}</div>
+					<div class="label" v-if="!player.small_buttons && adding_trait">stop adding trait</div>
+				</div>
+				<div class="button-mnml traitset-score" v-if="score" title="score">
+					<div class="icon">{{ score }}</div>
+					<div class="label" v-if="!player.small_buttons">score</div>
 				</div>
 			</div>
-		<!-- </Transition> -->
+			<div class="gm-info" v-if="player.is_gm">{{ traitset.id }}</div>
+			<div class="traitset-explainer" v-if="traitset.explainer" v-html="traitset.explainer"></div>
+		</div>
+
+
+		<div class="traits" v-if="show_traits" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
+
+			<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0">
+				<!-- <div class="sfx-sparkles">✨</div> -->
+				<template v-for="sfx in traitset.sfxs" :key="sfx.id">
+					<SFX :sfx_id="sfx.id"
+						@expand="expanded_sfx = sfx"
+						@collapse="expanded_sfx = {} as SFXType"
+						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
+				</template>
+			</div>
+
+			<div class="entity-traits" v-if="extended && !adding_trait">
+				<template class="highlighted-traits" v-for="trait in traits_to_display.filter(t => highlighted_traits.includes(t.traitSettingId))"
+						:key="trait.traitSettingId">
+					<Trait
+						:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
+						:trait_id="trait.id"
+						:traitset_id="traitset.id"
+						:trait_setting_id="trait.traitSettingId"
+						:entity_id="props.entity_id"
+						:highlight_root_id="root_highlight_id"
+						:location_key="props.location_key"
+						:traitset_limit="limiter"
+						:edit_mode="edit_mode"
+						:filter="filter"
+						:traitset_types="traitset.entityTypes"
+						:mode="view_modes.Small"
+						@refetch="retrieve_traitset"
+						@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
+						@set_highlight="highlight_traits"
+						@kill_highlight="kill_highlight_traits"
+						v-if="(player.is_gm
+							|| props.relationship
+							|| (player.is_player && entity.entityType == 'character')
+							|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
+							|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
+							|| props.tutorial)
+							&& (
+								(
+									traits_in_dicepool.length == limiter
+									&& (
+										traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
+										|| traits_in_dicepool.map((t: DieType) => t.traitsettingId).some((id) => trait.subTraits?.some((st) => st.traitSettingId == id))
+									)
+								)
+								|| traitset_dice(traitset.id).length < limiter
+								|| limiter == 0
+							)
+						" />
+					<!-- <div class="trait-divider"
+						v-if="
+							highlighted_traits.length > 0 &&
+							traitset.traits?.some((t) => t.requiredTraits && t.requiredTraits.length > 0) ?
+							highlighted_traits.includes(trait.id) && highlighted_traits.indexOf(trait.id) < highlighted_traits.length - 1 :
+							traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
+						"></div> -->
+				</template>
+				<template class="not-highlighted-traits" v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
+						:key="trait.traitSettingId">
+					<Trait
+						:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
+						:trait_id="trait.id"
+						:traitset_id="traitset.id"
+						:trait_setting_id="trait.traitSettingId"
+						:entity_id="props.entity_id"
+						:highlight_root_id="root_highlight_id"
+						:location_key="props.location_key"
+						:traitset_limit="limiter"
+						:edit_mode="edit_mode"
+						:filter="filter"
+						:traitset_types="traitset.entityTypes"
+						@refetch="retrieve_traitset"
+						@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
+						@set_highlight="highlight_traits"
+						@kill_highlight="kill_highlight_traits"
+						v-if="(player.is_gm
+							|| props.relationship
+							|| (player.is_player && entity.entityType == 'character')
+							|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
+							|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
+							|| props.tutorial)
+							&& (
+								(
+									traits_in_dicepool.length >= limiter
+									&& (
+										traits_in_dicepool.map((t: DieType) => t.traitsettingId).includes(trait.traitSettingId)
+										|| traits_in_dicepool.map((t: DieType) => t.traitsettingId)
+											.some((traitsettingId) => trait.subTraits?.some((st) => st.traitSettingId == traitsettingId))
+									)
+								)
+								|| traitset_dice(traitset.id).length < limiter
+								|| limiter == 0
+							)
+						" />
+					<!-- <div class="trait-divider"
+						v-if="
+							highlighted_traits.length > 0 &&
+							traitset.traits?.some((t) => t.requiredTraits && t.requiredTraits.length > 0) ?
+							highlighted_traits.includes(trait.id) && highlighted_traits.indexOf(trait.id) < highlighted_traits.length - 1 :
+							traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
+						"></div> -->
+				</template>
+				<div class="add-trait" v-if="
+							(
+								player.is_gm
+								|| (
+									player.is_player
+									&& player.player_character.id == props.entity_id
+								)
+								|| (props.relationship && props.extensible)
+								|| (props.location && props.extensible && !props.hide_title)
+								|| adding_trait
+							) && (
+								traits_in_dicepool.length < limiter
+								|| traits_in_dicepool.length == 0
+							)
+						">
+					<input type="button" class="button add-trait-button"
+						:value="adding_trait ?
+							player.small_buttons ? 'x' : 'stop adding trait x' :
+							player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
+						@click="toggle_add_trait" />
+				</div>
+			</div>
+
+			<div class="add_trait" v-if="adding_trait">
+
+
+				<div v-if="potential_traits.length == 0" class="no-results">no available traits to add</div>
+				
+				<input type="button" class="button add-trait-button"
+					:value="adding_trait ?
+						player.small_buttons ? 'x' : 'stop adding trait x' :
+						player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
+					@click="toggle_add_trait" />
+				<div class="button-mnml" @click="add_multiple_traits = !add_multiple_traits">
+					<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
+					<div class="label">add {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
+				</div>
+				<div class="trait-search" v-if="search_potential_traits_visible || potential_traits.length == 0">
+					<input class="trait-search-query" type="text" placeholder="find trait"
+						v-model="trait_search" autocomplete="off" />
+					<input type="button" class="button create-trait-button"
+						:value="'create ' + trait_search"
+						v-if="trait_search.length > 0
+							&& traits.filter(
+								t => t.name.toLowerCase() == trait_search.toLowerCase()
+							).length == 0
+							&& player.is_gm"
+						@click="add_trait" />
+				</div>
+				<div class="search-potential-trait-toggle" :class="search_potential_traits_visible ? 'active' : 'inactive'" v-if="potential_traits.length > 0">
+					<div class="button" @click="search_potential_traits_visible = true" v-if="!search_potential_traits_visible">search for trait</div>
+					<div class="button" @click="search_potential_traits_visible = false" v-else>x</div>
+				</div>
+				<div class="trait-list">
+					<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
+						<div class="button potential-trait"
+								:class="[trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
+										trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn',
+									trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating.map((r) => r.number_rating)[0] > 0 ?
+										'positive' : 'negative']"
+								@click="assign_trait_to_entity(trait)"
+								@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
+								@contextmenu="(e) => e.preventDefault()">
+							<div class="trait-description">
+								<div class="trait-name">{{ trait.name }}</div>
+								<div class="trait-explanation"
+									v-html="marked(trait.explanation ?? '')"></div>
+							</div>
+							<span class="trait-rating">
+								{{ trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.active)[0] : '' }}
+							</span>
+						</div>
+						<TraitEdit :trait_id="trait.id" :trait_name="trait.name" :expanded="true" v-if="player.is_gm && editing_potential_traits.includes(trait.id)" />
+					</template>
+				</div>
+
+				<div class="unavailable-traits-title" @click="show_unavailable_traits = !show_unavailable_traits">
+					{{ show_unavailable_traits ? 'hide unavailable traits' : 'show unavailable traits' }}
+				</div>
+				<div class="trait-list" v-if="show_unavailable_traits">
+					<template v-for="trait in all_traits.sort((t1, t2) => t1.name.localeCompare(t2.name)).filter(t => t.name.toLowerCase().includes(trait_search.toLowerCase()))" :key="trait.id">
+						<div class="button excluded-trait" :class="trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn'"
+								v-if="
+									!potential_traits.map(t => t.id).includes(trait.id)
+								"
+								@click="player.is_gm ? assign_trait_to_entity(trait) : null"
+								@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
+								@contextmenu="(e) => e.preventDefault()">
+							<div class="trait-description">
+								<div class="trait-name">{{ trait.name }}</div>
+								<div class="trait-explanation"
+									v-html="marked(trait.explanation ?? '')"></div>
+							</div>
+							<span class="trait-rating">
+								{{ trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.active)[0] : '' }}
+							</span>
+						</div>
+						<TraitEdit :trait_id="trait.id" :trait_name="trait.name" :expanded="true" v-if="editing_potential_traits.includes(trait.id)" />
+					</template>
+				</div>
+			</div>
+		</div>
 
 	</div>
 </template>
@@ -869,9 +906,9 @@
 			max-height: 100vh;
 		}
 		.traits {
-			display: block;
+			/* display: block;
 			height: auto;
-			overflow-y: auto;
+			overflow-y: auto; */
 			.add-trait {
 				flex-grow: 1 0;
 				display: flex;
@@ -915,7 +952,7 @@
 				display: flex;
 				flex-wrap: wrap;
 				justify-content: center;
-				align-items: center;
+				/* align-items: center; */
 				gap: .4em;
 				padding: 1em;
 				width: 100%;
@@ -928,7 +965,7 @@
 					}
 				}
 				.potential-trait, .excluded-trait {
-					flex-grow: 1;
+					/* flex-grow: 1; */
 					/* max-width: 50%; */
 					min-width: 20%;
 					align-items: center;
@@ -1064,17 +1101,23 @@
 <style>
 	.dark {
 		.traitset {
-			scroll-snap-align: start;
-			max-height: 80vh;
-			overflow-y: auto;
+			scroll-snap-align: center;
+			max-height: 100%;
+			/* overflow-y: auto; */
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
 			flex-grow: 1;
 			border: 1px solid var(--color-border);
 			border-radius: 10px;
-			/* overflow: hidden; */
 			backdrop-filter: blur(5px);
 			box-shadow: inset 0 0 10px var(--color-background-mute);
 			.set-title {
 				letter-spacing: .1em;
+				&.extended {
+					background-color: var(--color-background);
+					/* color: var(--color-); */
+				}
 				.limiter {
 					padding-right: .6em;
 					align-items: center;
@@ -1083,44 +1126,72 @@
 					}
 				}
 			}
-			.traitset-info {
-				text-shadow: var(--text-shadow);
-				.traitset-score {
-					border: 1px solid var(--color-border);
-					box-shadow: inset 0 0 10px var(--color-background-mute);
+			.traits {
+				height: 100%;
+				overflow: hidden;
+				.traitset-info {
+					text-shadow: var(--text-shadow);
+					.traitset-score {
+						border: 1px solid var(--color-border);
+						box-shadow: inset 0 0 10px var(--color-background-mute);
+					}
 				}
-			}
-			.traitset-sfxs {
-				backdrop-filter: blur(5px);
-				text-shadow: var(--color-background) 0px 0px 4px,
-					var(--color-background) 0px 0px 8px,
-					var(--color-background) 0px 0px 16px,
-					var(--color-background) 0px 0px 4px;
-			}
-			.entity-traits {
-				/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
-				flex-wrap: wrap;
-				/* flex-direction: column; */
-				padding: .4em;
-				.add-trait {
-					justify-content: end;
+				.traitset-sfxs {
+					backdrop-filter: blur(5px);
+					text-shadow: var(--color-background) 0px 0px 4px,
+						var(--color-background) 0px 0px 8px,
+						var(--color-background) 0px 0px 16px,
+						var(--color-background) 0px 0px 4px;
+				}
+				.entity-traits {
+					/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
+					flex-wrap: wrap;
+					flex-direction: column;
+					padding: .4em;
+					max-height: calc(100% - 2.4em);
+					/* overflow: hidden; */
+					overflow-x: auto;
+					overflow-y: hidden;
+					scroll-snap-type: x mandatory;
+					.add-trait {
+						justify-content: end;
+						scroll-snap-align: end;
+					}
+				}
+				.add_trait {
+					height: 100%;
+					display: flex;
+					flex-direction: column;
+					overflow: hidden;
+					.trait-list {
+						flex-grow: 1;
+						display: flex;
+						flex-direction: column;
+						overflow-x: auto;
+						overflow-y: hidden;
+						scroll-snap-type: x mandatory;
+						.potential-trait, .excluded-trait {
+							scroll-snap-align: center;
+							max-width: 100%;
+						}
+					}
 				}
 			}
 			.trait-divider {
 				display: none;
 			}
 			&.active {
+				height: 100%;
 				.set-title {
-					background-color: var(--color-highlight-mute);
-					color: var(--color-highlight-text);
+					background-color: var(--color-background-soft);
 					text-shadow: none;
-					font-size: 2em;
+					/* font-size: 2em; */
 				}
 			}
 			&.inactive {
 				.set-title {
 					/* color: var(--color-text); */
-					background-color: var(--color-background-mute);
+					/* background-color: var(--color-background-mute); */
 					justify-content: space-between;
 					.title {
 						gap: 1em;
@@ -1131,7 +1202,7 @@
 				box-shadow: 0 0 10px var(--color-highlight);
 				.trait-count,
 				.title .traitset-name {
-					color: var(--color-disabled);
+					color: var(--color-background);
 					text-shadow: 0 0 4px var(--color-highlight);
 				}
 			}
@@ -1151,10 +1222,10 @@
 			gap: .4em;
 		}
 		&.has-image {
-			.traitset.active .set-title {
+			/* .traitset.active .set-title {
 				background-color: var(--color-background-mute);
 				color: var(--color-text);
-			}
+			} */
 			.traitset.active .traits {
 				/* box-shadow: inset 0 0 20px var(--color-background-mute); */
 			}
@@ -1242,7 +1313,7 @@
 	.triptych {
 		.traitset.inactive.next {
 			position: sticky;
-			bottom: 47px;
+			bottom: 0;
 			z-index: 1;
 		}
 	}

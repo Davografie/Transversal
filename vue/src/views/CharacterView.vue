@@ -8,6 +8,8 @@
 	import { useCharacter } from '@/composables/Character'
 	import { useEntity, entity_icons } from '@/composables/Entity'
 	import { useLocation } from '@/composables/Location'
+	import { useTraitsetList } from '@/composables/TraitsetList'
+	import type { Traitset as TraitsetType } from '@/interfaces/Types'
 	
 	import PP from '@/components/PP.vue'
 	import Traitset from '@/components/Traitset.vue'
@@ -74,6 +76,9 @@
 		retrieve_presence,
 		set_location_key
 	} = useLocation(undefined, character.value?.location?.id)
+
+	const { traitsets, retrieve_traitsets } = useTraitsetList(undefined, entity.value.id, undefined)
+	retrieve_traitsets()
 
 
 	// entity name and type
@@ -211,15 +216,65 @@
 
 
 	// used in css:
-	const { height: portraitHeight, width: portraitWidth } = useElementSize(portrait_img)
-	const detail_height = computed(() => portrait_img.value ? portraitHeight.value * 0.9 : 200)
 	const entity_wrapper = ref()
-	const { width: entity_width } = useElementSize(entity_wrapper)
+	const traitset_wrapper = ref()
 	const character_wrapper = ref()
-	const { y: scrollY } = useScroll(character_wrapper)
+
+	const { height: portraitHeight, width: portraitWidth } = useElementSize(portrait_img)
+	const { width: entity_width } = useElementSize(entity_wrapper)
+
+	const { y: scrollY, directions: scrollDirections } = useScroll(character_wrapper)
+	const { y: traitset_scrollY, directions: traitset_scrollDirections, arrivedState: traitset_arrived } = useScroll(traitset_wrapper)
+	
+	const detail_height = computed(() => portrait_img.value ? portraitHeight.value * 0.9 : 200)
 	const character_wrapper_max_scroll_y = computed(() => character_wrapper.value ? character_wrapper.value.scrollHeight - character_wrapper.value.offsetHeight : 0)
+	
+	watch(traitset_scrollDirections, (newDirections) => {
+		if(newDirections.top) {
+			scrolling_up.value = true
+		}
+		else if(newDirections.bottom) {
+			scrolling_up.value = false
+		}
+	})
+	const scrolling_up = ref(false)
+	// const scrolling_up = computed(() => {
+	// 	return traitset_scrollDirections.top || traitset_arrived.top
+	// })
+	// const show_buttons = 
+
+	const show_controls = computed(() => {
+		return traitset_arrived.top
+	})
 	const banner_width = computed(() => (props.windowWidth ?? entity_width.value) - portraitWidth.value)
 
+	const banner_height = computed(() => {
+		// uses entity.value.image.width and the traitset scroll Y to determine the banner height
+		// at top of traitset scroll the banner is max size
+		// scrolling down shrinks the banner height to min size, depending on scroll Y
+		// where it remains until the user scrolled back up to the top
+		const min_height = 100
+		const max_height = 200
+		const scrollY_threshold = 100
+		const scrollY_ratio = Math.min(1, traitset_scrollY.value / scrollY_threshold)
+		const height = max_height - (max_height - min_height) * scrollY_ratio
+		return height
+	})
+	
+	function scroll_to_element(element_id: string) {
+		console.log("scrolling to element: " + element_id)
+		const element = document.getElementById(element_id)
+		if(element) {
+			console.log("element found, scrolling to it")
+			element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		}
+		show_reference.value = false
+	}
+
+	function scroll_to_traitset(traitset: TraitsetType) {
+		active_traitset_id.value = traitset.id
+		nextTick(() => scroll_to_element('ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + entity.value.key))
+	}
 
 	watch(character, (newCharacter) => {
 		new_name.value = newCharacter.name
@@ -430,6 +485,7 @@
 		emit('show_entity', entity_id)
 	}
 
+	const show_reference = ref(false)
 </script>
 
 <template>
@@ -532,10 +588,10 @@
 					v-if="editing_description" />
 			</div>
 		</div>
-		<div id="character" v-if="character" ref="character_wrapper">
+		<div id="character" v-if="character" v-show="show_controls" ref="character_wrapper">
 			<!-- <div id="character-details-spacer" /> -->
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
-			<div id="character-buttons" :class="player.small_buttons ? 'small-buttons' : 'verbose-buttons'">
+			<div id="character-buttons" :class="[player.small_buttons ? 'small-buttons' : 'verbose-buttons', scrolling_up ? 'scrolling-up' : 'scrolling-down']">
 				<div class="button-mnml" id="switch-gm"
 					title="switch to gm"
 					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'"
@@ -704,52 +760,59 @@
 					override_click
 					@click_entity="click_instance(entity.id)" />
 			</div>
-			<div id="traitsets" v-if="character.traitsets">
-				<Traitset
-					v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
-					:key="set.id + character.key"
-					:traitset_id="set.id"
-					:entity_id="character.id"
-					:limit="set.limit"
-					:expanded="((set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE') || player.traitset_defaults == 'EXPANDED') && player.traitset_defaults != 'COLLAPSED'"
-					:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
-					visible
-					:location_key="character.location?.key"
-					:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
-					:next="player.traitset_defaults == 'ACTIVE' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
-					:location="false"
-					:relationship="false"
-					@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
-					@set_traitset="active_traitset_id = set.id"
-					@unset_traitset="active_traitset_id = ''" />
+		</div>
+		<div id="traitsets" ref="traitset_wrapper" v-if="character.traitsets">
+			<Traitset
+				v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
+				:key="set.id + character.key"
+				:traitset_id="set.id"
+				:entity_id="character.id"
+				:limit="set.limit"
+				:expanded="((set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE') || player.traitset_defaults == 'EXPANDED') && player.traitset_defaults != 'COLLAPSED'"
+				:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
+				visible
+				:location_key="character.location?.key"
+				:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
+				:next="player.traitset_defaults == 'ACTIVE' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
+				:location="false"
+				:relationship="false"
+				@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
+				@set_traitset="active_traitset_id = set.id"
+				@unset_traitset="active_traitset_id = ''" />
+			<div class="traitset-bottom-scroll-space"></div>
+		</div>
+		<div class="floating-bottom">
+			<div class="button-mnml" @click="traitset_wrapper.scrollTop = 0; show_reference = false" v-if="!traitset_arrived.top">
+				<div class="icon">⤒</div>
+				<div class="label" v-if="!player.small_buttons">to top</div>
+			</div>
+			<div class="reference" v-if="show_reference">
+				<div class="scroll-item" v-for="traitset in traitsets.filter(ts => entity.traitsets?.map(t => t.id).includes(ts.id))">
+					<a @click="scroll_to_traitset(traitset)">
+						{{ traitset.name }}
+					</a>
+				</div>
+			</div>
+			<div class="button-mnml" @click="show_reference = !show_reference">
+				<div class="icon">☰</div>
+				<div class="label" v-if="!player.small_buttons">scroll to</div>
 			</div>
 		</div>
 		<!-- <div id="all-traits-wrapper">
 			<AllTraits v-if="character.id" :entity_id="character.id" />
 		</div> -->
-		<div class="bottom-scroll-space"></div>
 	</div>
 </template>
 
 <style scoped>
 	#entity-wrapper {
-		#character-quick-switch {
-			padding: 1em;
-			display: flex;
-			justify-content: space-around;
-			width: 100%;
-			overflow-x: auto;
-			.entity-card {
-				width: 50px;
-				height: 100px;
-			}
-		}
+		overflow: hidden;
 		#character-details {
 			display: flex;
 			align-items: center;
-			position: sticky;
+			/* position: sticky;
 			top: 0;
-			z-index: 2;
+			z-index: 2; */
 			#character-banner {
 				overflow: scroll;
 				flex-grow: 1;
@@ -859,31 +922,13 @@
 			}
 		}
 		#character {
+			/* flex-grow: 1; */
 			position: relative;
-			#entity-name-wrapper.editing {
-				display: flex;
-				#entity-name {
-					flex-grow: 1;
-					font-size: 1.2em;
-				}
-			}
-			#archetype-instances {
-				display: flex;
-				max-width: 100%;
-				overflow-x: auto;
-			}
-			#character-known-to {
-				.entity-cards {
-					display: flex;
-					justify-content: space-around;
-					flex-wrap: wrap;
-				}
-			}
 			#character-buttons {
 				/* position: absolute; */
 				/* margin-top: .2em; */
 				display: flex;
-				flex-wrap: wrap;
+				/* flex-wrap: wrap; */
 				width: 100%;
 				/* position: sticky; */
 				/* top: 0; */
@@ -917,6 +962,36 @@
 					}
 				}
 			}
+			#entity-name-wrapper.editing {
+				display: flex;
+				#entity-name {
+					flex-grow: 1;
+					font-size: 1.2em;
+				}
+			}
+			#character-quick-switch {
+				padding: 1em;
+				display: flex;
+				justify-content: space-around;
+				width: 100%;
+				overflow-x: auto;
+				.entity-card {
+					width: 50px;
+					height: 100px;
+				}
+			}
+			#archetype-instances {
+				display: flex;
+				max-width: 100%;
+				overflow-x: auto;
+			}
+			#character-known-to {
+				.entity-cards {
+					display: flex;
+					justify-content: space-around;
+					flex-wrap: wrap;
+				}
+			}
 		}
 		#portrait-lightbox {
 			position: fixed;
@@ -935,9 +1010,22 @@
 		}
 		#traitsets {
 			border-bottom: 1px solid var(--color-border);
+			flex-grow: 1;
+			overflow-y: auto;
 		}
-		.bottom-scroll-space {
+		.traitset-bottom-scroll-space {
 			height: 100px;
+			width: 100%;
+		}
+		.floating-bottom {
+			position: fixed;
+			bottom: 100px;
+			left: 0;
+			z-index: 1;
+			.button-mnml {
+				background-color: var(--color-background);
+				border: 1px solid var(--color-border);
+			}
 		}
 	}
 	.editing #character-portrait img {
@@ -948,11 +1036,13 @@
 <style>
 	.dark {
 		#entity-wrapper {
-			scroll-snap-type: y mandatory;
+			/* scroll-snap-type: y mandatory; */
 			scroll-padding: 2em;
 			display: flex;
 			flex-direction: column;
+			height: 100vh;
 			/* backdrop-filter: blur(5px); */
+			position: relative;
 			#character-details {
 				background-color: var(--color-background-mute);
 				/* margin: 0 1em; */
@@ -963,12 +1053,16 @@
 				/* position: fixed; */
 				/* top: 0; */
 				/* z-index: 2; */
+				height: v-bind(banner_height + 'px');
+				/* transition: height 1s ease-in-out; */
 				box-shadow: 0 0 10px var(--color-background);
 				#character-portrait img {
 					/* border-radius: 30px 0 0 30px; */
 					/* border: 1px solid var(--color-background); */
 					/* border-top: 3px solid var(--color-background); */
 					/* margin: .4em; */
+					max-height: v-bind(banner_height + 'px');
+					/* transition: max-height 1s ease-in-out; */
 				}
 				#character-banner {
 					/* text-shadow: #000 0px 0px 2px, #000 0px 0px 4px, #000 0px 0px 8px, #000 0px 0px 2px; */
@@ -984,17 +1078,20 @@
 				}
 			}
 			#character {
-				overflow-y: auto;
-				height: calc(100vh - v-bind(detail_height) + 'px' - 4em);
+				/* overflow-y: auto; */
+				/* height: calc(100vh - v-bind(detail_height) + 'px' - 4em); */
 				/* margin-top: v-bind(portraitHeight + 'px'); */
 				scroll-snap-type: y mandatory;
-				scroll-padding: 2em;
-				#character-details-spacer {
-					height: v-bind(detail_height + 'px');
-					scroll-snap-align: start;
-				}
+				/* height: 100px; */
+				/* flex-grow: 1; */
 				#character-buttons {
 					scroll-snap-align: start;
+					overflow-x: auto;
+					&.scrolling-up {
+						position: sticky;
+						top: 0;
+						z-index: 1;
+					}
 					.button-mnml {
 						text-shadow: var(--text-shadow);
 						backdrop-filter: blur(5px);
@@ -1003,34 +1100,46 @@
 						padding: .2em 1em;
 					}
 				}
-				#traitsets {
-					/* border-top: 1px solid var(--color-background); */
-					display: flex;
-					flex-wrap: wrap;
-					align-items: start;
-					justify-content: space-between;
-					gap: 2em;
-					padding: 1em;
-				}
 				&.horizontal {
 					background-image: linear-gradient(to left, var(--color-background-mute) 0, transparent 20px, transparent 100%);
+				}
+			}
+			#traitsets {
+				/* border-top: 1px solid var(--color-background); */
+				display: flex;
+				flex-wrap: wrap;
+				align-items: start;
+				justify-content: space-between;
+				gap: 2em;
+				padding: 1em;
+				scroll-snap-type: y mandatory;
+				scroll-behavior: smooth;
+				.bottom-scroll-space {
+					scroll-snap-align: end;
 				}
 			}
 		}
 	}
 	.light {
 		#entity-wrapper {
+			overflow-y: auto;
+			height: 100vh;
 			#character-details {
 				padding: 0 .4em;
-			}
-			#character-portrait {
-				padding: 1em;
-				img, #portrait-upload-wrapper {
-					border: 3px double var(--color-text);
+				#character-portrait {
+					padding: 1em;
+					img, #portrait-upload-wrapper {
+						border: 3px double var(--color-text);
+					}
+					#portrait-upload-wrapper {
+						top: 1em !important;
+						width: calc(100% - 2em) !important;
+					}
 				}
-				#portrait-upload-wrapper {
-					top: 1em !important;
-					width: calc(100% - 2em) !important;
+			}
+			#character {
+				#character-buttons {
+					flex-wrap: wrap;
 				}
 			}
 			#traitsets {
@@ -1043,4 +1152,7 @@
 			padding-top: 4em;
 		}
 	} */
+	#mobile-container #charactersheet-container #entity-wrapper {
+		padding-bottom: 3em;
+	}
 </style>
