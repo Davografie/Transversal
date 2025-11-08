@@ -109,6 +109,7 @@
 
 	function refresh() {
 		retrieve_trait()
+		retrieve_instances()
 		watch(trait, (newTrait) => {
 			default_name.value = trait.value.name
 			if (newTrait.explanation) explanation.value = newTrait.explanation

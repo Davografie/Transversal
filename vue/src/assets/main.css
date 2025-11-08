@@ -68,18 +68,37 @@ a {
 	.icon {
 		font-size: 1.4em;
 		line-height: 1em;
+		z-index: 1;
 	}
 	.label {
 		font-size: .8em;
 		padding: 0 .2em;
 		line-height: 1em;
+		/* border: 5px solid var(--color-border); */
+		/* background-color: var(--color-border); */
+	}
+	/* &.active {
+		.label {
+			background-color: var(--color-highlight-mute);
+			color: var(--color-highlight-text);
+		}
+		text-shadow: none;
+	} */
+}
+.dark .button-mnml {
+	.label {
+		background-color: var(--color-border);
 	}
 	&.active {
-		background-color: var(--color-highlight-mute);
-		color: var(--color-highlight-text);
+		.label {
+			background-color: var(--color-highlight-mute);
+			color: var(--color-highlight-text);
+		}
 		text-shadow: none;
 	}
 }
+
+
 .button.active {
 	background-color: var(--color-highlight);
 	color: var(--color-highlight-text);

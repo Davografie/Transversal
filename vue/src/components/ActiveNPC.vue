@@ -110,7 +110,7 @@
 				player.the_entity?.following?.id != entity.value.id		// already following
 				&& player.the_entity?.id != entity.value.id				// can't follow yourself
 				&& entity.value.following?.id != player.the_entity?.id	// can't follow that which follows you
-				&& player.the_entity?.entityType != 'location'			// locations can't follow
+				// && player.the_entity?.entityType != 'location'			// locations can't follow
 				&& !(
 					player.is_player
 					&& entity.value.location?.id != player.the_entity?.location?.id

@@ -630,10 +630,10 @@
 						:entity_id="location.id"
 						:location_key="props.loc"
 						:limit="traitset.limit"
-						:expanded="!(player.editing || editing_traits)"
-						:visible="(player.editing || editing_traits)"
-						:hide_title="!(player.editing || editing_traits)"
-						:extensible="(player.editing || editing_traits)"
+						:expanded="!editing_traits"
+						:visible="editing_traits"
+						:hide_title="!editing_traits"
+						:extensible="editing_traits"
 						:location="true"
 						:polling="player.the_entity?.location?.key == props.loc
 							&& (

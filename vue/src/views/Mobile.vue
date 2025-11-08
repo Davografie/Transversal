@@ -290,7 +290,7 @@
 					background-color: var(--color-background);
 					color: var(--color-text);
 					width: 100%;
-					height: 4em;
+					height: 50px;
 					display: flex;
 					flex-direction: column;
 					justify-content: end;
@@ -394,12 +394,15 @@
 	#charactersheet-container, #settings-container, #codex-container {
 		height: 100vh;
 		width: 100vw;
+		overflow: hidden;
 		z-index: 2;
-		overflow-x: hidden;
-		overflow-y: auto;
 		scroll-behavior: smooth;
 		position: fixed;
 		top: 0;
+	}
+	#settings-container, #codex-container {
+		overflow-x: hidden;
+		overflow-y: auto;
 	}
 	#dicepool-container {
 		position: fixed;

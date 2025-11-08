@@ -2267,7 +2267,7 @@ class Entity(Interface):
 
 	def resolve_key(parent, info):
 		Entity._hydrate_entity(parent, info)
-		return parent.key
+		return str(parent.key)
 
 	def resolve_name(parent, info):
 		Entity._hydrate_entity(parent, info)
@@ -2757,14 +2757,14 @@ class InstantiateArchetype(Mutation):
 	# also copies the traits
 	# does not copy the relations
 	class Arguments:
-		key = ID(required=True)
+		entity_id = ID(required=True)
 		name = String(required=False)
 
 	entity = Field(lambda: Entity)
 	message = String()
 
-	def mutate(root, info, key, name=None):
-		archetype = get_doc_by_id('Entities', 'Entities/' + str(key))
+	def mutate(root, info, entity_id, name=None):
+		archetype = get_doc_by_id('Entities', entity_id)
 		new_entity = {key: value for key, value in archetype.items() if not key.startswith('_')}
 		# new_entity['archetype_id'] = archetype.get('_id')
 		new_entity['is_archetype'] = False
@@ -2786,7 +2786,7 @@ class InstantiateArchetype(Mutation):
 
 		# copy traitset settings
 		query = f"""FOR entity IN Entities
-						FILTER entity._id == 'Entities/{ key }'
+						FILTER entity._id == '{ entity_id}'
 
 					LET traitsetsettings = (
 						FOR ts IN TraitsetSettings
@@ -2836,13 +2836,13 @@ class InstantiateArchetype(Mutation):
 
 class DeleteEntity(Mutation):
 	class Arguments:
-		key = ID(required=True)
+		entity_id = ID(required=True)
 		rmtree = Boolean(required=False)
 
 	success = Boolean()
 	message = String()
 
-	def mutate(root, info, key, rmtree=False):
+	def mutate(root, info, entity_id, rmtree=False):
 
 		def remove_entity(entity_id):
 			# we don't want any dangling relations, so we need to delete those, but because relations
@@ -2901,7 +2901,7 @@ class DeleteEntity(Mutation):
 			db.collection('Entities').delete(entity_id)
 
 		try:
-			current_entity = get_doc_by_id('Entities', 'Entities/' + str(key))
+			current_entity = get_doc_by_id('Entities', entity_id)
 
 			# if the entity is a location and only this location needs removing
 			# then all entities in that location need their location updated
@@ -4014,6 +4014,7 @@ def imagegen(entity_key, force):
 		"oceanic": "setting/ElementalWaterPlane",
 		"colorful": "colors/ColorPop",
 		"primitive": "setting/Hyperborea-v2",
+		"comic": "style/ComicStyle"
 	}
 
 	# variables used in the generation

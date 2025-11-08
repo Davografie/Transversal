@@ -81,13 +81,16 @@ export function useEntity(init?: Entity, entity_id?: string) {
 						ext
 					}
 				}
+				following {
+					id
+				}
 				relations {
 					id
 					toEntity {
 						id
 					}
 				}
-				following {
+				knownTo {
 					id
 				}
 				instances {

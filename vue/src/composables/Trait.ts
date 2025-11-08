@@ -20,6 +20,14 @@ export const placeholder_trait: Trait = {
 	rating: []
 }
 
+	// enable/disable trait edit mode
+export enum view_modes {
+	Small = 'small',
+	Neutral = 'neutral',
+	Editing = 'editing',
+	Viewing = 'viewing'
+}
+
 export const rating_types: string[] = ['empty', 'static', 'resource', 'challenge']
 
 
