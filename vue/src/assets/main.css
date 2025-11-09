@@ -53,6 +53,10 @@ a {
 	padding: .2em 1em;
 	margin: .3em;
 	font-size: 1.2em;
+	&.disabled {
+		color: var(--color-disabled);
+		pointer-events: none;
+	}
 }
 
 .button-mnml {
