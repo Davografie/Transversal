@@ -29,7 +29,11 @@
 
 	const filtered_presence = computed(() => {
 		return location.value.entities?.filter(
-			e => (e.entityType != 'gm' && e.entityType != 'faction' && !e.isArchetype)
+			e => (
+					e.entityType != 'gm'
+					&& e.entityType != 'faction'
+					// && !e.isArchetype
+				)
 				&& (
 					player.is_gm									// always show to GM
 					|| (e.entityType == 'character' && e.active)	// show active characters
