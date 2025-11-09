@@ -130,15 +130,16 @@ def get_doc_by_id(collection_name: str, doc_id: str):
 		r.hset(doc_id, mapping=serialized)
 	return doc
 
-def update_doc(collection_name: str, doc: dict):
+def update_doc(collection_name: str, doc: dict, temp=False):
 	"""
 	Helper function to update a document in a collection and update it in Redis.
 	@param collection_name: Name of the collection
 	@param doc: Document data
 	@return: Updated document data
 	"""
-	db_doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
-	db.collection(collection_name).update(db_doc)
+	if not temp:
+		db_doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
+		db.collection(collection_name).update(db_doc)
 
 	serialized = serialize_doc(doc)
 	r.hset(doc.get('_id'), mapping=serialized)
@@ -364,6 +365,9 @@ class UpdateSession(Mutation):
 			for entity in stuck_on_imagening:
 				entity['imagening'] = False
 				update_doc('Entities', entity)
+			
+			# clear the redis database
+			r.flushdb()
 
 		if session_input.new_session or session_input.next_scene:
 			scene_rev = uuid4()
@@ -655,11 +659,12 @@ class MutateTraitSetting(Mutation):
 		trait_setting_input = TraitSettingInput(required=False)
 		entity_id = ID(required=False) # for transferring traits
 		die_type = Int(required=False) # for transferring resources
+		temp = Boolean(required=False)
 
 	trait = Field(lambda: Trait)
 	message = String()
 
-	def mutate(self, info, trait_setting_id=None, trait_setting_input=None, entity_id=None, die_type=None):
+	def mutate(self, info, trait_setting_id=None, trait_setting_input=None, entity_id=None, die_type=None, temp=False):
 		"""
 		trait_setting_id: ID of trait setting to update, if not provided, trait will be created
 		entity_id: ID of entity to add trait setting to
@@ -692,7 +697,7 @@ class MutateTraitSetting(Mutation):
 						to_pocket = [doc for doc in pockets][0]
 						to_pocket['rating'] = to_pocket.get('rating') + [die_type]
 						# logger.info(f"MutateTraitSetting:\tto_pocket: { to_pocket }")
-						update_doc('TraitSettings', to_pocket)
+						update_doc('TraitSettings', to_pocket, temp=temp)
 					else:
 						new_doc = {
 							'_from': entity_id,
@@ -727,7 +732,7 @@ class MutateTraitSetting(Mutation):
 					**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
 					'known_to': list(set(trait_setting.get('known_to', []) + [trait_setting_input.get('teach_to')]))
 				}
-			update_doc('TraitSettings', trait_setting)
+			update_doc('TraitSettings', trait_setting, temp=temp)
 		else:
 			if trait_setting_input is not None:
 				trait_setting = {
@@ -737,7 +742,7 @@ class MutateTraitSetting(Mutation):
 					**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
 					**trait_setting_input
 				}
-			update_doc('TraitSettings', trait_setting)
+			update_doc('TraitSettings', trait_setting, temp=temp)
 		return MutateTraitSetting(trait=Trait(trait_setting_id=trait_setting.get('_id')))
 		# except Exception as e:
 		# 	logger.info(e)

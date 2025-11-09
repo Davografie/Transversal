@@ -357,6 +357,29 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
+	function mutate_trait_setting_temp(input: TraitSettingInput, temp: boolean = false) {
+		if(!trait_setting_id.value) {
+			console.error("mutate_trait_setting called without trait_setting_id")
+		}
+		const mutate_setting_trait = gql`
+			mutation MutateTraitSetting($traitSettingInput: TraitSettingInput!, $traitSettingId: ID, $temp: Boolean) {
+				mutateTraitSetting(traitSettingInput: $traitSettingInput, traitSettingId: $traitSettingId, temp: $temp) {
+					trait {
+						id
+					}
+				}
+			}`
+		if(apolloClient && trait_setting_id.value) {
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_setting_trait))
+			let variables: object = {
+				traitSettingId: trait_setting_id.value,
+				traitSettingInput: input,
+				temp: true
+			}
+			mutate(variables)
+		}
+	}
+
 	function overwrite_trait(input: TraitSettingInput) {
 		const overwrite_query = gql`mutation OverwriteTrait($entityId: ID!, $traitId: ID!, $traitSettingInput: TraitSettingInput) {
 			assignTrait(entityId: $entityId, traitId: $traitId, traitSettingInput: $traitSettingInput) {
@@ -641,6 +664,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		retrieve_instances,
 		mutate_trait,
 		mutate_trait_setting,
+		mutate_trait_setting_temp,
 		overwrite_trait,
 		copy_trait,
 		change_trait_entity,

@@ -70,6 +70,7 @@
 		retrieve_trait_setting,
 		mutate_trait,
 		mutate_trait_setting,
+		mutate_trait_setting_temp,
 		overwrite_trait,
 		copy_trait,
 		unassign_trait,
@@ -411,7 +412,7 @@
 			&& inAddingPhase.value
 		) {
 			new_rating.value = trait.value.rating.filter((d) => d.id != dc.id)
-			mutate_trait_setting({ 'rating': new_rating.value.map((r) => r.number_rating) })
+			mutate_trait_setting_temp({ 'rating': new_rating.value.map((r) => r.number_rating) })
 			// const { die } = useDie({rating: dc})
 			dc.traitId = trait.value.id
 			if(props.traitset_id) dc.traitsetId = props.traitset_id
@@ -469,7 +470,7 @@
 	})
 
 	// mutate trait when finished editing
-	function change_trait() {
+	function change_trait(temp: boolean = false) {
 		if(inherited.value) {
 			overwrite_trait({
 				'ratingType': new_ratingType.value,
@@ -484,8 +485,21 @@
 				'hidden': new_hidden.value
 			})
 		}
-		else {
+		else if(temp === false) {
 			mutate_trait_setting({
+				'ratingType': new_ratingType.value,
+				'rating': new_rating.value.map((r) => r.number_rating),
+				'scaling': new_scaling.value,
+				'statement': new_statement.value,
+				'notes': new_notes.value,
+				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
+				'locationsEnabled': new_locationsEnabled.value,
+				'locationsDisabled': new_locationsDisabled.value,
+				'hidden': new_hidden.value
+			})
+		}
+		else if(temp === true) {
+			mutate_trait_setting_temp({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
 				'scaling': new_scaling.value,
@@ -499,8 +513,8 @@
 		}
 	}
 
-	function submit_changes() {
-		change_trait()
+	function submit_changes(temp: boolean = false) {
+		change_trait(temp)
 		mode.value = view_modes.Neutral
 		edit_rating.value = false
 		show_sfxs.value = false
@@ -833,6 +847,12 @@
 			return { rating: die_constants.find(d => d.number_rating == max_rating)?.rating, sign: sign }
 		}
 	})
+
+	watch(() => player.session_id, (newSessionId, oldSessionId) => {
+		if(newSessionId != oldSessionId) {
+			retrieve_trait()
+		}
+	})
 </script>
 
 <template>
@@ -875,6 +895,10 @@
 						<span class="label" v-if="mode == view_modes.Editing
 								&& trait.traitSetting?.fromEntity?.name">
 							{{ ' from ' + trait.traitSetting?.fromEntity?.name }}
+						</span>
+						<span class="label" v-if="mode == view_modes.Editing
+								&& trait.traitSetting?.fromEntity?.id == player.the_entity?.id">
+							{{ ' (self)' }}
 						</span>
 					</span>
 					<span class="rating-type label" v-if="preferredColor == 'light'">
@@ -1220,7 +1244,12 @@
 		<div class="edit-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == view_modes.Editing">
 			<input  type="button" class="button-mnml save-button"
 				:value="player.small_buttons ? '💾' : '💾' + (inherited ? 'overwrite' : 'save') + ' trait'"
-				@click.stop="submit_changes"
+				@click.stop="submit_changes(false)"
+				v-if="can_edit" />
+			
+			<input  type="button" class="button-mnml save-temp-button"
+				:value="player.small_buttons ? '💾' : '💾' + (inherited ? 'overwrite' : 'save') + ' trait\n(this session only)'"
+				@click.stop="submit_changes(true)"
 				v-if="can_edit" />
 
 			<input  type="button" class="button-mnml cancel-button"
