@@ -107,7 +107,12 @@
 		// toggle_details()
 	}
 
+	const refreshing = ref(false)
+
 	function refresh() {
+		refreshing.value = true
+		let trait_completed = false
+		let default_completed = false
 		retrieve_trait()
 		retrieve_instances()
 		watch(trait, (newTrait) => {
@@ -117,6 +122,8 @@
 			if (newTrait.ratingType) default_rating_type.value = newTrait.ratingType
 			if (newTrait.requiredTraits) requirements.value = newTrait.requiredTraits.map(x => x.id)
 			if (newTrait.inheritable) new_inheritable.value = newTrait.inheritable
+			trait_completed = true
+			if(trait_completed && default_completed) refreshing.value = false
 		})
 		retrieve_default_settings()
 		watch(default_settings, (newDefaults) => {
@@ -126,6 +133,8 @@
 				default_rating.value = newDefaults.rating ?? []
 				new_default_sfxs.value = newDefaults.sfxs?.map((x: SFXType) => x.id) ?? []
 			}
+			default_completed = true
+			if(trait_completed && default_completed) refreshing.value = false
 		})
 	}
 
@@ -329,7 +338,7 @@
 		<div v-show="show_details" class="trait-details">
 			<div class="control-buttons">
 				<input type="button" class="copy-id button" title="copy trait id" value="#" @click="copy" />
-				<input type="button" class="refresh button" title="refresh" value="⟳" @click="refresh" />
+				<input type="button" class="refresh button" :class="{ 'disabled': refreshing }" title="refresh" value="⟳" @click="refresh" />
 				<input type="button" class="delete button" value="🗑" @click="deleting = true" v-if="!deleting" />
 				<input type="button" class="delete-y button" value="✅" @click="confirm_delete_trait" v-if="deleting" />
 				<input type="button" class="delete-n button" value="❌" @click="deleting = false" v-if="deleting" />
