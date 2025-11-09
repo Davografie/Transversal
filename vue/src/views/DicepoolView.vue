@@ -256,7 +256,7 @@
 					<ResolutionSWADE v-if="dicepool.inSwadeResultPhase.value && dicepoolStore.dice[0].result" />
 
 					<div id="pool-dice">
-						<div id="gm-die-picker" v-if="dicepool.inAddingPhase.value">
+						<div id="gm-die-picker" v-if="dicepool.inAddingPhase.value && !editing_die">
 							<DiePicker @change-die="add_custom_dice" custom />
 						</div>
 
@@ -289,7 +289,7 @@
 												@contextmenu.prevent="(e) => e.preventDefault()" />
 											<DiePicker
 												v-if="die.id == editing_die?.id"
-												roller
+												radial
 												size="5em"
 												@change-die="(r) => edit_die(r)"
 												:die="editing_die"
@@ -298,7 +298,7 @@
 									</div>
 								</div>
 							</div>
-							<div id="edit-die" v-if="editing">
+							<div id="edit-die" v-if="editing && verbose_dice">
 								<DiePicker
 									@change-die="(r) => edit_die(r)"
 									:die="editing_die"
@@ -473,7 +473,7 @@
 					gap: .4em;
 					height: 100%;
 					max-height: 60vh;
-					overflow-y: auto;
+					/* overflow-y: auto; */
 				}
 				.die.editing {
 					border: 1px solid red;
@@ -556,10 +556,10 @@
 </style>
 
 <style>
-	#dicepool .die {
+	/* #dicepool .die {
 		height: 5em;
 		width: 5em;
-	}
+	} */
 	.landscape {
 		#dicepool {
 			border-left: 1px solid var(--color-border);

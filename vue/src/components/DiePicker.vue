@@ -5,14 +5,11 @@
 
 	import Die from '@/components/Die.vue'
 	import type { Die as DieType } from '@/interfaces/Types'
-	import { useDie, die_constants, placeholder_die } from '@/composables/Die'
+	import { useDie, die_constants } from '@/composables/Die'
 
 	import { usePlayer } from '@/stores/Player'
 	
-	import { useDicepoolStore } from '@/stores/DicepoolStore'
-import { templateRef, useElementBounding, useWindowScroll } from '@vueuse/core'
-
-	const dicepoolStore = useDicepoolStore()
+	import { useElementBounding } from '@vueuse/core'
 
 	const props = defineProps<{
 		die?: DieType,
@@ -24,6 +21,7 @@ import { templateRef, useElementBounding, useWindowScroll } from '@vueuse/core'
 		dialogue?: boolean,
 		negative?: boolean,
 		roller?: boolean,
+		radial?: boolean,
 		size?: string,
 	}>()
 
@@ -195,37 +193,82 @@ import { templateRef, useElementBounding, useWindowScroll } from '@vueuse/core'
 	<div class="die-picker" :class="[
 				props.custom || props.roller ? 'vertical' : 'horizontal',
 				sign == '-' ? 'negative' : 'positive',
-				props.roller ? 'roller' : ''
+				{ 'roller': props.roller },
+				{ 'radial': props.radial }
 			]"
 			ref="die_picker">
 		<div class="die-picker-wrapper" :class="{ 'small-buttons': player.small_buttons }">
 			<div class="dice">
 				<span v-if="resource">add dice</span>
 				<!-- <div class="negative-positive-indicator">±</div> -->
-				<div class="positive-dice" v-if="sign == '+' || props.roller">
-					<span class="negative-positive-indicator button-mnml" @click="sign = '-'" v-if="!props.custom && !props.roller">{{ sign }}</span>
+				<div class="positive-dice" v-if="sign == '+' || props.roller || props.radial">
+					<span class="negative-positive-indicator button-mnml" @click="sign = '-'" v-if="!props.custom && !props.roller && !props.radial">{{ sign }}</span>
 					<!-- <span v-if="!props.custom" class="negative-positive-indicator">+</span> -->
-					<Die class="pickable-die" ref="positive_d12" :die="{rating: 'd12', number_rating: 5}" @click.stop="pick_die(5)" />
-					<Die class="pickable-die" ref="positive_d10" :die="{rating: 'd10', number_rating: 4}" @click.stop="pick_die(4)" />
-					<Die class="pickable-die" ref="positive_d8" :die="{rating: 'd8', number_rating: 3}" @click.stop="pick_die(3)" />
-					<Die class="pickable-die" ref="positive_d6" :die="{rating: 'd6', number_rating: 2}" @click.stop="pick_die(2)" />
-					<Die class="pickable-die" ref="positive_d4" :die="{rating: 'd4', number_rating: 1}" @click.stop="pick_die(1)" />
-				</div>
-				<div class="negative-dice" v-if="(!props.custom && sign == '-') || props.roller">
-					<span class="negative-positive-indicator button-mnml" @click="sign = '+'" v-if="!props.roller">{{ sign }}</span>
-					<Die class="pickable-die" ref="negative_d4" :die="{rating: 'd4', number_rating: -1}" @click.stop="pick_die(-1)" />
-					<Die class="pickable-die" ref="negative_d6" :die="{rating: 'd6', number_rating: -2}" @click.stop="pick_die(-2)" />
-					<Die class="pickable-die" ref="negative_d8" :die="{rating: 'd8', number_rating: -3}" @click.stop="pick_die(-3)" />
-					<Die class="pickable-die" ref="negative_d10" :die="{rating: 'd10', number_rating: -4}" @click.stop="pick_die(-4)" />
-					<Die class="pickable-die" ref="negative_d12" :die="{rating: 'd12', number_rating: -5}" @click.stop="pick_die(-5)" />
-					<!-- <span class="negative-positive-indicator">-</span> -->
+					<Die ref="positive_d12"
+						class="pickable-die positive_d12"
+						:die="{rating: 'd12', number_rating: 5}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(5)" />
+					<Die ref="positive_d10"
+						class="pickable-die positive_d10"
+						:die="{rating: 'd10', number_rating: 4}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(4)" />
+					<Die ref="positive_d8"
+						class="pickable-die positive_d8"
+						:die="{rating: 'd8', number_rating: 3}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(3)" />
+					<Die ref="positive_d6"
+						class="pickable-die positive_d6"
+						:die="{rating: 'd6', number_rating: 2}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(2)" />
+					<Die ref="positive_d4"
+						class="pickable-die positive_d4"
+						:die="{rating: 'd4', number_rating: 1}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(1)" />
 				</div>
 				<span v-if="resource && !props.roller">remove dice</span>
-				<div class="current-rating" v-if="!props.custom && props.preview">
-					<input type="button" id="multiple-button" class="button multiple" :value="multiple ? '●●●' : '○●○'" @click.stop="multiple = !multiple" v-if="!props.custom" />
-					<Die v-for="(d, index) in return_rating" :key="d.id" :die="d" @click.stop="remove_die(index)" v-if="multiple" />
+				<div class="current-rating" v-if="(!props.custom && props.preview) || props.radial">
+					<input type="button" id="multiple-button" class="button multiple" :value="multiple ? '●●●' : '○●○'" @click.stop="multiple = !multiple" v-if="!props.custom && !props.radial" />
+					<Die v-for="(d, index) in return_rating" :key="d.id"
+						:die="d"
+						:size="props.radial ? '5em' : props.size"
+						@click.stop="remove_die(index)"
+						v-if="multiple || props.radial" />
 				</div>
-				<div class="effect" v-if="!resource && props.die && show_effects && !props.roller">
+				<div class="negative-dice" v-if="(!props.custom && sign == '-') || props.roller || props.radial">
+					<span class="negative-positive-indicator button-mnml" @click="sign = '+'" v-if="!props.roller && !props.radial">{{ sign }}</span>
+					<Die ref="negative_d4"
+						class="pickable-die negative_d4"
+						:die="{rating: 'd4', number_rating: -1}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(-1)" />
+					<Die ref="negative_d6"
+						class="pickable-die negative_d6"
+						:die="{rating: 'd6', number_rating: -2}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(-2)" />
+					<Die ref="negative_d8"
+						class="pickable-die negative_d8"
+						:die="{rating: 'd8', number_rating: -3}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(-3)" />
+					<Die ref="negative_d10"
+						class="pickable-die negative_d10"
+						:die="{rating: 'd10', number_rating: -4}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(-4)" />
+					<Die ref="negative_d12"
+						class="pickable-die negative_d12"
+						:die="{rating: 'd12', number_rating: -5}"
+						:size="props.radial ? '3em' : props.size"
+						@click.stop="pick_die(-5)" />
+					<!-- <span class="negative-positive-indicator">-</span> -->
+				</div>
+				<div class="effect" v-if="!resource && props.die && show_effects && !props.roller && !props.radial">
 					<input type="button" class="button-mnml" :value="player.small_buttons ? '▼' : '▼\nstep down'" @click.stop="step_down(); submit()" />
 					<input type="button" class="button-mnml" :value="player.small_buttons ? '⇊' : '⇊\nsplit'" @click.stop="split(); submit()" />
 					<input type="button" class="button-mnml" :value="player.small_buttons ? '⧉' : '⧉\ndouble'" @click.stop="double(); submit()" />
@@ -286,7 +329,7 @@ import { templateRef, useElementBounding, useWindowScroll } from '@vueuse/core'
 					justify-content: center;
 					/* background-color: var(--color-border); */
 					gap: 1px;
-					border-top: 1px solid var(--color-border);
+					/* border-top: 1px solid var(--color-border); */
 					border-bottom: none;
 					overflow: hidden;
 					.button-mnml {
@@ -312,47 +355,88 @@ import { templateRef, useElementBounding, useWindowScroll } from '@vueuse/core'
 				}
 			}
 		}
-	}
-	.die-picker.vertical {
-		height: 100%;
-		.die-picker-wrapper {
+		&.vertical {
 			height: 100%;
-			.dice {
+			.die-picker-wrapper {
 				height: 100%;
-				display: flex;
-				flex-direction: column;
-				justify-content: space-evenly;
+				.dice {
+					height: 100%;
+					display: flex;
+					flex-direction: column;
+					justify-content: space-evenly;
+				}
+			}
+			&.roller {
+				height: v-bind(dom_size);
+				width: v-bind(dom_size);
+				overflow-y: auto;
+				overflow-x: hidden;
+				scroll-snap-type: y mandatory;
+				.pickable-die {
+					scroll-snap-align: center;
+				}
 			}
 		}
-		&.roller {
-			height: v-bind(dom_size);
-			width: v-bind(dom_size);
-			overflow-y: auto;
-			overflow-x: hidden;
-			scroll-snap-type: y mandatory;
-			.pickable-die {
-				scroll-snap-align: center;
+		&.horizontal {
+			/* padding: 0 1em; */
+			&.positive {
+				border: 1px solid var(--color-positive-die-12);
+				box-shadow: inset 0px 0px 10px var(--color-positive-die-12);
 			}
-		}
-	}
-	.die-picker.horizontal {
-		/* padding: 0 1em; */
-		&.positive {
-			border: 1px solid var(--color-positive-die-12);
-			box-shadow: inset 0px 0px 10px var(--color-positive-die-12);
-		}
-		&.negative {
-			border: 1px solid var(--color-hitch);
-			box-shadow: inset 0px 0px 10px var(--color-hitch);
-		}
-		border-radius: 10px;
-		overflow: hidden;
-		.dice {
+			&.negative {
+				border: 1px solid var(--color-hitch);
+				box-shadow: inset 0px 0px 10px var(--color-hitch);
+			}
+			border-radius: 10px;
 			overflow: hidden;
-			.negative-dice, .positive-dice {
-				display: flex;
-				justify-content: center;
-				align-items: center;
+			.dice {
+				overflow: hidden;
+				.negative-dice, .positive-dice {
+					display: flex;
+					justify-content: center;
+					align-items: center;
+				}
+			}
+		}
+		&.radial {
+			overflow: visible;
+			transform: translateX(-50%);
+			.dice {
+				overflow: visible;
+			}
+			transform: translateX(-50%);
+			.pickable-die {
+				
+			}
+			.positive_d12 {
+				transform: translate(2em, 2.4em);
+			}
+			.positive_d10 {
+				transform: translate(.4em, 0);
+			}
+			.positive_d8 {
+				transform: translate(0, -1em);
+			}
+			.positive_d6 {
+				transform: translate(-.4em, 0);
+			}
+			.positive_d4 {
+				transform: translate(-2em, 2.4em);
+			}
+			.negative_d4 {
+				transform: translate(2em, -2.4em);
+			}
+			.negative_d6 {
+				transform: translate(.4em, 0);
+			}
+			.negative_d8 {
+				transform: translate(0, 1em);
+			}
+			.negative_d10 {
+				transform: translate(-.4em, 0);
+			}
+			.negative_d12 {
+				transform: translate(-2em, -2.4em);
 			}
 		}
 	}
