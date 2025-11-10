@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, computed, watch, onMounted } from 'vue'
+	import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
 	import { useElementBounding, useWindowSize } from '@vueuse/core'
 
@@ -17,7 +17,8 @@
 
 	const emit = defineEmits([
 		'hide_entity',
-		'show_entity'
+		'show_entity',
+		'instantiated_entity',
 	])
 
 	const player = usePlayer()
@@ -27,6 +28,7 @@
 		set_entity_id,
 		retrieve_small_entity,
 		retrieve_entity,
+		retrieve_archetypes,
 		retrieve_followers,
 		create_relation,
 		entity_type_icon,
@@ -35,6 +37,7 @@
 	} = useEntity(undefined, props.entity_id)
 
 	retrieve_entity()
+	retrieve_archetypes()
 
 	const relation_exists = computed(() => {
 		return player.the_entity?.relations?.map(r => r.toEntity.id).includes(props.entity_id)
@@ -160,6 +163,11 @@
 			setTimeout(() => player.retrieve_relations(), 100)
 	}
 
+	function instantiate() {
+		clone_entity(undefined, player.the_entity?.location?.id)
+		emit('instantiated_entity')
+	}
+
 	onMounted(() => {
 		// retrieve_entity()
 		retrieve_followers()
@@ -172,7 +180,6 @@
 		if(newEntity != oldEntity && newEntity != entity.value.id) {
 			set_entity_id(newEntity)
 			retrieve_entity()
-			retrieve_followers()
 			if(player.the_entity?.relations?.map(r => r.toEntity.id).includes(newEntity)) {
 				set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == newEntity)?.id || '')
 				retrieve_relation()
@@ -181,6 +188,10 @@
 				relation.value = {} as Relation
 			}
 		}
+	})
+	watch(() => entity.value.id, () => {
+		retrieve_archetypes()
+		retrieve_followers()
 	})
 </script>
 
@@ -231,7 +242,7 @@
 					<span class="label">{{ player.small_buttons ? '' : 'unfollow'}}</span>
 				</div>
 				<div class="button-mnml copy-button"
-						@click.stop="clone_entity()"
+						@click.stop="instantiate"
 						v-if="entity.isArchetype">
 					<span class="icon">⧉</span>
 					<span class="label">{{ player.small_buttons ? '' : 'spawn'}}</span>
@@ -247,6 +258,14 @@
 		<h2 class="name header" v-if="player.is_gm || !relation_possible">
 			{{ entity.name }}
 		</h2>
+		<span class="location" v-if="entity.location?.name">
+			🗺 {{ entity.location.name }}
+		</span>
+		<div class="archetypes" v-if="player.is_gm">
+			<span class="archetype" v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id">
+				{{ archetype.name }}
+			</span>
+		</div>
 		<div class="description" v-if="entity.description">
 			{{ entity.description }}
 		</div>
@@ -312,6 +331,11 @@ div.active-npc {
 				}
 			}
 		}
+	}
+	.archetypes {
+		display: flex;
+		justify-content: space-evenly;
+		color: var(--color-gm-light);
 	}
 	.description {
 		font-style: italic;
