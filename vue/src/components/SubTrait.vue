@@ -84,53 +84,53 @@
 			}
 		}
 		else {
-			if(!check_trait(props.parent_traitsetting_id ?? '')) {
+			// if(!check_trait(props.parent_traitsetting_id ?? '')) {
 				emit('click_subtrait')
-			}
-			if(trait.value.rating) {
-				if(
-					trait.value.ratingType == 'static'
-					|| trait.value.ratingType == 'challenge'
-				) {
-					if(!check_trait(trait.value.traitSettingId ?? '')) {
-						for(let die of trait.value.rating) {
-							// if the trait is of a subtrait traitset, it should use the parent trait's traitset instead
-							if(trait.value.traitset?.entityTypes?.includes('subtrait') && props.parent_traitset_id) {
-								die.traitsetId = props.parent_traitset_id
-							}
-							if(die.number_rating > 0) {
-								add_die(_.clone(die))
-							}
-							else {
-								if(is_gm) {
-									add_die(_.clone(die))
-								}
-								else {
-									add_complication(_.clone(die))
-								}
-							}
-						}
-					}
-					else {
-						// remove positive dice from the dicepool and negative dice from complications
-						if(trait.value.rating.some((d) => d.number_rating > 0)) {
-							remove_traitsetting_dice(trait.value.traitSettingId ?? '')
-						}
-						else if(trait.value.rating.some((d) => d.number_rating < 0)) {
-							remove_complication_by_traitsetting(trait.value.traitSettingId ?? '')
-						}
-					}
-				}
-				else if(
-					trait.value.ratingType == 'resource'
-					&& new Set(trait.value.rating.map((d) => d.number_rating)).size == 1
-				) {
-					add_die(_.clone(trait.value.rating[0]))
-					new_rating.value = trait.value.rating.slice(1)
-					mutate_trait_setting({ 'rating': new_rating.value.map((d) => d.number_rating) })
-					retrieve_trait()
-				}
-			}
+			// }
+			// if(trait.value.rating) {
+			// 	if(
+			// 		trait.value.ratingType == 'static'
+			// 		|| trait.value.ratingType == 'challenge'
+			// 	) {
+			// 		if(!check_trait(trait.value.traitSettingId ?? '')) {
+			// 			for(let die of trait.value.rating) {
+			// 				// if the trait is of a subtrait traitset, it should use the parent trait's traitset instead
+			// 				if(trait.value.traitset?.entityTypes?.includes('subtrait') && props.parent_traitset_id) {
+			// 					die.traitsetId = props.parent_traitset_id
+			// 				}
+			// 				if(die.number_rating > 0) {
+			// 					add_die(_.clone(die))
+			// 				}
+			// 				else {
+			// 					if(is_gm) {
+			// 						add_die(_.clone(die))
+			// 					}
+			// 					else {
+			// 						add_complication(_.clone(die))
+			// 					}
+			// 				}
+			// 			}
+			// 		}
+			// 		else {
+			// 			// remove positive dice from the dicepool and negative dice from complications
+			// 			if(trait.value.rating.some((d) => d.number_rating > 0)) {
+			// 				remove_traitsetting_dice(trait.value.traitSettingId ?? '')
+			// 			}
+			// 			else if(trait.value.rating.some((d) => d.number_rating < 0)) {
+			// 				remove_complication_by_traitsetting(trait.value.traitSettingId ?? '')
+			// 			}
+			// 		}
+			// 	}
+			// 	else if(
+			// 		trait.value.ratingType == 'resource'
+			// 		&& new Set(trait.value.rating.map((d) => d.number_rating)).size == 1
+			// 	) {
+			// 		add_die(_.clone(trait.value.rating[0]))
+			// 		new_rating.value = trait.value.rating.slice(1)
+			// 		mutate_trait_setting({ 'rating': new_rating.value.map((d) => d.number_rating) })
+			// 		retrieve_trait()
+			// 	}
+			// }
 			if(traitset_limit_reached.value) {
 				emit('next_traitset')
 			}
@@ -276,7 +276,7 @@
 					|| trait.rating?.map(d => d.number_rating).toString() != new_rating.map(d => d.number_rating).toString()" />
 			<input type="button" class="button cancel-edit"
 				@click.stop="editing = false"
-				:value="'✖' + (small_buttons ? '' : '\ncancel')" />
+				:value="'✖' + (small_buttons ? '' : '\nclose')" />
 			<input type="button" class="button remove-subtrait"
 				@click.stop="remove_subtrait"
 				:value="'🗑' + (small_buttons ? '' : '\nremove')" />
