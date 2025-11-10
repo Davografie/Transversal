@@ -464,6 +464,22 @@
 		overwrite_active.value = entity_id
 		emit('scroll_to_top')
 	}
+
+	function set_presence_watcher() {
+		console.log("setting presence watcher")
+		watch(presence, (oldEntities, newEntities) => {
+			console.log("presence changed")
+			if(oldEntities && newEntities && oldEntities.length != newEntities.length) {
+				const new_entity = newEntities.find(e => !oldEntities.includes(e))
+				if(new_entity) {
+					console.log("changed player perspective to " + new_entity.name)
+					player.set_perspective_id(new_entity.id)
+				}
+			}
+		}, { once: true })
+	}
+
+	const show_below = ref(false)
 </script>
 
 <template>
@@ -569,7 +585,8 @@
 							class="active-npc"
 							:entity_id="overwrite_active ? overwrite_active : active_npc"
 							@hide_entity="overwrite_active = 'empty'"
-							@show_entity="(entity_key) => emit('show_entity', entity_key)" />
+							@show_entity="(entity_key) => emit('show_entity', entity_key)"
+							@instantiated_entity="set_presence_watcher" />
 					</div>
 					<div class="location-image-wrapper" v-if="show_location_image">
 						<img class="location-image" :src="image_link" @click="show_location_image = false" />
@@ -677,7 +694,10 @@
 								:search="import_search"
 								:level="0"
 								@click_entity="(ett_id) => change_active(ett_id)" />
-						<Presence class="zone-location" v-for="neigbor_location in location.zones ?? []"
+						<div class="below-line">
+							<input type="button" class="button" value="toggle below" @click="show_below = !show_below" />
+						</div>
+						<Presence class="zone-location" v-if="show_below" v-for="neigbor_location in location.zones ?? []"
 								:key="neigbor_location.key"
 								:location_key="neigbor_location.key"
 								:search="import_search"
@@ -867,6 +887,9 @@
 						display: flex;
 						flex-wrap: wrap;
 						gap: .4em;
+						.below-line {
+							width: 100%;
+						}
 					}
 					.search {
 						display: flex;
