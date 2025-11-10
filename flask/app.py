@@ -2764,11 +2764,12 @@ class InstantiateArchetype(Mutation):
 	class Arguments:
 		entity_id = ID(required=True)
 		name = String(required=False)
+		location_id = ID(required=False)
 
 	entity = Field(lambda: Entity)
 	message = String()
 
-	def mutate(root, info, entity_id, name=None):
+	def mutate(root, info, entity_id, name=None, location_id=None):
 		archetype = get_doc_by_id('Entities', entity_id)
 		new_entity = {key: value for key, value in archetype.items() if not key.startswith('_')}
 		# new_entity['archetype_id'] = archetype.get('_id')
@@ -2780,6 +2781,8 @@ class InstantiateArchetype(Mutation):
 			random.SystemRandom().shuffle(name)
 			new_entity['name'] = ''.join(name)
 			new_entity['name'] = ' '.join(s.capitalize() for s in new_entity['name'].split(' '))
+		if location_id is not None:
+			new_entity['location'] = location_id
 		try:
 			new_entity_meta = db.collection('Entities').insert(new_entity)
 			new_entity = {**new_entity, **new_entity_meta}
@@ -4005,6 +4008,7 @@ def imagegen(entity_key, force):
 	]
 	genre_loras = {
 		"wuxia": "setting/ChineseWuXia",
+		"anime": "style/Anime art",
 		"modern": "import/ModernCartoon-Gudarzi",
 		"fantasy": "import/FantasyIllustration",
 		"scifi": "setting/SydMead-v1",
