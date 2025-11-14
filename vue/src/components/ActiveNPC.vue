@@ -7,6 +7,7 @@
 
 	import { useEntity } from '@/composables/Entity'
 	import { useRelation } from '@/composables/Relation'
+	import { useLocation } from '@/composables/Location'
 	
 	import Traitset from '@/components/Traitset.vue'
 	import type { Relation } from '@/interfaces/Types'
@@ -33,7 +34,8 @@
 		create_relation,
 		entity_type_icon,
 		clone_entity,
-		set_location
+		set_location,
+		toggle_favorite
 	} = useEntity(undefined, props.entity_id)
 
 	retrieve_entity()
@@ -54,6 +56,13 @@
 			player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id
 			: ''
 	)
+
+	const {
+		location,
+		retrieve_location,
+		set_location_key,
+		make_transversable
+	} = useLocation(undefined, entity.value.key)
 
 
 	// check to see if the entity of this card can be added as a relation
@@ -193,6 +202,12 @@
 		retrieve_archetypes()
 		retrieve_followers()
 	})
+	watch(entity, (newEntity) => {
+		if(entity.value.entityType == 'location') {
+			set_location_key(newEntity.key)
+			retrieve_location()
+		}
+	})
 </script>
 
 <template>
@@ -222,6 +237,13 @@
 					<span class="icon">🏷</span>
 					<span class="label">{{ player.small_buttons ? '' : 'add to contacts'}}</span>
 				</div>
+				<div class="button-mnml transversable-button"
+						:class="{ 'small-button': !player.small_buttons }"
+						@click.stop="make_transversable(player.the_entity?.id)"
+						v-if="player.the_entity?.entityType == 'location' && entity.entityType == 'location'">
+					<span class="icon">⤠</span>
+					<span class="label">{{ player.small_buttons ? '' : 'make transversable'}}</span>
+				</div>
 				<div class="button-mnml import-button"
 						@click.stop="click_import"
 						v-if="player.is_gm && entity.location?.id != player.the_entity?.location?.id">
@@ -247,6 +269,12 @@
 					<span class="icon">⧉</span>
 					<span class="label">{{ player.small_buttons ? '' : 'spawn'}}</span>
 				</div>
+				<div class="button-mnml favorite-button"
+						@click.stop="toggle_favorite"
+						v-if="player.is_gm && entity.entityType == 'character'">
+					<span class="icon">⭐</span>
+					<span class="label">{{ player.small_buttons ? '' : 'favorite'}}</span>
+				</div>
 				<div class="button-mnml remove-relation-button"
 						@click.stop="remove_relation"
 						v-if="player.the_entity?.relations?.map(r => r.toEntity.id).includes(entity.id)">
@@ -262,7 +290,8 @@
 			🗺 {{ entity.location.name }}
 		</span>
 		<div class="archetypes" v-if="player.is_gm">
-			<span class="archetype" v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id">
+			<span class="archetype" v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id"
+				@click="emit('show_entity', archetype.key)">
 				{{ archetype.name }}
 			</span>
 		</div>
