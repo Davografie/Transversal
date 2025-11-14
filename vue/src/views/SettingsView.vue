@@ -108,7 +108,7 @@
 		else if(route.name == 'Landing') {
 			router.push({ name: 'Character overview' })
 		}
-		if(route.matched.length > 2 && route.matched[2].name?.toString().toLowerCase() != view.value) {
+		if(route.matched.length > 2 && route.matched[3].name?.toString().toLowerCase() != view.value) {
 			view.value = route.matched[2].name?.toString().toLowerCase() ?? 'settings'
 			if(route.params.traitset_key) {
 				traitset_key.value = route.params.traitset_key as string
@@ -220,6 +220,8 @@
 			height: 100vh;
 			text-align: center;
 			display: flex;
+			width: 100vw;
+			overflow-x: auto;
 			nav, .page {
 				height: 100%;
 				scroll-snap-align: start;
@@ -244,6 +246,7 @@
 			.page {
 				padding-bottom: 5em;
 				display: flex;
+				width: 100vw;
 				#settings {
 					display: flex;
 					flex-direction: column;
@@ -291,6 +294,7 @@
 				}
 				.setting-page {
 					height: 100vh;
+					width: 100vw;
 					overflow-y: auto;
 					flex-grow: 1;
 				}
