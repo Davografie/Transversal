@@ -57,6 +57,10 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 				entityType
 			}
 		}`
+		if(entity_type == 'npc') {
+			// when NPC, also pick up character archetypes
+			entity_type = ""
+		}
 		const variables = {
 			"entityType": entity_type,
 			"locationId": location_id,
@@ -72,7 +76,12 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			)
 			watch(result, (newResult) => {
 				if(newResult) {
-					entities.value = newResult.entities
+					if(entity_type != '' && entity_type != 'npc') {
+						entities.value = newResult.entities
+					}
+					else {
+						entities.value = newResult.entities.filter((e) => ['character', 'npc'].includes(e.entityType))
+					}
 				}
 			}, { immediate: true })
 		}
@@ -126,8 +135,8 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 				isArchetype
 			}
 		}`
+		const args = { "available": available ?? false }
 		if(apolloClient) {
-			const args = { "available": available ?? false }
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery<{characters: Entity[]}>(
 					query,
