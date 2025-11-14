@@ -800,7 +800,7 @@
 				@unset_traitset="active_traitset_id = ''" />
 			<div class="traitset-bottom-scroll-space"></div>
 		</div>
-		<div class="floating-bottom">
+		<div id="floating-bottom">
 			<div class="button-mnml" @click="traitset_wrapper.scrollTop = 0; show_reference = false" v-if="!traitset_arrived.top">
 				<div class="icon">⤒</div>
 				<div class="label" v-if="!player.small_buttons">to top</div>
@@ -1036,11 +1036,11 @@
 			height: 100px;
 			width: 100%;
 		}
-		.floating-bottom {
+		#floating-bottom {
 			position: fixed;
 			bottom: 100px;
 			left: 0;
-			z-index: 1;
+			z-index: 2;
 			.button-mnml {
 				background-color: var(--color-background);
 				border: 1px solid var(--color-border);
