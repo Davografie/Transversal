@@ -40,8 +40,12 @@ export function useDicepool() {
 	 * Changes the result limit by `+n`
 	 * @param n the change in result limit
 	 */
-	function change_result_limit(n: number) {
-		dicepool.result_limit += n
+	function change_result_limit(n: number, traitsettingId?: string) {
+		// dicepool.result_limit += n
+		if(!traitsettingId) {
+			traitsettingId = 'custom'
+		}
+		dicepool.result_limit_mod[traitsettingId] = n
 	}
 
 	function change_effect_limit(n: number) {
@@ -114,7 +118,7 @@ export function useDicepool() {
 	
 	function toggle_result(d: Die) {
 		const index = dicepool.dice.indexOf(d)
-		if(result_size.value < dicepool.result_limit && !d.isResultDie && !d.isEffectDie && !d.isHitch) {
+		if(result_size.value < result_limit.value && !d.isResultDie && !d.isEffectDie && !d.isHitch) {
 			dicepool.dice[index].isResultDie = true
 		}
 		else if(d.isResultDie) {
@@ -242,7 +246,7 @@ export function useDicepool() {
 	}
 
 	const result_size = computed(() => dicepool.dice.filter(d => d.isResultDie && d.ratingType != 'resource').length)
-	const result_limit = computed(() => dicepool.result_limit)
+	const result_limit = computed(() => Object.values(dicepool.result_limit_mod).reduce((sum, val) => sum + val, dicepool.base_result_limit))
 	const result = computed(() => dicepool.dice.filter(d => d.isResultDie && !d.disabled).reduce((sum, d) => sum + d.result, 0))
 	const effect_size = computed(() => dicepool.dice.filter(d => d.isEffectDie).length)
 	const effect_limit = computed(() => dicepool.effect_limit)
@@ -457,7 +461,8 @@ export function useDicepool() {
 		// 	dicepool.dicepool_limit = newLimit
 		// })
 
-		dicepool.result_limit = 2
+		dicepool.base_result_limit = 2
+		dicepool.result_limit_mod = {}
 		dicepool.effect_limit = 1
 
 		dicepool.phase = dicepool.phases.ADDING

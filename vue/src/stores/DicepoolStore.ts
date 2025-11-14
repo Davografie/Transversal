@@ -5,7 +5,7 @@
 		one for every active player
 		including the current user
 */
-import { ref, type Ref, computed, watch, onMounted } from 'vue'
+import { ref, type Ref, reactive, computed, watch, onMounted } from 'vue'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -41,7 +41,8 @@ export const useDicepoolStore = defineStore('dicepool', () => {
 	const dice: Ref<Array<Die>> = ref([])
 	const dicepool_limit: Ref<number> = ref(0)
 
-	const result_limit: Ref<number> = ref(2)
+	const base_result_limit: Ref<number> = ref(2)
+	const result_limit_mod = ref({})
 	const result = computed(() => {
 		let result = 0
 		for(const d of dice.value) {
@@ -125,7 +126,8 @@ export const useDicepoolStore = defineStore('dicepool', () => {
 		pull_resolutions,
 		dice,
 		dicepool_limit,
-		result_limit,
+		base_result_limit,
+		result_limit_mod,
 		result,
 		effect_limit,
 		effect,

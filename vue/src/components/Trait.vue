@@ -260,7 +260,7 @@
 					}
 					// if the trait has scaling, edit the dicepool limit
 					if(trait.value.traitSetting?.scaling) {
-						change_result_limit(trait.value.traitSetting.scaling)
+						change_result_limit(trait.value.traitSetting.scaling, trait.value.traitSettingId ?? trait.value.traitSetting.id)
 					}
 					if(traitset_limit_reached.value) {
 						emit('next_traitset')
@@ -276,7 +276,7 @@
 						}
 					}
 					if(trait.value.traitSetting?.scaling) {
-						change_result_limit(-1 * trait.value.traitSetting.scaling)
+						change_result_limit(-1 * trait.value.traitSetting.scaling, trait.value.traitSettingId ?? trait.value.traitSetting.id)
 					}
 				}
 			}
@@ -367,7 +367,7 @@
 			}
 			if(trait.value.traitSetting?.scaling) {
 				console.log("changing result limit (scaling)")
-				change_result_limit(trait.value.traitSetting.scaling)
+				change_result_limit(trait.value.traitSetting.scaling, trait.value.traitSettingId ?? trait.value.traitSetting.id)
 			}
 			if(traitset_limit_reached.value) {
 				emit('next_traitset')
