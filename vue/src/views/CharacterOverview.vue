@@ -148,7 +148,8 @@
 					show_unavailable
 					:is_active="!entity.active"
 					override_click
-					@click_entity="switch_character(entity)" />
+					@click_entity="switch_character(entity)"
+					right_click_favorite />
 			</div>
 		</div>
 		<h1 v-if="player.is_gm" @click="display_npcs" :class="[{ 'current': show_npcs }, { 'next': show_characters }]">npcs</h1>
