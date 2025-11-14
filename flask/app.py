@@ -4301,7 +4301,7 @@ def imagegen(entity_key, force):
 					FILTER entity._id == s._from
 				FOR t IN Traits
 					FILTER s._to == t._id
-				RETURN [t.name, s.statement, s.rating[0]]
+				RETURN [t.name, s.statement, s.notes, s.rating[0]]
 			)
 			LET genres = (
 				FOR v, e, p IN 0..20 OUTBOUND entity.location Relations
@@ -4335,7 +4335,7 @@ def imagegen(entity_key, force):
 					prompt += "with the following traits: "
 					for t in doc.get('traits'):
 						if t[0] == "appearance":
-							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}:1.4), ")
+							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}{t[2] if t[2] else ''}:1.4), ")
 						elif t[2]:
 							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}:{ str(rating_weights[abs(t[2]) - 1]) }), ")
 					prompt += ", ".join(traits)
