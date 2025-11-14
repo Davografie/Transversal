@@ -139,6 +139,16 @@ def update_doc(collection_name: str, doc: dict, temp=False):
 	"""
 	if not temp:
 		db_doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
+		# check if database is busy writing
+		# logger.log("DATABASE STATUS ::::::: ", db.status())
+		# while db.status():
+		# 	pass
+		try:
+			db.status()
+		except:
+			logger.info("Database is busy writing. Retrying...")
+		finally:
+			logger.info("Database is not busy writing.")
 		db.collection(collection_name).update(db_doc)
 
 	serialized = serialize_doc(doc)
@@ -4087,10 +4097,15 @@ def imagegen(entity_key, force):
 			archetype_trait_settings = []
 
 			archetype_ids = [archetype.get('_to') for archetype in db.collection('Relations').find({'_from': entity.get('_id'), 'type': 'archetype'})]
+			visited_archetypes = set()
 			while archetype_ids:
-				archetype = get_doc_by_id('Entities', archetype_ids[0])
+				current_id = archetype_ids.pop(0)
+				if current_id in visited_archetypes:
+					continue
+				visited_archetypes.add(current_id)
+				archetype = get_doc_by_id('Entities', current_id)
 				archetype_trait_settings += [doc for doc in db.collection('TraitSettings').find({'_from': archetype.get('_id')})]
-				archetype_ids = [archetype.get('_to') for archetype in db.collection('Relations').find({'_from': archetype.get('_id'), 'type': 'archetype'})]
+				archetype_ids.extend([archetype.get('_to') for archetype in db.collection('Relations').find({'_from': archetype.get('_id'), 'type': 'archetype'})])
 
 			trait_settings += archetype_trait_settings
 			trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
@@ -4202,7 +4217,7 @@ def imagegen(entity_key, force):
 						FILTER s.rating_type != 'resource'
 					FOR t IN Traits
 						FILTER s._to == t._id
-					RETURN [t.name, s.statement, s.rating[0]]
+					RETURN [t.name, s.statement, s.notes, s.rating[0]]
 				)
 				RETURN [v.name, v.description, hierarchy_traits]
 			)
@@ -4257,8 +4272,9 @@ def imagegen(entity_key, force):
 								elif lt[0] == "negative imagen":
 									negative += ", " + lt[1]
 								elif lt[0] == "appearance":
-									location_name += ", " + lt[1] if lt[1] else ""
-									location_name += ", " + lt[2] if lt[2] else ""
+									location_name += ", " + lt[1] if lt[1] else "" # name
+									location_name += ", " + lt[2] if lt[2] else "" # statement
+									location_name += ", " + lt[3] if lt[3] else "" # notes
 							prompt += " (" + location_name
 							# prompt += ", " + location_description
 						else:
