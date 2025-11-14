@@ -204,8 +204,8 @@ export function useCharacter(init?: Character, character_key?: string) {
 	function delete_entity() {
 		/* post character changes to the server */
 		console.log('deleting character: ' + character.value.key)
-		const query_delete_entity = gql`mutation DeleteEntity($key: ID!) {
-			deleteEntity(key: $key) {
+		const query_delete_entity = gql`mutation DeleteEntity($entityId: ID!) {
+			deleteEntity(entityId: $entityId) {
 				success
 			}
 		}`
@@ -213,7 +213,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_delete_entity))
 			console.log('deleting character: ' + character.value.key)
 			mutate({
-				"key": character.value.key
+				"entityId": character.value.id
 			})
 		}
 	}
