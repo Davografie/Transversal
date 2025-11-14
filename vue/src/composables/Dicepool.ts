@@ -1,7 +1,7 @@
 /*
 	dicepool composable logic
 */
-import { ref, computed, watch, inject, onMounted } from "vue"
+import { ref, computed, watch, inject, onUnmounted } from "vue"
 import { useFetch } from "@vueuse/core"
 
 import { useDie, placeholder_die } from "@/composables/Die"
@@ -494,6 +494,10 @@ export function useDicepool() {
 			}
 		})
 	}
+
+	onUnmounted(() => {
+		stop_clock.value = true
+	})
 
 	return {
 		resolutions_count,

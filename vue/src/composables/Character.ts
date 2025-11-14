@@ -33,7 +33,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 
 	function set_character_key(key: string) {
 		character_key = key
-		retrieve_character()
+		// retrieve_character()
 	}
 
 	function retrieve_character() {

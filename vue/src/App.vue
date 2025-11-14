@@ -75,7 +75,7 @@
 	const { location, set_location_key, retrieve_small_location } = useLocation(undefined, undefined)
 
 	watch(route, (newRoute) => {
-		if(newRoute.params.location_key) {
+		if(newRoute.params.location_key && newRoute.params.location_key != location.value.key) {
 			set_location_key(newRoute.params.location_key as string)
 			retrieve_small_location()
 		}
