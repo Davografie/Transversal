@@ -214,7 +214,7 @@
 	function add_trait() {
 		console.log('adding trait: ' + trait_search.value)
 		create_trait(trait_search.value)
-		trait_search.value = ""
+		// trait_search.value = ""
 		setTimeout(() => retrieve_potential_traits(), 200)
 	}
 
@@ -273,8 +273,10 @@
 	}
 
 	const editing_potential_traits = ref<string[]>([])
-	function toggle_editing_potential_trait(e: MouseEvent, trait_id: string) {
-		e.stopPropagation()
+	function toggle_editing_potential_trait(e: MouseEvent | null, trait_id: string) {
+		/**
+		 * Manages which traits to show as editing
+		 */
 		if(player.is_player) return
 		if(editing_potential_traits.value.includes(trait_id)) {
 			editing_potential_traits.value = editing_potential_traits.value.filter((id) => id != trait_id)
@@ -555,7 +557,7 @@
 					<div class="icon">⇅</div>
 					<div class="label">{{ player.small_buttons ? '' : '\n' + sorting.text }}</div>
 				</div>
-				<div class="button-mnml" :class="{ 'active': refreshing }" id="refresh-traitset"
+				<div class="button-mnml" :class="{ 'disabled': refreshing }" id="refresh-traitset"
 					@click.stop="refresh">
 					<div class="icon">🔄</div>
 					<div class="label">{{ player.small_buttons ? '' : '\nrefresh' }}</div>
@@ -608,7 +610,7 @@
 						:edit_mode="edit_mode"
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
-						:mode="view_modes.Small"
+						:mode="view_modes.Viewing"
 						@refetch="retrieve_traitset"
 						@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
@@ -653,6 +655,7 @@
 						:edit_mode="edit_mode"
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
+						:mode="view_modes.Viewing"
 						@refetch="retrieve_traitset"
 						@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
@@ -746,6 +749,7 @@
 										'positive' : 'negative']"
 								@click="assign_trait_to_entity(trait)"
 								@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
+								v-touch:hold="() => toggle_editing_potential_trait(null, trait.id)"
 								@contextmenu="(e) => e.preventDefault()">
 							<div class="trait-description">
 								<div class="trait-name">{{ trait.name }}</div>
@@ -839,6 +843,10 @@
 				&.change-limit {
 					background-color: var(--color-highlight);
 					color: var(--color-highlight-text);
+				}
+				&.disabled {
+					background-color: var(--color-disabled);
+					color: var(--color-disabled-text);
 				}
 			}
 			.score {
