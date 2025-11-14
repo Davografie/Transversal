@@ -74,7 +74,8 @@
 	const new_inheritable = ref(false)
 	
 	const show_details = ref(props.expanded ?? false)
-	
+	const refreshing = ref(false)
+
 	if(show_details.value) {
 		refresh()
 	}
@@ -106,8 +107,6 @@
 		refresh()
 		// toggle_details()
 	}
-
-	const refreshing = ref(false)
 
 	function refresh() {
 		refreshing.value = true
@@ -503,8 +502,11 @@
 		min-height: 1em;
 	}
 	.trait-edit.expanded {
+		scroll-snap-align: center;
 		margin-top: 1em;
 		width: 100%;
+		max-height: 100%;
+		overflow-y: auto;
 		.trait-title {
 			background-color: var(--color-highlight);
 			color: var(--color-highlight-text);
