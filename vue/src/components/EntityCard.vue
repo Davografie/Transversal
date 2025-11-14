@@ -15,6 +15,7 @@
 		entity_id:			{	type: String,	required: true	},
 		show_unavailable:	{	type: Boolean,	default: false	},
 		override_click:		{	type: Boolean,	default: false	},
+		right_click_favorite:{	type: Boolean,	default: false	},
 		show_archetypes:	{	type: Boolean,	default: false	},
 		show_icon:			{	type: Boolean,	default: false	},
 		show_name:			{	type: Boolean,	default: true	},
@@ -39,6 +40,7 @@
 		set_entity_id,
 		create_relation,
 		entity_type_icon,
+		toggle_favorite
 	} = useEntity(undefined, props.entity_id)
 
 	retrieve_small_entity()
@@ -138,7 +140,11 @@
 	const editing_card = ref(false)
 
 	function longpress_card() {
-		if(!props.is_follower && props.options_direction != 'none') {
+		if(props.right_click_favorite) {
+			toggle_favorite()
+			emit('refresh_favorites')
+		}
+		else if(!props.is_follower && props.options_direction != 'none') {
 			held.value = true
 			editing_card.value = !editing_card.value
 			setTimeout(() => held.value = false, 500)
