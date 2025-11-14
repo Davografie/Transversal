@@ -162,6 +162,24 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
+	function toggle_favorite() {
+		const toggle_favorite_query = gql`mutation ToggleFavorite($entityId: ID!, $favorite: Boolean!) {
+				updateEntity(entityId: $entityId, favorite: $favorite) {
+					entity {
+						id
+					}
+				}
+			}`
+
+		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(toggle_favorite_query))
+			mutate({
+				entityId: entity_id,
+				favorite: !entity.value.favorite
+			})
+		}
+	}
+
 	function retrieve_relations() {
 
 		const relations_query = gql`query EntityRelations($entityId: ID) {
@@ -228,6 +246,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		const archetypes_query = gql`query EntityArchetypes($entityId: ID) {
 			entities(entityId: $entityId) {
 				archetypes {
+					key
 					id
 					entityType
 					name
@@ -244,10 +263,12 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				)
 			)
 			watch(result, () => {
+				console.log('entity archetypes result', result.value.entities[0])
 				entity.value = {
 					...entity.value,
 					...result.value.entities[0]
 				}
+				console.log("entity result", entity.value)
 			})
 		}
 	}
@@ -338,11 +359,11 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	async function clone_entity(name?: string) {
+	async function clone_entity(name?: string, location_id?: string) {
 		/* post character changes to the server */
 		console.log('cloning character: ' + entity.value.key)
-		const query_clone_entity = gql`mutation CloneEntity($entityId: ID!${ name ? ', $name: String' : '' }) {
-			instantiateArchetype(entityId: $entityId${ name ? ', name: $name' : '' }) {
+		const query_clone_entity = gql`mutation CloneEntity($entityId: ID!${ name ? ', $name: String' : '' }${ location_id ? ', $locationId: ID' : '' }) {
+			instantiateArchetype(entityId: $entityId${ name ? ', name: $name' : '' }${ location_id ? ', locationId: $locationId' : '' }) {
 				entity {
 					id
 					key
@@ -353,12 +374,21 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		if(apolloClient) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_clone_entity))
 			console.log('cloning character: ' + entity.value.key)
-			const variables = name ? {
-				"entityId": entity_id ?? entity.value.id,
-				"name": name
-			} : {
-				"entityId": entity_id ?? entity.value.id,
+			const variables = {
+				"entityId": entity_id ?? entity.value.id
 			}
+			if(name) {
+				variables['name'] = name
+			}
+			if(location_id) {
+				variables['locationId'] = location_id
+			}
+			// name ? {
+			// 	"entityId": entity_id ?? entity.value.id,
+			// 	"name": name
+			// } : {
+			// 	"entityId": entity_id ?? entity.value.id,
+			// }
 			await mutate(variables).then((result) => {
 				console.log('clone_entity result', result)
 			})
@@ -484,6 +514,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		set_entity_id,
 		retrieve_entity,
 		retrieve_small_entity,
+		toggle_favorite,
 		retrieve_relations,
 		retrieve_followers,
 		retrieve_archetypes,
