@@ -191,6 +191,7 @@
 			success: boolean
 		}
 		useFetch<API_result>(url, { method: 'POST' }).post().json()
+		player.tickets_remaining -= 1
 	}
 
 	const img_link_small = computed(() => {
@@ -464,6 +465,10 @@
 			toggleEntityOverviewType('NONE')
 		}
 	}
+	function _toggle_archetype() {
+		toggle_archetype()
+		nextTick(() => retrieve_entity())
+	}
 	function show_archetypes() {
 		if(entityOverviewType.value != 'ARCHETYPES') {
 			toggleEntityOverviewType('ARCHETYPES')
@@ -483,6 +488,20 @@
 
 	function click_instance(entity_id: string) {
 		emit('show_entity', entity_id)
+	}
+
+	function quick_switch(entity_id: string) {
+		if(player.is_player) {
+			switch_to_entity(entity_id)
+		}
+		if(player.is_gm) {
+			emit('show_entity', entity_id)
+		}
+	}
+
+	function click_archetype(archetype_id: string) {
+		emit('show_entity', archetype_id)
+		editing_description.value = false
 	}
 
 	const show_reference = ref(false)
@@ -516,7 +535,7 @@
 						CANCEL
 					</div>
 					<div id="generate-portrait" class="portrait-edit-segment">
-						<input type="button" class="button-mnml" id="generate-portrait-button" value="imagen"
+						<input type="button" class="button-mnml" id="generate-portrait-button" :value="'imagen (' + player.tickets_remaining + ')'"
 							@click="imagen" v-if="!character.imagened || player.is_gm" />
 					</div>
 				</div>
@@ -565,7 +584,7 @@
 								v-for="archetype in entity.archetypes"
 								:entity_id="archetype.id"
 								override_click
-								@click_entity="emit('show_entity', archetype.id)"
+								@click_entity="click_archetype(archetype.id)"
 								/>
 							<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
 						</div>
@@ -628,11 +647,11 @@
 					<div class="label" v-if="!player.small_buttons">switch entity</div>
 				</div>
 				<div class="button-mnml" id="archetype"
-					:title="character.isArchetype ? 'unarchetype' : 'make archetype'"
+					:title="entity.isArchetype ? 'unarchetype' : 'make archetype'"
 					v-if="player.is_gm"
-					@click="toggle_archetype">
-					<div class="icon">{{ character.isArchetype ? '◑' : '○' }}</div>
-					<div class="label" v-if="!player.small_buttons">{{ character.isArchetype ? 'unarchetype' : 'make archetype' }}</div>
+					@click="_toggle_archetype">
+					<div class="icon">{{ entity.isArchetype ? '◑' : '○' }}</div>
+					<div class="label" v-if="!player.small_buttons">{{ entity.isArchetype ? 'unarchetype' : 'make archetype' }}</div>
 				</div>
 				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
 					title="show instances"
@@ -736,7 +755,7 @@
 					v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
-					@click_entity="switch_to_entity(entity_id)" />
+					@click_entity="quick_switch(entity_id)" />
 			</div>
 
 			<ArchetypePicker v-if="entityOverviewType == 'ARCHETYPES'" :entity_id="character.id" :entity_type="character.entityType" :location_id="entity.location?.id" />
