@@ -7,6 +7,7 @@
 	import Relation from '@/components/Relation.vue'
 	import EntityCard from '@/components/EntityCard.vue'
 	import type { Entity as EntityType, Relation as RelationType } from '@/interfaces/Types'
+import ToggleButton from '@/components/UI/ToggleButton.vue'
 
     const props = defineProps<{
 		shown: boolean
@@ -36,8 +37,15 @@
 	const polling_active = ref(player.is_gm)
 
 	function poll() {
-		retrieve_characters(true)
+		if(!show_players.value) retrieve_characters(true)
 		if(polling_active.value) setTimeout(poll, 7000)
+	}
+
+	const show_players = ref(false)
+
+	function toggle_players() {
+		retrieve_characters(false)
+		show_players.value = !show_players.value
 	}
 
 	onMounted(() => {
@@ -60,7 +68,7 @@
 	})
 
 	function click_character(entity: EntityType) {
-		if(player.orientation == 'vertical') {
+		if(player.orientation == 'vertical' && player.is_gm) {
 			if(selected_relation.value?.toEntity.id == entity.id) {
 				selected_relation.value = null
 			}
@@ -77,9 +85,7 @@
 				}
 			}
 		}
-		else {
-			emit('show_entity', entity.id)
-		}
+		emit('show_entity', entity.id)
 	}
 
 	function click_relation(relation: RelationType) {
@@ -119,11 +125,13 @@
 						@show_entity="emit('show_entity', $event)"
 						v-if="selected_relation && player.orientation == 'vertical'" />
 					<div class="mid-scroll-space scroll-space" v-if="player.orientation == 'horizontal'"></div>
+					<ToggleButton :default="show_players" truthy="show favs" falsy="show default" @toggle="toggle_players"
+						v-if="player.is_gm" />
 					<h2 v-if="player.is_gm && entities.length > 0">
 						{{player.orientation == 'vertical' ? 'characters' :  'PCs'}}
 					</h2>
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0">
-						<template v-for="(entity, index) in entities" :key="entity.id" v-if="player.is_gm">
+						<template v-for="(entity, index) in entities.filter(e => show_players ? e.favorite : true)" :key="entity.id">
 							<EntityCard
 								class="entity-card"
 								:entity_id="entity.id"
@@ -135,7 +143,8 @@
 						contacts
 					</h2>
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="(player.the_entity?.relations?.length ?? 0) > 0">
-						<template v-for="(relation, index) in player.the_entity?.relations?.filter(r => !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
+						<template v-if="!show_players"
+								v-for="(relation, index) in player.the_entity?.relations?.filter(r => !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
 							<EntityCard
 								class="entity-card"
 								:entity_id="relation.toEntity?.id"
@@ -144,6 +153,17 @@
 								show_icon
 								override_click
 								@click_entity="click_relation(relation)" />
+						</template>
+						<template v-if="show_players" v-for="(character, index) in entities.filter(e => e.favorite && e.entityType != 'character')" :key="character.id">
+							<EntityCard
+								class="entity-card"
+								:entity_id="character.id"
+								options_direction="none"
+								is_relationship
+								show_icon
+								override_click
+								@click_entity="emit('show_entity', character.id)"
+								right_click_favorite />
 						</template>
 					</div>
 					<div class="bottom-scroll-space scroll-space"></div>
