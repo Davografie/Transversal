@@ -528,19 +528,18 @@
 					:value="player.small_buttons ? '🏷' : '🏷\nadd to contacts'"
 					@click.stop="add_to_codex"
 					v-if="the_entity
-						&& the_entity.entityType != 'location'
 						&& the_entity.id != location.id
 						&& !the_entity.relations?.map(e => e.toEntity.id).some(id => id == location.id)
 						&& editing_location
 					" />
 
-				<input type="button" class="button codex-button corner-button"
+				<input type="button" class="button transversable-button corner-button"
 					:value="player.small_buttons ? '⤠' : '⤠\nmake transversable'"
 					@click.stop="establish_route"
 					v-if="the_entity
 						&& the_entity.entityType == 'location'
+						&& player.the_entity?.entityType == 'location'
 						&& the_entity.id != location.id
-						&& !the_entity.relations?.map(e => e.toEntity.id).some(id => id == location.id)
 						&& editing_location
 					" />
 
@@ -673,12 +672,12 @@
 							<input type="button" class="button" value="search" v-if="import_search" @click="search_import" />
 						</div>
 						<div class="entity-cards" v-if="import_search">
-							<EntityCard v-for="entity in entities.filter(e => e.entityType != 'location')"
+							<EntityCard v-for="entity in entities"
 								:key="entity.key"
 								:entity_id="entity.id"
 								override_click
 								is_active
-								@click_entity="import_ett(entity.id)" />
+								@click_entity="change_active(entity.id)" />
 						</div>
 					</div>
 					<div class="neighboring">
@@ -774,6 +773,14 @@
 					border-top: none;
 					border-right: none;
 					border-radius: 0 0 0 10px;
+				}
+				.transversable-button {
+					top: 50%;
+					right: 0;
+					transform: translateY(-50%);
+					border-top: none;
+					border-right: none;
+					border-radius: 10px 0 0 10px;
 				}
 				.transverse-button {
 					bottom: 0;
