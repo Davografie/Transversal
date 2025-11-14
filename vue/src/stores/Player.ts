@@ -29,6 +29,7 @@ export const usePlayer = defineStore(
 		const small_buttons: Ref<boolean> = ref(false)
 		const data_saving: Ref<boolean> = ref(false)
 		const traitset_defaults: Ref<string> = ref("ACTIVE") // COLLAPSED, ACTIVE, EXPANDED
+		const tickets_remaining: Ref<number> = ref(20)
 
 		//	GM variables
 		const is_gm: Ref<boolean> = ref(false)
@@ -210,7 +211,8 @@ export const usePlayer = defineStore(
 			editing,
 			viewing,
 			orientation,
-			theme
+			theme,
+			tickets_remaining
 		}
 	},
 	{
@@ -226,7 +228,8 @@ export const usePlayer = defineStore(
 				'is_gm', 
 				'small_buttons',
 				'data_saving',
-				'traitset_defaults'
+				'traitset_defaults',
+				'tickets_remaining'
 			],
 		},
 	},
