@@ -366,7 +366,7 @@ class UpdateSession(Mutation):
 			session_rev = uuid4()
 			session_characters = []
 
-			active_entities = db.collection('Entities').find({'active': True, 'type': 'character'})
+			active_entities = db.collection('Entities').find({'active': True})
 			for entity in active_entities:
 				entity['active'] = False
 				update_doc('Entities', entity)
