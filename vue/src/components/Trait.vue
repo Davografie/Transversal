@@ -111,7 +111,7 @@
 		Editing = 'editing',
 		Viewing = 'viewing'
 	}
-	const mode = ref<view_modes>(view_modes.Small)
+	const mode = ref<view_modes>(props.mode ?? view_modes.Small)
 
 	// true for longtaps so that normal taps/clicks don't trigger
 	const held = ref(false)
@@ -320,11 +320,12 @@
 		if (!traitset_limit_reached.value // dicepool limit is not reached
 			|| (player.editing && mode.value != view_modes.Editing)
 		) {
+			console.log("clicking subtrait, cascading to parent trait")
 			click_trait()
 		}
 		
 		// add subtrait to the dicepool
-		else if(
+		if(
 			!player.editing // clicking the trait while editing is handled by the subtrait component
 			&& subtrait.traitSettingId
 			&& !check_subtrait(subtrait.traitSettingId)
@@ -364,6 +365,10 @@
 				// resource subtrait with all rating die types the same
 				deplete_resource(subtrait.rating[0])
 			}
+			if(trait.value.traitSetting?.scaling) {
+				console.log("changing result limit (scaling)")
+				change_result_limit(trait.value.traitSetting.scaling)
+			}
 			if(traitset_limit_reached.value) {
 				emit('next_traitset')
 			}
@@ -378,6 +383,7 @@
 				remove_complication_by_traitsetting(subtrait.traitSettingId)
 			}
 		}
+		console.log("end click_subtrait")
 	}
 
 	const traitset_limit_reached = computed(() => {
@@ -976,14 +982,14 @@
 		</div>
 
 		<div class="edit-setting-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == view_modes.Editing">
-			<div class="button-mnml"
+			<div class="button-mnml copy-id-button"
 					title="copy traitsetting id"
 					@click="copy_id"
 					v-if="player.is_gm">
 				<div class="icon">#</div>
 				<div class="label" v-if="!player.small_buttons">copy ID</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml statement-button"
 					:class="edit_statement ? 'active' : 'inactive'"
 					v-if="!trait.statement && can_edit"
 					@click="() => {
@@ -993,7 +999,7 @@
 				<div class="icon">📄</div>
 				<div class="label" v-if="!player.small_buttons">{{ edit_statement ? 'cancel' : 'statement' }}</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml notes-button"
 					:class="edit_notes ? 'active' : 'inactive'"
 					v-if="!trait.notes && can_edit"
 					@click="() => {
@@ -1003,14 +1009,14 @@
 				<div class="icon">📄</div>
 				<div class="label" v-if="!player.small_buttons">{{ edit_notes ? 'cancel' : 'notes' }}</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml rating-button"
 					:class="edit_rating ? 'active' : 'inactive'"
 					@click="edit_rating = !edit_rating"
 					v-if="can_edit">
 				<div class="icon">🎲</div>
 				<div class="label" v-if="!player.small_buttons">{{ edit_rating ? 'cancel' : 'rating' }}</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml scaling-button"
 					:class="edit_scaling ? 'active' : 'inactive'"
 					@click="edit_scaling = !edit_scaling"
 					v-if="can_edit">
@@ -1026,19 +1032,19 @@
 				<div class="icon">⪽</div>
 				<div class="label" v-if="!player.small_buttons">{{ add_subtraits ? 'cancel' : 'add subtrait' }}</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml sfx-button"
 					:class="show_sfxs ? 'active' : 'inactive'"
 					@click="toggle_sfxs"
 					v-if="sfx_list && sfx_list?.length > 0 && can_edit">
 				<div class="icon">✨</div>
 				<div class="label" v-if="!player.small_buttons">{{ show_sfxs ? 'cancel' : 'add sfx' }}</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml copy-button"
 					@click.stop="copy">
 				<div class="icon">⧉</div>
 				<div class="label" v-if="!player.small_buttons">duplicate trait</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml transfer-resource-button"
 					:class="transfer_resource_mode ? 'active' : 'inactive'"
 					:title="'take ' + trait.name"
 					@click.stop="steal"
@@ -1046,7 +1052,7 @@
 				<div class="icon">🫳</div>
 				<div class="label" v-if="!player.small_buttons">take {{ trait.name }}</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml transfer-resource-button"
 					:class="transfer_resource_mode ? 'active' : 'inactive'"
 					:title="'drop ' + trait.name"
 					@click.stop="steal"
@@ -1054,7 +1060,7 @@
 				<div class="icon">🫳</div>
 				<div class="label" v-if="!player.small_buttons">drop {{ trait.name }}</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml visible-button"
 					:class="show_pc_visible ? 'active' : 'inactive'"
 					@click.stop="show_pc_visible ? show_pc_visible = false : show_pcs()"
 					@click.right="toggle_show_pc_visible"
@@ -1064,7 +1070,7 @@
 				<div class="icon">🧠</div>
 				<div class="label" v-if="!player.small_buttons">show PC</div>
 			</div>
-			<div class="button-mnml"
+			<div class="button-mnml restrict-location-button"
 					:class="restrict_location ? 'active' : 'inactive'"
 					@click="restrict_location = !restrict_location"
 					v-if="can_edit && !props.entity_id?.startsWith('Relations/')">
