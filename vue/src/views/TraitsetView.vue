@@ -226,6 +226,13 @@
 
 	const deleting = ref<boolean>(false)
 
+	const refreshing = ref<boolean>(false)
+
+	const refresh = async () => {
+		refreshing.value = true
+		retrieve_traitset()
+		refreshing.value = false
+	}
 </script>
 
 <template>
@@ -235,6 +242,7 @@
 			v-if="traitset.name != traitset_name" value="rename"
 			@click="mutate_traitset({'name': traitset_name})" />
 		<input type="button" @click.stop="copy" class="copy-id button" title="copy trait id" value="#" />
+		<input type="button" class="refresh button" :class="{ 'disabled': refreshing }" title="refresh" value="⟳" @click="refresh" />
 		<input type="button" class="delete button" value="🗑" @click="deleting = true" v-if="!deleting" />
 		<div class="delete-confirm" v-if="deleting">
 			are you sure you want to delete this traitset?<br />this action is permanent
@@ -248,19 +256,19 @@
 				<h4>explainer</h4>
 				<textarea id="explainer" v-model="traitset_explainer" placeholder="Enter explainer"></textarea>
 				<!-- <input type="button" class="button" :value="allows_duplicates ? 'allows duplicates' : 'disallows duplicates'" @click="allows_duplicates = !allows_duplicates" /> -->
-				<ToggleButton
+				<ToggleButton id="duplicates-switch"
 					class="toggle-button"
 					truthy="allow duplicates"
 					falsy="disallow duplicates"
 					:default="allows_duplicates"
 					@toggle="allows_duplicates = !allows_duplicates" />
-				<ToggleButton
+				<ToggleButton id="hidden-switch"
 					class="toggle-button"
 					truthy="default hide traits"
 					falsy="default show traits"
 					:default="default_settings?.hidden ?? false"
 					@toggle="mutate_default_settings({'hidden': !default_settings?.hidden}); retrieve_default_settings()" />
-				<ToggleButton
+				<ToggleButton id="restricted-switch"
 					class="toggle-button"
 					truthy="default restrict location"
 					falsy="default allow locations"
