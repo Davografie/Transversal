@@ -91,13 +91,19 @@
 			<div id="traitset-list-wrapper">
 				<ol v-sortable @update="order_change">
 					<li
-							v-for="traitset in traitsets.filter(ts => entity_types.every(et => ts.entityTypes?.includes(et)))"
-							@click="emit('show_traitset', traitset.key)">
+							v-for="traitset in traitsets.filter(
+								ts => entity_types.every(
+									et => ts.entityTypes?.includes(et)))
+								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase()))"
+							@click="emit('show_traitset', traitset.key)"
+							:class="{ 'subtraitset': traitset.entityTypes?.includes('subtrait')}">
 						<span>{{ traitset.name }}</span>
 					</li>
 				</ol>
 			</div>
-			<input type="button" class="button" value="save order" @click="save_order" v-if="order_changed" />
+			<div id="save-button-wrapper">
+				<input type="button" id="save-button" class="button" value="save order" @click="save_order" v-if="order_changed" />
+			</div>
 		</div>
 		<div class="bottom-scroll-space"></div>
 	</div>
@@ -120,6 +126,10 @@
 			font-size: 1.2em;
 			padding: .2em;
 			cursor: grab;
+			&.subtraitset span {
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+			}
 			&:hover {
 				background-color: var(--color-highlight);
 				color: var(--color-highlight-text);
@@ -129,11 +139,21 @@
 			width: 60%;
 			border: 3px double var(--color-border);
 			background-color: var(--color-background);
+			max-height: 100%;
 		}
-		input[type="button"] {
+		#save-button-wrapper {
 			position: absolute;
 			top: 0;
 			right: 0;
+			height: 100%;
+			width: 0;
+			overflow: visible;
+			#save-button {
+				position: absolute;
+				top: 0;
+				right: 0;
+				/* transform: translateY(-50%); */
+			}
 		}
 	}
 	.bottom-scroll-space {
