@@ -4067,7 +4067,7 @@ def imagegen(entity_key, force):
 					location_key = hierarchy[-2].get('_key')
 		name = entity.get('name')
 		description = entity.get('description')
-		negative = "cgi, 3d, bad quality, watermark, signature"
+		negative = "cgi, 3d, bad quality, watermark, signature, text"
 
 		if entity_type in ["character", "npc"]:
 			# prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
@@ -4077,8 +4077,8 @@ def imagegen(entity_key, force):
 		elif entity_type == "asset":
 			prompt = f"(an image of { name }:1.2), "
 			negative += ", person"
-			width = 1216
-			height = 832
+			# width = 1216
+			# height = 832
 		elif entity_type == "faction":
 			prompt = f"(a symbol or logo or flag or shield or emblem:1.2) representing the faction called { name }. "
 			negative += ", photo, person, environment"
@@ -4160,7 +4160,7 @@ def imagegen(entity_key, force):
 			
 			positive_imagen = []
 
-			hierarchy = retrieve_hierarchy(location.get('_id'))
+			hierarchy = retrieve_hierarchy(location.get('_id'))[:-1]
 			for loc in hierarchy:
 				if entity_type in ["npc"]:
 					prompt += f" (located in { loc.get('name') }, " + re.sub(r'\([^)]*\)', '', loc.get('description'))
