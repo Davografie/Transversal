@@ -230,6 +230,7 @@
 			v-if="visible">
 		<div class="card-wrapper" :style="backgroundStyle">
 		</div>
+		<p class="entity-type">{{ entity_type_icon }}</p>
 		<p class="archetype-label" v-if="entity.isArchetype">*</p>
 		<p class="name" v-if="props.show_name">{{ entity?.name }}</p>
 		<transition name="options-transition">
