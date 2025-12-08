@@ -546,7 +546,7 @@
 
 	function cancel_edit() {
 		retrieve_trait()
-		mode.value = view_modes.Neutral
+		mode.value = props.mode ?? view_modes.Small
 		transfer_resource_mode.value = false
 		edit_rating.value = false
 		new_rating.value = []
@@ -922,7 +922,7 @@
 							{{ ' (self)' }}
 						</span>
 					</span>
-					<span class="rating-type label" v-if="preferredColor == 'light'">
+					<span class="rating-type label" v-if="preferredColor == 'light' || mode == view_modes.Viewing">
 						{{ trait.ratingType ?? 'empty' }}
 					</span>
 					<span class="scaling label" v-if="trait.traitSetting?.scaling">
