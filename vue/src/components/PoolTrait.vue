@@ -4,20 +4,26 @@
 	import PoolTrait from '@/components/PoolTrait.vue'
 	import { useTrait } from '@/composables/Trait'
 	import { useSFX } from '@/composables/SFX'
-	import { useDicepoolStore } from '@/stores/DicepoolStore'
 	import { useDicepool } from '@/composables/Dicepool'
 	import type { Die as DieType } from '@/interfaces/Types'
+	
 	const props = defineProps<{
 		traitsetting_id: string
 		dice: DieType[]
 	}>()
+
 	const emit = defineEmits(['longpress_die'])
-	// const dicepool = useDicepoolStore()
+	
 	const dicepool = useDicepool()
 	const { trait, retrieve_trait } = useTrait(undefined, undefined, props.traitsetting_id, props.dice[0]?.entityId)
+	const { sfx, retrieve_sfx } = useSFX(undefined, props.dice[0]?.sfxId)
+
 	retrieve_trait()
-	const { sfx } = useSFX(undefined, props.dice[0]?.sfxId)
+	retrieve_sfx()
+
+	// used to discern between click and longpress
 	const held = ref(false)
+
 	function click_die(die: DieType) {
 		if(!held.value) {
 			if(dicepool.inAddingPhase.value) dicepool.remove_die(die)
@@ -30,6 +36,7 @@
 			}
 		}
 	}
+
 	function longpress_die(die: DieType) {
 		held.value = true
 		emit('longpress_die', die)
@@ -37,6 +44,7 @@
 			held.value = false
 		}, 500)
 	}
+
 	const trait_class = computed(() => {
 		if(dicepool.inEffectPhase.value && props.dice.some((d) => !d.isResultDie)) return 'available'
 		if(dicepool.inEffectPhase.value && props.dice.every((d) => d.isResultDie)) return 'unavailable'
@@ -55,7 +63,7 @@
 					{{ trait.statement ? trait.statement : '' }}
 				</div>
 				<div class="trait-sfx" v-if="sfx && sfx.id != 'placeholder'">
-					sfx: {{ sfx.name }}
+					✨ {{ sfx.name }}
 				</div>
 			</div>
 			<div class="pool-trait-rating">
@@ -99,7 +107,13 @@
 			display: flex;
 			flex-direction: column;
 			justify-content: center;
+			.trait-name {
+				font-weight: bold;
+			}
 			.trait-statement {
+				font-size: 1.2em;
+			}
+			.trait-sfx {
 				font-style: italic;
 			}
 		}

@@ -2,6 +2,7 @@
 	import { marked } from 'marked'
 	import { ref, type Ref } from 'vue'
 	import { useSFXList } from '@/composables/SFXList'
+	import SfxEdit from '@/components/SfxEdit.vue'
 	const { sfx_list, retrieve_sfx_list, create_sfx, update_sfx, delete_sfx } = useSFXList()
 	const new_sfx_name: Ref<string> = ref('')
 	const new_sfx_description: Ref<string> = ref('')
@@ -45,7 +46,8 @@
 		</div>
 		<div id="sfx-list">
 			<div class="sfx" :class="editing_sfx == sfx.id ? 'editing' : ''" v-for="sfx in sfx_list" @click="focus_sfx(sfx.id)">
-				<div v-if="editing_sfx != sfx.id">
+				<SfxEdit :sfx_id="sfx.id" />
+				<!-- <div v-if="editing_sfx != sfx.id">
 					<div class="sfx-name">{{ sfx.name }}</div>
 					<div class="sfx-description" v-html="marked.parse(sfx.description)"></div>
 				</div>
@@ -57,7 +59,7 @@
 					<input type="button" class="button" value="update" @click.stop="change_sfx()" />
 					<input type="button" class="button" value="delete" @click.stop="remove_sfx(sfx.id)" />
 					<input type="button" class="button" value="cancel" @click.stop="editing_sfx = ''" />
-				</div>
+				</div> -->
 			</div>
 		</div>
 	</div>

@@ -14,6 +14,14 @@ export function useSFXList() {
 				id
 				name
 				description
+				traits {
+					id
+					name
+					traitset {
+						id
+						name
+					}
+				}
 			}
 		}`
 

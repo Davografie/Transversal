@@ -389,6 +389,9 @@
 				border: none;
 			}
 		}
+		&:hover {
+			background-color: var(--color-highlight-mute);
+		}
 	}
 	#dicepool:not(.empty) .title {
 		background-color: var(--color-highlight);

@@ -54,6 +54,12 @@ export interface SFX {
     id: string
     name: string
     description: string
+    traits: Trait[]
+}
+
+export interface SFXInput {
+    name?: string
+    description?: string
 }
 
 export interface TraitSetting {

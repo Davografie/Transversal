@@ -44,6 +44,7 @@ export const usePlayer = defineStore(
 
 		const orientation = ref("horizontal")	// horizontal (for landscape, e.g. desktop monitor) or vertical (for portrait, e.g. mobile)
 		const theme = ref("dark")
+		const font_size = ref(16)
 
 		const {
 			character: player_character,
@@ -212,6 +213,7 @@ export const usePlayer = defineStore(
 			viewing,
 			orientation,
 			theme,
+			font_size,
 			tickets_remaining
 		}
 	},
@@ -229,7 +231,8 @@ export const usePlayer = defineStore(
 				'small_buttons',
 				'data_saving',
 				'traitset_defaults',
-				'tickets_remaining'
+				'tickets_remaining',
+				'font_size'
 			],
 		},
 	},

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, computed } from 'vue'
+    import { ref, computed, watch } from 'vue'
     import { marked } from 'marked'
 
     import { usePlayer } from '@/stores/Player'
@@ -21,34 +21,53 @@
         'remove'
     ])
 
+    watch(() => props.expanded, (newVal) => {
+        show_description.value = newVal
+    })
+
     const player = usePlayer()
-    const { sfx } = useSFX(undefined, props.sfx_id)
+    const { sfx, retrieve_sfx } = useSFX(undefined, props.sfx_id)
+
+    retrieve_sfx()
+
     const rendered_description = computed(() => 
         sfx.value.description ? marked.parse(sfx.value.description) : ''
     )
+
     function click_card() {
         console.log('click card')
         if(player.editing && !props.editing) return
-        show_description.value = !show_description.value
+        // show_description.value = !show_description.value
         if(show_description.value) {
             emit('expand')
         } else {
             emit('collapse')
         }
     }
+
     function activate() {
+        // triggers the @activate event on Trait.vue
+        // where the trait is added to the dice pool
+        // with the selected sfx as metadata
         if(!props.adding) {
             emit('activate', sfx.value)
         }
     }
+
     function add() {
+        // triggers the @add event on Trait.vue
+        // where it is added to the trait setting
         show_description.value = false
         emit('add')
     }
+    
     function remove() {
+        // triggers the @remove event on Trait.vue
+        // where it is removed from the trait setting
         show_description.value = false
         emit('remove')
     }
+
     const show_description = ref(props.expanded && !props.adding)
 </script>
 
@@ -56,14 +75,13 @@
     <div class="sfx" :class="[
                 show_description ? 'expanded' : 'collapsed',
                 props.adding ? 'adding' : 'playing',
-            ]"
-            @click.stop="click_card">
-        <div class="sfx-title" :title="show_description ? 'collapse' : 'expand'">
+            ]">
+        <div class="sfx-title" :title="show_description ? 'collapse' : 'expand'" @click.stop="click_card">
             ✨ {{ sfx?.name }}
             <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
         </div>
         <div class="sfx-description" v-if="show_description && sfx?.description"
-            v-html="rendered_description" @click="activate" title="play">
+            v-html="rendered_description" @click.stop="activate" title="play">
         </div>
         <input type="button" class="button" value="add" @click.stop="add" 
             v-if="show_description && props.adding" />

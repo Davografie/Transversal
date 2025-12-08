@@ -7,7 +7,7 @@ import type { Ref } from 'vue'
 import { provideApolloClient, useQuery, useMutation } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
 import type { ApolloClient } from '@apollo/client'
-import type { SFX } from '@/interfaces/Types'
+import type { SFX, SFXInput } from '@/interfaces/Types'
 
 export const placeholder_sfx: SFX = {
 	id: "placeholder",
@@ -50,6 +50,51 @@ export function useSFX(init?: SFX, sfx_id?: string) {
 		}
 	}
 
+	function retrieve_traits() {
+		const query = gql`query SfxTraits($sfxId: ID) {
+			sfxs(sfxId: $sfxId) {
+				traits {
+					id
+					name
+				}
+			}
+		}`
+		if(apolloClient) {
+			const { result } = provideApolloClient(apolloClient)(
+				() => useQuery<{sfxs: SFX[]}>(
+					query,
+					{ sfxId: sfx_id }
+				)
+			)
+			watch(result, (newResult) => {
+				if(newResult?.sfxs[0] && newResult.sfxs[0].traits) {
+					sfx.value = {
+						...sfx.value,
+						traits: newResult.sfxs[0].traits
+					}
+				}
+			},
+			{ immediate: true })
+		}
+	}
+
+	function change_sfx(input: SFXInput) {
+		if(apolloClient) {
+			const query = gql`mutation UpdateSfx($updateSfxId: ID!, $input: SfxInput!) {
+				updateSfx(id: $updateSfxId, input: $input) {
+					success
+					message
+				}
+			}`
+			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
+			let variables: object = {
+				updateSfxId: sfx_id,
+				input: input
+			}
+			mutate(variables)
+		}
+	}
+
 	function delete_sfx() {
 		if(apolloClient) {
 			const query = gql`mutation DeleteSfx($deleteSfxId: ID!) {
@@ -67,17 +112,23 @@ export function useSFX(init?: SFX, sfx_id?: string) {
 		}
 	}
 
-	onMounted(() => {
-		if(init) {
-			sfx.value = init
-		}
-		else if(sfx_id) {
-			retrieve_sfx()
-		}
-		else {
-			console.log('no sfx specified')
-		}
-	})
+	// onMounted(() => {
+	// 	if(init) {
+	// 		sfx.value = init
+	// 	}
+	// 	else if(sfx_id) {
+	// 		retrieve_sfx()
+	// 	}
+	// 	else {
+	// 		console.log('no sfx specified')
+	// 	}
+	// })
 	
-	return { sfx }
+	return {
+		sfx,
+		retrieve_sfx,
+		retrieve_traits,
+		change_sfx,
+		delete_sfx
+	}
 }

@@ -71,6 +71,8 @@ a {
 	padding: .2em .5em;
 	.icon {
 		font-size: 1.4em;
+		max-width: 1.4em;
+		max-height: 1.4em;
 		line-height: 1em;
 		z-index: 1;
 	}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import Mobile from '@/views/Mobile.vue'
 	import Landscape from '@/views/Landscape.vue'
-	import { ref, computed, watch, onMounted, onUpdated } from 'vue'
+	import { ref, computed, watch, onMounted, onUpdated, toRefs } from 'vue'
 	import { useRouter, useRoute, RouterLink } from 'vue-router'
 	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef } from '@vueuse/core'
 
@@ -14,6 +14,7 @@
 	import { type Location } from '@/interfaces/Types'
 
 	const player = usePlayer()
+	const font_size = computed(() => player.font_size)
 	player.create_player()
 
 	const dicepool_store = useDicepoolStore()
@@ -280,6 +281,7 @@
 		height: 100vh;
 		overflow-y: scroll;
 		overflow-x: hidden;
+		font-size: v-bind(font_size + 'px');
 	}
 	.dark.gm {
 		--color-highlight: beige;

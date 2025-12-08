@@ -2,7 +2,7 @@
 	import _ from 'lodash'
 	import { marked } from 'marked'
 
-	import { ref, computed, watch, onUnmounted } from 'vue'
+	import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 	import type { Ref } from 'vue'
 
 	import Trait from '@/components/Trait.vue'
@@ -113,7 +113,7 @@
 		if(!held.value) {
 			if(!show_traits.value) {
 				retrieve_traitset()
-				emit('set_traitset')
+				emit('set_traitset', traitset.value)
 			}
 			else {
 				show_info.value = false
@@ -447,6 +447,23 @@
 			|| (props.location && props.extensible)
 		)
 	})
+
+	const active_trait_id = ref("")
+
+	function scroll_to_element(element_id: string) {
+		console.log("scrolling to element: " + element_id)
+		const element = document.getElementById(element_id)
+		if(element) {
+			console.log("element found, scrolling to it")
+			element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		}
+		// show_reference.value = false
+	}
+
+	function scroll_to_trait(trait: TraitType) {
+		active_trait_id.value = trait.id
+		nextTick(() => scroll_to_element('ts-' + trait.traitSettingId + '-' + entity.value.key))
+	}
 </script>
 
 <template>
@@ -485,7 +502,8 @@
 				{{ traitset.traits ? traits_to_display.length : '' }}
 			</div>
 			<div v-else class="button-mnml" @click.stop="toggle_info">
-				<span class="icon">ℹ️</span>
+				<!-- <span class="icon">ℹ️</span> -->
+				<img src="/img/icons/info.png" class="icon" />
 			</div>
 			
 			<div class="title">
@@ -525,12 +543,14 @@
 				<div class="traitset-limiter">
 					<div type="button" class="button-mnml change-limit limit-decrease"
 						@click.stop="change_limit(-1)">
-						<div class="icon">⊖</div>
+						<!-- <div class="icon">⊖</div> -->
+						<img src="/img/icons/minus.png" class="icon" />
 						<div class="label">decrease limit</div>
 					</div>
 					<div type="button" class="button-mnml change-limit limit-increase"
 						@click.stop="change_limit(1)">
-						<div class="icon">⊕</div>
+						<!-- <div class="icon">⊕</div> -->
+						<img src="/img/icons/plus.png" class="icon" />
 						<div class="label">increase limit</div>
 					</div>
 				</div>
@@ -644,6 +664,7 @@
 				<template class="not-highlighted-traits" v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
 						:key="trait.traitSettingId">
 					<Trait
+						:id="'ts-' + trait.traitSettingId + '-' + entity.key"
 						:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
 						:trait_id="trait.id"
 						:traitset_id="traitset.id"
@@ -655,11 +676,12 @@
 						:edit_mode="edit_mode"
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
-						:mode="view_modes.Viewing"
+						:mode="view_modes.Small"
 						@refetch="retrieve_traitset"
 						@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
 						@kill_highlight="kill_highlight_traits"
+						@show_trait="scroll_to_trait"
 						v-if="(player.is_gm
 							|| props.relationship
 							|| (player.is_player && entity.entityType == 'character')
@@ -1110,6 +1132,7 @@
 	.dark {
 		.traitset {
 			scroll-snap-align: center;
+			scroll-snap-stop: always;
 			max-height: 100%;
 			/* overflow-y: auto; */
 			overflow: hidden;
@@ -1137,6 +1160,8 @@
 			.traits {
 				height: 100%;
 				overflow: hidden;
+				display: flex;
+				flex-direction: column;
 				.traitset-info {
 					text-shadow: var(--text-shadow);
 					.traitset-score {
@@ -1153,8 +1178,13 @@
 				}
 				.entity-traits {
 					/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
+					display: flex;
 					flex-wrap: wrap;
 					flex-direction: column;
+					align-items: center;
+					padding: .2em;
+					gap: .4em;
+					/* flex-wrap: wrap; */
 					padding: .4em;
 					max-height: calc(100% - 2.4em);
 					/* overflow: hidden; */
@@ -1224,10 +1254,6 @@
 			}
 		}
 		.entity-traits {
-			display: flex;
-			flex-wrap: wrap;
-			padding: .2em;
-			gap: .4em;
 		}
 		&.has-image {
 			/* .traitset.active .set-title {
@@ -1321,7 +1347,7 @@
 	.triptych {
 		.traitset.inactive.next {
 			position: sticky;
-			bottom: 0;
+			bottom: -50px;
 			z-index: 1;
 		}
 	}

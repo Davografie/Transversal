@@ -59,7 +59,8 @@
 		'next_traitset',
 		'require_traits',
 		'set_highlight',
-		'kill_highlight'
+		'kill_highlight',
+		'show_trait'
 	])
 
 	const player = usePlayer()
@@ -105,84 +106,30 @@
 	} = useLocation(undefined, props.location_key)
 
 	// enable/disable trait edit mode
-	enum Mode {
-		Small = 'small',
-		Neutral = 'neutral',
-		Editing = 'editing',
-		Viewing = 'viewing'
-	}
-	const mode = ref<view_modes>(props.mode ?? view_modes.Small)
+	const mode = ref<view_modes>(props.mode ?? view_modes.Neutral)
+	// watch(() => props.mode, (newMode) => {
+	// 	mode.value = newMode ?? view_modes.Neutral
+	// })
 
 	// true for longtaps so that normal taps/clicks don't trigger
 	const held = ref(false)
 
-	// placeholders for mutating trait
-	const new_ratingType: Ref<string> = ref(trait.value.ratingType ?? 'empty')
-	const new_rating: Ref<DieType[]> = ref(trait.value.rating ?? [])
-	const new_scaling: Ref<number> = ref(trait.value.traitSetting?.scaling ?? 0)
-	const new_statement: Ref<string> = ref(trait.value.statement ?? "")
-	const new_hidden: Ref<boolean> = ref(trait.value.traitSetting?.hidden ?? false)
-	const new_notes: Ref<string> = ref(trait.value.notes ?? "")
-	const new_sfxs: Ref<SFXType[]> = ref(trait.value.sfxs ?? [])
-	const new_locationsEnabled: Ref<string[]> = ref(trait.value.traitSetting?.locationsEnabled ?? [])
-	const new_locationsDisabled: Ref<string[]> = ref(trait.value.traitSetting?.locationsDisabled ?? [])
-
-	function switch_to_editing() {
-		reset_temporary_attributes()
-		if(props.location_key) set_location_key(props.location_key)
-		retrieve_location()
-		retrieve_trait_setting()
-		if(
-			trait.value.traitSetting?.locationsEnabled
-			&& trait.value.traitSetting?.locationsEnabled?.length > 0
-			&& location.value.parents
-			// don't show the default restriction
-			&& !trait.value.traitSetting.locationsEnabled.includes(location.value.parents[location.value.parents.length - 2].id)
-		){
-			restrict_location.value = true
-		}
-		else {
-			restrict_location.value = false
-		}
-		edit_statement.value = trait.value.statement || trait.value.notes ? true : false
-		edit_notes.value = trait.value.notes ? true : false
-		edit_rating.value = false
-		add_subtraits.value = false
-		show_sfxs.value = false
-		mode.value = view_modes.Editing
-		if(
-			player.is_gm
-			|| props.entity_id == player.player_character.id
-			|| props.entity_id?.startsWith('Relations/')
-		) {
-			can_edit.value = true
-		}
-	}
-
-	const can_edit = ref<boolean>(false)
-
-	function reset_temporary_attributes() {
-		new_ratingType.value = trait.value?.ratingType ?? 'empty'
-		new_rating.value = trait.value?.rating ?? []
-		new_scaling.value = trait.value?.traitSetting?.scaling ?? 0
-		new_statement.value = trait.value?.statement ?? ""
-		new_notes.value = trait.value?.notes ?? ""
-		new_sfxs.value = trait.value?.sfxs ?? []
-		new_hidden.value = trait.value?.traitSetting?.hidden ?? false
-		new_locationsEnabled.value = trait.value?.traitSetting?.locationsEnabled ?? []
-		new_locationsDisabled.value = trait.value?.traitSetting?.locationsDisabled ?? []
-	}
-
-	watch(() => props.edit_mode, () => {
-		if (props.edit_mode) {
-			// switch_to_editing()
-		}
-		else {
-			mode.value = view_modes.Neutral
-		}
-	})
-
+	// PLAYING
 	function click_trait() {
+		// flip through view modes
+		if (mode.value == view_modes.Neutral) {
+			mode.value = view_modes.Viewing
+		}
+		else if (mode.value == view_modes.Viewing) {
+			mode.value = view_modes.Small
+		}
+		else if (mode.value == view_modes.Small) {
+			mode.value = view_modes.Viewing
+			emit('show_trait', trait.value)
+		}
+	}
+
+	function play_trait() {
 		/* add trait to dicepool */
 		console.log("click_trait")
 		if(
@@ -215,6 +162,7 @@
 					// traitset dice limit isn't reached
 					// && traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).length < (props.traitset_limit ?? 0)
 				) {
+					console.log("adding trait to dicepool")
 					for(const die of trait.value.rating) {
 						die.traitId = trait.value.id
 						if(props.traitset_id) die.traitsetId = props.traitset_id
@@ -386,31 +334,6 @@
 		console.log("end click_subtrait")
 	}
 
-	const traitset_limit_reached = computed(() => {
-		// trait traitset limit
-		return [...new Set(traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).map((d) => d.traitsettingId))].length >= (props.traitset_limit ?? 0)
-		// dice traitset limit
-		// return traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).length < (props.traitset_limit ?? 1)
-	})
-
-	function longtap_trait(e: MouseEvent) {
-		e.stopPropagation()
-		held.value = true
-		console.log("longtap")
-		if(
-			mode.value != view_modes.Editing
-			// && (
-			//	// disable trait editing for traits that aren't yours
-			// 	player.is_gm
-			// 	|| props.entity_id == player.player_character.id
-			// 	|| props.entity_id.startsWith('Relations/')
-			// )
-		) {
-			switch_to_editing()
-		}
-		setTimeout(() => held.value = false, 500)
-	}
-
 	function deplete_resource(dc: DieType) {
 		if(
 			mode.value != view_modes.Editing
@@ -463,6 +386,98 @@
 			}
 		}
 		mutate_trait_setting({ 'rating': new_rating.value.map((r) => r.number_rating ) })
+	}
+
+	const traitset_limit_reached = computed(() => {
+		// trait traitset limit
+		return [...new Set(traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).map((d) => d.traitsettingId))].length >= (props.traitset_limit ?? 0)
+		// dice traitset limit
+		// return traitset_dice(props.traitset_id ?? '').filter((d) => d.entityId == props.entity_id).length < (props.traitset_limit ?? 1)
+	})
+
+	// EDITING
+	// placeholders for mutating trait
+	const new_ratingType: Ref<string> = ref(trait.value.ratingType ?? 'empty')
+	const new_rating: Ref<DieType[]> = ref(trait.value.rating ?? [])
+	const new_scaling: Ref<number> = ref(trait.value.traitSetting?.scaling ?? 0)
+	const new_statement: Ref<string> = ref(trait.value.statement ?? "")
+	const new_hidden: Ref<boolean> = ref(trait.value.traitSetting?.hidden ?? false)
+	const new_notes: Ref<string> = ref(trait.value.notes ?? "")
+	const new_sfxs: Ref<SFXType[]> = ref(trait.value.sfxs ?? [])
+	const new_locationsEnabled: Ref<string[]> = ref(trait.value.traitSetting?.locationsEnabled ?? [])
+	const new_locationsDisabled: Ref<string[]> = ref(trait.value.traitSetting?.locationsDisabled ?? [])
+
+	function switch_to_editing() {
+		reset_temporary_attributes()
+		if(props.location_key) set_location_key(props.location_key)
+		retrieve_location()
+		retrieve_trait_setting()
+		if(
+			trait.value.traitSetting?.locationsEnabled
+			&& trait.value.traitSetting?.locationsEnabled?.length > 0
+			&& location.value.parents
+			// don't show the default restriction
+			&& !trait.value.traitSetting.locationsEnabled.includes(location.value.parents[location.value.parents.length - 2].id)
+		){
+			restrict_location.value = true
+		}
+		else {
+			restrict_location.value = false
+		}
+		editing_statement.value = trait.value.statement || trait.value.notes ? true : false
+		editing_notes.value = trait.value.notes ? true : false
+		edit_rating.value = false
+		add_subtraits.value = false
+		show_sfxs.value = false
+		mode.value = view_modes.Editing
+		if(
+			player.is_gm
+			|| props.entity_id == player.player_character.id
+			|| props.entity_id?.startsWith('Relations/')
+		) {
+			can_edit.value = true
+		}
+	}
+
+	const can_edit = ref<boolean>(false)
+
+	function reset_temporary_attributes() {
+		new_ratingType.value = trait.value?.ratingType ?? 'empty'
+		new_rating.value = trait.value?.rating ?? []
+		new_scaling.value = trait.value?.traitSetting?.scaling ?? 0
+		new_statement.value = trait.value?.statement ?? ""
+		new_notes.value = trait.value?.notes ?? ""
+		new_sfxs.value = trait.value?.sfxs ?? []
+		new_hidden.value = trait.value?.traitSetting?.hidden ?? false
+		new_locationsEnabled.value = trait.value?.traitSetting?.locationsEnabled ?? []
+		new_locationsDisabled.value = trait.value?.traitSetting?.locationsDisabled ?? []
+	}
+
+	watch(() => props.edit_mode, () => {
+		if (props.edit_mode) {
+			// switch_to_editing()
+		}
+		else {
+			mode.value = view_modes.Neutral
+		}
+	})
+	
+	function longtap_trait(e: MouseEvent) {
+		e.stopPropagation()
+		held.value = true
+		console.log("longtap")
+		if(
+			mode.value != view_modes.Editing
+			// && (
+			//	// disable trait editing for traits that aren't yours
+			// 	player.is_gm
+			// 	|| props.entity_id == player.player_character.id
+			// 	|| props.entity_id.startsWith('Relations/')
+			// )
+		) {
+			switch_to_editing()
+		}
+		setTimeout(() => held.value = false, 500)
 	}
 
 	const in_dicepool = computed(() => {
@@ -547,8 +562,8 @@
 		setTimeout(() => emit('refetch'), 200)
 	}
 
-	const edit_statement = ref(trait.value.statement || trait.value.notes ? true : false)
-	const edit_notes = ref(trait.value.notes ? true : false)
+	const editing_statement = ref(trait.value.statement || trait.value.notes ? true : false)
+	const editing_notes = ref(trait.value.notes ? true : false)
 	
 	const statement_examples = ref<string[]>([])
 	const show_statement_examples = ref(false)
@@ -916,17 +931,10 @@
 						{{ trait.traitSetting?.scaling ?? '' }}
 					</span>
 				</div>
-				<div class="label explanation"
-					title="trait explanation"
-					v-if="preferredColor == 'light' ||
-						['viewing', 'editing'].includes(mode) ||
-						player.viewing"
-					v-html="marked(trait.explanation ?? '')">
-				</div>
 				<div class="statement" v-if="trait.statement && mode != view_modes.Editing"
 					v-html="rendered_statement" />
 
-				<div class="edit-statement edit-attribute" v-if="edit_statement && mode == view_modes.Editing">
+				<div class="edit-statement edit-attribute" v-if="editing_statement && mode == view_modes.Editing">
 					<div class="edit-statement-1">
 						<input type="text" name="text-statement" ref="text-statement"
 							class="statement statement-edit"
@@ -980,6 +988,15 @@
 					@deplete-challenge="(d) => mode == view_modes.Editing ? edit_rating = true : deplete_challenge(d)" />
 			</div>
 		</div>
+		<div class="label explanation"
+			title="trait explanation"
+			v-if="preferredColor == 'light' ||
+				[view_modes.Viewing, view_modes.Editing].includes(mode) ||
+				// mode == view_modes.Viewing ||
+				// mode == view_modes.Editing ||
+				player.viewing"
+			v-html="marked(trait.explanation ?? '')">
+		</div>
 
 		<div class="edit-setting-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == view_modes.Editing">
 			<div class="button-mnml copy-id-button"
@@ -990,24 +1007,24 @@
 				<div class="label" v-if="!player.small_buttons">copy ID</div>
 			</div>
 			<div class="button-mnml statement-button"
-					:class="edit_statement ? 'active' : 'inactive'"
+					:class="editing_statement ? 'active' : 'inactive'"
 					v-if="!trait.statement && can_edit"
 					@click="() => {
-						edit_statement = !edit_statement;
+						editing_statement = !editing_statement;
 						new_statement = trait.statement ?? '';
 					}">
 				<div class="icon">📄</div>
-				<div class="label" v-if="!player.small_buttons">{{ edit_statement ? 'cancel' : 'statement' }}</div>
+				<div class="label" v-if="!player.small_buttons">{{ editing_statement ? 'cancel' : 'statement' }}</div>
 			</div>
 			<div class="button-mnml notes-button"
-					:class="edit_notes ? 'active' : 'inactive'"
+					:class="editing_notes ? 'active' : 'inactive'"
 					v-if="!trait.notes && can_edit"
 					@click="() => {
-						edit_notes = !edit_notes;
+						editing_notes = !editing_notes;
 						new_notes = trait.notes ?? '';
 					}">
 				<div class="icon">📄</div>
-				<div class="label" v-if="!player.small_buttons">{{ edit_notes ? 'cancel' : 'notes' }}</div>
+				<div class="label" v-if="!player.small_buttons">{{ editing_notes ? 'cancel' : 'notes' }}</div>
 			</div>
 			<div class="button-mnml rating-button"
 					:class="edit_rating ? 'active' : 'inactive'"
@@ -1096,7 +1113,7 @@
 				<input type="button" class="button" value="+" @click="new_scaling = new_scaling + 1" />
 			</div>
 
-			<div class="edit-notes edit-attribute" v-if="edit_notes">
+			<div class="edit-notes edit-attribute" v-if="editing_notes">
 				<textarea class="notes" :class="{ 'changed': (trait.notes ?? '') != new_notes }" v-model="new_notes" placeholder="notes" @contextmenu="(e) => e.stopPropagation()"
 					v-if="player.is_gm || (props.entity_id == player.player_character.id || props.entity_id?.startsWith('Relations/'))" />
 			</div>
@@ -1247,25 +1264,38 @@
 			</div>
 		</div>
 
-		<div class="edit-buttons" :class="{ 'small-buttons': player.small_buttons }" v-if="mode == view_modes.Editing">
+		<div class="edit-buttons" :class="{ 'small-buttons': player.small_buttons }"
+				v-if="mode == view_modes.Viewing ||
+					mode == view_modes.Editing">
+			<input type="button" class="button-mnml play-button"
+				:value="player.small_buttons ? '▶' : '▶ play trait'"
+				@click.stop="play_trait"
+				v-if="mode == view_modes.Viewing" />
+			
+			<input type="button" class="button-mnml edit-button"
+				:value="player.small_buttons ? '✎' : '✎ edit trait'"
+				@click.stop="mode = view_modes.Editing"
+				v-if="mode == view_modes.Viewing" />
+			
 			<input  type="button" class="button-mnml save-button"
 				:value="player.small_buttons ? '💾' : '💾' + (inherited ? 'overwrite' : 'save') + ' trait'"
 				@click.stop="submit_changes(false)"
-				v-if="can_edit" />
+				v-if="can_edit && mode == view_modes.Editing" />
 			
 			<input  type="button" class="button-mnml save-temp-button"
 				:value="player.small_buttons ? '💾' : '💾' + (inherited ? 'overwrite' : 'save') + ' trait\n(this session only)'"
 				@click.stop="submit_changes(true)"
-				v-if="can_edit" />
+				v-if="can_edit && mode == view_modes.Editing" />
 
 			<input  type="button" class="button-mnml cancel-button"
 				:value="player.small_buttons ? '✖' : '✖ cancel'"
-				@click.stop="cancel_edit" />
+				@click.stop="cancel_edit"
+				v-if="[view_modes.Editing, view_modes.Viewing].includes(mode)" />
 				
 			<input  type="button" class="button-mnml remove-button"
 				:value="player.small_buttons ? '🗑' : '🗑 remove trait'"
 				@click.stop="delete_trait"
-				v-if="can_edit && !inherited" />
+				v-if="can_edit && !inherited && mode == view_modes.Editing" />
 		</div>
 
 		</div>
@@ -1284,7 +1314,6 @@
 		}
 		.descriptor {
 			display: flex;
-			flex-grow: 1;
 			.trait-text .trait-name {
 				display: flex;
 				justify-content: space-between;
@@ -1309,9 +1338,7 @@
 		.scaling {
 			font-size: 2em !important;
 			transform: translateY(+.4em);
-		}
-		.explanation {
-			font-size: .8em;
+			white-space: nowrap;
 		}
 		.statement {
 			padding-left: .5em;
@@ -1408,6 +1435,47 @@
 					font-size: 2em;
 					line-height: 0;
 				}
+			}
+		}
+		.edit-buttons {
+			display: flex;
+			min-height: 3em;
+			position: sticky;
+			bottom: 0;
+			z-index: 1;
+			.button-mnml {
+				flex-grow: 1;
+				margin: 0;
+				padding: .5em 0;
+			}
+			&.small-buttons .button-mnml {
+				font-size: 1.2em;
+			}
+			.button-mnml:hover {
+				font-weight: bold;
+				flex-grow: 1.5;
+			}
+			.play-button {
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+			}
+			.edit-button {
+				background-color: var(--color-editing);
+				color: var(--color-editing-text);
+			}
+			.save-button {
+				border-right: 1px solid var(--color-editing);
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+			}
+			.cancel-button {
+				background-color: var(--color-background);
+				color: var(--color-text);
+			}
+			.remove-button {
+				border-left: 1px solid var(--color-editing);
+				background-color: var(--color-hitch);
+				color: var(--color-hitch-text);
 			}
 		}
 		&.editing {
@@ -1519,39 +1587,6 @@
 					}
 				}
 			}
-			.edit-buttons {
-				display: flex;
-				min-height: 3em;
-				position: sticky;
-				bottom: 0;
-				z-index: 1;
-				.button-mnml {
-					flex-grow: 1;
-					margin: 0;
-					padding: .5em 0;
-				}
-				&.small-buttons .button-mnml {
-					font-size: 1.2em;
-				}
-				.button-mnml:hover {
-					font-weight: bold;
-					flex-grow: 1.5;
-				}
-				.save-button {
-					border-right: 1px solid var(--color-editing);
-					background-color: var(--color-highlight);
-					color: var(--color-highlight-text);
-				}
-				.cancel-button {
-					background-color: var(--color-disabled);
-					color: var(--color-disabled-text);
-				}
-				.remove-button {
-					border-left: 1px solid var(--color-editing);
-					background-color: var(--color-hitch);
-					color: var(--color-hitch-text);
-				}
-			}
 			.add-sfx-list {
 				display: flex;
 				flex-wrap: wrap;
@@ -1598,9 +1633,13 @@
 		.trait {
 			/* flex-grow: 1; */
 			scroll-snap-align: center;
+			width: 70%;
 			.trait-inner {
 				border-radius: 10px;
 				height: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
 			}
 			/* margin: .6em .4em; */
 			border-radius: 10px;
@@ -1611,6 +1650,15 @@
 				.rating {
 					margin-left: .2em;
 				}
+			}
+			.explanation {
+				box-shadow: inset 0 0 10px var(--color-border);
+				padding: 1em;
+				width: 80%;
+				text-align: center;
+				background-color: var(--color-border);
+				color: var(--color-disabled);
+				margin: 0 10%;
 			}
 			.statement {
 				font-style: italic;
@@ -1986,11 +2034,10 @@
 				}
 			}
 		}
-		.explanation {
-			display: none;
-		}
-		.viewing .explanation, .editing .explanation {
-			display: block;
+		.viewing {
+			/* flex-grow: 1; */
+			width: 100%;
+			height: 100%;
 		}
 		.sfxs {
 			border-top: 1px solid var(--color-border);
@@ -2012,6 +2059,7 @@
 			}
 			.explanation.label {
 				font-style: italic;
+				font-size: .8em;
 			}
 			.statement {
 				font-family: 'Courier New', Courier, monospace;

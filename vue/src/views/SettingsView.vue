@@ -55,6 +55,21 @@
 		edit_dicepool_limit_manually.value = false
 	}
 
+	const new_font_size = ref<number>(player.font_size ?? 16)
+	const edit_font_size_manually = ref(false)
+	function update_font_size() {
+		player.font_size = new_font_size.value
+		edit_font_size_manually.value = false
+	}
+	function increase_font_size() {
+		new_font_size.value++
+		update_font_size()
+	}
+	function decrease_font_size() {
+		new_font_size.value--
+		update_font_size()
+	}
+
 	const player_name: Ref<string> = ref(player.player_name)
 	function update_player_name() {
 		player.player_name = player_name.value
@@ -160,20 +175,20 @@
 							<label id="player-name-updated" for="player_name" v-if="player.player_name == player_name">✅</label>
 						</div>
 					</div>
-					<div class="setting">
+					<div class="setting architect-switcher">
 						<label for="is_gm">role</label>
 						<ToggleButton truthy="player" falsy="architect" :default="!player.is_gm" @toggle="toggle_gm" />
 					</div>
-					<div class="setting">
+					<div class="setting icon-label-switcher">
 						<label for="small_buttons">button labels</label>
 						<!-- <input id="small_buttons" type="button" class="button" :value="small_buttons" @click="toggle_small_buttons" /> -->
 						<ToggleButton truthy="🔘" :falsy="'ℹ\nbutton labels'" :default="player.small_buttons" @toggle="toggle_small_buttons" />
 					</div>
-					<div class="setting">
+					<div class="setting data-saving-switcher">
 						<label for="data_saving">data saving</label>
 						<ToggleButton truthy="on" falsy="off" :default="player.data_saving" @toggle="toggle_data_saving" />
 					</div>
-					<div v-if="player.is_gm" class="setting">
+					<div v-if="player.is_gm" class="setting dicepool-limit-slider">
 						<label>dicepool limit</label>
 						<div id="dicepool-limit">
 							<input type="button" class="button" value="-" @click="decrease_dicepool_limit" v-if="!edit_dicepool_limit_manually" />
@@ -184,9 +199,25 @@
 							<input class="dicepool-limit" type="text" v-model="new_dicepool_limit" v-if="edit_dicepool_limit_manually" />
 							<input type="button" class="button" value="ok" @click="update_dicepool_limit" v-if="edit_dicepool_limit_manually && dicepool_limit != new_dicepool_limit" />
 							<input type="button" class="button" value="x" @click="edit_dicepool_limit_manually = false" v-if="edit_dicepool_limit_manually" />
-
+							
 							<input type="button" class="button" value="+" @click="increase_dicepool_limit" v-if="!edit_dicepool_limit_manually" />
 						</div>
+						<input type="range" class="dicepool-limit-slider" min="0" max="20" v-model="new_dicepool_limit" v-if="edit_dicepool_limit_manually" @change="update_dicepool_limit" />
+					</div>
+
+					<div class="setting font-size-slider">
+						<label>font size</label>
+						<div id="font-size">
+							<input type="button" class="button" value="-" @click="decrease_font_size" />
+							<span class="font-size" @click="edit_font_size_manually = true; new_font_size = font_size">
+								{{ new_font_size }} px
+							</span>
+							<input class="font-size" type="text" v-model="new_font_size" v-if="edit_font_size_manually" />
+							<input type="button" class="button" value="ok" @click="update_font_size" v-if="edit_font_size_manually && font_size != new_font_size" />
+							<input type="button" class="button" value="x" @click="edit_font_size_manually = false" v-if="edit_font_size_manually" />
+							<input type="button" class="button" value="+" @click="increase_font_size" />
+						</div>
+						<input type="range" class="font-size-slider" min="8" max="24" v-model="new_font_size" v-if="edit_font_size_manually" @change="update_font_size" />
 					</div>
 				</div>
 				<CharacterOverview class="setting-page" v-if="view == 'characters'" @show_entity="emit('show_entity', $event)" />

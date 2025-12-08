@@ -230,7 +230,7 @@
 			v-if="visible">
 		<div class="card-wrapper" :style="backgroundStyle">
 		</div>
-		<p class="entity-type">{{ entity_type_icon }}</p>
+		<p class="entity-type" v-if="player.is_gm">{{ entity_type_icon }}</p>
 		<p class="archetype-label" v-if="entity.isArchetype">*</p>
 		<p class="name" v-if="props.show_name">{{ entity?.name }}</p>
 		<transition name="options-transition">
@@ -284,6 +284,92 @@
 		padding: 0;
 		cursor: pointer;
 		width: 100px;
+		.entity-type {
+			position: absolute;
+			top: -10px;
+			left: -5px;
+			font-size: 1.2em;
+			font-weight: bold;
+			color: var(--color-text);
+			z-index: 1;
+		}
+		.card-wrapper {
+			height: inherit;
+			width: inherit;
+			display: flex;
+			flex-direction: column;
+			border-radius: inherit;
+			justify-content: end;
+			color: var(--color-text);
+			padding: 0.5rem;
+			position: relative;
+			z-index: 1;
+			/* background-image: linear-gradient(to top, var(--color-background) 0, var(--color-background-mute) 15%, transparent 30%); */
+			p {
+				vertical-align: middle;
+			}
+			input {
+				display: block;
+			}
+			.followers {
+				position: absolute;
+				display: flex;
+				gap: .2em;
+				left: 50%;
+				transform: translateX(-50%);
+				bottom: -1.6em;
+				.follower {
+					height: 32px;
+					width: 32px;
+					.card-wrapper {
+						border-width: 2px;
+					}
+					.name {
+						display: none;
+					}
+				}
+			}
+			.dice {
+				position: absolute;
+				height: 140px;
+				overflow: hidden;
+				top: -20px;
+				width: 120px;
+				left: -10px;
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: space-between;
+				align-content: space-between;
+				gap: 2px;
+				.die {
+					margin: 2px;
+				}
+			}
+			.score {
+				font-size: .8em;
+				position: absolute;
+				top: 0px;
+				right: 2px;
+				color: var(--color-border);
+			}
+			.availability {
+				font-size: .8em;
+				position: absolute;
+				bottom: 2px;
+				right: 4px;
+				color: var(--color-border);
+			}
+			.live .availability {
+				color: var(--color-highlight);
+			}
+			.subtitle {
+				font-size: .8em;
+			}
+			.vision {
+				font-style: italic;
+				font-size: .8em;
+			}
+		}
 		.options {
 			interpolate-size: allow-keywords;
 			position: absolute;
@@ -365,83 +451,6 @@
 		.options-transition-leave-from {
 			width: auto;
 			padding-left: 1em;
-		}
-		.card-wrapper {
-			height: inherit;
-			width: inherit;
-			display: flex;
-			flex-direction: column;
-			border-radius: inherit;
-			justify-content: end;
-			color: var(--color-text);
-			padding: 0.5rem;
-			position: relative;
-			z-index: 1;
-			/* background-image: linear-gradient(to top, var(--color-background) 0, var(--color-background-mute) 15%, transparent 30%); */
-			p {
-				vertical-align: middle;
-			}
-			input {
-				display: block;
-			}
-			.followers {
-				position: absolute;
-				display: flex;
-				gap: .2em;
-				left: 50%;
-				transform: translateX(-50%);
-				bottom: -1.6em;
-				.follower {
-					height: 32px;
-					width: 32px;
-					.card-wrapper {
-						border-width: 2px;
-					}
-					.name {
-						display: none;
-					}
-				}
-			}
-			.dice {
-				position: absolute;
-				height: 140px;
-				overflow: hidden;
-				top: -20px;
-				width: 120px;
-				left: -10px;
-				display: flex;
-				flex-wrap: wrap;
-				justify-content: space-between;
-				align-content: space-between;
-				gap: 2px;
-				.die {
-					margin: 2px;
-				}
-			}
-			.score {
-				font-size: .8em;
-				position: absolute;
-				top: 0px;
-				right: 2px;
-				color: var(--color-border);
-			}
-			.availability {
-				font-size: .8em;
-				position: absolute;
-				bottom: 2px;
-				right: 4px;
-				color: var(--color-border);
-			}
-			.live .availability {
-				color: var(--color-highlight);
-			}
-			.subtitle {
-				font-size: .8em;
-			}
-			.vision {
-				font-style: italic;
-				font-size: .8em;
-			}
 		}
 		&.no-image {
 			.card-wrapper {

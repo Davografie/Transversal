@@ -15,7 +15,8 @@
             <span v-if="amount" class="amount">
                 {{ amount }}
             </span>
-            <span class="icon">☯</span>
+            <!-- <span class="icon">☯</span> -->
+			<img src="/img/icons/plot_point.png" class="icon" />
         </div>
         <span class="label" v-if="!player.small_buttons"> plot point{{ ((amount ?? 0) > 1 ? 's' : '') }}</span>
     </button>
@@ -38,6 +39,8 @@
         }
         .icon {
             font-size: 1.8em;
+            max-width: 1.4em;
+            max-height: 1.4em;
         }
         .label {
             font-size: .8em;

@@ -289,12 +289,18 @@ def retrieve_hierarchy(location_id):
 
 class Player(ObjectType):
 	uuid = ID()
+	id = ID()
 	name = String()
 	is_gm = Boolean()
 	character = Field(lambda: Character)
+	entities = List(lambda: Entity)
 
 	def resolve_character(parent, info):
 		return next((char for char in session_characters if char['uuid'] == parent.uuid), None)
+
+	def resolve_entities(parent, info):
+		relations = db.collection('Relations').find({ '_from': parent.id })
+		return [Entity(id=relation.get('_to')) for relation in relations]
 
 class Dicepool(ObjectType):
 	dice = List(JSONString)
@@ -402,12 +408,20 @@ class SFX(ObjectType):
 	id = ID()
 	name = String()
 	description = String()
+	traits = List(lambda: Trait)
 
 	def resolve_name(parent, info):
 		return get_doc_by_id('SFXs', parent.id)['name']
 
 	def resolve_description(parent, info):
 		return get_doc_by_id('SFXs', parent.id)['description']
+
+	def resolve_traits(parent, info):
+		query = f"""FOR trait IN Traits
+			FILTER '{ parent.id }' IN trait.possible_sfxs
+			RETURN trait"""
+		cursor = db.aql.execute(query)
+		return [Trait(id=doc.get('_id')) for doc in cursor]
 
 class CreateSFX(Mutation):
 	class Arguments:
