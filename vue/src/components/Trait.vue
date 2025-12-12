@@ -961,7 +961,10 @@
 				<div class="notes" v-html="marked.parse(trait.notes)"
 					v-if="trait.notes
 					&& mode != view_modes.Editing
-					&& mode != view_modes.Small
+					&& (
+						mode != view_modes.Small ||
+						!trait.statement
+					)
 					&& (player.is_gm
 						|| props.entity_id == player.player_character.id
 						|| props.entity_id?.startsWith('Relations/')
@@ -990,11 +993,14 @@
 		</div>
 		<div class="label explanation"
 			title="trait explanation"
-			v-if="preferredColor == 'light' ||
-				[view_modes.Viewing, view_modes.Editing].includes(mode) ||
-				// mode == view_modes.Viewing ||
-				// mode == view_modes.Editing ||
-				player.viewing"
+			v-if="trait.explanation &&
+				(
+					preferredColor == 'light' ||
+					[view_modes.Viewing, view_modes.Editing].includes(mode) ||
+					// mode == view_modes.Viewing ||
+					// mode == view_modes.Editing ||
+					player.viewing
+				)"
 			v-html="marked(trait.explanation ?? '')">
 		</div>
 
@@ -1308,7 +1314,7 @@
 		display: flex;
 		flex-direction: column;
 		max-height: 100%;
-		overflow-y: auto;
+		/* overflow-y: auto; */
 		.traitset-name {
 			font-size: small;
 		}
@@ -1359,7 +1365,6 @@
 			font-size: .8em;
 			position: relative;
 			padding-left: 1.5em;
-			flex-grow: 1;
 			.sfx-sparkles {
 				position: absolute;
 				left: 0;
@@ -1637,6 +1642,7 @@
 			.trait-inner {
 				border-radius: 10px;
 				height: 100%;
+				overflow-y: auto;
 				display: flex;
 				flex-direction: column;
 				justify-content: space-between;
@@ -1658,7 +1664,8 @@
 				text-align: center;
 				background-color: var(--color-border);
 				color: var(--color-disabled);
-				margin: 0 10%;
+				margin: .4em 10%;
+				font-style: italic;
 			}
 			.statement {
 				font-style: italic;
@@ -2081,6 +2088,9 @@
 			.sfxs,
 			.notes {
 				margin-left: 1.4em;
+			}
+			.sfxs {
+				flex-grow: 1;
 			}
 			&.negative {
 				color: var(--color-hitch);
