@@ -226,18 +226,18 @@
 				<TraitsetView class="setting-page" v-if="traitset_key && view == 'traitset'" :traitset_key="traitset_key" />
 				<SFXOverview class="setting-page" v-if="view == 'sfxs'" />
 				<RulesView class="setting-page" v-if="view == 'rules'" />
+				<div class="button menu-button"
+						:class="{ 'active': scroll.x.value > 0}"
+						@click="scroll.x.value > 0 ? container.scrollTo(0, 0) : container.scrollTo(300, 0)"
+						v-if="player.orientation == 'vertical'">
+					<span class="icon">
+						{{scroll.x.value > 0 ? '➡' : '⬅'}}
+					</span>
+					<span class="label" v-if="!player.small_buttons">
+						menu
+					</span>
+				</div>
 			</div>
-		</div>
-		<div class="button menu-button"
-				:class="{ 'active': scroll.x.value > 0}"
-				@click="scroll.x.value > 0 ? container.scrollTo(0, 0) : container.scrollTo(300, 0)"
-				v-if="player.orientation == 'vertical'">
-			<span class="icon">
-				{{scroll.x.value > 0 ? '➡' : '⬅'}}
-			</span>
-			<span class="label" v-if="!player.small_buttons">
-				menu
-			</span>
 		</div>
 		<!-- <div class="bottom-scroll-space scroll-space"></div> -->
 	</div>
@@ -278,12 +278,16 @@
 				padding-bottom: 5em;
 				display: flex;
 				width: 100vw;
+				position: relative;
 				#settings {
 					display: flex;
 					flex-direction: column;
 					justify-content: center;
 					align-items: center;
 					gap: 2em;
+					height: 100vh;
+					padding-bottom: 8em;
+					overflow: auto;
 					.setting {
 						width: 100%;
 						display: flex;
@@ -329,27 +333,27 @@
 					overflow-y: auto;
 					flex-grow: 1;
 				}
-			}
-		}
-		.menu-button {
-			position: absolute;
-			top: 0;
-			left: 140px;
-			margin: 0;
-			width: 3em;
-			border-radius: 0 0 10px 0;
-			border-right: none;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.5em;
-			.icon {
-				font-size: 1.6em;
-			}
-			.label {
-				font-size: 1em;
-				transform: rotate(-90deg);
-				margin-bottom: 1em;
+				.menu-button {
+					position: absolute;
+					top: 0;
+					left: 0;
+					margin: 0;
+					width: 3em;
+					border-radius: 0 0 10px 0;
+					border-right: none;
+					display: flex;
+					flex-direction: column;
+					align-items: center;
+					gap: 0.5em;
+					.icon {
+						font-size: 1.6em;
+					}
+					.label {
+						font-size: 1em;
+						transform: rotate(-90deg);
+						margin-bottom: 1em;
+					}
+				}
 			}
 		}
 	}
