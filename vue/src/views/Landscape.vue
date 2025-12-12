@@ -52,7 +52,7 @@
 
 		<div id="panels" v-if="route.matched.length < 2 || route.matched[1].name != 'Settings'">
 			<CharacterView
-				class="panel"
+				class="panel character-panel"
 				v-if="player.the_entity"
 				:entity_key="player.the_entity?.key"
 				orientation="horizontal"
@@ -122,6 +122,9 @@
 		grid-template-columns: 3fr 4fr 130px;
 		width: 100vw;
 		height: 100vh;
+		.character-panel {
+			background-image: linear-gradient(to left, var(--color-background-mute) 0, transparent 20px);
+		}
 	}
 	.panel {
 		/* padding-top: v-bind(header_height + 'px'); */
