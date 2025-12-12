@@ -505,8 +505,11 @@
 		if(player.is_player) {
 			switch_to_entity(entity_id)
 		}
-		if(player.is_gm) {
+		else if(player.is_gm && player.orientation == 'horizontal') {
 			emit('show_entity', entity_id)
+		}
+		else {
+			switch_to_entity(entity_id)
 		}
 		entityOverviewType.value = 'NONE'
 	}
@@ -806,6 +809,7 @@
 			</div>
 		</div>
 		<div id="traitsets" ref="traitset_wrapper" v-if="character.traitsets">
+			<div class="traitset-top-scroll-space"></div>
 			<Traitset
 				v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
 				:key="set.id + character.key"
@@ -1166,9 +1170,11 @@
 				gap: .8em;
 				padding: 1em;
 				padding-top: 2.8em;
-				padding-bottom: 8em;
 				scroll-snap-type: y mandatory;
 				scroll-behavior: smooth;
+				.top-scroll-space {
+					scroll-snap-align: start;
+				}
 				.bottom-scroll-space {
 					scroll-snap-align: end;
 				}
@@ -1209,5 +1215,8 @@
 	} */
 	#mobile-container #charactersheet-container #entity-wrapper {
 		padding-bottom: 3em;
+		#traitsets {
+			padding-bottom: 105px;
+		}
 	}
 </style>
