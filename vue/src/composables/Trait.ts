@@ -87,6 +87,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					hidden
 					fromEntity {
 						id
+						name
 					}
 				}
 				requiredTraits {

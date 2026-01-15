@@ -466,8 +466,8 @@ export function useLocation(init?: Location, location_key?: string) {
 
 	function set_location_visibility(hide?: boolean) {
 		console.log('set_location_visibility: ' + (hide ?? !location.value.hidden))
-		const query = gql`mutation HideLocation($locationId: ID!, $entityInput: EntityInput) {
-			updateEntity(locationId: $locationId, entityInput: $entityInput) {
+		const query = gql`mutation HideLocation($entityId: ID!, $entityInput: EntityInput) {
+			updateEntity(entityId: $entityId, entityInput: $entityInput) {
 				entity {
 					id
 				}
@@ -476,7 +476,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		if(apolloClient) {
 			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
 			mutate({
-				"key": location.value.key,
+				"entityId": location.value.id,
 				"entityInput": {
 					"hidden": hide ?? !location.value.hidden ?? false
 				}

@@ -30,7 +30,8 @@ export interface Dicepool {
 
 export interface Player {
     uuid: string
-    player_name: string
+    id: string
+    name: string
     is_gm: boolean
     phase: string
 }
@@ -81,6 +82,7 @@ export interface TraitSetting {
 }
 
 export interface TraitSettingInput {
+    newTraitId?: string
     statement?: string
     notes?: string
     ratingType?: string

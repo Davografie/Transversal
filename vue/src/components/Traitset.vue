@@ -17,7 +17,12 @@
 	import { useEntity } from '@/composables/Entity'
 	import { die_shapes } from '@/composables/Die'
 
-	import type { SFX as SFXType, Trait as TraitType, Die as DieType } from '@/interfaces/Types'
+	import type {
+		SFX as SFXType,
+		Trait as TraitType,
+		Die as DieType,
+		Entity as EntityType
+	} from '@/interfaces/Types'
 
 	import { usePlayer } from '@/stores/Player'
 	import { useDicepool } from '@/composables/Dicepool'
@@ -25,6 +30,7 @@
 	const props = defineProps<{
 		traitset_id: string,
 		entity_id: string,
+		entity?: EntityType,
 		relation_id?: string,
 		limit?: number,
 		expanded?: boolean,
@@ -367,9 +373,15 @@
 	const filter = ref('')
 	const filtering = ref(false)
 
+// !highlighted_traits.value.includes(t.traitSettingId)
 	const traits_to_display = computed(() => {
 		if(traitset.value.traits) {
 			let result = <TraitType[]>[]
+
+			// experimental, show only traits that are highlighted
+			if(highlighted_traits.value.length > 0) {
+				return traitset.value.traits.filter((t) => highlighted_traits.value.includes(t.traitSettingId ?? ''))
+			}
 
 			const filtered_traits = traitset.value.traits.filter((trait) => {
 				return (
@@ -525,7 +537,7 @@
 				</span>
 
 			</div>
-			<div class="limiter" v-if="!show_traits || props.active">
+			<div class="limiter">
 				<span v-if="limiter - traits_in_dicepool.length > 0" v-for="i in limiter - traits_in_dicepool.length" :key="i">
 					{{ die_shapes.default_inactive }}
 				</span>
@@ -534,7 +546,7 @@
 				</span>
 			</div>
 
-			<div v-else></div>
+			<!-- <div v-else></div> -->
 		</div>
 
 
@@ -616,8 +628,9 @@
 			</div>
 
 			<div class="entity-traits" v-if="extended && !adding_trait">
-				<template class="highlighted-traits" v-for="trait in traits_to_display.filter(t => highlighted_traits.includes(t.traitSettingId))"
-						:key="trait.traitSettingId">
+				<template class="highlighted-traits" v-for="trait in traits_to_display"
+						:key="trait.traitSettingId"
+						v-if="highlighted_traits.length > 0">
 					<Trait
 						:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
 						:trait_id="trait.id"
@@ -661,7 +674,7 @@
 							traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
 						"></div> -->
 				</template>
-				<template class="not-highlighted-traits" v-for="trait in traits_to_display.filter(t => !highlighted_traits.includes(t.traitSettingId))"
+				<template class="not-highlighted-traits" v-if="highlighted_traits.length == 0" v-for="trait in traits_to_display"
 						:key="trait.traitSettingId">
 					<Trait
 						:id="'ts-' + trait.traitSettingId + '-' + entity.key"
@@ -670,6 +683,7 @@
 						:traitset_id="traitset.id"
 						:trait_setting_id="trait.traitSettingId"
 						:entity_id="props.entity_id"
+						:entity="props.entity"
 						:highlight_root_id="root_highlight_id"
 						:location_key="props.location_key"
 						:traitset_limit="limiter"
@@ -1133,7 +1147,7 @@
 		.traitset {
 			scroll-snap-align: center;
 			scroll-snap-stop: always;
-			max-height: 100%;
+			/* height: 100%; */
 			/* overflow-y: auto; */
 			overflow: hidden;
 			display: flex;
@@ -1186,7 +1200,7 @@
 					gap: .4em;
 					/* flex-wrap: wrap; */
 					padding: .4em;
-					max-height: calc(100% - 2.4em);
+					/* max-height: calc(100% - 2.4em); */
 					/* overflow: hidden; */
 					overflow-x: auto;
 					overflow-y: hidden;
@@ -1210,7 +1224,7 @@
 						scroll-snap-type: x mandatory;
 						.potential-trait, .excluded-trait {
 							scroll-snap-align: center;
-							max-width: 100%;
+							max-width: 40%;
 						}
 					}
 				}
@@ -1219,7 +1233,7 @@
 				display: none;
 			}
 			&.active {
-				height: 100%;
+				max-height: 90%;
 				.set-title {
 					background-color: var(--color-background-soft);
 					text-shadow: none;

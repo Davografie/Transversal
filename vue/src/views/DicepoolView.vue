@@ -275,6 +275,9 @@
 											@longpress_die="(die: DieType) => longtap_die(die)" />
 									</div>
 									<div id="simple-dice" v-else>
+										<div id="average-result" v-if="dicepoolStore.dice.length > 0">
+											{{ (dicepoolStore.dice.map((d) => d.sides).reduce((acc, curr) => acc + (curr / 2), 0) / dicepoolStore.dice.length ) * dicepool.result_limit.value }}
+										</div>
 										<template v-for="die in dicepool.interactive_dice.value" :key="die.id">
 											<DieComponent
 												v-if="die.id != editing_die?.id"

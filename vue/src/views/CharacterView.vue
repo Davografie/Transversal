@@ -138,8 +138,11 @@
 
 
 	// entity portrait
+	// const portrait_image = ref(null)
+
 	const file_upload: Ref<File | null> = ref(null)
 	const portrait_img = ref(null)
+	const { width: portrait_width} = useElementSize(portrait_img)
 
 	const portrait_updated = ref(false)
 	const show_image = ref(false)
@@ -226,7 +229,7 @@
 	const { height: portraitHeight, width: portraitWidth } = useElementSize(portrait_img)
 	const { width: entity_width } = useElementSize(entity_wrapper)
 
-	const { y: scrollY, directions: scrollDirections } = useScroll(character_wrapper)
+	// const { y: scrollY, directions: scrollDirections } = useScroll(character_wrapper)
 	const { y: traitset_scrollY, directions: traitset_scrollDirections, arrivedState: traitset_arrived } = useScroll(traitset_wrapper)
 
 	const detail_height = computed(() => portrait_img.value ? portraitHeight.value * 0.9 : 200)
@@ -252,18 +255,22 @@
 	const show_controls = ref(false)
 	const banner_width = computed(() => (props.windowWidth ?? entity_width.value) - portraitWidth.value)
 
+	const min_banner_height = 100
+	const max_banner_height = 200
 	const banner_height = computed(() => {
 		// uses entity.value.image.width and the traitset scroll Y to determine the banner height
 		// at top of traitset scroll the banner is max size
 		// scrolling down shrinks the banner height to min size, depending on scroll Y
 		// where it remains until the user scrolled back up to the top
-		const min_height = 100
-		const max_height = 200
 		const scrollY_threshold = 100
 		const scrollY_ratio = Math.min(1, traitset_scrollY.value / scrollY_threshold)
-		const height = max_height - (max_height - min_height) * scrollY_ratio
+		const height = max_banner_height - (max_banner_height - min_banner_height) * scrollY_ratio
 		return height
 	})
+
+	function reset_scroll() {
+		traitset_scrollY.value = 0
+	}
 
 	function scroll_to_element(element_id: string) {
 		console.log("scrolling to element: " + element_id)
@@ -321,6 +328,7 @@
 		active_traitset_id.value = character.value.traitsets && character.value.traitsets.length > 0 ?
 			character.value.traitsets[0].id :
 			''
+		show_controls.value = false
 	})
 
 	// traits
@@ -440,6 +448,7 @@
 			})
 		}
 		character_wrapper.value?.scrollIntoView({ behavior: 'smooth' })
+		reset_scroll()
 		// if(player.is_gm) {
 		// 	watch(character, () => {
 		// 		if(player.perspective_id != character.value.id && character.value.entityType == 'npc') {
@@ -457,7 +466,10 @@
 		}
 		else if(player.is_player) {
 			player.player_character_key = entity_id.substring(9)
-			if(player.uuid) { activate_character(player.uuid) }
+			nextTick(() => {
+				player.retrieve_character()
+			})
+			// if(player.uuid) { activate_character(player.uuid) }
 		}
 		// switching_entities.value = false
 		entityOverviewType.value = 'NONE'
@@ -529,12 +541,13 @@
 				:src="img_link_large" />
 		</div>
 		<div id="character-details">
-			<div id="character-portrait" ref="portrait_img">
+			<div id="character-portrait">
 				<img :src="img_link_small"
 					v-touch:hold="longpress_portrait"
 					@click.right="longpress_portrait"
 					@click="click_portrait"
-					@contextmenu="(e) => e.preventDefault()" />
+					@contextmenu="(e) => e.preventDefault()"
+					ref="portrait_img" />
 				<div id="portrait-upload-wrapper" v-if="editing_portrait">
 					<div id="portrait-upload" class="portrait-edit-segment">
 						<input type="file" id="file-upload" @change="handle_fileupload"
@@ -581,39 +594,43 @@
 				<div id="plot_points">
 					<PP class="plot_point" v-for="i in character.pp" v-if="character.pp && character.pp <= 5" :key="i" @click="decrease_pp" />
 					<PP class="plot_point" v-else-if="character.pp" :amount="character.pp" @click="decrease_pp" />
-					<div id="add_pp" @click="increase_pp">
-						<span>{{ player.small_buttons ? '+' : '+☯' }}</span>
+					<div id="add_pp" @click="increase_pp" class="button-mnml">
+						<!-- <span>{{ player.small_buttons ? '+' : '+☯' }}</span> -->
+						<!-- <img src="/img/icons/plot_point.png" class="icon" /> -->
+						<span class="icon">+</span>
 						<span class="label" v-if="!player.small_buttons">add plot point</span>
 					</div>
 				</div>
 
-				<div id="character-description">
-					<div id="character-meta" v-if="player.is_gm">
-						{{ character.isArchetype ? 'archetype ' : '' }}
-						{{ character.entityType }} located in
-						<span v-if="!character.location || player.the_entity?.id == character.id">{{ character.location?.name }}</span>
-						<a v-else @click="player.set_perspective_location(character.location)">{{ character.location?.name }} ⬇</a>
-						<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
-							instance of
-							<EntityCard
-								v-for="archetype in entity.archetypes"
-								:entity_id="archetype.id"
-								override_click
-								@click_entity="click_archetype(archetype.id)"
-								/>
-							<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
+				<Transition name="fade-description">
+					<div id="character-description" v-if="banner_height > min_banner_height">
+						<div id="character-meta" v-if="player.is_gm">
+							{{ character.isArchetype ? 'archetype ' : '' }}
+							{{ character.entityType }} located in
+							<span v-if="!character.location || player.the_entity?.id == character.id">{{ character.location?.name }}</span>
+							<a v-else @click="player.set_perspective_location(character.location)">{{ character.location?.name }} ⬇</a>
+							<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
+								instance of
+								<EntityCard
+									v-for="archetype in entity.archetypes"
+									:entity_id="archetype.id"
+									override_click
+									@click_entity="click_archetype(archetype.id)"
+									/>
+								<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(character.archetype.id)" v-if="player.is_gm && character.archetype" />
+							</div>
 						</div>
+						<div id="character-description-text"
+							v-html="description"
+							v-if="!editing_description"
+							v-touch:hold="longpress_description"
+							@click.right="longpress_description"
+							@contextmenu="(e) => e.preventDefault()" />
+						<textarea id="character-description-text"
+							v-model="new_description"
+							v-if="editing_description" />
 					</div>
-					<div id="character-description-text"
-						v-html="description"
-						v-if="!editing_description"
-						v-touch:hold="longpress_description"
-						@click.right="longpress_description"
-						@contextmenu="(e) => e.preventDefault()" />
-					<textarea id="character-description-text"
-						v-model="new_description"
-						v-if="editing_description" />
-				</div>
+				</Transition>
 				<input type="button" class="button" :value="'save ' + character.entityType"
 					@click="click_save"
 					v-if="editing_description" />
@@ -626,14 +643,12 @@
 			<!-- <div id="character-details-spacer" /> -->
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
 			<div id="character-buttons" :class="[player.small_buttons ? 'small-buttons' : 'verbose-buttons', scrolling_up ? 'scrolling-up' : 'scrolling-down']" v-show="show_controls">
-				<div class="button-mnml" id="switch-gm"
-					title="switch to gm"
-					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'"
-					@click="switch_gm">
-					<!-- <div class="icon">{{ entity_icons['gm'] }}</div> -->
-					<img src="/img/icons/gm.png" class="icon" />
-					<div class="label" v-if="!player.small_buttons">switch to gm</div>
-				</div>
+
+				<ButtonMinimal
+					:function="ButtonTypes.GM"
+					@click="switch_gm"
+					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'" />
+
 				<div class="button-mnml" id="copy-id"
 					title="copy ID"
 					v-if="player.is_gm"
@@ -656,13 +671,20 @@
 					<div class="icon">🤝</div>
 					<div class="label" v-if="!player.small_buttons">create relation</div>
 				</div>
-				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
+
+				<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
 					title="switch entity"
 					v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
 					@click="toggle_quick_switch">
 					<div class="icon">🔁</div>
 					<div class="label" v-if="!player.small_buttons">switch entity</div>
-				</div>
+				</div> -->
+				<ButtonMinimal
+					:class="{ 'active': entityOverviewType == 'QUICK_SWITCH'}"
+					:function="ButtonTypes.SWITCH"
+					v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
+					@click="toggle_quick_switch" />
+
 				<div class="button-mnml" id="archetype"
 					:title="entity.isArchetype ? 'unarchetype' : 'make archetype'"
 					v-if="player.is_gm"
@@ -677,13 +699,18 @@
 					<div class="icon">⊛</div>
 					<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'INSTANCES' ? 'hide' : 'show' }} instances</div>
 				</div>
+
 				<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'ARCHETYPES' }" id="show-archetypes"
 					title="show archetypes"
 					@click="show_archetypes">
 					<div class="icon">⊛</div>
 					<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show' }} archetypes</div>
 				</div> -->
-				<ButtonMinimal :function="ButtonTypes.ADD_ARCHETYPE" @click="entityOverviewType == 'ARCHETYPES' ? entityOverviewType = 'NONE' : entityOverviewType = 'ARCHETYPES'" />
+				<ButtonMinimal
+					:class="{ 'active': entityOverviewType == 'ARCHETYPES'}"
+					:function="ButtonTypes.ADD_ARCHETYPE"
+					@click="entityOverviewType == 'ARCHETYPES' ? entityOverviewType = 'NONE' : entityOverviewType = 'ARCHETYPES'" />
+
 				<div class="button-mnml" id="clone-entity"
 					title="clone entity"
 					v-if="character.isArchetype && player.is_gm"
@@ -705,33 +732,20 @@
 					<div class="icon">👀</div>
 					<div class="label" v-if="!player.small_buttons">known to</div>
 				</div>
-				<div class="button-mnml" id="all-traitsets-collapsed"
-					title="collapse all traitsets"
+
+				<ButtonMinimal :function="ButtonTypes.TRAITSET_CLOSED"
 					@click="cycle_traitset_defaults(false)"
 					@click.right.prevent="cycle_traitset_defaults(true)"
-					v-if="player.traitset_defaults == 'COLLAPSED'">
-					<!-- <div class="icon">📕</div> -->
-					<img src="/img/icons/closed.png" class="icon" />
-					<div class="label" v-if="!player.small_buttons">collapsed</div>
-				</div>
-				<div class="button-mnml" id="only-active-traitset"
-					title="only show active traitset"
+					v-if="player.traitset_defaults == 'COLLAPSED'" />
+				<ButtonMinimal :function="ButtonTypes.TRAITSET_ACTIVE"
 					@click="cycle_traitset_defaults(false)"
 					@click.right.prevent="cycle_traitset_defaults(true)"
-					v-else-if="player.traitset_defaults == 'ACTIVE'">
-					<!-- <div class="icon">📑</div> -->
-					<img src="/img/icons/active.png" class="icon" />
-					<div class="label" v-if="!player.small_buttons">active</div>
-				</div>
-				<div class="button-mnml" id="all-traitsets-expanded"
-					title="expand all traitsets"
+					v-else-if="player.traitset_defaults == 'ACTIVE'" />
+				<ButtonMinimal :function="ButtonTypes.TRAITSET_OPEN"
 					@click="cycle_traitset_defaults(false)"
 					@click.right.prevent="cycle_traitset_defaults(true)"
-					v-else-if="player.traitset_defaults == 'EXPANDED'">
-					<!-- <div class="icon">📖</div> -->
-					<img src="/img/icons/open.png" class="icon" />
-					<div class="label" v-if="!player.small_buttons">expanded</div>
-				</div>
+					v-else-if="player.traitset_defaults == 'EXPANDED'" />
+
 				<div class="button-mnml" id="delete-entity"
 					title="delete entity"
 					v-if="player.is_gm && character.key != 'placeholder' && !['1', '2'].includes(character.key) && deletion == false"
@@ -771,7 +785,7 @@
 				</div>
 			</div>
 
-			<div id="character-quick-switch" v-show="show_controls"
+			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
 					v-if="entityOverviewType == 'QUICK_SWITCH' && player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0">
 				<EntityCard
 					class="entity-card"
@@ -781,9 +795,9 @@
 					@click_entity="quick_switch(entity_id)" />
 			</div>
 
-			<ArchetypePicker v-if="entityOverviewType == 'ARCHETYPES'" v-show="show_controls" :entity_id="character.id" :entity_type="character.entityType" :location_id="entity.location?.id" />
+			<ArchetypePicker class="character-menu" v-if="entityOverviewType == 'ARCHETYPES'" v-show="show_controls" :entity_id="character.id" :entity_type="character.entityType" :location_id="entity.location?.id" />
 
-			<div id="character-known-to" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0" v-show="show_controls">
+			<div id="character-known-to" class="character-menu" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0" v-show="show_controls">
 				<div class="info">
 					<div class="header">known to</div>
 					<div class="explainer">click to remove from known to</div>
@@ -796,7 +810,7 @@
 				</div>
 			</div>
 
-			<div id="archetype-instances" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
+			<div id="archetype-instances" class="character-menu" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
 				<EntityCard v-for="entity in entity.instances" :key="entity.key"
 					:entity_id="entity.id"
 					override_click
@@ -809,12 +823,13 @@
 			</div>
 		</div>
 		<div id="traitsets" ref="traitset_wrapper" v-if="character.traitsets">
-			<div class="traitset-top-scroll-space"></div>
+			<div class="top-scroll-space"></div>
 			<Traitset
 				v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
 				:key="set.id + character.key"
 				:traitset_id="set.id"
 				:entity_id="character.id"
+				:entity="character"
 				:limit="set.limit"
 				:expanded="((set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE') || player.traitset_defaults == 'EXPANDED') && player.traitset_defaults != 'COLLAPSED'"
 				:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == character.id))"
@@ -827,7 +842,7 @@
 				@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
 				@set_traitset="set_traitset"
 				@unset_traitset="active_traitset_id = ''" />
-			<div class="traitset-bottom-scroll-space"></div>
+			<div class="bottom-scroll-space"></div>
 		</div>
 		<div id="floating-bottom">
 			<div class="button-mnml" @click="traitset_wrapper.scrollTop = 0; show_reference = false" v-if="!traitset_arrived.top">
@@ -869,9 +884,11 @@
 					text-align: center;
 					display: inline-flex;
 					justify-content: space-between;
+					gap: 1em;
 					border-radius: 20px;
-					border: 1px solid var(--color-border);
-					margin-left: 1em;
+					/* border: 1px solid var(--color-border); */
+					margin: 0 .4em;
+					/* width: 100%; */
 					#add_pp {
 						/* background-color: var(--color-background-mute); */
 						padding: .4em .8em;
@@ -879,14 +896,26 @@
 						margin: 0;
 						display: flex;
 						flex-direction: column;
+						.icon {
+							font-size: 1em;
+						}
 						span.label {
 							font-size: .8em;
 						}
 					}
 				}
+				.fade-description-enter-to {
+					opacity: 1;
+				}
+				.fade-description-enter-active {
+					transition: opacity 1s ease;
+				}
+				.fade-description-enter-from, .fade-description-leave-to {
+					opacity: 0;
+				}
 				#character-description {
 					#character-meta, #character-description-text {
-						padding-left: .4em;
+						padding-left: .6em;
 					}
 					#character-description-text {
 						min-height: v-bind((detail_height * .5) + 'px');
@@ -901,8 +930,9 @@
 				position: relative;
 				text-align: center;
 				min-height: 100px;
-				width: fit-content;
-				min-width: 15%;
+				/* width: fit-content; */
+				/* min-width: 15%; */
+				width: v-bind(portrait_width + 'px');
 				img {
 					display: block;
 					/* width: 100%; */
@@ -1068,7 +1098,7 @@
 			flex-grow: 1;
 			overflow-y: auto;
 		}
-		.traitset-bottom-scroll-space {
+		.bottom-scroll-space {
 			height: 100px;
 			width: 100%;
 		}
@@ -1122,9 +1152,9 @@
 				#character-banner {
 					/* text-shadow: #000 0px 0px 2px, #000 0px 0px 4px, #000 0px 0px 8px, #000 0px 0px 2px; */
 					#plot_points {
-						background-color: var(--color-background-mute);
+						/* background-color: var(--color-background-mute); */
 						color: var(--color-text);
-						border: 1px solid var(--color-border);
+						/* border: 1px solid var(--color-border); */
 						#add_pp {
 							color: var(--color-text);
 							border: 1px solid var(--color-border);
@@ -1144,18 +1174,22 @@
 				#character-buttons {
 					scroll-snap-align: start;
 					overflow-x: auto;
+					backdrop-filter: blur(5px);
 					&.scrolling-up {
 						position: sticky;
 						top: 0;
 						z-index: 1;
 					}
-					.button-mnml {
+					.minimal-button {
 						text-shadow: var(--text-shadow);
-						backdrop-filter: blur(5px);
-						box-shadow: inset 0 0 10px var(--color-background-mute);
-						border: 1px solid var(--color-border);
+						/* box-shadow: inset 0 0 10px var(--color-background-mute); */
+						/* border: 1px solid var(--color-border); */
 						padding: .2em 1em;
 					}
+				}
+				.character-menu {
+					background-color: var(--color-background-mute);
+					backdrop-filter: blur(5px);
 				}
 				&.horizontal {
 					background-image: linear-gradient(to left, var(--color-background-mute) 0, transparent 20px, transparent 100%);
@@ -1172,8 +1206,11 @@
 				padding-top: 2.8em;
 				scroll-snap-type: y mandatory;
 				scroll-behavior: smooth;
+				scroll-padding-top: -4em;
 				.top-scroll-space {
-					scroll-snap-align: start;
+					/* scroll-snap-align: start; */
+					/* height: 100px; */
+					background-color: var(--color-background);
 				}
 				.bottom-scroll-space {
 					scroll-snap-align: end;

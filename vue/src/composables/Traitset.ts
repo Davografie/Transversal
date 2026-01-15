@@ -122,6 +122,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 								id
 							}
 							statement
+							notes
 							hidden
 							priority
 						}

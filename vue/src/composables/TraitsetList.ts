@@ -17,7 +17,7 @@ export const placeholder_traitset: Traitset = {
 	]
 }
 
-export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_type?: string) {
+export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_type?: string, location_restriction?: string) {
 	const traitsets: Ref<Traitset[]> = ref(init ? init : [placeholder_traitset])
 	const apolloClient = inject<ApolloClient<Cache>>('apolloClient')
 
@@ -67,6 +67,27 @@ export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_ty
 		}
 	}
 
+	function retrieve_traitsets_by_type_and_location() {
+		const query = gql`query TraitsetsByTypeAndLocation($entityType: String, $locationRestriction: ID) {
+			traitsets(entityType: $entityType, locationRestriction: $locationRestriction) {
+				key
+				id
+				name
+			}
+		}`
+		if(apolloClient) {
+			const { result } = provideApolloClient(apolloClient)(
+				() => useQuery<{traitsets: Traitset[]}>(query,
+					{ entityType: entity_type, locationRestriction: location_restriction }, { fetchPolicy: 'cache-and-network' })
+			)
+			watch(result, (newResult) => {
+				if(newResult) {
+					traitsets.value = newResult.traitsets
+				}
+			})
+		}
+	}
+
 	async function create_traitset(name: string, entity_types: string[]) {
 		const mutate_create_traitset = gql`mutation CreateTraitset($name: String!, $entityTypes: [String]) {
 			createTraitset(name: $name, entityTypes: $entityTypes) {
@@ -112,6 +133,7 @@ export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_ty
 	return {
 		traitsets,
 		retrieve_traitsets,
+		retrieve_traitsets_by_type_and_location,
 		create_traitset,
 		change_traitset_order
 	}

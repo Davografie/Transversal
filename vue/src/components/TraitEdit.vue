@@ -9,7 +9,7 @@
 	import Die from '@/components/Die.vue'
 	import DiePicker from '@/components/DiePicker.vue'
 	import LocationSelector from '@/components/LocationSelector.vue'
-	import TraitSelector from '@/components/TraitSelector.vue'
+	import SubtraitSelector from '@/components/SubtraitSelector.vue'
 	import ToggleButton from '@/components/UI/ToggleButton.vue'
 	import Trait from '@/components/Trait.vue'
 	import SFX from '@/components/SFX.vue'
@@ -414,7 +414,7 @@
 				<div class="sub-traits" v-show="show_subtraits">
 					<h3>subtrait traitsets</h3>
 					<div>
-						<TraitSelector v-for="ts in traitsets.filter(ts => ts.entityTypes?.includes('subtrait'))" :key="ts.id"
+						<SubtraitSelector v-for="ts in traitsets.filter(ts => ts.entityTypes?.includes('subtrait'))" :key="ts.id"
 							:traitset_id="ts.id"
 							:traitset_name="ts.name"
 							:selected_traits="trait.possibleSubTraits?.map(x => x.id)"
@@ -424,7 +424,7 @@
 					</div>
 					<h3 @click="show_linking_subtraits = !show_linking_subtraits">allow linked subtraits</h3>
 					<div v-if="show_linking_subtraits">
-						<TraitSelector v-for="ts in traitsets.filter(ts => !ts.entityTypes?.includes('subtrait'))" :key="ts.id"
+						<SubtraitSelector v-for="ts in traitsets.filter(ts => !ts.entityTypes?.includes('subtrait'))" :key="ts.id"
 							:traitset_id="ts.id"
 							:traitset_name="ts.name"
 							:selected_traits="trait.possibleSubTraits?.map(x => x.id)"

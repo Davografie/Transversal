@@ -49,6 +49,14 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 		}
 	}
 
+	function set_traitset_id(_id: string) {
+		traitset_id = _id
+	}
+
+	function set_entity_id(_id: string) {
+		entity_id = _id
+	}
+
 	function retrieve_entity_traits() {
 		if(apolloClient) {
 			const query_get_entity_traits = gql`
@@ -115,8 +123,10 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 
 	return {
 		traits,
+		set_traitset_id,
 		retrieve_traits,
 		retrieve_entity_traits,
-		retrieve_potential_traits
+		retrieve_potential_traits,
+		set_entity_id
 	}
 }

@@ -1,30 +1,24 @@
 <script setup lang="ts">
 	import { ref, computed } from 'vue'
 	import { useTraitset } from '@/composables/Traitset'
-	import { useTraitList } from '@/composables/TraitList'
-	import TraitsetSelector from './TraitsetSelector.vue'
-	import type {
-		Traitset as TraitsetType,
-		Trait as TraitType,
-		Entity as EntityType
-	} from '@/interfaces/Types'
+	// import { useTraitList } from '@/composables/TraitList'
+	// import TraitsetSelector from './TraitsetSelector.vue'
+	// import type { Traitset as TraitsetType } from '@/interfaces/Types'
 
 	const props = defineProps<{
 		traitset_id?: string,
 		traitset_name?: string,
 		selected_traits?: string[],
-		selected_count?: number,
-		entity?: EntityType
+		selected_count?: number
 	}>()
 
 	const emit = defineEmits([
-		'set_trait',
 		'toggle_subtrait',
 		'toggle_subtraitset'
 	])
 
 	const { traitset, retrieve_traitset, set_traitset_id } = useTraitset(undefined, props.traitset_id, undefined, undefined)
-	const { traits, retrieve_traits, set_traitset_id: set_traitlist_traitset_id } = useTraitList(undefined, props.traitset_id, undefined, undefined)
+	// const { traits, retrieve_traits, set_traitset_id: set_traitlist_traitset_id } = useTraitList(undefined, props.traitset_id, undefined, undefined)
 
 	
 	const show_traits = ref(false)
@@ -37,36 +31,29 @@
 
 	const trait_count = computed(() => props.selected_traits?.filter(x => traitset?.value.traits?.map(y => y.id).includes(x)).length)
 
-	function set_traitset(ts: TraitsetType) {
-		console.log("set traitset: " + ts.name)
-		set_traitset_id(ts.id)
-		retrieve_traitset()
-		set_traitlist_traitset_id(ts.id)
-		retrieve_traits()
-	}
+	// function set_traitset(ts: TraitsetType) {
+	// 	set_traitset_id(ts.id)
+	// 	retrieve_traitset()
+	// 	set_traitlist_traitset_id(ts.id)
+	// 	retrieve_traits()
+	// }
 
-	const default_trait = { id: '', name: '' }
-	const trait = ref(default_trait as TraitType)
+	// const trait = ref()
 
-	const alphabetical_traits = computed(() => {
-		return traits.value.sort((a, b) => a.name.localeCompare(b.name))
-	})
-
-	function select_trait(t: TraitType) {
-		emit('set_trait', t)
-	}
+	// const alphabetical_traits = computed(() => {
+	// 	return traits.value.sort((a, b) => a.name.localeCompare(b.name))
+	// })
 </script>
 
 <template>
     <div class="traitset-selector" :class="{'sub-traitset': traitset?.entityTypes?.includes('subtrait')}">
-		<TraitsetSelector @set_traitset="set_traitset" :initial_traitset_id="props.traitset_id" :entity="props.entity" />
-		<select v-model="trait" v-if="traitset.id != 'placeholder'" @change="select_trait(trait)">
-			<option :value="default_trait">select trait</option>
-			<option v-for="t in alphabetical_traits" :key="t.id" :value="t">
+		<!-- <TraitsetSelector @set_traitset="set_traitset" :initial_traitset_id="props.traitset_id" />
+		<select v-model="trait">
+			<option v-for="t in alphabetical_traits" :key="t.id" :value="t" @click="trait = t">
 				{{ t.name }}
 			</option>
-		</select>
-		<!-- <div class="header" @click="toggle_show_traits">
+		</select> -->
+		<div class="header" @click="toggle_show_traits">
 			<div class="amount">
 				{{ props.selected_count ?? trait_count ?? 0 }}
 			</div>
@@ -84,7 +71,7 @@
 				v-if="show_traits" @click="emit('toggle_subtrait', t)">
 			<div>{{ t.name }}</div>
 			<div>{{ props.selected_traits?.includes(t.id) ? '✓' : 'x' }}</div>
-		</div> -->
+		</div>
     </div>
 </template>
 

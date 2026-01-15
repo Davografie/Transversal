@@ -9,6 +9,7 @@
 
 	const { sfx, retrieve_sfx, retrieve_traits, change_sfx, delete_sfx } = useSFX(undefined, props.sfx_id)
 	retrieve_sfx()
+	retrieve_traits()
 	watch(sfx, (newSfx, oldSfx) => {
 		if(newSfx && newSfx.id != oldSfx?.id) {
 			retrieve_traits()

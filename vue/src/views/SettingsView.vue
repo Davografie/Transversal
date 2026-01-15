@@ -1,10 +1,12 @@
 <script setup lang="ts">
-	import { ref, computed, onMounted, watch } from 'vue'
+	import { ref, computed, watch } from 'vue'
 	import type { Ref } from 'vue'
 	import { templateRef, useScroll } from '@vueuse/core'
 
 	import { useRoute, useRouter, RouterLink } from 'vue-router'
 	
+	import { usePlayerList } from '@/composables/PlayerList'
+
 	import { usePlayer } from '@/stores/Player'
 	import { useDicepool } from '@/composables/Dicepool'
 	import { useSession } from '@/composables/Session'
@@ -26,6 +28,9 @@
 
 	const player = usePlayer()
 	const { dicepool_limit } = useDicepool()
+
+	const { players, retrieve_players } = usePlayerList()
+	retrieve_players()
 
 	const view = ref('settings')
 
@@ -173,6 +178,11 @@
 						<div id="player-name-input">
 							<input id="player_name" type="text" placeholder="player name" v-model="player_name" @blur="update_player_name" />
 							<label id="player-name-updated" for="player_name" v-if="player.player_name == player_name">✅</label>
+						</div>
+						<div id="player-list">
+							<div class="player button" v-for="player in players" :key="player.id">
+								<div class="name">{{ player.name }}</div>
+							</div>
 						</div>
 					</div>
 					<div class="setting architect-switcher">

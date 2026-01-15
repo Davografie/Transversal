@@ -1,7 +1,21 @@
 import { computed } from "vue"
 
+import IconAddArchetype from '@/components/icons/IconAddArchetype.vue';
+import IconSwitch from '@/components/icons/IconSwitch.vue';
+import IconGM from "@/components/icons/IconGM.vue";
+import IconTraitsetsOpen from "@/components/icons/IconTraitsetsOpen.vue";
+import IconTraitsetsActive from "@/components/icons/IconTraitsetsActive.vue";
+import IconTraitsetsClosed from "@/components/icons/IconTraitsetsClosed.vue";
+import IconScaling from "@/components/icons/IconScaling.vue";
+
 export enum ButtonTypes {
 	ADD_ARCHETYPE = 'add_archetype',
+	SWITCH = 'switch',
+	GM = 'gm',
+	TRAITSET_OPEN = 'traitset_open',
+	TRAITSET_ACTIVE = 'traitset_active',
+	TRAITSET_CLOSED = 'traitset_closed',
+	SCALING = 'scaling',
 	CANCEL = 'cancel',
 	SAVE = 'save',
 	EDIT = 'edit',
@@ -10,7 +24,7 @@ export enum ButtonTypes {
 	FOLLOW = 'follow',
 	UNFOLLOW = 'unfollow',
 	FAVORITE = 'favorite',
-	UNFAVORITE = 'unfavorite'
+	UNFAVORITE = 'unfavorite',
 }
 
 export function useButtonTypes(_type: ButtonTypes) {
@@ -18,6 +32,18 @@ export function useButtonTypes(_type: ButtonTypes) {
 		switch (_type) {
 			case ButtonTypes.ADD_ARCHETYPE:
 				return 'add archetype';
+			case ButtonTypes.SWITCH:
+				return 'switch entities';
+			case ButtonTypes.GM:
+				return 'gm';
+			case ButtonTypes.TRAITSET_OPEN:
+				return 'open';
+			case ButtonTypes.TRAITSET_ACTIVE:
+				return 'active';
+			case ButtonTypes.TRAITSET_CLOSED:
+				return 'closed';
+			case ButtonTypes.SCALING:
+				return 'scaling';
 			case ButtonTypes.CANCEL:
 				return 'cancel';
 			case ButtonTypes.SAVE:
@@ -40,8 +66,27 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return '';
 		}
 	})
+	const the_component = computed(() => {
+		switch(_type) {
+			case ButtonTypes.ADD_ARCHETYPE:
+				return IconAddArchetype
+			case ButtonTypes.SWITCH:
+				return IconSwitch
+			case ButtonTypes.GM:
+				return IconGM
+			case ButtonTypes.TRAITSET_OPEN:
+				return IconTraitsetsOpen
+			case ButtonTypes.TRAITSET_ACTIVE:
+				return IconTraitsetsActive
+			case ButtonTypes.TRAITSET_CLOSED:
+				return IconTraitsetsClosed
+			case ButtonTypes.SCALING:
+				return IconScaling
+		}
+	})
 	return {
 		ButtonTypes,
-		label
+		label,
+		the_component
 	}
 }
