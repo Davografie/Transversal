@@ -12,6 +12,7 @@
 	}>()
 
 	const emit = defineEmits([
+		'transverse',
 		'click_entity'
 	])
 
@@ -71,7 +72,7 @@
 			:class="[{ 'super': props.level > 0, 'transversable': props.level == 0, 'zone': props.level < 0 }]"
 			:style="backgroundImage"
 			v-if="(filtered_presence && filtered_presence.length > 0) || (location.zones && location.zones.length > 0)">
-		<div class="parent-location-name">
+		<div class="parent-location-name" @click="emit('transverse', location)">
 			{{ location.name }}
 		</div>
 		<div class="entity-cards">
