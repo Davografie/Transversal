@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { ref } from 'vue'
 	import { usePreferredColorScheme } from '@vueuse/core'
-	import PP from '@/components/PP.vue'
+	import PlotPoint from '@/components/PlotPoint.vue'
 	import Die from '@/components/Die.vue'
 	import Traitset from '@/components/Traitset.vue'
 	import type { Die as DieType, Traitset as TraitsetType } from '@/interfaces/Types'
@@ -230,7 +230,7 @@
 					<div id="contest" class="rule" v-if="show_contest">
 						<p>Challenger builds a dicepool and rolls first.</p>
 						<p>Defender builds a dicepool and tries to beat the challenger's result.</p>
-						<p><PP :amount="1" /> can be paid in order to push through, which means you can rebuild a dicepool and roll again.</p>
+						<p><PlotPoint :amount="1" /> can be paid in order to push through, which means you can rebuild a dicepool and roll again.</p>
 					</div>
 				</div>
 				<div id="heroic_success_wrapper" :class="{ 'wrapper-active': show_heroic_success }">
@@ -253,14 +253,14 @@
 					<div id="sfx" class="rule" v-if="show_sfx">
 						<p>A special effect can have a cost and/or a limit, and has an effect.</p>
 						<p>Pay the cost, within the limits, to activate the effect.</p>
-						<p>Most costs are expressed in <PP />.</p>
+						<p>Most costs are expressed in <PlotPoint />.</p>
 						<p>The default SFXs are:</p>
 						<ul>
-							<li>pay <PP /> to increase how many traits you can pick from the same traitset</li>
-							<li>before rolling, pay <PP /> to increase the result limit of the dicepool</li>
-							<li>pay <PP /> to step up an effect die</li>
-							<li>buy a hitch from the game master for <PP /> to step down a complication</li>
-							<li>after failing a contest, pay <PP /> to push through (i.e. build a new dicepool)</li>
+							<li>pay <PlotPoint /> to increase how many traits you can pick from the same traitset</li>
+							<li>before rolling, pay <PlotPoint /> to increase the result limit of the dicepool</li>
+							<li>pay <PlotPoint /> to step up an effect die</li>
+							<li>buy a hitch from the game master for <PlotPoint /> to step down a complication</li>
+							<li>after failing a contest, pay <PlotPoint /> to push through (i.e. build a new dicepool)</li>
 						</ul>
 					</div>
 				</div>
@@ -359,9 +359,9 @@
 									<Die :die="{ number_rating: 5, rating: 'd12', result: 1, isHitch: true }" in_pool />
 								</p>
 								<p>A hitch is rolling a 1 on a die.</p>
-								<p>When a player rolls a hitch, the game master can buy that hitch by paying the player <PP :amount="1" />, this incurs a d6 complication, or steps up an existing complication, for the player character.</p>
-								<p>When a player rolls multiple hitches in one dicepool, the game master can buy all for <PP :amount="1" />, but it will incur a larger complication.</p>
-								<p>When the game master rolls a hitch, a player can buy that hitch from the game master for <PP :amount="1" />, by doing this the player can step down a complication.</p>
+								<p>When a player rolls a hitch, the game master can buy that hitch by paying the player <PlotPoint :amount="1" />, this incurs a d6 complication, or steps up an existing complication, for the player character.</p>
+								<p>When a player rolls multiple hitches in one dicepool, the game master can buy all for <PlotPoint :amount="1" />, but it will incur a larger complication.</p>
+								<p>When the game master rolls a hitch, a player can buy that hitch from the game master for <PlotPoint :amount="1" />, by doing this the player can step down a complication.</p>
 								<b>Botch</b>
 								<p>A botch is rolling 1's on all dice in a dicepool. Shit hits the fan.</p>
 							</div>

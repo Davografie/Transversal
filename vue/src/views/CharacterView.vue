@@ -12,7 +12,7 @@
 	import type { Traitset as TraitsetType } from '@/interfaces/Types'
 	import { ButtonTypes } from '@/composables/Button'
 
-	import PP from '@/components/PP.vue'
+	import PlotPoint from '@/components/PlotPoint.vue'
 	import Traitset from '@/components/Traitset.vue'
 	import AllTraits from '@/components/AllTraits.vue'
 	import EntityCard from '@/components/EntityCard.vue'
@@ -101,6 +101,15 @@
 		setTimeout(() => retrieve_character(), 200)
 	}
 
+
+	const plot_points_element = ref(null)
+	const plot_point_element = ref(null)
+	const add_plot_point_element = ref(null)
+	const { width: pp_width } = useElementSize(plot_point_element)
+	const { width: add_pp_width } = useElementSize(add_plot_point_element)
+	const showing_max_plot_points = computed<number>(() => {
+		return (banner_width.value - useElementSize(add_plot_point_element).width.value) / (useElementSize(plot_point_element).width.value + 10)
+	})
 
 	function decrease_pp() {
 		mutate_pp(-1)
@@ -200,12 +209,12 @@
 	}
 
 	const img_link_small = computed(() => {
-		if(character.value.image) {
-			return '/assets/uploads/' + character.value.image.path
-				+ '/small' + character.value.image?.ext
+		if(entity.value.image) {
+			return '/assets/uploads/' + entity.value.image.path
+				+ '/small' + entity.value.image?.ext
 		}
 		else {
-			return '/assets/uploads/' + character.value.entityType + '/small.png'
+			return '/assets/uploads/' + entity.value.entityType + '/small.png'
 		}
 	})
 
@@ -256,7 +265,7 @@
 	const banner_width = computed(() => (props.windowWidth ?? entity_width.value) - portraitWidth.value)
 
 	const min_banner_height = 100
-	const max_banner_height = 200
+	const max_banner_height = 240
 	const banner_height = computed(() => {
 		// uses entity.value.image.width and the traitset scroll Y to determine the banner height
 		// at top of traitset scroll the banner is max size
@@ -591,10 +600,15 @@
 					<input type="button" class="button" :value="player.small_buttons ? '✖' : '✖ cancel'"
 						@click="editing_name_type = false" v-if="editing_name_type" />
 				</div>
-				<div id="plot_points">
-					<PP class="plot_point" v-for="i in character.pp" v-if="character.pp && character.pp <= 5" :key="i" @click="decrease_pp" />
-					<PP class="plot_point" v-else-if="character.pp" :amount="character.pp" @click="decrease_pp" />
-					<div id="add_pp" @click="increase_pp" class="button-mnml">
+				<div id="plot_points" ref="plot_points_element">
+					<PlotPoint ref="plot_point_element" class="plot_point" v-if="character.pp"
+						:amount="(character.pp ?? 0) > showing_max_plot_points ? (character.pp ?? 0) : undefined"
+						@click="decrease_pp" />
+					<PlotPoint class="plot_point"
+						v-for="i in (character.pp || 0) - 1" :key="i"
+						v-if="(character.pp ?? 0) > 0 && (character.pp ?? 0) <= showing_max_plot_points"
+						@click="decrease_pp" />
+					<div ref="add_plot_point_element" id="add_pp" @click="increase_pp" class="button-mnml">
 						<!-- <span>{{ player.small_buttons ? '+' : '+☯' }}</span> -->
 						<!-- <img src="/img/icons/plot_point.png" class="icon" /> -->
 						<span class="icon">+</span>
@@ -876,67 +890,17 @@
 			/* position: sticky;
 			top: 0;
 			z-index: 2; */
-			#character-banner {
-				overflow: scroll;
-				flex-grow: 1;
-				height: 100%;
-				#plot_points {
-					text-align: center;
-					display: inline-flex;
-					justify-content: space-between;
-					gap: 1em;
-					border-radius: 20px;
-					/* border: 1px solid var(--color-border); */
-					margin: 0 .4em;
-					/* width: 100%; */
-					#add_pp {
-						/* background-color: var(--color-background-mute); */
-						padding: .4em .8em;
-						border: none;
-						margin: 0;
-						display: flex;
-						flex-direction: column;
-						.icon {
-							font-size: 1em;
-						}
-						span.label {
-							font-size: .8em;
-						}
-					}
-				}
-				.fade-description-enter-to {
-					opacity: 1;
-				}
-				.fade-description-enter-active {
-					transition: opacity 1s ease;
-				}
-				.fade-description-enter-from, .fade-description-leave-to {
-					opacity: 0;
-				}
-				#character-description {
-					#character-meta, #character-description-text {
-						padding-left: .6em;
-					}
-					#character-description-text {
-						min-height: v-bind((detail_height * .5) + 'px');
-						max-height: v-bind(detail_height + 'px');
-						width: 100%;
-						max-height: 200px;
-						overflow-y: scroll;
-					}
-				}
-			}
 			#character-portrait {
 				position: relative;
 				text-align: center;
 				min-height: 100px;
 				/* width: fit-content; */
 				/* min-width: 15%; */
-				width: v-bind(portrait_width + 'px');
+				/* width: v-bind((portrait_width + 6) + 'px'); */
 				img {
 					display: block;
 					/* width: 100%; */
-					max-height: 240px;
+					max-height: v-bind(banner_height + 'px');
 				}
 				#portrait-upload-wrapper {
 					position: absolute;
@@ -995,6 +959,58 @@
 					#portrait-upload {
 						display: flex;
 						flex-direction: column;
+					}
+				}
+			}
+			#character-banner {
+				overflow-x: hidden;
+				overflow-y: scroll;
+				flex-grow: 1;
+				height: 100%;
+				/* width: v-bind((entity_width - portrait_width - 6) + 'px'); */
+				#plot_points {
+					text-align: center;
+					display: inline-flex;
+					justify-content: space-between;
+					gap: 10px;
+					border-radius: 20px;
+					/* border: 1px solid var(--color-border); */
+					margin: 0 .4em;
+					max-width: 100%;
+					#add_pp {
+						/* background-color: var(--color-background-mute); */
+						padding: .4em .8em;
+						border: none;
+						margin: 0;
+						display: flex;
+						flex-direction: column;
+						.icon {
+							font-size: 1em;
+						}
+						span.label {
+							font-size: .8em;
+						}
+					}
+				}
+				.fade-description-enter-to {
+					opacity: 1;
+				}
+				.fade-description-enter-active {
+					transition: opacity 1s ease;
+				}
+				.fade-description-enter-from, .fade-description-leave-to {
+					opacity: 0;
+				}
+				#character-description {
+					#character-meta, #character-description-text {
+						padding-left: .6em;
+					}
+					#character-description-text {
+						min-height: v-bind((detail_height * .5) + 'px');
+						max-height: v-bind(detail_height + 'px');
+						width: 100%;
+						max-height: 200px;
+						overflow-y: scroll;
 					}
 				}
 			}
@@ -1206,7 +1222,7 @@
 				padding-top: 2.8em;
 				scroll-snap-type: y mandatory;
 				scroll-behavior: smooth;
-				scroll-padding-top: -4em;
+				/* scroll-padding-top: -4em; */
 				.top-scroll-space {
 					/* scroll-snap-align: start; */
 					/* height: 100px; */
@@ -1225,7 +1241,7 @@
 			#character-details {
 				padding: 0 .4em;
 				#character-portrait {
-					padding: 1em;
+					/* padding: 1em; */
 					img, #portrait-upload-wrapper {
 						border: 3px double var(--color-text);
 					}
