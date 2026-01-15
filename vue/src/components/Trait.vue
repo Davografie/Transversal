@@ -5,7 +5,6 @@
 	import { ref, type Ref, computed, watch } from 'vue'
 
 	import useClipboard from 'vue-clipboard3'
-	const { toClipboard } = useClipboard()
 
 	import { usePreferredColorScheme } from '@vueuse/core'
 
@@ -106,6 +105,7 @@
 		retrieve_parents
 	} = useLocation(undefined, props.location_key)
 
+	const { toClipboard } = useClipboard()
 	const copy_id = async () => {
 		try {
 			await toClipboard(trait.value.traitSettingId ?? trait.value.id)
@@ -141,7 +141,7 @@
 
 	function play_trait() {
 		/* add trait to dicepool */
-		console.log("click_trait")
+		console.log("play_trait")
 		if(
 			// long pressing the trait enables viewing mode
 			!held.value
@@ -1120,6 +1120,7 @@
 						@click="(mode == view_modes.Editing && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
 					<Rating v-if="trait.rating" :rating="new_rating.length > 0 ? new_rating : trait.rating"
 						:rating-type="trait.ratingType"
+						@click.stop="play_trait"
 						@deplete-resource="deplete_resource"
 						@deplete-challenge="(d) => mode == view_modes.Editing ? edit_rating = true : deplete_challenge(d)" />
 				</div>
