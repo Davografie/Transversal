@@ -71,6 +71,7 @@ a {
 	padding: .2em .5em;
 	.icon {
 		font-size: 1.4em;
+		min-width: 1em;
 		max-width: 1.4em;
 		max-height: 1.4em;
 		line-height: 1em;
@@ -80,6 +81,7 @@ a {
 		font-size: .8em;
 		padding: 0 .2em;
 		line-height: 1em;
+		text-align: center;
 		/* border: 5px solid var(--color-border); */
 		/* background-color: var(--color-border); */
 	}
@@ -90,15 +92,21 @@ a {
 		}
 		text-shadow: none;
 	} */
+	&.disabled {
+		color: var(--color-disabled);
+		pointer-events: none;
+		cursor: not-allowed;
+	}
 }
 .dark .button-mnml {
 	.label {
-		background-color: var(--color-border);
+		/* background-color: var(--color-border); */
 	}
 	&.active {
 		.label {
-			background-color: var(--color-highlight-mute);
-			color: var(--color-highlight-text);
+			/* background-color: var(--color-highlight-mute); */
+			/* color: var(--color-highlight-text); */
+			color: var(--color-text);
 		}
 		text-shadow: none;
 	}
