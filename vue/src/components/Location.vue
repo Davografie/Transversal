@@ -136,12 +136,14 @@
 			transverse(location.value)
 		}
 		else {
-			if(!show_location_image.value) {
-				show_active.value = false
-				overwrite_active.value = ""
+			if(!show_location_image.value && overwrite_active.value != location.value.id) {
 				show_location_image.value = true
+				show_active.value = player.is_gm
+				overwrite_active.value = location.value.id
 			}
 			else {
+				show_active.value = false
+				overwrite_active.value = ""
 				show_location_image.value = false
 			}
 		}
@@ -479,7 +481,9 @@
 		}, { once: true })
 	}
 
-	const show_below = ref(false)
+	const show_parents = ref(false)
+	const show_transversables = ref(false)
+	const show_zones = ref(false)
 </script>
 
 <template>
@@ -579,7 +583,7 @@
 					<input type="text" class="header location-name-edit" v-model="new_location_name" v-if="editing_location && player.is_gm" />
 					<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
 				
-					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty'">
+					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
 						<ActiveNPC
 							class="active-npc"
 							:entity_id="overwrite_active ? overwrite_active : active_npc"
@@ -604,6 +608,71 @@
 							override_click
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
 								overwrite_active = entity.id : overwrite_active = 'empty'" />
+					</div>
+				</div>
+			</div>
+			<div class="entities attribute" v-if="player.is_gm && expanded">
+				<div class="attribute-header header" @click="editing_presence = !editing_presence">
+					<span>presence</span>
+					<div class="border-bottom"></div>
+				</div>
+				<div class="import-entities drawer" v-if="editing_presence">
+					<div class="import">
+						<div class="search" v-if="player.is_gm">
+							<input type="text" class="import-search-text" placeholder="import entity" v-model="import_search" />
+							<input type="button" class="button" value="search" v-if="import_search" @click="search_import" />
+						</div>
+						<div class="entity-cards" v-if="import_search">
+							<EntityCard v-for="entity in entities"
+								:key="entity.key"
+								:entity_id="entity.id"
+								override_click
+								is_active
+								@click_entity="change_active(entity.id)" />
+						</div>
+					</div>
+					<div class="neighboring">
+						<div class="show-parent-wrapper show-presence-button-wrapper">
+							<input type="button" class="button-mnml show-presence-button header" value="toggle parents" @click="show_parents = !show_parents" />
+						</div>
+						<Presence class="parent-location" v-for="(neigbor_location, index) in location.parents?.slice(1, 4).reverse() ?? []"
+								:key="neigbor_location.key"
+								v-if="show_parents"
+								:location_key="neigbor_location.key"
+								:search="import_search"
+								:level="3 - index"
+								@click_entity="(ett_id) => change_active(ett_id)"
+								@transverse="transverse" />
+						<div class="show-transversable-wrapper show-presence-button-wrapper">
+							<input type="button" class="button-mnml show-presence-button header" value="toggle transversables" @click="show_transversables = !show_transversables" />
+						</div>
+						<Presence class="transversable-location" v-for="neigbor_location in location.transversables ?? []"
+								:key="neigbor_location.key"
+								v-if="show_transversables"
+								:location_key="neigbor_location.key"
+								:search="import_search"
+								:level="0"
+								@click_entity="(ett_id) => change_active(ett_id)"
+								@transverse="transverse" />
+						<div class="show-current-wrapper show-presence-button-wrapper">
+							<input type="button" class="button-mnml show-presence-button header" value="current location" />
+						</div>
+						<Presence
+								:key="location.key"
+								:location_key="location.key"
+								:search="import_search"
+								:level="0"
+								@click_entity="(ett_id) => change_active(ett_id)" />
+						<div class="below-line show-presence-button-wrapper">
+							<input type="button" class="button-mnml show-presence-button header" value="toggle zones" @click="show_zones = !show_zones" />
+						</div>
+						<Presence class="zone-location" v-if="show_zones" v-for="neigbor_location in location.zones ?? []"
+								:key="neigbor_location.key"
+								:location_key="neigbor_location.key"
+								:search="import_search"
+								:level="-1"
+								@click_entity="(ett_id) => change_active(ett_id)"
+								@transverse="transverse" />
 					</div>
 				</div>
 			</div>
@@ -658,51 +727,6 @@
 							)"
 						@refetch="retrieve_location"
 					/>
-				</div>
-			</div>
-			<div class="entities attribute" v-if="player.is_gm && expanded">
-				<div class="attribute-header header" @click="editing_presence = !editing_presence">
-					<span>presence</span>
-					<div class="border-bottom"></div>
-				</div>
-				<div class="import-entities drawer" v-if="editing_presence">
-					<div class="import">
-						<div class="search" v-if="player.is_gm">
-							<input type="text" class="import-search-text" placeholder="import entity" v-model="import_search" />
-							<input type="button" class="button" value="search" v-if="import_search" @click="search_import" />
-						</div>
-						<div class="entity-cards" v-if="import_search">
-							<EntityCard v-for="entity in entities"
-								:key="entity.key"
-								:entity_id="entity.id"
-								override_click
-								is_active
-								@click_entity="change_active(entity.id)" />
-						</div>
-					</div>
-					<div class="neighboring">
-						<Presence class="parent-location" v-for="(neigbor_location, index) in location.parents?.slice(1, 4).reverse() ?? []"
-								:key="neigbor_location.key"
-								:location_key="neigbor_location.key"
-								:search="import_search"
-								:level="3 - index"
-								@click_entity="(ett_id) => change_active(ett_id)" />
-						<Presence class="transversable-location" v-for="neigbor_location in location.transversables ?? []"
-								:key="neigbor_location.key"
-								:location_key="neigbor_location.key"
-								:search="import_search"
-								:level="0"
-								@click_entity="(ett_id) => change_active(ett_id)" />
-						<div class="below-line">
-							<input type="button" class="button" value="toggle below" @click="show_below = !show_below" />
-						</div>
-						<Presence class="zone-location" v-if="show_below" v-for="neigbor_location in location.zones ?? []"
-								:key="neigbor_location.key"
-								:location_key="neigbor_location.key"
-								:search="import_search"
-								:level="-1"
-								@click_entity="(ett_id) => change_active(ett_id)" />
-					</div>
 				</div>
 			</div>
 			<div class="zones attribute" v-if="expanded && (player.is_gm || (location.zones && location.zones.length > 0))" ref="zones">
@@ -871,6 +895,18 @@
 				}
 			}
 		}
+		.neighboring {
+			.show-presence-button-wrapper {
+				width: 100%;
+				display: flex;
+				justify-content: center;
+				/* background-color: var(--color-background-mute); */
+				background-image: linear-gradient(to bottom, var(--color-background-soft) 45%, white 50%, var(--color-background-soft) 55%);
+				.show-presence-button {
+					background-color: var(--color-background-soft);
+				}
+			}
+		}
 		.attribute {
 			.attribute-header {
 				text-align: center;
@@ -893,7 +929,7 @@
 					.neighboring {
 						display: flex;
 						flex-wrap: wrap;
-						gap: .4em;
+						/* gap: .4em; */
 						.below-line {
 							width: 100%;
 						}
@@ -1068,8 +1104,17 @@
 			background-size: v-bind(background_image_width + 'px') v-bind(background_image_height + 'px');
 			box-shadow: 0 0 10px var(--color-background);
 			&.is-expanded {
+				background-color: transparent;
+				.entities {
+					.drawer {
+						box-shadow: inset 0 0 100px var(--color-background);
+					}
+				}
 				>.location-component-wrapper {
 					backdrop-filter: v-bind('filter');
+				}
+				.zones .location-component {
+					border-radius: calc(60px - 1em);
 				}
 			}
 			div.content div.center div.location-image-wrapper img {
@@ -1107,14 +1152,6 @@
 						var(--color-background) 0px 0px 4px;
 					box-shadow: inset 0 0 50px var(--color-background-mute);
 					backdrop-filter: blur(20px);
-				}
-			}
-			&.is-expanded {
-				background-color: transparent;
-				.entities {
-					.drawer {
-						box-shadow: inset 0 0 100px var(--color-background);
-					}
 				}
 			}
 			&.new-location {
