@@ -148,7 +148,8 @@ def update_doc(collection_name: str, doc: dict, temp=False):
 		except:
 			logger.info("Database is busy writing. Retrying...")
 		finally:
-			logger.info("Database is not busy writing.")
+			pass
+			# logger.info("Database is not busy writing.")
 		db.collection(collection_name).update(db_doc)
 
 	serialized = serialize_doc(doc)
@@ -172,6 +173,7 @@ def deserialize_doc(stored):
 			doc[k.decode('utf-8')] = json.loads(v.decode('utf-8'))
 		except json.JSONDecodeError:
 			doc[k.decode('utf-8')] = v.decode('utf-8')
+			# logger.info(f"JSONDecodeError: {k.decode('utf-8')}: {v.decode('utf-8')}")
 	return doc
 
 
@@ -277,7 +279,7 @@ def retrieve_hierarchy(location_id):
 		location_id (str): The ID of the location to retrieve the hierarchy for.
 
 	Returns:
-		list: A list of dictionaries representing the hierarchy of the location.
+		list: A list of dictionaries representing the hierarchy of the location, where index 0 is the location itself and index 1 is its parent.
 	"""
 	query = f"""FOR v, e, p IN 0..20 OUTBOUND "{ location_id }" Relations
 				FILTER p.edges[*].type ALL == 'super'
@@ -295,12 +297,33 @@ class Player(ObjectType):
 	character = Field(lambda: Character)
 	entities = List(lambda: Entity)
 
+	@classmethod
+	def _hydrate_player(cls, parent, info):
+		if parent.id is not None:
+			player = get_doc_by_id('Players', parent.id)
+			parent.name = player.get('name')
+
+	def resolve_name(parent, info):
+		if parent.name is None:
+			Player._hydrate_player(parent, info)
+		return parent.name
+
 	def resolve_character(parent, info):
 		return next((char for char in session_characters if char['uuid'] == parent.uuid), None)
 
 	def resolve_entities(parent, info):
-		relations = db.collection('Relations').find({ '_from': parent.id })
+		relations = db.collection('Relations').find({ '_from': parent.id, 'type': 'agency' })
 		return [Entity(id=relation.get('_to')) for relation in relations]
+
+class CreatePlayer(Mutation):
+	class Arguments:
+		name = String(required=True)
+	
+	player = Field(lambda: Player)
+	
+	def mutate(self, info, name):
+		player = db.collection('Players').insert({ 'name': name })
+		return CreatePlayer(player=Player(id=player.get('_id'), name=name))
 
 class Dicepool(ObjectType):
 	dice = List(JSONString)
@@ -404,6 +427,7 @@ class UpdateSession(Mutation):
 			effect_limit=effect_limit
 		))
 
+
 class SFX(ObjectType):
 	id = ID()
 	name = String()
@@ -494,7 +518,6 @@ absolute_default_trait_setting = {
 	'locations_disabled': [],
 	'sfxs': []
 }
-
 
 class TraitSetting(ObjectType):
 	id = ID()
@@ -663,6 +686,7 @@ class TraitSetting(ObjectType):
 			return 0
 
 class TraitSettingInput(InputObjectType):
+	new_trait_id = ID(required=False)
 	rating_type = String(required=False)
 	rating = List(Int, required=False)
 	scaling = Int(required=False)
@@ -738,6 +762,17 @@ class MutateTraitSetting(Mutation):
 					trait_setting = { **trait_setting, '_from': entity_id }
 
 			# then update the actual setting
+			# new_trait_id exception
+			if trait_setting_input is not None and trait_setting_input.get('new_trait_id') is not None:
+				trait_setting = {
+					'_id': trait_setting.get('_id'),
+					'_from': trait_setting.get('_from'),
+					'_to': trait_setting_input.get('new_trait_id'),
+					**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
+					**trait_setting_input
+				}
+
+			# teach_to exception
 			if trait_setting_input is not None and trait_setting_input.get('teach_to') is None:
 				trait_setting = {
 					'_id': trait_setting.get('_id'),
@@ -801,6 +836,7 @@ class CloneTraitSetting(Mutation):
 				**{ key: value for key, value in subtrait.items() if not key.startswith('_') },
 			})
 		return CloneTraitSetting(trait=Trait(trait_setting_id=new_trait_setting.get('_id')))
+
 
 class Trait(ObjectType):
 	global absolute_default_trait_setting
@@ -2484,7 +2520,7 @@ class Entity(Interface):
 		return [Traitset(id=traitset) for traitset in unique_traitsets]
 	
 	def resolve_traits(parent, info):
-		trait_settings = db.collection('TraitSettings').find({'_from': parent.id})
+		trait_settings = [setting for setting in db.collection('TraitSettings').find({'_from': parent.id})]
 		location = retrieve_location(get_doc_by_id('Entities', parent.id))
 		archetype_ids = db.collection('Relations').find({'_from': parent.id, 'type': 'archetype'})
 		for archetype in archetype_ids:
@@ -3291,11 +3327,11 @@ class Relation(ObjectType):
 		result = []
 		for traitset_id in traitset_ids:
 			query = f"""FOR traitsetting IN TraitSettings
-FILTER traitsetting._from == '{parent.id}'
-FOR trait IN Traits
-FILTER traitsetting._to == trait._id
-FILTER trait.traitset == '{traitset_id}'
-RETURN {{ trait: trait._id, traitsetting: traitsetting._id }}"""
+						FILTER traitsetting._from == '{parent.id}'
+						FOR trait IN Traits
+						FILTER traitsetting._to == trait._id
+						FILTER trait.traitset == '{traitset_id}'
+						RETURN {{ trait: trait._id, traitsetting: traitsetting._id }}"""
 			# logger.info("Relation.resolve_traitsets:\tquery: ", query)
 			cursor = db.aql.execute(query)
 			traits = [Trait(id=doc.get('trait'), trait_setting_id=doc.get('traitsetting')) for doc in cursor]
@@ -3366,6 +3402,13 @@ class DeleteRelation(Mutation):
 
 
 class Query(ObjectType):
+	players = List(Player, key=ID(required=False), player_id=ID(required=False))
+	def resolve_players(parent, info, key=None, player_id=None):
+		if player_id:
+			return [Player(id = player_id)]
+		else:
+			return [Player(id = doc['_id']) for doc in db.collection('Players').all()]
+
 	session = Field(Session)
 	def resolve_session(parent, info):
 		return Session()
@@ -3500,8 +3543,9 @@ class Query(ObjectType):
 		traitset_id=ID(required=False),
 		entity_id=ID(required=False),
 		entity_type=String(required=False),
-		sorting=String(required=False))
-	def resolve_traitsets(parent, info, traitset_id=None, entity_id=None, entity_type=None, sorting=None):
+		sorting=String(required=False),
+		location_restriction=ID(required=False))
+	def resolve_traitsets(parent, info, traitset_id=None, entity_id=None, entity_type=None, sorting=None, location_restriction=None):
 		query = None
 		if traitset_id is not None:
 			if entity_id is not None:
@@ -3510,25 +3554,59 @@ class Query(ObjectType):
 				info.context['sorting'] = sorting
 			return [Traitset(id=traitset_id)]
 		elif entity_type is not None:
-			# return all traitsets of a given entity type
-			query = f"""FOR traitsets IN Traitsets
-				FILTER '{ entity_type }' IN traitsets.entity_types
-				SORT traitsets.order ASC
-				RETURN {{ 'id': traitsets._id, 'name': traitsets.name }}"""
-			# logger.info("retrieving traitsets for entity type: ", query)
+			if not location_restriction:
+				# return all traitsets of a given entity type
+				query = f"""FOR traitsets IN Traitsets
+					FILTER '{ entity_type }' IN traitsets.entity_types
+					SORT traitsets.order ASC
+					RETURN {{ 'id': traitsets._id, 'name': traitsets.name }}"""
+				# logger.info("retrieving traitsets for entity type: ", query)
+				cursor = db.aql.execute(query)
+				result = [
+					Traitset(id = doc['id'], name = doc['name'])
+					for doc in cursor
+				]
+				return result
+			else:
+				result = []
+				hierarchy = retrieve_hierarchy(location_restriction)
+				traitsets = db.collection('Traitsets').all()
+				for traitset in traitsets:
+					if not entity_type in traitset.get('entity_types'):
+						continue
+					logger.info("retrieving traitsets, checking traitset " + traitset.get('name'))
+					cursor = db.collection('TraitSettings').find({'_from': traitset.get('_id'), '_to': 'Traits/1'})
+					if not cursor.empty():
+						default_settings = cursor.next()
+						if default_settings is not None:
+							if default_settings.get('locations_disabled') is not None and len(default_settings.get('locations_disabled')) > 0:
+								for location in hierarchy:
+									logger.info("retrieving traitsets, checking location " + location.get('name'))
+									if location.get('_id') in default_settings.get('locations_enabled'):
+										logger.info("adding traitset " + traitset.get('_id') + " from " + str(default_settings.get('locations_enabled')))
+										result.append(Traitset(id = traitset.get('_id'), name = traitset.get('name')))
+										break
+									elif location.get('_id') in default_settings.get('locations_disabled'):
+										logger.info("skipping traitset " + traitset.get('_id') + " since disabled: " + str(default_settings.get('locations_disabled')))
+										break
+							else:
+								logger.info("adding traitset " + traitset.get('name'))
+								result.append(Traitset(id = traitset.get('_id'), name = traitset.get('name')))
+					else:
+						result.append(Traitset(id = traitset.get('_id'), name = traitset.get('name')))
+					logger.info("updated result to " + str(result))
+				logger.info("returning " + str(len(result)) + " traitsets", result)
+				return result
 		else:
 			query = f"""FOR traitsets IN Traitsets
 				SORT traitsets.order ASC, traitsets.name ASC
 				RETURN {{ 'id': traitsets._id, 'name': traitsets.name }}"""
-		if query is not None:
 			cursor = db.aql.execute(query)
 			result = [
 				Traitset(id = doc['id'], name = doc['name'])
 				for doc in cursor
 			]
 			return result
-		else:
-			return []
 
 	traits = List(Trait,
 		trait_id=ID(required=False),
