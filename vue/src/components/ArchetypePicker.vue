@@ -65,32 +65,47 @@
 
 <template>
 	<div class="archetype-picker">
-		<EntityCard
-			class="entity-card"
-			v-for="archetype in entity.archetypes" :key="archetype.id"
-			:entity_id="archetype.id"
-			:is_active="true"
-			@click="select_archetype(archetype.id)"
-			override_click
-			show_archetypes />
-		<EntityCard
-			class="entity-card"
-			v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id && !entity.archetypes?.map(archetype => archetype.id).includes(archetype.id))" :key="archetype.id"
-			:entity_id="archetype.id"
-			:is_active="selected_archetypes.includes(archetype.id)"
-			@click="select_archetype(archetype.id)"
-			override_click
-			show_archetypes />
+		<div class="banner">
+			<h3>pick archetypes</h3>
+			<span>each archetype has several traits which will be inherited when selected</span>
+		</div>
+		<div class="archetypes">
+			<EntityCard
+				class="entity-card"
+				v-for="archetype in entity.archetypes" :key="archetype.id"
+				:entity_id="archetype.id"
+				:is_active="true"
+				@click="select_archetype(archetype.id)"
+				override_click
+				show_archetypes />
+			<EntityCard
+				class="entity-card"
+				v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id && !entity.archetypes?.map(archetype => archetype.id).includes(archetype.id))" :key="archetype.id"
+				:entity_id="archetype.id"
+				:is_active="selected_archetypes.includes(archetype.id)"
+				@click="select_archetype(archetype.id)"
+				override_click
+				show_archetypes />
+		</div>
 	</div>
 </template>
 
 <style scoped>
 	.archetype-picker {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
-		.entity-card {
-			width: 80px;
+		.banner {
+			padding: 0 1em;
+		}
+		.archetypes {
+			padding: 1em;
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-evenly;
+			gap: 1rem;
+			max-height: 30vh;
+			overflow-y: auto;
+			.entity-card {
+				width: 80px;
+			}
 		}
 	}
 </style>
