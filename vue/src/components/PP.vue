@@ -11,8 +11,8 @@
 
 <template>
     <button class="pp" :class="player.small_buttons ? 'small' : 'verbose'" title="plot point">
-        <div class="pp-wrapper">
-            <span v-if="amount" class="amount">
+        <div class="pp-wrapper button-mnml">
+            <span v-if="amount" class="amount label">
                 {{ amount }}
             </span>
             <!-- <span class="icon">☯</span> -->
@@ -38,9 +38,9 @@
             padding-right: .2em;
         }
         .icon {
-            font-size: 1.8em;
-            max-width: 1.4em;
-            max-height: 1.4em;
+            font-size: 1em;
+            /* max-width: 1.4em; */
+            /* max-height: 1.4em; */
         }
         .label {
             font-size: .8em;
