@@ -251,7 +251,7 @@
 					<span class="label">{{ player.small_buttons ? '' : 'import'}}</span>
 				</div>
 				<div class="button-mnml follow-button"
-						:class="{ 'small-button': !player.small_buttons }"
+						:class="[{ 'small-button': !player.small_buttons }, { 'disabled': player.the_entity?.location?.id == entity.id }]"
 						@click.stop="click_follow"
 						v-if="followable">
 					<span class="icon">⬆</span>
