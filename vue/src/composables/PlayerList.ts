@@ -1,7 +1,7 @@
 import { ref, inject, watch } from 'vue'
 import type { ApolloClient } from '@apollo/client'
 import gql from 'graphql-tag'
-import { useQuery, provideApolloClient } from "@vue/apollo-composable"
+import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
 import type { Player } from '@/interfaces/Types'
 
 export function usePlayerList() {
@@ -30,8 +30,26 @@ export function usePlayerList() {
 		}
 	}
 
+	function create_player(player_name: string) {
+		const mutation = gql`mutation CreatePlayer($name: String!) {
+			createPlayer(name: $name) {
+				id
+				name
+			}
+		}`
+		if(apolloClient) {
+			const { mutate } = provideApolloClient(apolloClient)(
+				() => useMutation(mutation)
+			)
+			mutate({
+				name: player_name
+			})
+		}
+	}
+
 	return {
 		players,
-		retrieve_players
+		retrieve_players,
+		create_player
 	}
 }
