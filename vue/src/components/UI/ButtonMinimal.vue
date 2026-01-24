@@ -3,7 +3,7 @@
 	// import IconSwitch from '@/components/icons/IconSwitch.vue';
 	
 	// import { computed } from 'vue'
-	import { usePlayer } from '@/stores/Player';
+	import { usePlayerStore } from '@/stores/PlayerStore';
 
 	import { ButtonTypes, useButtonTypes } from '@/composables/Button';
 
@@ -11,7 +11,7 @@
 		function: ButtonTypes
 	}>()
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	// const the_component = computed(() => {
 	// 	switch(props.function) {
@@ -37,10 +37,26 @@
 <style scoped>
 	.minimal-button {
 		cursor: pointer;
-		text-align: center;
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
+		align-items: center;
+		justify-content: end;
+		/* height: 100%; */
+		.icon {
+			width: 2em;
+			height: 2em;
+			flex-grow: 5;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: end;
+		}
+		.label {
+			flex-grow: 1;
+			text-align: center;
+			line-height: 0.9em;
+			/* height: 1.4em; */
+		}
 	}
 </style>
 
@@ -49,8 +65,8 @@
 		.minimal-button {
 			/* background-color: var(--color-background-mute); */
 			.icon {
-				min-width: 2em;
-				min-height: 2em;
+				/* width: 1.4em; */
+				/* height: 1.4em; */
 			}
 			.label {
 			}

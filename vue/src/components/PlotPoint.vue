@@ -1,12 +1,14 @@
 <script setup lang="ts">
-    import { usePlayer } from '@/stores/Player'
+    import { usePlayerStore } from '@/stores/PlayerStore'
+    import { ButtonTypes, useButtonTypes } from '@/composables/Button';
+    import ButtonMinimal from '@/components/UI/ButtonMinimal.vue';
 
-    const player = usePlayer()
+    const player = usePlayerStore()
     defineProps<{
         amount?: number
     }>()
 
-    // 🪙
+    // 🪙☯
 </script>
 
 <template>
@@ -16,9 +18,10 @@
                 {{ amount }}
             </span>
             <!-- <span class="icon">☯</span> -->
-			<img src="/img/icons/plot_point.png" class="icon" />
+			<!-- <img src="/img/icons/plot_point.png" class="icon" /> -->
+            <ButtonMinimal :function="ButtonTypes.PP" />
         </div>
-        <span class="label" v-if="!player.small_buttons"> plot point{{ ((amount ?? 0) > 1 ? 's' : '') }}</span>
+        <!-- <span class="label" v-if="!player.small_buttons"> plot point{{ ((amount ?? 0) > 1 ? 's' : '') }}</span> -->
     </button>
 </template>
 

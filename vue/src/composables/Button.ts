@@ -3,6 +3,7 @@ import { computed } from "vue"
 import IconAddArchetype from '@/components/icons/IconAddArchetype.vue';
 import IconSwitch from '@/components/icons/IconSwitch.vue';
 import IconGM from "@/components/icons/IconGM.vue";
+import IconPP from "@/components/icons/IconPP.vue";
 import IconTraitsetsOpen from "@/components/icons/IconTraitsetsOpen.vue";
 import IconTraitsetsActive from "@/components/icons/IconTraitsetsActive.vue";
 import IconTraitsetsClosed from "@/components/icons/IconTraitsetsClosed.vue";
@@ -12,6 +13,7 @@ export enum ButtonTypes {
 	ADD_ARCHETYPE = 'add_archetype',
 	SWITCH = 'switch',
 	GM = 'gm',
+	PP = 'pp',
 	TRAITSET_OPEN = 'traitset_open',
 	TRAITSET_ACTIVE = 'traitset_active',
 	TRAITSET_CLOSED = 'traitset_closed',
@@ -36,6 +38,8 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return 'switch entities';
 			case ButtonTypes.GM:
 				return 'gm';
+			case ButtonTypes.PP:
+				return 'plot point';
 			case ButtonTypes.TRAITSET_OPEN:
 				return 'open';
 			case ButtonTypes.TRAITSET_ACTIVE:
@@ -74,6 +78,8 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return IconSwitch
 			case ButtonTypes.GM:
 				return IconGM
+			case ButtonTypes.PP:
+				return IconPP
 			case ButtonTypes.TRAITSET_OPEN:
 				return IconTraitsetsOpen
 			case ButtonTypes.TRAITSET_ACTIVE:
