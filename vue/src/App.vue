@@ -5,7 +5,7 @@
 	import { useRouter, useRoute, RouterLink } from 'vue-router'
 	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef } from '@vueuse/core'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
 	import { useSession } from '@/composables/Session'
 
@@ -13,7 +13,7 @@
 	
 	import { type Location } from '@/interfaces/Types'
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const font_size = computed(() => player.font_size)
 	player.create_player()
 
@@ -184,7 +184,8 @@
 				preferredColor,
 				player.is_gm ? 'gm' : 'player',
 				location_image_link ? 'has-image' : 'no-image',
-				view
+				view,
+				player.input_method
 			]"
 			:style="preferredColor == 'dark' ? { 'background-image': 'url(' + location_image_link + ')'} : ''"
 			ref="app_wrapper_component">
