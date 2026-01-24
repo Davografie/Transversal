@@ -3,7 +3,7 @@
 
 	import { useElementBounding, useWindowSize } from '@vueuse/core'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import { useEntity } from '@/composables/Entity'
 	import { useRelation } from '@/composables/Relation'
@@ -22,7 +22,7 @@
 		'instantiated_entity',
 	])
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const {
 		entity,

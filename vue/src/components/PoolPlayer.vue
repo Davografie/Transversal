@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref } from 'vue'
-    import { usePlayer } from '@/stores/Player'
+    import { usePlayerStore } from '@/stores/PlayerStore'
     import { useDicepoolStore } from '@/stores/DicepoolStore'
     import Die from '@/components/Die.vue'
     import PoolEntity from '@/components/PoolEntity.vue'
@@ -10,7 +10,7 @@
         resolution: ResolutionType
     }>()
 
-    const player = usePlayer()
+    const player = usePlayerStore()
     const dicepoolStore = useDicepoolStore()
     const verbose_dice = ref(false)
 </script>

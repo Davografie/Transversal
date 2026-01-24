@@ -4,7 +4,7 @@
 	import { useRoute, useRouter } from 'vue-router'
 	import { useFetch, useElementSize, useScroll } from '@vueuse/core'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { useCharacter } from '@/composables/Character'
 	import { useEntity, entity_icons } from '@/composables/Entity'
 	import { useLocation } from '@/composables/Location'
@@ -41,7 +41,7 @@
 	const emit = defineEmits(['show_entity'])
 
 	const API_URL = inject('API_URL')
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const router = useRouter()
 	const route = useRoute()
 

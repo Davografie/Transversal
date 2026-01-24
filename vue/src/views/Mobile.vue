@@ -2,7 +2,7 @@
 	import { ref, watch } from 'vue';
 	import { useRoute, useRouter } from 'vue-router';
 
-	import { usePlayer } from '@/stores/Player';
+	import { usePlayerStore } from '@/stores/PlayerStore';
 	import { useDicepoolStore } from '@/stores/DicepoolStore';
 
 	import CurrentLocationView from '@/views/CurrentLocationView.vue';
@@ -16,7 +16,7 @@
 
 	const route = useRoute()
 	const router = useRouter()
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const dicepool_store = useDicepoolStore()
 
 	const mobile_component = ref<HTMLDivElement>()

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { computed, inject } from 'vue'
 	import { useLocation } from '@/composables/Location'
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import EntityCard from '@/components/EntityCard.vue'
 
@@ -16,7 +16,7 @@
 		'click_entity'
 	])
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const {
 		location,
 		retrieve_small_location,

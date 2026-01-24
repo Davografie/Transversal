@@ -7,11 +7,11 @@
 
 	import Location from '@/components/Location.vue'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import type { Location as LocationType } from '@/interfaces/Types'
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const router = useRouter()
 	
 	const props = defineProps<{

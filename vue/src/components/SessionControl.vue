@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { usePlayer } from '@/stores/Player';
+import { usePlayerStore } from '@/stores/PlayerStore';
 import { useSession } from '@/composables/Session'
 import { ref, watch } from 'vue';
 const { new_session, next_scene, next_beat } = useSession()
-const player = usePlayer()
+const player = usePlayerStore()
 const changing_beat = ref(false)
 function next_something(what: string) {
 	if(changing_beat.value) {

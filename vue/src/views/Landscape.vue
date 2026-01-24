@@ -3,7 +3,7 @@
 	import { useRoute } from 'vue-router';
 	import { useWindowSize } from '@vueuse/core'
 
-	import { usePlayer } from '@/stores/Player';
+	import { usePlayerStore } from '@/stores/PlayerStore';
 
 	import CurrentLocationView from '@/views/CurrentLocationView.vue';
 	import CodexView from '@/views/CodexView.vue';
@@ -14,7 +14,7 @@
 	import type { Location as LocationType } from '@/interfaces/Types';
 
 	const route = useRoute()
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const { width: windowWidth, height: windowHeight } = useWindowSize()
 	const third_width = computed(() => windowWidth.value / 3)

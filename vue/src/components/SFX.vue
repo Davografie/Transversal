@@ -2,7 +2,7 @@
     import { ref, computed, watch } from 'vue'
     import { marked } from 'marked'
 
-    import { usePlayer } from '@/stores/Player'
+    import { usePlayerStore } from '@/stores/PlayerStore'
     import { useSFX } from '@/composables/SFX'
 
     const props = defineProps<{
@@ -25,7 +25,7 @@
         show_description.value = newVal
     })
 
-    const player = usePlayer()
+    const player = usePlayerStore()
     const { sfx, retrieve_sfx } = useSFX(undefined, props.sfx_id)
 
     retrieve_sfx()

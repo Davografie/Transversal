@@ -5,19 +5,37 @@ import { v4 as uuidv4 } from 'uuid'
 import { ref, type Ref, computed, watch, onMounted } from 'vue'
 import { useTitle } from '@vueuse/core'
 
+import { usePlayer } from '@/composables/Player'
 import { useCharacter } from '@/composables/Character'
 import { useEntity } from '@/composables/Entity'
 
-import type { Location } from '@/interfaces/Types'
+import type { Location, Player } from '@/interfaces/Types'
 
-export const usePlayer = defineStore(
+export enum input_methods {
+	Keyboard = 'keyboard',
+	Mouse = 'mouse',
+	KBM = 'kbm',
+	Touch = 'touch',
+	Pen = 'pen',
+	Voice = 'voice'
+}
+
+export const usePlayerStore = defineStore(
 	'player',
 	() => {
 		const mounted = ref(false)
 		//	player variables
 		const uuid: Ref<string> = ref('')
+		const player_id = ref<string>("")
+		const { player, set_player_id, retrieve_player, activate_entity } = usePlayer(undefined, player_id.value)
 		const player_name: Ref<string> = ref("")
 		const is_player = computed(() => !is_gm.value)
+
+		function switch_player(player: Player) {
+			player_id.value = player.id
+			set_player_id(player.id)
+			retrieve_player()
+		}
 
 		//	character
 		const player_character_key: Ref<string|undefined> = ref()
@@ -45,6 +63,7 @@ export const usePlayer = defineStore(
 		const orientation = ref("horizontal")	// horizontal (for landscape, e.g. desktop monitor) or vertical (for portrait, e.g. mobile)
 		const theme = ref("dark")
 		const font_size = ref(16)
+		const input_method = ref<input_methods>(input_methods.KBM)
 
 		const {
 			character: player_character,
@@ -77,7 +96,8 @@ export const usePlayer = defineStore(
 			// 	deactivate_character()
 			// }
 			if(!newCharacter.active) {
-				activate_character(uuid.value)
+				// activate_character(uuid.value)
+				activate_entity(newCharacter)
 			}
 		})
 
@@ -125,7 +145,8 @@ export const usePlayer = defineStore(
 					save_perspective_id(oldEntity.id)
 				}
 				if(newEntity && is_gm.value) {
-					activate_perspective()
+					// activate_perspective()
+					activate_entity(newEntity)
 				}
 			}
 		})
@@ -178,11 +199,17 @@ export const usePlayer = defineStore(
 		onMounted(() => {
 			mounted.value = true
 			retrieve_the_entity()
+			if(player_id.value) {
+				retrieve_player()
+			}
 		})
 
 		return {
 			uuid,
+			player_id,
 			player_name,
+			player,
+			switch_player,
 			is_player,
 			small_buttons,
 			data_saving,
@@ -214,6 +241,7 @@ export const usePlayer = defineStore(
 			orientation,
 			theme,
 			font_size,
+			input_method,
 			tickets_remaining
 		}
 	},
@@ -222,7 +250,8 @@ export const usePlayer = defineStore(
 		persist: {
 			debug: true,
 			paths: [
-				'uuid', 
+				'uuid',
+				'player_id',
 				'player_name', 
 				'player_character_key', 
 				'previous_perspective_ids',
@@ -232,7 +261,8 @@ export const usePlayer = defineStore(
 				'data_saving',
 				'traitset_defaults',
 				'tickets_remaining',
-				'font_size'
+				'font_size',
+				'input_method'
 			],
 		},
 	},

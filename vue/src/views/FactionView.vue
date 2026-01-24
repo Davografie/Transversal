@@ -1,8 +1,8 @@
 <script setup lang="ts">
-	import { usePlayer } from '@/stores/Player';
+	import { usePlayerStore } from '@/stores/PlayerStore';
 	import { useEntity } from '@/composables/Entity';
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const { entity, retrieve_entity } = useEntity(undefined, player.perspective_id)
 	retrieve_entity()
 </script>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 	import { ref, type Ref, watch } from 'vue'
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { useTraitsetList } from '@/composables/TraitsetList'
 
 	const emit = defineEmits(['show_traitset'])
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const {
 		traitsets,

@@ -5,11 +5,11 @@
 	import Die from '@/components/Die.vue'
 	import Traitset from '@/components/Traitset.vue'
 	import type { Die as DieType, Traitset as TraitsetType } from '@/interfaces/Types'
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { placeholder_d6 } from '@/composables/Die'
 	import { useRoute, RouterLink } from 'vue-router'
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const route = useRoute()
 
 	const die: DieType = placeholder_d6

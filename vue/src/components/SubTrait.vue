@@ -11,7 +11,7 @@
 	import Rating from '@/components/Rating.vue'
 	import RatingEdit from '@/components/RatingEdit.vue'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import type { Die as DieType } from '@/interfaces/Types'
 	
@@ -30,7 +30,7 @@
 		'remove_subtrait',
 	])
 
-	const { is_gm, small_buttons } = usePlayer()
+	const { is_gm, small_buttons } = usePlayerStore()
 
 	const {
 		trait,

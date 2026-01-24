@@ -7,7 +7,7 @@
 	import type { Die as DieType } from '@/interfaces/Types'
 	import { useDie, die_constants } from '@/composables/Die'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	
 	import { useElementBounding } from '@vueuse/core'
 
@@ -50,7 +50,7 @@
 		}
 	})
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	watch(player, (newPlayer) => {
 		if(newPlayer.is_gm) {
 			return_rating.value = []

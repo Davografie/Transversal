@@ -4,11 +4,11 @@
 	// import Die from './Die.vue'
 	import { useEntity } from '@/composables/Entity'
 	// import { useDicepoolStore } from '@/stores/DicepoolStore'
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import type { Character as CharacterType } from '@/interfaces/Types'
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	// const dicepool = useDicepoolStore()
 
 	const props = defineProps({
@@ -230,7 +230,7 @@
 			v-if="visible">
 		<div class="card-wrapper" :style="backgroundStyle">
 		</div>
-		<p class="entity-type" v-if="player.is_gm">{{ entity_type_icon }}</p>
+		<p class="entity-type" v-if="player.is_gm && props.show_icon != false">{{ entity_type_icon }}</p>
 		<p class="archetype-label" v-if="entity.isArchetype">*</p>
 		<p class="name" v-if="props.show_name">{{ entity?.name }}</p>
 		<transition name="options-transition">

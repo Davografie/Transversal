@@ -15,7 +15,7 @@
 	import { die_shapes } from '@/composables/Die'
 
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import type { Die as DieType } from '@/interfaces/Types'
 	import ResolutionSWADE from '@/components/ResolutionSWADE.vue'
@@ -29,7 +29,7 @@
 		'collapse'
 	])
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const dicepoolStore = useDicepoolStore()
 
 	const dicepool = useDicepool()

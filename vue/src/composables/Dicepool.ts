@@ -9,7 +9,7 @@ import type { Dicepool, Die, Resolution } from "@/interfaces/Types"
 
 import { useSession } from "@/composables/Session"
 import { useDicepoolStore } from "@/stores/DicepoolStore"
-import { usePlayer } from "@/stores/Player"
+import { usePlayerStore } from "@/stores/PlayerStore"
 import _ from "lodash"
 import { useTrait } from "./Trait"
 
@@ -21,7 +21,7 @@ export const placeholder_dicepool: Dicepool = {
 
 export function useDicepool() {
 	const dicepool = useDicepoolStore()
-	const player = usePlayer()
+	const playerStore = usePlayerStore()
 	const { get_session, get_dicepool_limit } = useSession()
 
 	const resolutions_count = computed(() => dicepool.resolutions.length)
@@ -142,7 +142,7 @@ export function useDicepool() {
 	function roll() {
 		// swade roll
 		if(dicepool.dice.length <= 2) {
-			if(player.the_entity?.entityType == 'character' && dicepool.dice.length == 1) {
+			if(playerStore.the_entity?.entityType == 'character' && dicepool.dice.length == 1) {
 				// add wild die
 				const { die, tag, change_type } = useDie(_.clone(dicepool.dice[0]), undefined, 2)
 				tag()
@@ -311,14 +311,14 @@ export function useDicepool() {
 	function push_dicepool() {
 		const resolution: Resolution = {
 			player: {
-				uuid: player.uuid || "",
-				player_name: player.player_name || "",
-				is_gm: player.is_gm,
+				uuid: playerStore.uuid || "",
+				name: playerStore.player_name || "",
+				isGm: playerStore.is_gm,
 				phase: dicepool.phase.toString()
 			},
 			dice: dicepool.dice
 		}
-		const url = API_URL + "set-dicepool/" + player.uuid
+		const url = API_URL + "set-dicepool/" + playerStore.uuid
 		const { data } = useFetch(url).post(resolution).json()
 		watch(data, (newData) => {
 			console.log("resolution data set update: ", newData)
@@ -332,7 +332,7 @@ export function useDicepool() {
 	}
 
 	function push_complications() {
-		const url = API_URL + "add-complications/" + player.uuid
+		const url = API_URL + "add-complications/" + playerStore.uuid
 		const { data } = useFetch(url).post({complications: dicepool.complications}).json()
 		
 		watch(data, (newData) => {
@@ -380,7 +380,7 @@ export function useDicepool() {
 					// only after resolution
 					console.error("teaching")
 					console.log("resolutions: ", newData.resolutions)
-					dicepool.resolutions.filter((r: Resolution) => r.player.phase == dicepool.phases.RESOLVE.toString() && r.player.uuid != player.uuid)
+					dicepool.resolutions.filter((r: Resolution) => r.player.phase == dicepool.phases.RESOLVE.toString() && r.player.uuid != playerStore.uuid)
 							.forEach((r: Resolution) => {
 						console.log("resolution: ", r)
 						new Set(r.dice.map((d: Die) => d.traitsettingId)).forEach((trait_setting_id) => {
@@ -403,7 +403,7 @@ export function useDicepool() {
 					// complications are grouped by player
 					// here the dice are extracted and put into a flat array
 					complication_dice = newData.complication_pool
-						.filter((cp: any) => cp.player != player.uuid)
+						.filter((cp: any) => cp.player != playerStore.uuid)
 						.map((cp: any) => cp.complications).flat()
 				}
 
@@ -471,7 +471,7 @@ export function useDicepool() {
 		dicepool.$persist()
 	}
 
-	watch(() => player.beat_id, (newBeatId, oldBeatId) => {
+	watch(() => playerStore.beat_id, (newBeatId, oldBeatId) => {
 		if(oldBeatId && newBeatId && newBeatId != oldBeatId) {
 			console.log("beat id changed from ", oldBeatId, " to ", newBeatId , ", clearing dicepool")
 			clear_dicepool()

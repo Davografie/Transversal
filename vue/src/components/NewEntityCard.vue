@@ -2,7 +2,7 @@
 	import { ref, type Ref } from 'vue'
 	import { useRouter } from 'vue-router'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import { useEntityList } from '@/composables/EntityList'
 	import { useEntity } from '@/composables/Entity'
@@ -17,7 +17,7 @@
 	const emit = defineEmits(['created_entity'])
 
 	const router = useRouter()
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const show_entity_creation = ref(false)
 	const new_entity_name: Ref<string> = ref('')

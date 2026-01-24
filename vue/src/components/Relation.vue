@@ -2,7 +2,7 @@
 	import { ref, computed, watch } from 'vue'
 	import { useRouter } from 'vue-router'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import { useRelation } from '@/composables/Relation'
 	import { useCharacter } from '@/composables/Character'
@@ -24,7 +24,7 @@
 	])
 
 	const router = useRouter()
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const { relation, set_relation_id, retrieve_relation, update_relation, delete_relation } = useRelation(undefined, props.relation_id)
 

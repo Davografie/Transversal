@@ -24,7 +24,7 @@
 		Entity as EntityType
 	} from '@/interfaces/Types'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { useDicepool } from '@/composables/Dicepool'
 
 	const props = defineProps<{
@@ -48,7 +48,7 @@
 
 	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset'])
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const { traitset_dice } = useDicepool()
 
 	const {

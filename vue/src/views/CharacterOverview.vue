@@ -5,8 +5,8 @@
 
 	const router = useRouter()
 
-	import { usePlayer } from '@/stores/Player'
-	const player = usePlayer()
+	import { usePlayerStore } from '@/stores/PlayerStore'
+	const player = usePlayerStore()
 
 	const EntityCard = defineAsyncComponent(() => import('@/components/EntityCard.vue'))
 	import NewEntityCard from '@/components/NewEntityCard.vue'

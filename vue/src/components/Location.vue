@@ -18,7 +18,7 @@
 	import { useRoute } from 'vue-router'
 	import { useElementBounding, useWindowSize } from '@vueuse/core'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
 
 	import Traitset from '@/components/Traitset.vue'
@@ -35,7 +35,7 @@
 	import type { Location as LocationType } from '@/interfaces/Types'
 
 	const route = useRoute()
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const { resolutions } = useDicepoolStore()
 	
 	const props = defineProps<{

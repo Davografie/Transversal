@@ -2,14 +2,14 @@ import { ref, computed, inject, watch } from 'vue'
 import { provideApolloClient, useMutation, useQuery } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
 import type { ApolloClient } from '@apollo/client'
-import { usePlayer } from '@/stores/Player'
+import { usePlayerStore } from '@/stores/PlayerStore'
 import { useDicepoolStore } from '@/stores/DicepoolStore'
 import { useDicepool } from '@/composables/Dicepool'
 import type { Session } from '@/interfaces/Types'
 
 export function useSession() {
 	const apolloClient: ApolloClient<any>|undefined = inject('apolloClient')
-	const player = usePlayer()
+	const player = usePlayerStore()
 	const dicepool_store = useDicepoolStore()
 
 	function get_session() {

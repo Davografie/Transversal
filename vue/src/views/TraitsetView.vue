@@ -3,7 +3,7 @@
 	import type { Ref } from 'vue'
 	import { useRoute } from 'vue-router'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	// import Trait from '@/components/Trait.vue'
 	import TraitEdit from '@/components/TraitEdit.vue'
@@ -25,7 +25,7 @@
 
 	const route = useRoute()
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const {
 		traitset,

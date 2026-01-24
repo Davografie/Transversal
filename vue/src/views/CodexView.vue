@@ -2,7 +2,7 @@
 	import { ref, watch, onMounted } from 'vue'
 	import { templateRef, useScroll } from '@vueuse/core'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { useEntityList } from '@/composables/EntityList'
 	import Relation from '@/components/Relation.vue'
 	import EntityCard from '@/components/EntityCard.vue'
@@ -18,7 +18,7 @@ import ToggleButton from '@/components/UI/ToggleButton.vue'
 		'show_entity'
 	])
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const { entities, retrieve_characters } = useEntityList(undefined, 'character')
 
