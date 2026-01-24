@@ -29,11 +29,13 @@ export interface Dicepool {
 }
 
 export interface Player {
-    uuid: string
-    id: string
+    uuid?: string
+    id?: string
     name: string
-    is_gm: boolean
-    phase: string
+    activeCharacter?: Entity
+    entities?: Entity[]
+    isGm: boolean
+    phase?: string
 }
 
 export interface Resolution {
@@ -78,6 +80,7 @@ export interface TraitSetting {
     hidden?: boolean
     resource?: boolean
     fromEntity?: Entity
+    toEntity?: Entity
     priority?: number
 }
 
