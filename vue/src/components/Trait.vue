@@ -21,7 +21,7 @@
 	import SubTrait from '@/components/SubTrait.vue'
 	import EntityCard from './EntityCard.vue'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore } from '@/stores/PlayerStore'
 	
 	import { useTrait, view_modes } from '@/composables/Trait'
 	import { die_constants, useDie } from '@/composables/Die'
@@ -63,7 +63,7 @@
 		'show_trait'
 	])
 
-	const player = usePlayer()
+	const player = usePlayerStore()
 
 	const {
 		trait,
@@ -896,6 +896,15 @@
 			retrieve_trait()
 		}
 	})
+
+	const trait_explanation = computed(() => {
+		if(trait.value.explanation && mode.value == view_modes.Small && trait.value.explanation.length > 50) {
+			return trait.value.explanation.substring(0, 50) + '...'
+		}
+		else {
+			return trait.value.explanation
+		}
+	})
 </script>
 
 <template>
@@ -1037,6 +1046,9 @@
 				
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
 						trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',]">
+				<div class="to-entity" v-if="trait.traitSetting?.toEntity">
+					<EntityCard :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" class="trait-to-entity" />
+				</div>
 				<div class="trait-text">
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
 						<span class="name">
@@ -1094,10 +1106,10 @@
 					<div class="notes" v-html="marked.parse(trait.notes)"
 						v-if="trait.notes
 						&& mode != view_modes.Editing
-						&& (
-							mode != view_modes.Small ||
-							!trait.statement
-						)
+						// && (
+						// 	mode != view_modes.Small ||
+						// 	!trait.statement
+						// )
 						&& (player.is_gm
 							|| props.entity_id == player.player_character.id
 							|| props.entity_id?.startsWith('Relations/')
@@ -1230,7 +1242,7 @@
 						// mode == view_modes.Editing ||
 						player.viewing
 					)"
-				v-html="marked(trait.explanation ?? '')">
+				v-html="marked(trait_explanation ?? '')">
 			</div>
 
 			<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
@@ -1404,6 +1416,9 @@
 		}
 		.descriptor {
 			display: flex;
+			.trait-to-entity {
+				width: 5em;
+			}
 			.trait-text .trait-name {
 				display: flex;
 				justify-content: space-between;
@@ -1761,7 +1776,7 @@
 			width: 85%;
 			.trait-inner {
 				border-radius: 10px;
-				height: 100%;
+				max-height: 50vh;
 				overflow-y: auto;
 				display: flex;
 				flex-direction: column;
@@ -1772,9 +1787,15 @@
 			/* flex-grow: 0.6; */
 			text-shadow: none;
 			.descriptor {
-				padding: 0 1em;
+				/* padding: 0 1em; */
 				.rating {
 					margin-left: .2em;
+				}
+				.trait-name {
+					margin-left: .6em;
+				}
+				.statement {
+					padding-left: .6em;
 				}
 			}
 			.explanation {
@@ -1786,6 +1807,14 @@
 				color: var(--color-disabled);
 				margin: .4em 10%;
 				font-style: italic;
+			}
+			.notes {
+				font-style: italic;
+				font-size: .8em;
+				padding: 0.4em 4em;
+				color: var(--color-disabled);
+				/* box-shadow: inset 0 0 10px var(--color-border); */
+				background-image: linear-gradient(to bottom, var(--color-border) -100%, transparent 30%);
 			}
 			.statement {
 				font-style: italic;
