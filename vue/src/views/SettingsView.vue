@@ -6,8 +6,10 @@
 	import { useRoute, useRouter, RouterLink } from 'vue-router'
 	
 	import { usePlayerList } from '@/composables/PlayerList'
+	import { usePlayer } from '@/composables/Player'
+	import type { Player as PlayerType } from '@/interfaces/Types'
 
-	import { usePlayer } from '@/stores/Player'
+	import { usePlayerStore, input_methods } from '@/stores/PlayerStore'
 	import { useDicepool } from '@/composables/Dicepool'
 	import { useSession } from '@/composables/Session'
 
@@ -26,11 +28,27 @@
 	const route = useRoute()
 	const router = useRouter()
 
-	const player = usePlayer()
+	const playerStore = usePlayerStore()
 	const { dicepool_limit } = useDicepool()
 
-	const { players, retrieve_players } = usePlayerList()
+	const { players, retrieve_players, create_player } = usePlayerList()
 	retrieve_players()
+
+	function switch_to_player(player: PlayerType) {
+		playerStore.switch_player(player)
+		player_name.value = player.name
+		update_player_name()
+	}
+
+	const players_to_show = computed(() => {
+		// use player_name to filter players
+		return players.value.filter(p => p.name.toLowerCase().includes(player_name.value.toLowerCase()))
+	})
+
+	function new_player() {
+		create_player(player_name.value)
+		retrieve_players()
+	}
 
 	const view = ref('settings')
 
@@ -60,10 +78,10 @@
 		edit_dicepool_limit_manually.value = false
 	}
 
-	const new_font_size = ref<number>(player.font_size ?? 16)
+	const new_font_size = ref<number>(playerStore.font_size ?? 16)
 	const edit_font_size_manually = ref(false)
 	function update_font_size() {
-		player.font_size = new_font_size.value
+		playerStore.font_size = new_font_size.value
 		edit_font_size_manually.value = false
 	}
 	function increase_font_size() {
@@ -75,24 +93,24 @@
 		update_font_size()
 	}
 
-	const player_name: Ref<string> = ref(player.player_name)
+	const player_name: Ref<string> = ref(playerStore.player_name)
 	function update_player_name() {
-		player.player_name = player_name.value
+		playerStore.player_name = player_name.value
 	}
 
-	const is_gm = computed(() => player.is_gm ? 'gm' : 'player')
+	const is_gm = computed(() => playerStore.is_gm ? 'gm' : 'player')
 	function toggle_gm() {
-		player.is_gm = !player.is_gm
+		playerStore.is_gm = !playerStore.is_gm
 	}
 
-	const small_buttons = computed(() => player.small_buttons ? 'small buttons' : 'verbose buttons')
+	const small_buttons = computed(() => playerStore.small_buttons ? 'small buttons' : 'verbose buttons')
 	function toggle_small_buttons() {
-		player.small_buttons = !player.small_buttons
+		playerStore.small_buttons = !playerStore.small_buttons
 	}
 
-	const data_saving = computed(() => player.data_saving ? 'data saving on' : 'data saving off')
+	const data_saving = computed(() => playerStore.data_saving ? 'data saving on' : 'data saving off')
 	function toggle_data_saving() {
-		player.data_saving = !player.data_saving
+		playerStore.data_saving = !playerStore.data_saving
 	}
 
 	// Traitset
@@ -100,7 +118,7 @@
 	function switch_to_traitset(key: string) {
 		console.log('switching to traitset: ', key)
 		view.value = 'traitset'
-		router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings/traitset/' + key })
+		router.push({ path: '/location/' + playerStore.the_entity?.location?.key + '/settings/traitset/' + key })
 		traitset_key.value = key
 	}
 
@@ -111,19 +129,19 @@
 		view.value = new_view
 		container.value.scrollLeft = 140
 		if(new_view == 'location') {
-			router.push({ path: '/location/' + player.the_entity?.location?.key })
+			router.push({ path: '/location/' + playerStore.the_entity?.location?.key })
 		}
 		else if(new_view == 'settings') {
-			router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })
+			router.push({ path: '/location/' + playerStore.the_entity?.location?.key + '/settings' })
 		}
 		else {
-			router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings/' + new_view })
+			router.push({ path: '/location/' + playerStore.the_entity?.location?.key + '/settings/' + new_view })
 		}
 	}
 
 	watch(route, () => {
-		if(route.name == 'Landing' && player.the_entity?.location?.key) {
-			router.push({ path: '/location/' + player.the_entity?.location.key + '/settings' })
+		if(route.name == 'Landing' && playerStore.the_entity?.location?.key) {
+			router.push({ path: '/location/' + playerStore.the_entity?.location.key + '/settings' })
 		}
 		else if(route.name == 'Landing') {
 			router.push({ name: 'Character overview' })
@@ -135,6 +153,10 @@
 			}
 		}
 	})
+
+	function switch_input(new_input: input_methods) {
+		playerStore.input_method = new_input
+	}
 </script>
 
 <template>
@@ -144,7 +166,7 @@
 				<div class="links">
 					
 					<div class="link" :class="{ 'header': view == 'location'}" @click="go_to('location')"
-							v-if="player.the_entity?.id && player.the_entity.id != 'placeholder'">
+							v-if="playerStore.the_entity?.id && playerStore.the_entity.id != 'placeholder'">
 						game
 					</div>
 					
@@ -153,14 +175,14 @@
 					</div>
 
 					<div class="link" :class="{ 'header': view == 'characters'}" @click="go_to('characters')">
-						{{ player.is_gm ? 'entities' : 'characters' }}
+						{{ playerStore.is_gm ? 'entities' : 'characters' }}
 					</div>
 
-					<div class="link" :class="{ 'header': view == 'traitsets'}" @click="go_to('traitsets')" v-if="player.is_gm">
+					<div class="link" :class="{ 'header': view == 'traitsets'}" @click="go_to('traitsets')" v-if="playerStore.is_gm">
 						traitsets
 					</div>
 
-					<div class="link" :class="{ 'header': view == 'sfxs'}" @click="go_to('sfxs')" v-if="player.is_gm">
+					<div class="link" :class="{ 'header': view == 'sfxs'}" @click="go_to('sfxs')" v-if="playerStore.is_gm">
 						sfxs
 					</div>
 
@@ -177,28 +199,39 @@
 						<label for="player_name">player name</label>
 						<div id="player-name-input">
 							<input id="player_name" type="text" placeholder="player name" v-model="player_name" @blur="update_player_name" />
-							<label id="player-name-updated" for="player_name" v-if="player.player_name == player_name">✅</label>
+							<label id="player-name-updated" for="player_name" v-if="playerStore.player_name == player_name">✅</label>
 						</div>
 						<div id="player-list">
-							<div class="player button" v-for="player in players" :key="player.id">
-								<div class="name">{{ player.name }}</div>
-							</div>
+							<template v-for="_player in players_to_show" :key="_player.id">
+								<div class="player button" @click="switch_to_player(_player)">
+									<div class="name">{{ _player.name }}</div>
+								</div>
+							</template>
+						</div>
+						<div class="button" v-if="players_to_show.length == 0" @click="new_player">
+							create {{ player_name }}
 						</div>
 					</div>
 					<div class="setting architect-switcher">
 						<label for="is_gm">role</label>
-						<ToggleButton truthy="player" falsy="architect" :default="!player.is_gm" @toggle="toggle_gm" />
+						<ToggleButton truthy="player" falsy="architect" :default="!playerStore.is_gm" @toggle="toggle_gm" />
 					</div>
 					<div class="setting icon-label-switcher">
 						<label for="small_buttons">button labels</label>
 						<!-- <input id="small_buttons" type="button" class="button" :value="small_buttons" @click="toggle_small_buttons" /> -->
-						<ToggleButton truthy="🔘" :falsy="'ℹ\nbutton labels'" :default="player.small_buttons" @toggle="toggle_small_buttons" />
+						<ToggleButton truthy="🔘" :falsy="'ℹ\nbutton labels'" :default="playerStore.small_buttons" @toggle="toggle_small_buttons" />
 					</div>
 					<div class="setting data-saving-switcher">
 						<label for="data_saving">data saving</label>
-						<ToggleButton truthy="on" falsy="off" :default="player.data_saving" @toggle="toggle_data_saving" />
+						<ToggleButton truthy="on" falsy="off" :default="playerStore.data_saving" @toggle="toggle_data_saving" />
 					</div>
-					<div v-if="player.is_gm" class="setting dicepool-limit-slider">
+					<div class="setting input-switcher">
+						<label for="input_switcher">input switcher</label>
+						<button class="button" v-for="ip in Object.entries(input_methods)" :value="ip" :disabled="!ip" @click="switch_input(ip[1])">
+							{{ ip[0] }}
+						</button>
+					</div>
+					<div v-if="playerStore.is_gm" class="setting dicepool-limit-slider">
 						<label>dicepool limit</label>
 						<div id="dicepool-limit">
 							<input type="button" class="button" value="-" @click="decrease_dicepool_limit" v-if="!edit_dicepool_limit_manually" />
@@ -239,11 +272,11 @@
 				<div class="button menu-button"
 						:class="{ 'active': scroll.x.value > 0}"
 						@click="scroll.x.value > 0 ? container.scrollTo(0, 0) : container.scrollTo(300, 0)"
-						v-if="player.orientation == 'vertical'">
+						v-if="playerStore.orientation == 'vertical'">
 					<span class="icon">
 						{{scroll.x.value > 0 ? '➡' : '⬅'}}
 					</span>
-					<span class="label" v-if="!player.small_buttons">
+					<span class="label" v-if="!playerStore.small_buttons">
 						menu
 					</span>
 				</div>
