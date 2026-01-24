@@ -81,7 +81,13 @@ logger.info(f"Redis connection established.")
 dicepool_limit = -1
 result_limit = 2
 effect_limit = 1
+
 session_characters = []
+# {
+# 	"player": player ID,
+# 	"character": entity ID
+# }
+
 session_rev = uuid4()
 scene_rev = uuid4()
 beat_rev = uuid4()
@@ -309,11 +315,26 @@ class Player(ObjectType):
 		return parent.name
 
 	def resolve_character(parent, info):
-		return next((char for char in session_characters if char['uuid'] == parent.uuid), None)
+		global session_characters
+		for character in session_characters:
+			if character.get('player') == parent.id:
+				return Character(id=character.get('character'))
 
 	def resolve_entities(parent, info):
 		relations = db.collection('Relations').find({ '_from': parent.id, 'type': 'agency' })
-		return [Entity(id=relation.get('_to')) for relation in relations]
+		# for every entity, get the entity and check the type to make sure to return the proper object
+		for relation in relations:
+			entity = get_doc_by_id('Entities', relation.get('_to'))
+			if entity.get('type') == 'character':
+				yield Character(id=entity.get('_id'))
+			elif entity.get('type') == 'npc':
+				yield NPC(id=entity.get('_id'))
+			elif entity.get('type') == 'asset':
+				yield Asset(id=entity.get('_id'))
+			elif entity.get('type') == 'faction':
+				yield Faction(id=entity.get('_id'))
+			elif entity.get('type') == 'location':
+				yield Location(id=entity.get('_id'))
 
 class CreatePlayer(Mutation):
 	class Arguments:
@@ -324,6 +345,55 @@ class CreatePlayer(Mutation):
 	def mutate(self, info, name):
 		player = db.collection('Players').insert({ 'name': name })
 		return CreatePlayer(player=Player(id=player.get('_id'), name=name))
+
+class DeletePlayer(Mutation):
+	class Arguments:
+		player_id = ID(required=True)
+	
+	message = String()
+	
+	def mutate(self, info, player_id):
+		# remove all player relations
+		relations = db.collection('Relations').find({ '_from': player_id, 'type': 'agency' })
+		for relation in relations:
+			db.collection('Relations').remove({ '_id': relation.get('_id') })
+		db.collection('Players').remove({ '_id': player_id })
+		return DeletePlayer(message='Player deleted')
+
+class ActivateEntity(Mutation):
+	class Arguments:
+		player_id = ID(required=True)
+		entity_id = ID(required=True)
+	
+	player = Field(lambda: Player)
+	
+	def mutate(self, info, player_id, entity_id):
+		# check if agency relation exists
+		if db.collection('Relations').find({ '_from': player_id, '_to': entity_id, 'type': 'agency' }).empty():
+			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency' })
+		
+		# activate entity for player
+		global session_characters
+		# first, check if the player ID is registered in session_characters
+		if not any(char['player'] == player_id for char in session_characters):
+			session_characters.append({ 'player': player_id, 'character': entity_id })
+		# if player ID is in session_characters, update the character
+		else:
+			for char in session_characters:
+				if char['player'] == player_id:
+					# deactivate the previous character
+					if char['character'] is not None:
+						character_doc = get_doc_by_id('Entities', str(char['character']))
+						character_doc['active'] = False
+						update_doc('Entities', character_doc)
+					char['character'] = entity_id
+		# activate the character in ADB
+		entity_doc = get_doc_by_id('Entities', entity_id)
+		entity_doc['active'] = True
+		update_doc('Entities', entity_doc)
+		return ActivateEntity(player=Player(id=player_id))
+	
+
 
 class Dicepool(ObjectType):
 	dice = List(JSONString)
@@ -523,6 +593,7 @@ class TraitSetting(ObjectType):
 	id = ID()
 	trait = Field(lambda: Trait)
 	from_entity = Field(lambda: Entity)
+	to_entity = Field(lambda: Entity)
 	statement = String()
 	notes = String()
 	rating_type = String()
@@ -577,6 +648,31 @@ class TraitSetting(ObjectType):
 					return Faction(id=entity_id)
 			elif entity_id.startswith('Relations/'):
 				entity_id = get_doc_by_id('Relations', entity_id).get('_from')
+				if entity_id.startswith('Entities/'):
+					entity_type = get_doc_by_id('Entities', entity_id).get('type')
+					if entity_type in ['character', 'gm']:
+						return Character(id=entity_id)
+					elif entity_type == 'npc':
+						return NPC(id=entity_id)
+					elif entity_type == 'asset':
+						return Asset(id=entity_id)
+					elif entity_type == 'location':
+						return Location(id=entity_id)
+					elif entity_type == 'faction':
+						return Faction(id=entity_id)
+			else:
+				return None
+		else:
+			return None
+	
+	def resolve_to_entity(parent, info):
+		# only for relation traits
+		if parent.to_entity and parent.to_entity.id is not None:
+			return parent.to_entity
+		elif parent.id:
+			relation_id = get_doc_by_id('TraitSettings', parent.id).get('_from')
+			if relation_id.startswith('Relations/'):
+				entity_id = get_doc_by_id('Relations', relation_id).get('_to')
 				if entity_id.startswith('Entities/'):
 					entity_type = get_doc_by_id('Entities', entity_id).get('type')
 					if entity_type in ['character', 'gm']:
@@ -1677,6 +1773,8 @@ class Traitset(ObjectType):
 	initial_xp = Int()
 	traitset_setting = Field(lambda: TraitsetSetting)
 
+	hydrated = False
+
 	@classmethod
 	def _hydrate(cls, parent, info):
 		traitset = get_doc_by_id('Traitsets', parent.id)
@@ -1688,6 +1786,7 @@ class Traitset(ObjectType):
 		parent.limit = traitset.get('limit')
 		parent.order = traitset.get('order')
 		parent.duplicates = traitset.get('duplicates')
+		parent.hydrated = True
 
 	def resolve_key(parent, info):
 		if not parent.key:
@@ -1746,8 +1845,43 @@ class Traitset(ObjectType):
 		return get_doc_by_id('Traitsets', parent.id).get('duplicates')
 
 	def resolve_traits(parent, info):
+		if not parent.hydrated:
+			Traitset._hydrate(parent, info)
 		if parent.traits:
 			return parent.traits
+
+		# traits per relation
+		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Relations/'):
+			query = f"""FOR traitsettings IN TraitSettings
+				FILTER traitsettings._from == '{ info.context.get('entity_id') }'
+			FOR trait IN Traits
+				FILTER traitsettings._to == trait._id
+				FILTER trait.traitset == '{ parent.id }'
+			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
+			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
+			cursor = db.aql.execute(query)
+			return [Trait(
+				id=doc['id'],
+				trait_setting_id=doc['setting']
+			) for doc in cursor]
+		
+		# traits for relationships
+		elif 'relation' in parent.entity_types:
+			query = f"""FOR relation IN Relations
+				FILTER relation._from == '{ info.context.get('entity_id') }'
+			FOR traitsettings IN TraitSettings
+				FILTER traitsettings._from == relation._id
+			FOR trait IN Traits
+				FILTER traitsettings._to == trait._id
+				FILTER trait.traitset == '{ parent.id }'
+			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
+			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
+			cursor = db.aql.execute(query)
+			return [Trait(
+				id=doc['id'],
+				trait_setting_id=doc['setting']
+			) for doc in cursor]
+
 		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Entities/'):
 			# logger.info(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")
 			entity = get_doc_by_id('Entities', info.context.get('entity_id'))
@@ -1893,21 +2027,6 @@ class Traitset(ObjectType):
 			else:
 				# logger.info(f"Traitset.resolve_traits:\tNo entity or relation found")
 				return []
-
-		# traits for relations
-		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Relations/'):
-			query = f"""FOR traitsettings IN TraitSettings
-				FILTER traitsettings._from == '{ info.context.get('entity_id') }'
-			FOR trait IN Traits
-				FILTER traitsettings._to == trait._id
-				FILTER trait.traitset == '{ parent.id }'
-			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
-			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
-			cursor = db.aql.execute(query)
-			return [Trait(
-				id=doc['id'],
-				trait_setting_id=doc['setting']
-			) for doc in cursor]
 
 		elif info.context.get('entity_id') is None:
 			# logger.info(f"Traitset.resolve_traits:\tResolving traits for traitsets irrespective of entity")
@@ -3810,6 +3929,10 @@ class Mutation(ObjectType):
 	delete_entity = DeleteEntity.Field()
 	create_or_update_character = CreateOrUpdateCharacter.Field()
 
+	create_player = CreatePlayer.Field()
+	delete_player = DeletePlayer.Field()
+	activate_entity = ActivateEntity.Field()
+
 schema = Schema(query=Query, mutation=Mutation)
 
 app.add_url_rule('/graphql', view_func=GraphQLView.as_view(
@@ -3863,30 +3986,30 @@ def get_location(id):
 
 @app.route("/pick-character/<uuid>/<characterkey>", methods = ['POST'])
 def pick_character(uuid, characterkey):
-	if uuid not in [d['uuid'] for d in session_characters] and characterkey not in [d['character'] for d in session_characters]:
+	if uuid not in [d['player'] for d in session_characters] and characterkey not in [d['character'] for d in session_characters]:
 		session_characters.append({
-			"uuid": uuid,
-			"character": characterkey
+			"player": uuid,
+			"character": 'Entities/' + characterkey
 		})
 		return { "success": True }
 
-	elif characterkey not in [d['character'] for d in session_characters]:
+	elif 'Entities/' + characterkey not in [d['character'] for d in session_characters]:
 		for sc in session_characters:
-			if sc["uuid"] == uuid:
-				sc["character"] = characterkey
+			if sc["player"] == uuid:
+				sc["character"] = 'Entities/' + characterkey
 				return { "success": True }
 	
-	character_doc = get_doc_by_id('Entities', 'Entities/' + str(characterkey))
+	character_doc = get_doc_by_id('Entities', str(characterkey))
 	character_doc['active'] = True
 	update_doc('Entities', character_doc)
 
 	return { "success": False }
 
-@app.route("/deactivate-character/<character>", methods = ['POST'])
-def deactivate_character(character):
-	if character in [d['character'] for d in session_characters]:
+@app.route("/deactivate-character/<character_key>", methods = ['POST'])
+def deactivate_character(character_key):
+	if 'Entities/' + character_key in [d['character'] for d in session_characters]:
 		for sc in session_characters:
-			if sc["character"] == character:
+			if sc["character"] == 'Entities/' + character_key:
 				session_characters.remove(sc)
 				return { "success": True }
 	return { "success": False }
