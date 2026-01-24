@@ -31,8 +31,10 @@
 <style scoped>
 	#Layer_2 {
 		/* max-width: 2.6em; */
-		max-width: 90%;
-		margin: .5em;
+		/* max-width: 90%; */
+		/* margin: .5em; */
+		width: 3em;
+		height: 3em;
 	}
 	.cls-1 {
 		fill: var(--color-background);
