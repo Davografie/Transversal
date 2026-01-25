@@ -1143,6 +1143,22 @@
 </style>
 
 <style>
+	.touch {
+		.traitset {
+			.entity-traits {
+				flex-direction: column;
+				align-items: center;
+				overflow-x: hidden;
+				overflow-y: auto;
+				scroll-snap-type: y mandatory;
+				scroll-behavior: smooth;
+			}
+		}
+	}
+	.entity-traits {
+		flex-direction: row;
+		/* flex-wrap: wrap; */
+	}
 	.dark {
 		.traitset {
 			scroll-snap-align: center;
@@ -1193,18 +1209,10 @@
 				.entity-traits {
 					/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
 					display: flex;
-					flex-wrap: wrap;
-					flex-direction: column;
-					align-items: center;
-					padding: .2em;
-					gap: .4em;
-					/* flex-wrap: wrap; */
-					padding: .4em;
 					/* max-height: calc(100% - 2.4em); */
 					/* overflow: hidden; */
-					overflow-x: auto;
-					overflow-y: hidden;
-					scroll-snap-type: x mandatory;
+					padding: .2em;
+					gap: .4em;
 					.add-trait {
 						justify-content: end;
 						scroll-snap-align: end;

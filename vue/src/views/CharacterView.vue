@@ -150,8 +150,6 @@
 	// const portrait_image = ref(null)
 
 	const file_upload: Ref<File | null> = ref(null)
-	const portrait_img = ref(null)
-	const { width: portrait_width} = useElementSize(portrait_img)
 
 	const portrait_updated = ref(false)
 	const show_image = ref(false)
@@ -235,6 +233,8 @@
 	const traitset_wrapper = ref()
 	const character_wrapper = ref()
 
+	const portrait_img = ref(null)
+	const { width: portrait_width} = useElementSize(portrait_img)
 	const { height: portraitHeight, width: portraitWidth } = useElementSize(portrait_img)
 	const { width: entity_width } = useElementSize(entity_wrapper)
 
@@ -271,6 +271,7 @@
 		// at top of traitset scroll the banner is max size
 		// scrolling down shrinks the banner height to min size, depending on scroll Y
 		// where it remains until the user scrolled back up to the top
+		if(player.input_method == 'touch') return min_banner_height
 		const scrollY_threshold = 100
 		const scrollY_ratio = Math.min(1, traitset_scrollY.value / scrollY_threshold)
 		const height = max_banner_height - (max_banner_height - min_banner_height) * scrollY_ratio
@@ -1112,7 +1113,6 @@
 		#traitsets {
 			border-bottom: 1px solid var(--color-border);
 			flex-grow: 1;
-			overflow-y: auto;
 		}
 		.bottom-scroll-space {
 			height: 100px;
@@ -1135,6 +1135,35 @@
 </style>
 
 <style>
+	.touch {
+		#traitsets {
+			align-items: start;
+			justify-content: space-between;
+			scroll-snap-type: x mandatory;
+			scroll-behavior: smooth;
+			flex-direction: row;
+			/* scroll-padding-top: -4em; */
+			/* padding: 1em;
+			padding-top: 2.8em; */
+			overflow-y: hidden;
+			overflow-x: auto;
+			padding-top: 2.4em;
+			.traitset {
+				width: 100%;
+				height: 100%;
+			}
+		}
+	}
+	.kbm {
+		#traitsets {
+			flex-grow: 1;
+			overflow: auto;
+			flex-wrap: wrap;
+		}
+	}
+	#traitsets {
+		overflow: auto;
+	}
 	.dark {
 		#entity-wrapper {
 			/* scroll-snap-type: y mandatory; */
@@ -1214,15 +1243,7 @@
 			#traitsets {
 				/* border-top: 1px solid var(--color-background); */
 				display: flex;
-				flex-wrap: wrap;
-				align-items: start;
-				justify-content: space-between;
 				gap: .8em;
-				padding: 1em;
-				padding-top: 2.8em;
-				scroll-snap-type: y mandatory;
-				scroll-behavior: smooth;
-				/* scroll-padding-top: -4em; */
 				.top-scroll-space {
 					/* scroll-snap-align: start; */
 					/* height: 100px; */
@@ -1261,15 +1282,23 @@
 			}
 		}
 	}
-	/* .landscape {
+	.landscape {
 		#entity-wrapper {
-			padding-top: 4em;
+			/* padding-top: 4em; */
+			#traitsets {
+				.traitset {
+					min-width: 33vw;
+				}
+			}
 		}
-	} */
+	}
 	#mobile-container #charactersheet-container #entity-wrapper {
 		padding-bottom: 3em;
 		#traitsets {
-			padding-bottom: 105px;
+			/* padding-bottom: 105px; */
+			.traitset {
+				min-width: 100vw;
+			}
 		}
 	}
 </style>

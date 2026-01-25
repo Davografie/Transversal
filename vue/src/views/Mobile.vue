@@ -126,7 +126,7 @@
 				@transverse="scroll_top" />
 		</div>
 
-		<div id="charactersheet-container" v-if="view == 'entity'" :key="view">
+		<div id="charactersheet-container" v-show="view == 'entity'" :key="view">
 			<CharacterView
 				:entity_key="overwrite_entity_key ?? player.the_entity?.key"
 				:key="overwrite_entity_key ?? player.the_entity?.key"
