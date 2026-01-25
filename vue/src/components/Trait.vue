@@ -1047,7 +1047,7 @@
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
 						trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',]">
 				<div class="to-entity" v-if="trait.traitSetting?.toEntity">
-					<EntityCard :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" class="trait-to-entity" />
+					<EntityCard :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" class="trait-to-entity" is_active />
 				</div>
 				<div class="trait-text">
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
