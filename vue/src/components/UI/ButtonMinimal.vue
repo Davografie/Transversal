@@ -63,7 +63,9 @@
 <style>
 	.dark {
 		.minimal-button {
-			/* background-color: var(--color-background-mute); */
+			background-color: var(--color-background-mute);
+			backdrop-filter: blur(5px);
+			text-shadow: var(--text-shadow);
 			.icon {
 				/* width: 1.4em; */
 				/* height: 1.4em; */
