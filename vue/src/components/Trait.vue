@@ -1103,17 +1103,6 @@
 							</div>
 						</div>
 					</div>
-					<div class="notes" v-html="marked.parse(trait.notes)"
-						v-if="trait.notes
-						&& mode != view_modes.Editing
-						// && (
-						// 	mode != view_modes.Small ||
-						// 	!trait.statement
-						// )
-						&& (player.is_gm
-							|| props.entity_id == player.player_character.id
-							|| props.entity_id?.startsWith('Relations/')
-						)" />
 					<div class="required-traits label" v-if="mode == view_modes.Viewing || player.viewing">
 						<div v-if="trait.requiredTraits && trait.requiredTraits?.length > 0">
 							required traits:
@@ -1129,7 +1118,7 @@
 
 				<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
 						v-if="trait.ratingType != 'empty'"
-						@click="(mode == view_modes.Editing && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
+						@click.stop="(mode == view_modes.Editing && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
 					<Rating v-if="trait.rating" :rating="new_rating.length > 0 ? new_rating : trait.rating"
 						:rating-type="trait.ratingType"
 						@click.stop="play_trait"
@@ -1138,6 +1127,18 @@
 				</div>
 			</div>
 
+			<div class="notes" v-html="marked.parse(trait.notes)"
+				v-if="trait.notes
+				&& mode != view_modes.Editing
+				// && (
+				// 	mode != view_modes.Small ||
+				// 	!trait.statement
+				// )
+				&& (player.is_gm
+					|| props.entity_id == player.player_character.id
+					|| props.entity_id?.startsWith('Relations/')
+				)" />
+			
 			<div class="edit-trait" v-if="mode == view_modes.Editing">
 				<div class="edit-trait-id" v-if="mode == view_modes.Editing && editing_trait_id">
 					<div class="edit-trait-label">
@@ -1764,6 +1765,14 @@
 </style>
 
 <style>
+	.touch {
+		.trait {
+			/* height: 50vh; */
+			.trait-inner {
+				overflow-y: visible;
+			}
+		}
+	}
 	@keyframes moveGradient {
 		50% {
 			background-position: 100% 50%;
@@ -1776,7 +1785,7 @@
 			width: 85%;
 			.trait-inner {
 				border-radius: 10px;
-				max-height: 50vh;
+				/* max-height: 50vh; */
 				overflow-y: auto;
 				display: flex;
 				flex-direction: column;
@@ -2182,11 +2191,14 @@
 				border-top-left-radius: 10px;
 				border-top-right-radius: 10px;
 				background-color: transparent;
+				position: sticky;
+				top: 0;
+				z-index: 2;
 				.divider {
 					border-left: 1px solid var(--color-border);
 				}
 				.button-mnml.active {
-					background-color: transparent;
+					background-color: var(--color-background-mute);
 				}
 			}
 			.edit-buttons {
