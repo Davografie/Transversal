@@ -12,12 +12,12 @@ import { useEntity } from '@/composables/Entity'
 import type { Location, Player } from '@/interfaces/Types'
 
 export enum input_methods {
-	Keyboard = 'keyboard',
-	Mouse = 'mouse',
-	KBM = 'kbm',
+	// Keyboard = 'keyboard',
+	// Mouse = 'mouse',
+	KBM = 'keyboard and mouse',
 	Touch = 'touch',
-	Pen = 'pen',
-	Voice = 'voice'
+	// Pen = 'pen',
+	// Voice = 'voice'
 }
 
 export const usePlayerStore = defineStore(
@@ -27,7 +27,12 @@ export const usePlayerStore = defineStore(
 		//	player variables
 		const uuid: Ref<string> = ref('')
 		const player_id = ref<string>("")
-		const { player, set_player_id, retrieve_player, activate_entity } = usePlayer(undefined, player_id.value)
+		const {
+			player,
+			set_player_id,
+			retrieve_player,
+			activate_entity
+		} = usePlayer(undefined, player_id.value)
 		const player_name: Ref<string> = ref("")
 		const is_player = computed(() => !is_gm.value)
 
