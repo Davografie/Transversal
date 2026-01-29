@@ -286,7 +286,7 @@
 		<h2 class="name header" v-if="player.is_gm || !relation_possible">
 			{{ entity.name }}
 		</h2>
-		<span class="location" v-if="entity.location?.name">
+		<span class="location" v-if="entity.location?.name" @click="emit('show_entity', entity.location.key)">
 			🗺 {{ entity.location.name }}
 		</span>
 		<div class="archetypes" v-if="player.is_gm">
