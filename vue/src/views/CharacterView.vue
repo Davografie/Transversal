@@ -747,6 +747,9 @@
 					<div class="icon">👀</div>
 					<div class="label" v-if="!player.small_buttons">known to</div>
 				</div>
+				<ButtonMinimal :function="ButtonTypes.KNOWN_TO"
+					@click="toggle_known_to"
+					v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0" />
 
 				<ButtonMinimal :function="ButtonTypes.TRAITSET_CLOSED"
 					@click="cycle_traitset_defaults(false)"
@@ -801,10 +804,10 @@
 			</div>
 
 			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
-					v-if="entityOverviewType == 'QUICK_SWITCH' && player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0">
+					v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities?.map(e => e.id).filter(p => p != player.the_entity?.id).length > 0">
 				<EntityCard
 					class="entity-card"
-					v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
+					v-for="entity_id in player.player.entities?.map(e => e.id).filter(p => p != player.the_entity?.id)" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
 					@click_entity="quick_switch(entity_id)" />
