@@ -242,9 +242,15 @@
 				</div>
 				<div class="setting input-switcher">
 					<label for="input_switcher">input switcher</label>
-					<button class="button" v-for="ip in Object.entries(input_methods)" :value="ip" :disabled="!ip" @click="switch_input(ip[1])">
-						{{ ip[0] }}
-					</button>
+					<template v-for="ip in Object.entries(input_methods)">
+						<button class="button"
+								:value="ip"
+								:disabled="!ip"
+								@click="switch_input(ip[1])"
+								:class="{ 'active': playerStore.input_method == ip[1]}">
+							{{ ip[1] }}
+						</button>
+					</template>
 				</div>
 				<div v-if="playerStore.is_gm" class="setting dicepool-limit-slider">
 					<label>dicepool limit</label>
