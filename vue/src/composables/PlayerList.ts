@@ -20,7 +20,7 @@ export function usePlayerList() {
 				() => useQuery(
 					query,
 					null,
-					{ fetchPolicy: 'cache-first' }
+					{ fetchPolicy: 'cache-and-network' }
 				)
 			)
 			watch(result, (newResult) => {
@@ -33,8 +33,9 @@ export function usePlayerList() {
 	function create_player(player_name: string) {
 		const mutation = gql`mutation CreatePlayer($name: String!) {
 			createPlayer(name: $name) {
-				id
-				name
+				player {
+					id
+				}
 			}
 		}`
 		if(apolloClient) {
@@ -47,9 +48,26 @@ export function usePlayerList() {
 		}
 	}
 
+	function remove_player(player_id: string) {
+		const mutation = gql`mutation DeletePlayer($playerId: ID!) {
+			deletePlayer(playerId: $playerId) {
+				message
+			}
+		}`
+		if(apolloClient) {
+			const { mutate } = provideApolloClient(apolloClient)(
+				() => useMutation(mutation)
+			)
+			mutate({
+				playerId: player_id
+			})
+		}
+	}
+
 	return {
 		players,
 		retrieve_players,
-		create_player
+		create_player,
+		remove_player
 	}
 }
