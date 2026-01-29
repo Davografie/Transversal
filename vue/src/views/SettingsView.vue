@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, computed, watch } from 'vue'
+	import { ref, computed, watch, nextTick } from 'vue'
 	import type { Ref } from 'vue'
 	import { templateRef, useScroll } from '@vueuse/core'
 
@@ -19,6 +19,8 @@
 	import SFXOverview from '@/views/SFXOverview.vue'
 	import RulesView from '@/views/RulesView.vue'
 	import ToggleButton from '@/components/UI/ToggleButton.vue'
+	import ButtonMinimal from '@/components/UI/ButtonMinimal.vue'
+	import { ButtonTypes } from '@/composables/Button'
 
 	const props = defineProps({
 		orientation: String // 'vertical' or 'horizontal'
@@ -31,7 +33,7 @@
 	const playerStore = usePlayerStore()
 	const { dicepool_limit } = useDicepool()
 
-	const { players, retrieve_players, create_player } = usePlayerList()
+	const { players, retrieve_players, create_player, remove_player } = usePlayerList()
 	retrieve_players()
 
 	function switch_to_player(player: PlayerType) {
@@ -47,7 +49,12 @@
 
 	function new_player() {
 		create_player(player_name.value)
-		retrieve_players()
+		setTimeout(() => retrieve_players(), 500)
+	}
+
+	function delete_player(player_id: string) {
+		remove_player(player_id)
+		setTimeout(() => retrieve_players(), 500)
 	}
 
 	const view = ref('settings')
@@ -161,125 +168,132 @@
 
 <template>
 	<div id="settings-wrapper" ref="container">
+		<nav>
+			<div class="links">
+				
+				<div class="link" :class="{ 'header': view == 'location'}" @click="go_to('location')"
+						v-if="playerStore.the_entity?.id && playerStore.the_entity.id != 'placeholder'">
+					game
+				</div>
+				
+				<div class="link" :class="{ 'header': view == 'settings'}" @click="go_to('settings')">
+					settings
+				</div>
+
+				<div class="link" :class="{ 'header': view == 'characters'}" @click="go_to('characters')">
+					{{ playerStore.is_gm ? 'entities' : 'characters' }}
+				</div>
+
+				<div class="link" :class="{ 'header': view == 'traitsets'}" @click="go_to('traitsets')" v-if="playerStore.is_gm">
+					traitsets
+				</div>
+
+				<div class="link" :class="{ 'header': view == 'sfxs'}" @click="go_to('sfxs')" v-if="playerStore.is_gm">
+					sfxs
+				</div>
+
+				<div class="link" :class="{ 'header': view == 'rules'}" @click="go_to('rules')">
+					help
+				</div>
+
+			</div>
+		</nav>
 		<div id="settings-container">
-			<nav>
-				<div class="links">
-					
-					<div class="link" :class="{ 'header': view == 'location'}" @click="go_to('location')"
-							v-if="playerStore.the_entity?.id && playerStore.the_entity.id != 'placeholder'">
-						game
+			<div id="settings" class="setting-page" v-if="view == 'settings'">
+				<h1>settings</h1>
+				<div id="player-name" class="setting">
+					<label for="player_name">player name</label>
+					<div id="player-name-input">
+						<input id="player_name" type="text" placeholder="player name" v-model="player_name" @blur="update_player_name" />
+						<label id="player-name-updated" for="player_name" v-if="playerStore.player_name == player_name">✅</label>
 					</div>
-					
-					<div class="link" :class="{ 'header': view == 'settings'}" @click="go_to('settings')">
-						settings
+					<div id="player-list">
+						<template v-for="_player in players" :key="_player.id">
+							<div class="player button" :class="[
+										{ 'faded': _player.name.toLowerCase().indexOf(player_name.toLowerCase()) < 0 },
+										{ 'selected': _player.name == playerStore.player.name }
+									]"
+									@click="switch_to_player(_player)">
+								<div class="name">{{ _player.name }}</div>
+								<ButtonMinimal
+									class="player-trash-button"
+									:function="ButtonTypes.TRASH"
+									@click.stop="delete_player(_player.id)"
+									v-if="_player.id && playerStore.player.id != _player.id && playerStore.is_gm" />
+							</div>
+						</template>
 					</div>
-
-					<div class="link" :class="{ 'header': view == 'characters'}" @click="go_to('characters')">
-						{{ playerStore.is_gm ? 'entities' : 'characters' }}
-					</div>
-
-					<div class="link" :class="{ 'header': view == 'traitsets'}" @click="go_to('traitsets')" v-if="playerStore.is_gm">
-						traitsets
-					</div>
-
-					<div class="link" :class="{ 'header': view == 'sfxs'}" @click="go_to('sfxs')" v-if="playerStore.is_gm">
-						sfxs
-					</div>
-
-					<div class="link" :class="{ 'header': view == 'rules'}" @click="go_to('rules')">
-						help
-					</div>
-
-				</div>
-			</nav>
-			<div class="page" @click="container.scrollLeft = 140">
-				<div id="settings" class="setting-page" v-if="view == 'settings'">
-					<h1>settings</h1>
-					<div id="player-name" class="setting">
-						<label for="player_name">player name</label>
-						<div id="player-name-input">
-							<input id="player_name" type="text" placeholder="player name" v-model="player_name" @blur="update_player_name" />
-							<label id="player-name-updated" for="player_name" v-if="playerStore.player_name == player_name">✅</label>
-						</div>
-						<div id="player-list">
-							<template v-for="_player in players_to_show" :key="_player.id">
-								<div class="player button" @click="switch_to_player(_player)">
-									<div class="name">{{ _player.name }}</div>
-								</div>
-							</template>
-						</div>
-						<div class="button" v-if="players_to_show.length == 0" @click="new_player">
-							create {{ player_name }}
-						</div>
-					</div>
-					<div class="setting architect-switcher">
-						<label for="is_gm">role</label>
-						<ToggleButton truthy="player" falsy="architect" :default="!playerStore.is_gm" @toggle="toggle_gm" />
-					</div>
-					<div class="setting icon-label-switcher">
-						<label for="small_buttons">button labels</label>
-						<!-- <input id="small_buttons" type="button" class="button" :value="small_buttons" @click="toggle_small_buttons" /> -->
-						<ToggleButton truthy="🔘" :falsy="'ℹ\nbutton labels'" :default="playerStore.small_buttons" @toggle="toggle_small_buttons" />
-					</div>
-					<div class="setting data-saving-switcher">
-						<label for="data_saving">data saving</label>
-						<ToggleButton truthy="on" falsy="off" :default="playerStore.data_saving" @toggle="toggle_data_saving" />
-					</div>
-					<div class="setting input-switcher">
-						<label for="input_switcher">input switcher</label>
-						<button class="button" v-for="ip in Object.entries(input_methods)" :value="ip" :disabled="!ip" @click="switch_input(ip[1])">
-							{{ ip[0] }}
-						</button>
-					</div>
-					<div v-if="playerStore.is_gm" class="setting dicepool-limit-slider">
-						<label>dicepool limit</label>
-						<div id="dicepool-limit">
-							<input type="button" class="button" value="-" @click="decrease_dicepool_limit" v-if="!edit_dicepool_limit_manually" />
-
-							<span class="dicepool-limit" @click="edit_dicepool_limit_manually = true; new_dicepool_limit = dicepool_limit" v-if="!edit_dicepool_limit_manually">
-								{{ dicepool_limit && dicepool_limit > 0 ? dicepool_limit : '∞' }}
-							</span>
-							<input class="dicepool-limit" type="text" v-model="new_dicepool_limit" v-if="edit_dicepool_limit_manually" />
-							<input type="button" class="button" value="ok" @click="update_dicepool_limit" v-if="edit_dicepool_limit_manually && dicepool_limit != new_dicepool_limit" />
-							<input type="button" class="button" value="x" @click="edit_dicepool_limit_manually = false" v-if="edit_dicepool_limit_manually" />
-							
-							<input type="button" class="button" value="+" @click="increase_dicepool_limit" v-if="!edit_dicepool_limit_manually" />
-						</div>
-						<input type="range" class="dicepool-limit-slider" min="0" max="20" v-model="new_dicepool_limit" v-if="edit_dicepool_limit_manually" @change="update_dicepool_limit" />
-					</div>
-
-					<div class="setting font-size-slider">
-						<label>font size</label>
-						<div id="font-size">
-							<input type="button" class="button" value="-" @click="decrease_font_size" />
-							<span class="font-size" @click="edit_font_size_manually = true; new_font_size = font_size">
-								{{ new_font_size }} px
-							</span>
-							<input class="font-size" type="text" v-model="new_font_size" v-if="edit_font_size_manually" />
-							<input type="button" class="button" value="ok" @click="update_font_size" v-if="edit_font_size_manually && font_size != new_font_size" />
-							<input type="button" class="button" value="x" @click="edit_font_size_manually = false" v-if="edit_font_size_manually" />
-							<input type="button" class="button" value="+" @click="increase_font_size" />
-						</div>
-						<input type="range" class="font-size-slider" min="8" max="24" v-model="new_font_size" v-if="edit_font_size_manually" @change="update_font_size" />
+					<div class="button" v-if="players_to_show.length == 0 && player_name.length > 0" @click="new_player">
+						create {{ player_name }}
 					</div>
 				</div>
-				<CharacterOverview class="setting-page" v-if="view == 'characters'" @show_entity="emit('show_entity', $event)" />
-				<!-- <LocationOverview v-if="view == 'locations'" /> -->
-				<TraitsetOverview class="setting-page" v-if="view == 'traitsets' || (view == 'traitset' && props.orientation == 'horizontal')" @show_traitset="switch_to_traitset" />
-				<TraitsetView class="setting-page" v-if="traitset_key && view == 'traitset'" :traitset_key="traitset_key" />
-				<SFXOverview class="setting-page" v-if="view == 'sfxs'" />
-				<RulesView class="setting-page" v-if="view == 'rules'" />
-				<div class="button menu-button"
-						:class="{ 'active': scroll.x.value > 0}"
-						@click="scroll.x.value > 0 ? container.scrollTo(0, 0) : container.scrollTo(300, 0)"
-						v-if="playerStore.orientation == 'vertical'">
-					<span class="icon">
-						{{scroll.x.value > 0 ? '➡' : '⬅'}}
-					</span>
-					<span class="label" v-if="!playerStore.small_buttons">
-						menu
-					</span>
+				<div class="setting architect-switcher">
+					<label for="is_gm">role</label>
+					<ToggleButton truthy="player" falsy="architect" :default="!playerStore.is_gm" @toggle="toggle_gm" />
 				</div>
+				<div class="setting icon-label-switcher">
+					<label for="small_buttons">button labels</label>
+					<!-- <input id="small_buttons" type="button" class="button" :value="small_buttons" @click="toggle_small_buttons" /> -->
+					<ToggleButton truthy="🔘" :falsy="'ℹ\nbutton labels'" :default="playerStore.small_buttons" @toggle="toggle_small_buttons" />
+				</div>
+				<div class="setting data-saving-switcher">
+					<label for="data_saving">data saving</label>
+					<ToggleButton truthy="on" falsy="off" :default="playerStore.data_saving" @toggle="toggle_data_saving" />
+				</div>
+				<div class="setting input-switcher">
+					<label for="input_switcher">input switcher</label>
+					<button class="button" v-for="ip in Object.entries(input_methods)" :value="ip" :disabled="!ip" @click="switch_input(ip[1])">
+						{{ ip[0] }}
+					</button>
+				</div>
+				<div v-if="playerStore.is_gm" class="setting dicepool-limit-slider">
+					<label>dicepool limit</label>
+					<div id="dicepool-limit">
+						<input type="button" class="button" value="-" @click="decrease_dicepool_limit" v-if="!edit_dicepool_limit_manually" />
+
+						<span class="dicepool-limit" @click="edit_dicepool_limit_manually = true; new_dicepool_limit = dicepool_limit" v-if="!edit_dicepool_limit_manually">
+							{{ dicepool_limit && dicepool_limit > 0 ? dicepool_limit : '∞' }}
+						</span>
+						<input class="dicepool-limit" type="text" v-model="new_dicepool_limit" v-if="edit_dicepool_limit_manually" />
+						<input type="button" class="button" value="ok" @click="update_dicepool_limit" v-if="edit_dicepool_limit_manually && dicepool_limit != new_dicepool_limit" />
+						<input type="button" class="button" value="x" @click="edit_dicepool_limit_manually = false" v-if="edit_dicepool_limit_manually" />
+						
+						<input type="button" class="button" value="+" @click="increase_dicepool_limit" v-if="!edit_dicepool_limit_manually" />
+					</div>
+					<input type="range" class="dicepool-limit-slider" min="0" max="20" v-model="new_dicepool_limit" v-if="edit_dicepool_limit_manually" @change="update_dicepool_limit" />
+				</div>
+
+				<div class="setting font-size-slider">
+					<label>font size</label>
+					<div id="font-size">
+						<input type="button" class="button" value="-" @click="decrease_font_size" />
+						<span class="font-size" @click="edit_font_size_manually = true; new_font_size = font_size">
+							{{ new_font_size }} px
+						</span>
+						<input class="font-size" type="text" v-model="new_font_size" v-if="edit_font_size_manually" />
+						<input type="button" class="button" value="ok" @click="update_font_size" v-if="edit_font_size_manually && font_size != new_font_size" />
+						<input type="button" class="button" value="x" @click="edit_font_size_manually = false" v-if="edit_font_size_manually" />
+						<input type="button" class="button" value="+" @click="increase_font_size" />
+					</div>
+					<input type="range" class="font-size-slider" min="8" max="24" v-model="new_font_size" v-if="edit_font_size_manually" @change="update_font_size" />
+				</div>
+			</div>
+			<CharacterOverview class="setting-page" v-if="view == 'characters'" @show_entity="emit('show_entity', $event)" />
+			<!-- <LocationOverview v-if="view == 'locations'" /> -->
+			<TraitsetOverview class="setting-page" v-if="view == 'traitsets' || (view == 'traitset' && props.orientation == 'horizontal')" @show_traitset="switch_to_traitset" />
+			<TraitsetView class="setting-page" v-if="traitset_key && view == 'traitset'" :traitset_key="traitset_key" />
+			<SFXOverview class="setting-page" v-if="view == 'sfxs'" />
+			<RulesView class="setting-page" v-if="view == 'rules'" />
+			<div class="button menu-button"
+					:class="{ 'active': scroll.x.value > 0}"
+					@click="scroll.x.value > 0 ? container.scrollTo(0, 0) : container.scrollTo(300, 0)"
+					v-if="playerStore.orientation == 'vertical'">
+				<span class="icon">
+					{{scroll.x.value > 0 ? '➡' : '⬅'}}
+				</span>
+				<span class="label" v-if="!playerStore.small_buttons">
+					menu
+				</span>
 			</div>
 		</div>
 		<!-- <div class="bottom-scroll-space scroll-space"></div> -->
@@ -288,33 +302,129 @@
 
 <style scoped>
 	#settings-wrapper {
+		display: flex;
 		/* position: relative; */
+		nav {
+			flex: 0 0 140px;
+			height: 100vh;
+			.links {
+				padding-top: 3em;
+				display: flex;
+				flex-direction: column;
+				width: 100%;
+				gap: 1em;
+				.link {
+					color: var(--color-highlight-text);
+					font-size: 1.2em;
+					cursor: pointer;
+					padding: 0.5em;
+				}
+			}
+		}
 		#settings-container {
 			/* width: fit-content; */
 			height: 100vh;
 			text-align: center;
-			display: flex;
 			width: 100vw;
 			overflow-x: auto;
 			nav, .page {
 				height: 100%;
 				scroll-snap-align: start;
 			}
-			nav {
-				flex: 0 0 140px;
+			#settings {
+				display: flex;
+				flex-direction: column;
+				/* justify-content: center; */
+				align-items: center;
+				gap: 2em;
 				height: 100vh;
-				.links {
-					padding-top: 3em;
+				max-width: calc(100vw - 140px);
+				padding-bottom: 8em;
+				overflow: hidden auto;
+				.setting {
+					width: 100%;
 					display: flex;
 					flex-direction: column;
-					width: 100%;
-					gap: 1em;
-					.link {
-						color: var(--color-highlight-text);
-						font-size: 1.2em;
-						cursor: pointer;
-						padding: 0.5em;
+					align-items: center;
+					&#player-name {
+						#player-name-input {
+							width: 80%;
+							position: relative;
+							#player_name {
+								/* display: block; */
+								width: 100%;
+								font-size: 2em;
+								text-align: center;
+								border: none;
+								border-bottom: 1px solid var(--color-border);
+								background-color: var(--color-background);
+								color: var(--color-text);
+							}
+							#player-name-updated {
+								position: absolute;
+								right: 10px;
+								top: 50%;
+								transform: translateY(-50%);
+							}
+						}
+						#player-list {
+							width: 100%;
+							display: flex;
+							justify-content: space-evenly;
+							.player {
+								display: flex;
+								align-items: center;
+								gap: 0.5em;
+								&.faded {
+									opacity: 0.5;
+								}
+								&.selected {
+									background-color: var(--color-highlight);
+									color: var(--color-highlight-text);
+								}
+								.player-trash-button {
+									font-size: 0.6em;
+								}
+							}
+						}
 					}
+					#dicepool-limit {
+						width: 50%;
+						min-width: 150px;
+						display: flex;
+						justify-content: space-evenly;
+						.dicepool-limit {
+							font-size: 2em;
+							max-width: 50px;
+						}
+					}
+				}
+			}
+			.setting-page {
+				height: 100vh;
+				width: 100vw;
+				overflow-y: auto;
+				flex-grow: 1;
+			}
+			.menu-button {
+				position: absolute;
+				top: 0;
+				left: 0;
+				margin: 0;
+				width: 3em;
+				border-radius: 0 0 10px 0;
+				border-right: none;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 0.5em;
+				.icon {
+					font-size: 1.6em;
+				}
+				.label {
+					font-size: 1em;
+					transform: rotate(-90deg);
+					margin-bottom: 1em;
 				}
 			}
 			.page {
@@ -322,81 +432,6 @@
 				display: flex;
 				width: 100vw;
 				position: relative;
-				#settings {
-					display: flex;
-					flex-direction: column;
-					justify-content: center;
-					align-items: center;
-					gap: 2em;
-					height: 100vh;
-					padding-bottom: 8em;
-					overflow: auto;
-					.setting {
-						width: 100%;
-						display: flex;
-						flex-direction: column;
-						align-items: center;
-						&#player-name {
-							#player-name-input {
-								width: 80%;
-								position: relative;
-								#player_name {
-									/* display: block; */
-									width: 100%;
-									font-size: 2em;
-									text-align: center;
-									border: none;
-									border-bottom: 1px solid var(--color-border);
-									background-color: var(--color-background);
-									color: var(--color-text);
-								}
-								#player-name-updated {
-									position: absolute;
-									right: 10px;
-									top: 50%;
-									transform: translateY(-50%);
-								}
-							}
-						}
-						#dicepool-limit {
-							width: 50%;
-							min-width: 150px;
-							display: flex;
-							justify-content: space-evenly;
-							.dicepool-limit {
-								font-size: 2em;
-								max-width: 50px;
-							}
-						}
-					}
-				}
-				.setting-page {
-					height: 100vh;
-					width: 100vw;
-					overflow-y: auto;
-					flex-grow: 1;
-				}
-				.menu-button {
-					position: absolute;
-					top: 0;
-					left: 0;
-					margin: 0;
-					width: 3em;
-					border-radius: 0 0 10px 0;
-					border-right: none;
-					display: flex;
-					flex-direction: column;
-					align-items: center;
-					gap: 0.5em;
-					.icon {
-						font-size: 1.6em;
-					}
-					.label {
-						font-size: 1em;
-						transform: rotate(-90deg);
-						margin-bottom: 1em;
-					}
-				}
 			}
 		}
 	}
