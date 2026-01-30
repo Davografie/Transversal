@@ -1105,8 +1105,9 @@
 			width: 100vw;
 			height: 100vh;
 			background-color: var(--color-background-mute);
-			z-index: 5;
+			z-index: 10;
 			display: flex;
+			justify-content: center;
 			align-items: center;
 		}
 		#portrait_large {
@@ -1139,6 +1140,9 @@
 
 <style>
 	.touch {
+		#character-buttons {
+			overflow: scroll hidden;
+		}
 		#traitsets {
 			align-items: start;
 			justify-content: space-between;
@@ -1158,14 +1162,15 @@
 		}
 	}
 	.kbm {
+		#character-buttons {
+			flex-wrap: wrap;
+		}
 		#traitsets {
 			flex-grow: 1;
 			overflow: auto;
-			flex-wrap: wrap;
+			flex-direction: column;
+			padding-top: 2em;
 		}
-	}
-	#traitsets {
-		overflow: auto;
 	}
 	.dark {
 		#entity-wrapper {
@@ -1277,7 +1282,7 @@
 			}
 			#character {
 				#character-buttons {
-					flex-wrap: wrap;
+					/* flex-wrap: wrap; */
 				}
 			}
 			#traitsets {
