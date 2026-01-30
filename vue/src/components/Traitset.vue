@@ -1105,9 +1105,6 @@
 	}
 	.traitset.active {
 		.set-title {
-			position: sticky;
-			z-index: 2;
-			top: -3px;
 			padding: 0;
 			justify-content: space-between;
 			.title {
@@ -1153,11 +1150,29 @@
 				scroll-snap-type: y mandatory;
 				scroll-behavior: smooth;
 			}
+			&.active {
+				max-height: 90%;
+			}
 		}
 	}
-	.entity-traits {
-		flex-direction: row;
-		/* flex-wrap: wrap; */
+	.kbm {
+		.traitset {
+			.set-title {
+				position: sticky;
+				z-index: 2;
+				top: 0;
+			}
+			.entity-traits {
+				flex-direction: column;
+				align-items: center;
+				overflow-x: hidden;
+				overflow-y: auto;
+				.add-trait {
+					width: 100%;
+					justify-content: end;
+				}
+			}
+		}
 	}
 	.dark {
 		.traitset {
@@ -1165,7 +1180,7 @@
 			scroll-snap-stop: always;
 			/* height: 100%; */
 			/* overflow-y: auto; */
-			overflow: hidden;
+			/* overflow: hidden; */
 			display: flex;
 			flex-direction: column;
 			flex-grow: 1;
@@ -1241,7 +1256,6 @@
 				display: none;
 			}
 			&.active {
-				max-height: 90%;
 				.set-title {
 					background-color: var(--color-background-soft);
 					text-shadow: none;
@@ -1321,10 +1335,11 @@
 				background-color: var(--color-border);
 				display: flex;
 				flex-direction: column;
-				.add-trait {
+				.trait, .add-trait {
+					width: 100%;
 					background-color: var(--color-background);
 					color: var(--color-text);
-					justify-content: center;
+					/* justify-content: center; */
 				}
 			}
 			&.active {
