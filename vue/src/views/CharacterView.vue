@@ -150,8 +150,6 @@
 	// const portrait_image = ref(null)
 
 	const file_upload: Ref<File | null> = ref(null)
-	const portrait_img = ref(null)
-	const { width: portrait_width} = useElementSize(portrait_img)
 
 	const portrait_updated = ref(false)
 	const show_image = ref(false)
@@ -235,6 +233,8 @@
 	const traitset_wrapper = ref()
 	const character_wrapper = ref()
 
+	const portrait_img = ref(null)
+	const { width: portrait_width} = useElementSize(portrait_img)
 	const { height: portraitHeight, width: portraitWidth } = useElementSize(portrait_img)
 	const { width: entity_width } = useElementSize(entity_wrapper)
 
@@ -271,6 +271,7 @@
 		// at top of traitset scroll the banner is max size
 		// scrolling down shrinks the banner height to min size, depending on scroll Y
 		// where it remains until the user scrolled back up to the top
+		if(player.input_method == 'touch') return min_banner_height
 		const scrollY_threshold = 100
 		const scrollY_ratio = Math.min(1, traitset_scrollY.value / scrollY_threshold)
 		const height = max_banner_height - (max_banner_height - min_banner_height) * scrollY_ratio
@@ -746,6 +747,9 @@
 					<div class="icon">👀</div>
 					<div class="label" v-if="!player.small_buttons">known to</div>
 				</div>
+				<ButtonMinimal :function="ButtonTypes.KNOWN_TO"
+					@click="toggle_known_to"
+					v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0" />
 
 				<ButtonMinimal :function="ButtonTypes.TRAITSET_CLOSED"
 					@click="cycle_traitset_defaults(false)"
@@ -800,10 +804,10 @@
 			</div>
 
 			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
-					v-if="entityOverviewType == 'QUICK_SWITCH' && player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0">
+					v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities?.map(e => e.id).filter(p => p != player.the_entity?.id).length > 0">
 				<EntityCard
 					class="entity-card"
-					v-for="entity_id in player.previous_perspective_ids" :key="entity_id"
+					v-for="entity_id in player.player.entities?.map(e => e.id).filter(p => p != player.the_entity?.id)" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
 					@click_entity="quick_switch(entity_id)" />
@@ -1101,8 +1105,9 @@
 			width: 100vw;
 			height: 100vh;
 			background-color: var(--color-background-mute);
-			z-index: 5;
+			z-index: 10;
 			display: flex;
+			justify-content: center;
 			align-items: center;
 		}
 		#portrait_large {
@@ -1112,7 +1117,6 @@
 		#traitsets {
 			border-bottom: 1px solid var(--color-border);
 			flex-grow: 1;
-			overflow-y: auto;
 		}
 		.bottom-scroll-space {
 			height: 100px;
@@ -1135,6 +1139,39 @@
 </style>
 
 <style>
+	.touch {
+		#character-buttons {
+			overflow: scroll hidden;
+		}
+		#traitsets {
+			align-items: start;
+			justify-content: space-between;
+			scroll-snap-type: x mandatory;
+			scroll-behavior: smooth;
+			flex-direction: row;
+			/* scroll-padding-top: -4em; */
+			/* padding: 1em;
+			padding-top: 2.8em; */
+			overflow-y: hidden;
+			overflow-x: auto;
+			padding-top: 2.4em;
+			.traitset {
+				width: 100%;
+				height: 100%;
+			}
+		}
+	}
+	.kbm {
+		#character-buttons {
+			flex-wrap: wrap;
+		}
+		#traitsets {
+			flex-grow: 1;
+			overflow: auto;
+			flex-direction: column;
+			padding-top: 2em;
+		}
+	}
 	.dark {
 		#entity-wrapper {
 			/* scroll-snap-type: y mandatory; */
@@ -1214,15 +1251,7 @@
 			#traitsets {
 				/* border-top: 1px solid var(--color-background); */
 				display: flex;
-				flex-wrap: wrap;
-				align-items: start;
-				justify-content: space-between;
 				gap: .8em;
-				padding: 1em;
-				padding-top: 2.8em;
-				scroll-snap-type: y mandatory;
-				scroll-behavior: smooth;
-				/* scroll-padding-top: -4em; */
 				.top-scroll-space {
 					/* scroll-snap-align: start; */
 					/* height: 100px; */
@@ -1253,7 +1282,7 @@
 			}
 			#character {
 				#character-buttons {
-					flex-wrap: wrap;
+					/* flex-wrap: wrap; */
 				}
 			}
 			#traitsets {
@@ -1261,15 +1290,23 @@
 			}
 		}
 	}
-	/* .landscape {
+	.landscape {
 		#entity-wrapper {
-			padding-top: 4em;
+			/* padding-top: 4em; */
+			#traitsets {
+				.traitset {
+					min-width: 33vw;
+				}
+			}
 		}
-	} */
+	}
 	#mobile-container #charactersheet-container #entity-wrapper {
 		padding-bottom: 3em;
 		#traitsets {
-			padding-bottom: 105px;
+			/* padding-bottom: 105px; */
+			.traitset {
+				min-width: 100vw;
+			}
 		}
 	}
 </style>

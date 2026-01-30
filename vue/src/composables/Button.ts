@@ -8,6 +8,8 @@ import IconTraitsetsOpen from "@/components/icons/IconTraitsetsOpen.vue";
 import IconTraitsetsActive from "@/components/icons/IconTraitsetsActive.vue";
 import IconTraitsetsClosed from "@/components/icons/IconTraitsetsClosed.vue";
 import IconScaling from "@/components/icons/IconScaling.vue";
+import IconKnownTo from "@/components/icons/IconKnownTo.vue";
+import IconTrash from "@/components/icons/IconTrash.vue";
 
 export enum ButtonTypes {
 	ADD_ARCHETYPE = 'add_archetype',
@@ -18,15 +20,8 @@ export enum ButtonTypes {
 	TRAITSET_ACTIVE = 'traitset_active',
 	TRAITSET_CLOSED = 'traitset_closed',
 	SCALING = 'scaling',
-	CANCEL = 'cancel',
-	SAVE = 'save',
-	EDIT = 'edit',
-	REMOVE = 'remove',
-	TOGGLE = 'toggle',
-	FOLLOW = 'follow',
-	UNFOLLOW = 'unfollow',
-	FAVORITE = 'favorite',
-	UNFAVORITE = 'unfavorite',
+	KNOWN_TO = 'known_to',
+	TRASH = 'trash'
 }
 
 export function useButtonTypes(_type: ButtonTypes) {
@@ -48,24 +43,10 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return 'closed';
 			case ButtonTypes.SCALING:
 				return 'scaling';
-			case ButtonTypes.CANCEL:
-				return 'cancel';
-			case ButtonTypes.SAVE:
-				return 'save';
-			case ButtonTypes.EDIT:
-				return 'edit';
-			case ButtonTypes.REMOVE:
-				return 'remove';
-			case ButtonTypes.TOGGLE:
-				return 'toggle';
-			case ButtonTypes.FOLLOW:
-				return 'follow';
-			case ButtonTypes.UNFOLLOW:
-				return 'unfollow';
-			case ButtonTypes.FAVORITE:
-				return 'favorite';
-			case ButtonTypes.UNFAVORITE:
-				return 'unfavorite';
+			case ButtonTypes.KNOWN_TO:
+				return 'known to';
+			case ButtonTypes.TRASH:
+				return 'trash';
 			default:
 				return '';
 		}
@@ -88,6 +69,10 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return IconTraitsetsClosed
 			case ButtonTypes.SCALING:
 				return IconScaling
+			case ButtonTypes.KNOWN_TO:
+				return IconKnownTo
+			case ButtonTypes.TRASH:
+				return IconTrash
 		}
 	})
 	return {

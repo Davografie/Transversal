@@ -356,8 +356,8 @@ class DeletePlayer(Mutation):
 		# remove all player relations
 		relations = db.collection('Relations').find({ '_from': player_id, 'type': 'agency' })
 		for relation in relations:
-			db.collection('Relations').remove({ '_id': relation.get('_id') })
-		db.collection('Players').remove({ '_id': player_id })
+			db.collection('Relations').delete({ '_id': relation.get('_id') })
+		db.collection('Players').delete({ '_id': player_id })
 		return DeletePlayer(message='Player deleted')
 
 class ActivateEntity(Mutation):

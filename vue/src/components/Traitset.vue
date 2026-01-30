@@ -1105,9 +1105,6 @@
 	}
 	.traitset.active {
 		.set-title {
-			position: sticky;
-			z-index: 2;
-			top: -3px;
 			padding: 0;
 			justify-content: space-between;
 			.title {
@@ -1143,13 +1140,47 @@
 </style>
 
 <style>
+	.touch {
+		.traitset {
+			.entity-traits {
+				flex-direction: column;
+				align-items: center;
+				overflow-x: hidden;
+				overflow-y: auto;
+				scroll-snap-type: y mandatory;
+				scroll-behavior: smooth;
+			}
+			&.active {
+				max-height: 90%;
+			}
+		}
+	}
+	.kbm {
+		.traitset {
+			.set-title {
+				position: sticky;
+				z-index: 2;
+				top: 0;
+			}
+			.entity-traits {
+				flex-direction: column;
+				align-items: center;
+				overflow-x: hidden;
+				overflow-y: auto;
+				.add-trait {
+					width: 100%;
+					justify-content: end;
+				}
+			}
+		}
+	}
 	.dark {
 		.traitset {
 			scroll-snap-align: center;
 			scroll-snap-stop: always;
 			/* height: 100%; */
 			/* overflow-y: auto; */
-			overflow: hidden;
+			/* overflow: hidden; */
 			display: flex;
 			flex-direction: column;
 			flex-grow: 1;
@@ -1193,18 +1224,10 @@
 				.entity-traits {
 					/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
 					display: flex;
-					flex-wrap: wrap;
-					flex-direction: column;
-					align-items: center;
-					padding: .2em;
-					gap: .4em;
-					/* flex-wrap: wrap; */
-					padding: .4em;
 					/* max-height: calc(100% - 2.4em); */
 					/* overflow: hidden; */
-					overflow-x: auto;
-					overflow-y: hidden;
-					scroll-snap-type: x mandatory;
+					padding: .2em;
+					gap: .4em;
 					.add-trait {
 						justify-content: end;
 						scroll-snap-align: end;
@@ -1233,7 +1256,6 @@
 				display: none;
 			}
 			&.active {
-				max-height: 90%;
 				.set-title {
 					background-color: var(--color-background-soft);
 					text-shadow: none;
@@ -1313,10 +1335,11 @@
 				background-color: var(--color-border);
 				display: flex;
 				flex-direction: column;
-				.add-trait {
+				.trait, .add-trait {
+					width: 100%;
 					background-color: var(--color-background);
 					color: var(--color-text);
-					justify-content: center;
+					/* justify-content: center; */
 				}
 			}
 			&.active {
