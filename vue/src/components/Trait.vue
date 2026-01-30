@@ -279,7 +279,7 @@
 			|| (player.editing && mode.value != view_modes.Editing)
 		) {
 			console.log("clicking subtrait, cascading to parent trait")
-			click_trait()
+			play_trait()
 		}
 		
 		// add subtrait to the dicepool
@@ -599,7 +599,7 @@
 	// render statement with first letter of each word bold
 	const rendered_statement = computed(() => {
 		if (!trait.value.statement) return ''
-		const words = trait.value.statement.split(/([\s\-\/])/)
+		const words = trait.value.statement.trim().split(/([\s\-\/])/)
 		const parsed_words = words.map(word => {
 			if (word.match(/^\d+$/)) return word
 			return `<strong style="font-weight: 600; font-size: 0.8em; text-transform: uppercase">${word[0]}</strong>${word.slice(1)}`
@@ -1773,6 +1773,11 @@
 			}
 		}
 	}
+	.kbm {
+		.trait {
+			width: 100%;
+		}
+	}
 	@keyframes moveGradient {
 		50% {
 			background-position: 100% 50%;
@@ -1786,6 +1791,7 @@
 			.trait-inner {
 				border-radius: 10px;
 				/* max-height: 50vh; */
+				height: 100%;
 				overflow-y: auto;
 				display: flex;
 				flex-direction: column;
