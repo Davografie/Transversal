@@ -1857,7 +1857,7 @@
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-4) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-positive-die-4);
 						border-right: 1px solid var(--color-positive-die-4);
@@ -1877,7 +1877,7 @@
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-6) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-positive-die-6);
 						border-right: 1px solid var(--color-positive-die-6);
@@ -1897,7 +1897,7 @@
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-8) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-positive-die-8);
 						border-right: 1px solid var(--color-positive-die-8);
@@ -1917,7 +1917,7 @@
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-10) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-positive-die-10);
 						border-right: 1px solid var(--color-positive-die-10);
@@ -1937,7 +1937,7 @@
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-12) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-positive-die-12);
 						border-right: 1px solid var(--color-positive-die-12);
@@ -1959,7 +1959,7 @@
 						.trait-inner {
 							background-image: linear-gradient(45deg,
 								var(--color-negative-die-4) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-negative-die-4);
 						border-right: 1px solid var(--color-negative-die-4);
@@ -1979,7 +1979,7 @@
 						.trait-inner {
 							background-image: linear-gradient(45deg,
 								var(--color-negative-die-6) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-negative-die-6);
 						border-right: 1px solid var(--color-negative-die-6);
@@ -1999,7 +1999,7 @@
 						.trait-inner {
 							background-image: linear-gradient(45deg,
 								var(--color-negative-die-8) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-negative-die-8);
 						border-right: 1px solid var(--color-negative-die-8);
@@ -2019,7 +2019,7 @@
 						.trait-inner {
 							background-image: linear-gradient(45deg,
 								var(--color-negative-die-10) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-negative-die-10);
 						border-right: 1px solid var(--color-negative-die-10);
@@ -2039,7 +2039,7 @@
 						.trait-inner {
 							background-image: linear-gradient(45deg,
 								var(--color-negative-die-12) -100%,
-								var(--color-background) 50%);
+								var(--color-background-mute) 50%);
 						}
 						border-left: 1px solid var(--color-negative-die-12);
 						border-right: 1px solid var(--color-negative-die-12);
