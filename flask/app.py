@@ -6,6 +6,7 @@ import pandas as pd
 import datetime
 import random
 import json
+import hashlib
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -182,6 +183,54 @@ def deserialize_doc(stored):
 			# logger.info(f"JSONDecodeError: {k.decode('utf-8')}: {v.decode('utf-8')}")
 	return doc
 
+def execute_aql(query, collections=[]):
+	"""
+	Helper function to execute AQL queries.
+	Query hashes and collection revision hashes, and the results are stored in Redis.
+	If the query or any of the collections have changed, the query is re-executed.
+	Otherwise the result is retrieved from Redis.
+
+	Args:
+		query (str): The AQL query to be executed.
+		collections (list): A list of collections included in the query.
+
+	Returns:
+		list: The results of the query.
+	"""
+	logger.info("Executing AQL query: " + query)
+	# create query hash
+	query_hash = hashlib.sha256(query.encode('utf-8')).hexdigest()
+	logger.info("Query hash: " + query_hash)
+	
+	# get all collection revisions
+	revisions = []
+	for collection in collections:
+		revisions.append(db.collection(collection).revision())
+
+	# create collection revision hash
+	collection_hash = hashlib.sha256(json.dumps(revisions).encode('utf-8')).hexdigest()
+	logger.info("Collection revision hash: " + collection_hash)
+
+	# create query key
+	query_key = f"query:{query_hash}:{collection_hash}"
+
+	# check if query has changed
+	if r.exists(query_key):
+		# query has not changed, retrieve result from Redis
+		logger.info("Query has not changed, retrieving result from Redis")
+		return [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
+	else:
+		# query has changed, execute query and store result in Redis
+		logger.info("Query has changed, executing query and storing result in Redis")
+		cursor = db.aql.execute(query)
+		result = [doc for doc in cursor]
+		logger.info(f"Query result: {result}")
+		try:
+			r.rpush(query_key, *[json.dumps(doc).encode('utf-8') for doc in result])
+		except Exception as e:
+			logger.error(f"Error storing query result in Redis: {e}")
+		return result
+
 
 def filter_trait_settings_by_location(trait_settings, location_id):
 	"""
@@ -290,7 +339,8 @@ def retrieve_hierarchy(location_id):
 	query = f"""FOR v, e, p IN 0..20 OUTBOUND "{ location_id }" Relations
 				FILTER p.edges[*].type ALL == 'super'
 				RETURN v"""
-	cursor = db.aql.execute(query)
+	# cursor = db.aql.execute(query)
+	cursor = execute_aql(query, ['Relations'])
 	return [doc for doc in cursor]
 
 
@@ -514,7 +564,8 @@ class SFX(ObjectType):
 		query = f"""FOR trait IN Traits
 			FILTER '{ parent.id }' IN trait.possible_sfxs
 			RETURN trait"""
-		cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Traits'])
+		# cursor = db.aql.execute(query)
 		return [Trait(id=doc.get('_id')) for doc in cursor]
 
 class CreateSFX(Mutation):
@@ -561,7 +612,8 @@ class DeleteSFX(Mutation):
 			query = f"""FOR trait IN Traits
 				FILTER '{ id }' IN trait.possible_sfxs
 				RETURN trait"""
-			results = db.aql.execute(query)
+			results = execute_aql(query, ['Traits'])
+			# results = db.aql.execute(query)
 			for result in results:
 				new_sfxs = result.get('possible_sfxs')
 				new_sfxs.remove(id)
@@ -570,7 +622,8 @@ class DeleteSFX(Mutation):
 			query = f"""FOR ts IN TraitSettings
 				FILTER '{ id }' IN ts.sfxs
 				RETURN ts"""
-			results = db.aql.execute(query)
+			results = execute_aql(query, ['TraitSettings'])
+			# results = db.aql.execute(query)
 			for result in results:
 				new_sfxs = result.get('sfxs')
 				new_sfxs.remove(id)
@@ -836,8 +889,9 @@ class MutateTraitSetting(Mutation):
 					FILTER setting._to == '{ trait_setting.get('_to') }'
 					FILTER TRIM(setting.statement) == TRIM('{ trait_setting.get('statement') }')
 					RETURN setting"""
-					pockets = db.aql.execute(query)
-					if not pockets.empty():
+					pockets = execute_aql(query, ['TraitSettings'])
+					# pockets = db.aql.execute(query)
+					if pockets:
 						to_pocket = [doc for doc in pockets][0]
 						to_pocket['rating'] = to_pocket.get('rating') + [die_type]
 						# logger.info(f"MutateTraitSetting:\tto_pocket: { to_pocket }")
@@ -1228,14 +1282,16 @@ class Trait(ObjectType):
 			FILTER trait._id == subtraits._to
 			SORT trait.traitset ASC, SUM(ABS(subtraits.rating)), trait._id ASC
 			RETURN subtraits"""
-		sub_traits = list(db.aql.execute(query))
+		sub_traits = execute_aql(query, ['TraitSettings', 'Traits'])
+		# sub_traits = list(db.aql.execute(query))
 		query = f"""FOR setting IN TraitSettings
 			FILTER setting._id == '{ parent.trait_setting_id }'
 			FOR shortcut_trait IN setting.shortcut_traits OR []
 			FOR trait_setting IN TraitSettings
 			FILTER shortcut_trait == trait_setting._id
 			RETURN trait_setting"""
-		shortcuts = list(db.aql.execute(query))
+		shortcuts = execute_aql(query, ['TraitSettings'])
+		# shortcuts = list(db.aql.execute(query))
 		result = sub_traits + shortcuts
 		return [Trait(id=doc.get('_to'), trait_setting_id=doc.get('_id')) for doc in result]
 
@@ -1417,9 +1473,10 @@ class AssignTrait(Mutation):
 					'notes': traitsetting.notes
 				}}"""
 		logger.info(f"AssignTrait:\tquerying for trait default:\n{ query }")
-		cursor = db.aql.execute(query)
+		query_result = execute_aql(query, ['TraitSettings'])
+		# cursor = db.aql.execute(query)
 		# retrieving default traitset setting
-		if cursor.empty():
+		if not query_result:
 			query = f"""FOR traitsetting IN TraitSettings
 				FILTER traitsetting._from == '{ get_doc_by_id('Traits', trait_id)['traitset'] }'
 				FILTER traitsetting._to == 'Traits/1'
@@ -1439,9 +1496,10 @@ class AssignTrait(Mutation):
 					'statement': traitsetting.statement,
 					'notes': traitsetting.notes
 				}}"""
-			cursor = db.aql.execute(query)
+			query_result = execute_aql(query, ['TraitSettings'])
+			# cursor = db.aql.execute(query)
 		# retrieving global default setting
-		if cursor.empty():
+		if not query_result:
 			query = f"""FOR traitsetting IN TraitSettings
 					FILTER traitsetting._id == 'TraitSettings/1'
 					RETURN {{
@@ -1460,9 +1518,10 @@ class AssignTrait(Mutation):
 						'statement': traitsetting.statement,
 						'notes': traitsetting.notes
 					}}"""
-			cursor = db.aql.execute(query)
-		if not cursor.empty():
-			traitsetting = [doc for doc in cursor][0]
+			query_result = execute_aql(query, ['TraitSettings'])
+			# cursor = db.aql.execute(query)
+		if len(query_result) > 0:
+			traitsetting = query_result[0]
 			old_traitsetting_id = traitsetting.get('_id')
 			traitsetting = {
 				**absolute_default_trait_setting,
@@ -1489,7 +1548,8 @@ class AssignTrait(Mutation):
 			FILTER setting._from == '{ old_traitsetting_id }'
 			FILTER setting._to != 'Traits/1'
 			RETURN setting"""
-		cursor = db.aql.execute(query)
+		cursor = db.aql.execute(query, ['TraitSettings'])
+		# cursor = db.aql.execute(query)
 		for subtrait in cursor:
 			db.collection('TraitSettings').insert({
 				'_from': new_traitsetting.get('_id'),
@@ -1859,7 +1919,8 @@ class Traitset(ObjectType):
 				FILTER trait.traitset == '{ parent.id }'
 			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
 			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
-			cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['TraitSettings', 'Traits'])
+			# cursor = db.aql.execute(query)
 			return [Trait(
 				id=doc['id'],
 				trait_setting_id=doc['setting']
@@ -1876,7 +1937,8 @@ class Traitset(ObjectType):
 				FILTER trait.traitset == '{ parent.id }'
 			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
 			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
-			cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
+			# cursor = db.aql.execute(query)
 			return [Trait(
 				id=doc['id'],
 				trait_setting_id=doc['setting']
@@ -1921,7 +1983,8 @@ class Traitset(ObjectType):
 					)
 					FOR trait IN UNIQUE(APPEND(direct_traits, inherited_traits))
 					RETURN trait"""
-				cursor = db.aql.execute(query)
+				cursor = execute_aql(query, ['Entities', 'TraitSettings', 'Traits'])
+				# cursor = db.aql.execute(query)
 				return [Trait(id=trait['_to'], trait_setting_id=trait['_id']) for trait in cursor]
 
 
@@ -1946,7 +2009,8 @@ class Traitset(ObjectType):
 						FILTER trait.traitset == '{ parent.id }'
 					{ sorting }
 					RETURN setting"""
-				direct_trait_settings = [doc for doc in db.aql.execute(query)]
+				# direct_trait_settings = [doc for doc in db.aql.execute(query)]
+				direct_trait_settings = execute_aql(query, ['TraitSettings', 'Traits'])
 				direct_trait_settings = [{
 					'max': 10000,
 					'entity_depth': 0,
@@ -1989,7 +2053,8 @@ class Traitset(ObjectType):
 						traitsetting: ts.traitsetting
 					}}"""
 				# logger.info(f"Traitset.resolve_traits:\tarchetype query: { query }")
-				inherited_trait_settings = [doc for doc in db.aql.execute(query)]
+				# inherited_trait_settings = [doc for doc in db.aql.execute(query)]
+				inherited_trait_settings = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
 				inherited_trait_settings = [
 					{
 						'max': ts.get('max') or 0,
@@ -2034,11 +2099,12 @@ class Traitset(ObjectType):
 				FILTER trait.traitset == '{ parent.id }'
 				SORT trait.name ASC
 				RETURN {{ 'id': trait._id, 'name': trait.name }}"""
-			cursor = db.aql.execute(query)
-			if not cursor.empty():
+			# cursor = db.aql.execute(query)
+			query_result = execute_aql(query, ['Traits'])
+			if len(query_result) > 0:
 				result = [
 					Trait(id=doc['id'], name=doc['name'])
-					for doc in cursor
+					for doc in query_result
 				]
 			else:
 				result = []
@@ -2094,7 +2160,8 @@ class Traitset(ObjectType):
 								RETURN s.score
 				)"""
 			# logger.info("(005) using query: ", set_query)
-			set_cursor = db.aql.execute(set_query)
+			# set_cursor = db.aql.execute(set_query)
+			set_cursor = execute_aql(set_query, ['TraitSettings', 'Traits'])
 			result = [doc for doc in set_cursor][0]
 			return result
 		return 0
@@ -2602,7 +2669,8 @@ class Entity(Interface):
 						traitsettings[0].traitsetting,
 						{{ traitset: t.traitset }}
 					)"""
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Relations', 'TraitSettings', 'Traits', 'Traitsets'])
 		trait_settings = [doc for doc in cursor]
 		location = retrieve_location(get_doc_by_id('Entities', parent.id))
 		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(trait_settings)} trait settings, now filtering by location { location.get('name') }")
@@ -2627,7 +2695,8 @@ class Entity(Interface):
 						locations_enabled: default.locations_enabled,
 						locations_disabled: default.locations_disabled
 					}}"""
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['TraitSettings', 'Traitsets'])
 		unpopulated_traitsets = [doc for doc in cursor]
 		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(unpopulated_traitsets)} unpopulated trait sets, now filtering by location { location.get('name') }")
 		filtered_unpopulated_traitsets = filter_trait_settings_by_location(unpopulated_traitsets, location.get('_id'))
@@ -2697,7 +2766,8 @@ class Entity(Interface):
 
 			RETURN relation"""
 		# logger.info("query: ", query)
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Relations'])
 		# relations = db.collection('Relations').find({'_from': parent.id})
 		return [Relation(id=doc['_id']) for doc in cursor]
 
@@ -2761,7 +2831,8 @@ class Entity(Interface):
 			SORT relation.favorite DESC, POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
 
 			RETURN e"""
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Relations'])
 		for entity in cursor:
 			if entity.get('type') == 'character':
 				result.append(Character(id=entity.get('_id')))
@@ -2985,7 +3056,8 @@ class InstantiateArchetype(Mutation):
 						entity: entity,
 						traitsetsettings: traitsetsettings
 					}}"""
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Entities', 'TraitsetSettings'])
 		result = [doc for doc in cursor][0]
 		for traitsetsetting in result.get('traitsetsettings'):
 			new_traitsetsetting = {key: value for key, value in traitsetsetting.items() if not key.startswith('_')}
@@ -3058,7 +3130,8 @@ class DeleteEntity(Mutation):
 			query = f"""FOR s IN TraitSettings
 						FILTER { entity_id } IN s.locations_enabled
 						RETURN s"""
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['TraitSettings'])
 			for doc in cursor:
 				doc['locations_enabled'].remove(entity_id)
 				if doc['locations_enabled'] == []:
@@ -3071,7 +3144,8 @@ class DeleteEntity(Mutation):
 			query = f"""FOR s IN TraitSettings
 						FILTER { entity_id } IN s.locations_disabled
 						RETURN s"""
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['TraitSettings'])
 			for doc in cursor:
 				doc['locations_disabled'].remove(entity_id)
 				update_doc('TraitSettings', doc)
@@ -3112,7 +3186,8 @@ class DeleteEntity(Mutation):
 				query = f"""FOR v, e, p IN 0..100 INBOUND "{ current_entity.get('_id') }" Relations
 					FILTER p.edges[*].type ALL == 'super'
 					RETURN v"""
-				cursor = db.aql.execute(query)
+				# cursor = db.aql.execute(query)
+				cursor = execute_aql(query, ['Relations', 'Entities'])
 				zones = [doc for doc in cursor]
 
 				# then remove all entities in those zones
@@ -3169,7 +3244,8 @@ class Character(ObjectType):
 							RETURN s.score
 			)"""
 		# logger.info("(005) using query: ", set_query)
-		set_cursor = db.aql.execute(set_query)
+		# set_cursor = db.aql.execute(set_query)
+		set_cursor = execute_aql(set_query, ['TraitSettings', 'Traits'])
 		result = [doc for doc in set_cursor][0]
 		return result
 
@@ -3271,7 +3347,8 @@ class Location(ObjectType):
 			FILTER r._from == '{ parent.id }'
 			FILTER r.type == 'super'
 			RETURN r._to"""
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Relations'])
 		parent_id = [doc for doc in cursor]
 		if len(parent_id) == 1:
 			return Location(id=parent_id[0])
@@ -3282,7 +3359,8 @@ class Location(ObjectType):
 		query = f"""FOR v, e, p IN 0..100 OUTBOUND "{ parent.id }" Relations
 			FILTER p.edges[*].type ALL == 'super'
 			RETURN v._id"""
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Relations', 'Entities'])
 		return [Location(id=doc) for doc in cursor]
 
 	def resolve_flavortext(parent, info):
@@ -3294,7 +3372,8 @@ class Location(ObjectType):
 			FILTER r._to == '{ parent.id }'
 			FILTER r.type == 'super'
 			RETURN r._from"""
-		zones = db.aql.execute(query)
+		# zones = db.aql.execute(query)
+		zones = execute_aql(query, ['Relations'])
 		return [Location(id=loc) for loc in zones]
 
 	def resolve_transversables(parent, info):
@@ -3302,7 +3381,8 @@ class Location(ObjectType):
 			FILTER r._from == '{ parent.id }'
 			FILTER r.type == 'transversable'
 			RETURN r._to"""
-		transversables = db.aql.execute(query)
+		# transversables = db.aql.execute(query)
+		transversables = execute_aql(query, ['Relations'])
 		return [Location(id=loc) for loc in transversables]
 
 	def resolve_entities(parent, info):
@@ -3310,7 +3390,8 @@ class Location(ObjectType):
 					FILTER e.location == '{ parent.id }'
 					SORT POSITION(['character', 'npc', 'asset', 'faction'], e.type, true) ASC, e.name ASC
 					RETURN e"""
-		cursor = db.aql.execute(query)
+		# cursor = db.aql.execute(query)
+		cursor = execute_aql(query, ['Entities'])
 		entities = [doc for doc in cursor]
 		# check if any entities are being followed
 		new_entities = []
@@ -3452,7 +3533,8 @@ class Relation(ObjectType):
 						FILTER trait.traitset == '{traitset_id}'
 						RETURN {{ trait: trait._id, traitsetting: traitsetting._id }}"""
 			# logger.info("Relation.resolve_traitsets:\tquery: ", query)
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['TraitSettings', 'Traits'])
 			traits = [Trait(id=doc.get('trait'), trait_setting_id=doc.get('traitsetting')) for doc in cursor]
 			result.append(Traitset(id=traitset_id, traits=traits))
 		return result
@@ -3597,7 +3679,8 @@ class Query(ObjectType):
 				query += f"""FILTER e.location IN ['{ "', '".join([loc.get('_id') for loc in hierarchy]) }'] """
 			query += """SORT POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
 			RETURN e"""
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['Entities'])
 			entities = [doc for doc in cursor]
 			result = []
 			for entity in entities:
@@ -3624,7 +3707,8 @@ class Query(ObjectType):
 			SORT e.name ASC
 			RETURN e"""
 			logger.info("resolve_entities:\tquery: ", query)
-			entities = db.aql.execute(query)
+			# entities = db.aql.execute(query)
+			entities = execute_aql(query, ['Entities'])
 			if entity_type  in ['character', 'gm']:
 				return [Character(id = doc['_id']) for doc in entities]
 			elif entity_type == 'location':
@@ -3680,7 +3764,8 @@ class Query(ObjectType):
 					SORT traitsets.order ASC
 					RETURN {{ 'id': traitsets._id, 'name': traitsets.name }}"""
 				# logger.info("retrieving traitsets for entity type: ", query)
-				cursor = db.aql.execute(query)
+				# cursor = db.aql.execute(query)
+				cursor = execute_aql(query, ['Traitsets'])
 				result = [
 					Traitset(id = doc['id'], name = doc['name'])
 					for doc in cursor
@@ -3720,7 +3805,8 @@ class Query(ObjectType):
 			query = f"""FOR traitsets IN Traitsets
 				SORT traitsets.order ASC, traitsets.name ASC
 				RETURN {{ 'id': traitsets._id, 'name': traitsets.name }}"""
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['Traitsets'])
 			result = [
 				Traitset(id = doc['id'], name = doc['name'])
 				for doc in cursor
@@ -3770,7 +3856,8 @@ class Query(ObjectType):
 			FILTER trait.traitset == '{ traitset_id }'
 			RETURN trait
 			"""
-			set_cursor = db.aql.execute(query)
+			# set_cursor = db.aql.execute(query)
+			set_cursor = execute_aql(query, ['TraitSettings', 'Traits'])
 			return [Trait(id=doc.get('_id')) for doc in set_cursor]
 
 		# return all of a traitset's traits that the given entity doesn't already have
@@ -3816,7 +3903,8 @@ class Query(ObjectType):
 					SORT t.name, TO_NUMBER(SUBSTRING(default_trait[0].rating[0], 1)) ASC
 					RETURN {{ location_hierarchy: location_hierarchy, trait: t, default: default_trait }}"""
 			# logger.info("resolve_traits\tpotential traits query\n", query)
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['TraitSettings', 'Traits', 'Relations', 'Entities'])
 			result = []
 			for doc in cursor:
 				if doc['default']:
@@ -3858,7 +3946,8 @@ class Query(ObjectType):
 			query = f"""FOR sfx IN SFXs
 				SORT sfx.name ASC
 				RETURN sfx"""
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['SFXs'])
 			return [
 				SFX(id=doc['_id'], name = doc['name'], description = doc['description'])
 				for doc in cursor
@@ -4450,7 +4539,8 @@ def imagegen(entity_key, force):
 			}}"""
 
 			# there should only be one result
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['Entities', 'Relations'])
 
 			traits = []
 
@@ -4539,7 +4629,8 @@ def imagegen(entity_key, force):
 			}}"""
 
 			# there should only be one result
-			cursor = db.aql.execute(query)
+			# cursor = db.aql.execute(query)
+			cursor = execute_aql(query, ['Entities', 'Relations', 'TraitSettings', 'Traits'])
 
 			traits = []
 
