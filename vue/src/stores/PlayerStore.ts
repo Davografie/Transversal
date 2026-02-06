@@ -14,8 +14,8 @@ import type { Location, Player } from '@/interfaces/Types'
 export enum input_methods {
 	// Keyboard = 'keyboard',
 	// Mouse = 'mouse',
-	KBM = 'kbm',
-	Touch = 'touch',
+	kbm = 'mouse',
+	touch = 'touch/touchpad',
 	// Pen = 'pen',
 	// Voice = 'voice'
 }

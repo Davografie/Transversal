@@ -5,7 +5,7 @@
 	import { useRouter, useRoute, RouterLink } from 'vue-router'
 	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef } from '@vueuse/core'
 
-	import { usePlayerStore } from '@/stores/PlayerStore'
+	import { usePlayerStore, input_methods } from '@/stores/PlayerStore'
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
 	import { useSession } from '@/composables/Session'
 
@@ -185,7 +185,7 @@
 				player.is_gm ? 'gm' : 'player',
 				location_image_link ? 'has-image' : 'no-image',
 				view,
-				player.input_method
+				Object.keys(input_methods).find(key => input_methods[key] === player.input_method)
 			]"
 			:style="preferredColor == 'dark' ? { 'background-image': 'url(' + location_image_link + ')'} : ''"
 			ref="app_wrapper_component">
