@@ -287,18 +287,20 @@
 		const element = document.getElementById(element_id)
 		if(element) {
 			console.log("element found, scrolling to it")
-			element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+			element.scrollIntoView({ behavior: 'smooth', block: 'center' })
 		}
 		show_reference.value = false
 	}
 
 	function scroll_to_traitset(traitset: TraitsetType) {
 		active_traitset_id.value = traitset.id
-		nextTick(() => scroll_to_element('ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + entity.value.key))
+		const el_id = 'ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + entity.value.key
+		console.log("scrolling to traitset: " + el_id)
+		nextTick(() => scroll_to_element(el_id))
 	}
 
 	function set_traitset(set: TraitsetType) {
-		console.log('traitset: ', set)
+		// console.log('traitset: ', set)
 		if(set) {
 			// active_traitset_id.value = set.id
 			scroll_to_traitset(set)
@@ -542,6 +544,13 @@
 	}
 
 	const show_reference = ref(false)
+
+	function next_traitset(_traitset: TraitsetType) {
+		if(character.value.traitsets) {
+			active_traitset_id.value = character.value.traitsets[character.value.traitsets?.indexOf(_traitset) + 1]?.id
+			scroll_to_traitset(character.value.traitsets[character.value.traitsets?.indexOf(_traitset) + 1])
+		}
+	}
 </script>
 
 <template>
@@ -857,7 +866,7 @@
 				:next="player.traitset_defaults == 'ACTIVE' && character.traitsets?.indexOf(set) - 1 < character.traitsets.length && character.traitsets[character.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
 				:location="false"
 				:relationship="false"
-				@next="active_traitset_id = character.traitsets[character.traitsets?.indexOf(set) + 1]?.id"
+				@next="next_traitset(set)"
 				@set_traitset="set_traitset"
 				@unset_traitset="active_traitset_id = ''" />
 			<div class="bottom-scroll-space"></div>

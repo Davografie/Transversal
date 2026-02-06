@@ -78,6 +78,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 					pp
 					traitsets {
 						id
+						name
 						entityTypes
 						limit
 					}

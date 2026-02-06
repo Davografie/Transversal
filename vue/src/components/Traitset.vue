@@ -645,7 +645,7 @@
 						:traitset_types="traitset.entityTypes"
 						:mode="view_modes.Viewing"
 						@refetch="retrieve_traitset"
-						@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
+						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
 						@kill_highlight="kill_highlight_traits"
 						v-if="(player.is_gm
@@ -692,7 +692,7 @@
 						:traitset_types="traitset.entityTypes"
 						:mode="view_modes.Small"
 						@refetch="retrieve_traitset"
-						@next_traitset="limiter - dice_in_dicepool.length == 0 ? $emit('next') : null"
+						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
 						@kill_highlight="kill_highlight_traits"
 						@show_trait="scroll_to_trait"
