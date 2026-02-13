@@ -345,12 +345,21 @@
 	}
 
 	function deplete_resource(dc: DieType) {
+		console.log("depleting resource")
 		if(
 			mode.value != view_modes.Editing
-			&& trait.value.rating?.map((d) => d.id).includes(dc.id)
+			&& (
+				trait.value.rating?.map((d) => d.id).includes(dc.id)
+				|| new_rating.value.map((d) => d.id).includes(dc.id)
+			)
 			&& inAddingPhase.value
 		) {
-			new_rating.value = trait.value.rating.filter((d) => d.id != dc.id)
+			if(new_rating.value.length > 0) {
+				new_rating.value = new_rating.value.filter((d) => d.id != dc.id)
+			}
+			else {
+				new_rating.value = trait.value.rating.filter((d) => d.id != dc.id)
+			}
 			mutate_trait_setting_temp({ 'rating': new_rating.value.map((r) => r.number_rating) })
 			// const { die } = useDie({rating: dc})
 			dc.traitId = trait.value.id
@@ -1119,7 +1128,8 @@
 				<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
 						v-if="trait.ratingType != 'empty'"
 						@click.stop="(mode == view_modes.Editing && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
-					<Rating v-if="trait.rating" :rating="new_rating.length > 0 ? new_rating : trait.rating"
+					<Rating v-if="trait.rating"
+						:rating="new_rating.length > 0 ? new_rating : trait.rating"
 						:rating-type="trait.ratingType"
 						@click.stop="play_trait"
 						@deplete-resource="deplete_resource"

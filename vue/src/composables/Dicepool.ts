@@ -81,7 +81,13 @@ export function useDicepool() {
 		push_complications()
 	}
 
-	const { trait_setting_id, trait, retrieve_trait, mutate_trait_setting } = useTrait(undefined, undefined, undefined, undefined)
+	const {
+		trait_setting_id,
+		trait,
+		retrieve_trait,
+		mutate_trait_setting,
+		mutate_trait_setting_temp
+	} = useTrait(undefined, undefined, undefined, undefined)
 
 	function remove_die(d: Die) {
 		console.log("dicepool: removing die: ", d)
@@ -103,7 +109,7 @@ export function useDicepool() {
 			watch(trait, (newTrait) => {
 				if(newTrait.ratingType == 'resource' && trait_setting_id.value) {
 					const new_rating = [...newTrait.rating ?? [], d]
-					mutate_trait_setting({rating: new_rating.map((r) => r.number_rating)})
+					mutate_trait_setting_temp({rating: new_rating.map((r) => r.number_rating)})
 					change_result_limit(-1)
 				}
 				trait_setting_id.value = undefined
@@ -173,9 +179,18 @@ export function useDicepool() {
 
 			// if multiple resource dice, disable all except for highest result
 			if(dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch).length > 1) {
-				dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch).sort((d1: Die, d2: Die) => d2.result - d1.result)
-					.slice(1)
-					.forEach(d => d.disabled = true)
+				dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch)
+					.map(d => d.traitsettingId)
+					.forEach((tsId) => {
+						dicepool.dice.filter(d => d.traitsettingId == tsId)
+							.sort((d1: Die, d2: Die) => d2.result - d1.result)
+							.slice(1)
+							.forEach(d => d.disabled = true)
+					})
+				// dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch)
+				// 	.sort((d1: Die, d2: Die) => d2.result - d1.result)
+				// 	.slice(1)
+				// 	.forEach(d => d.disabled = true)
 			}
 			// non-disabled resource dice should be inResult
 			dicepool.dice.filter(d => d.ratingType == 'resource' && !d.disabled && !d.isHitch).forEach(d => d.isResultDie = true)
@@ -452,7 +467,8 @@ export function useDicepool() {
 
 	function clear_dicepool() {
 		console.log("clearing dicepool")
-		dicepool.dice = []
+		// dicepool.dice = []
+		dicepool.dice.forEach((d: Die) => remove_die(d))
 		dicepool.complications = []
 		push_complications()
 
