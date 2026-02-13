@@ -1135,7 +1135,7 @@
 			position: fixed;
 			bottom: 100px;
 			left: 0;
-			z-index: 2;
+			z-index: 5;
 			.button-mnml {
 				background-color: var(--color-background);
 				border: 1px solid var(--color-border);
