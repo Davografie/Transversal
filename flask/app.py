@@ -249,16 +249,17 @@ def find_docs(collection_name: str, query: dict):
 	redis_key = f"find:{collection_name}:{revision}:{json.dumps(query)}"
 	if r.exists(redis_key):
 		# collection has not changed, retrieve result from Redis
-		logger.info("Collection has not changed, retrieving result from Redis")
+		# logger.info("Collection has not changed, retrieving result from Redis")
 		return [json.loads(doc) for doc in r.lrange(redis_key, 0, -1)]
 	else:
 		# collection has changed, execute query and store result in Redis
-		logger.info("Collection has changed, executing query and storing result in Redis")
+		# logger.info("Collection has changed, executing query and storing result in Redis")
 		cursor = db.collection(collection_name).find(query)
 		result = [doc for doc in cursor]
-		logger.info(f"Query result: {result}")
+		# logger.info(f"Query result: {result}")
 		try:
-			r.rpush(redis_key, *[json.dumps(doc).encode('utf-8') for doc in result])
+			if len(result) > 0:
+				r.rpush(redis_key, *[json.dumps(doc).encode('utf-8') for doc in result])
 		except Exception as e:
 			logger.error(f"Error storing query result in Redis: {e}")
 	return []
@@ -407,19 +408,26 @@ class Player(ObjectType):
 
 	def resolve_entities(parent, info):
 		relations = find_docs('Relations', { '_from': parent.id, 'type': 'agency' })
+		result = []
 		# for every entity, get the entity and check the type to make sure to return the proper object
 		for relation in relations:
 			entity = get_doc_by_id('Entities', relation.get('_to'))
 			if entity.get('type') == 'character':
-				yield Character(id=entity.get('_id'))
+				# yield Character(id=entity.get('_id'))
+				result.append(Character(id=entity.get('_id')))
 			elif entity.get('type') == 'npc':
-				yield NPC(id=entity.get('_id'))
+				# yield NPC(id=entity.get('_id'))
+				result.append(NPC(id=entity.get('_id')))
 			elif entity.get('type') == 'asset':
-				yield Asset(id=entity.get('_id'))
+				# yield Asset(id=entity.get('_id'))
+				result.append(Asset(id=entity.get('_id')))
 			elif entity.get('type') == 'faction':
-				yield Faction(id=entity.get('_id'))
+				# yield Faction(id=entity.get('_id'))
+				result.append(Faction(id=entity.get('_id')))
 			elif entity.get('type') == 'location':
-				yield Location(id=entity.get('_id'))
+				# yield Location(id=entity.get('_id'))
+				result.append(Location(id=entity.get('_id')))
+		return result
 
 class CreatePlayer(Mutation):
 	class Arguments:
@@ -454,7 +462,9 @@ class ActivateEntity(Mutation):
 	
 	def mutate(self, info, player_id, entity_id):
 		# check if agency relation exists
-		if len(find_docs('Relations', { '_from': player_id, '_to': entity_id, 'type': 'agency' })) == 0:
+		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
+		if len(relations) == 0:
+			logger.info("creating agency relation, rev: " + db.collection('Relations').revision())
 			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency' })
 		
 		# activate entity for player
