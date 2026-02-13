@@ -386,9 +386,8 @@ div.active-npc {
 }
 .light {
 	div.active-npc {
-		.name {
-			background-color: var(--color-background);
-		}
+		background-color: var(--color-background);
+		border: 4px double var(--color-border);
 	}
 }
 </style>
