@@ -27,7 +27,7 @@
 
 	const emit = defineEmits(['change-die', 'cancel'])
 
-	const multiple = ref(props.dice && props.dice.length > 1 ? true : false)
+	const multiple = ref(props.dice && (props.dice.length > 1 || props.resource) ? true : false)
 
 	watch(() => props.die, (newDie) => {
 		if(newDie) {
