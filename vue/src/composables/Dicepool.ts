@@ -89,7 +89,7 @@ export function useDicepool() {
 		mutate_trait_setting_temp
 	} = useTrait(undefined, undefined, undefined, undefined)
 
-	function remove_die(d: Die) {
+	async function remove_die(d: Die) {
 		console.log("dicepool: removing die: ", d)
 		const index = dicepool.dice.map((d) => d.id).indexOf(d.id)
 		if(dicepool.dice.map((d) => d.id).includes(d.id)) {
@@ -104,16 +104,19 @@ export function useDicepool() {
 			// if it's a resource die, then the resource should be given back to that trait
 			trait_setting_id.value = d.traitsettingId
 
-			retrieve_trait()
+			await retrieve_trait()
 
-			watch(trait, (newTrait) => {
-				if(newTrait.ratingType == 'resource' && trait_setting_id.value) {
-					const new_rating = [...newTrait.rating ?? [], d]
-					mutate_trait_setting_temp({rating: new_rating.map((r) => r.number_rating)})
-					change_result_limit(-1)
-				}
-				trait_setting_id.value = undefined
-			})
+			if(
+				trait.value.id
+				&& d.ratingType == 'resource'
+				&& trait_setting_id.value
+				&& dicepool.phase != dicepool.phases.RESOLVE
+			) {
+				const new_rating = [...trait.value.rating ?? [], d]
+				mutate_trait_setting_temp({rating: new_rating.map((r) => r.number_rating)})
+				change_result_limit(-1)
+			}
+			trait_setting_id.value = undefined
 
 
 
@@ -465,10 +468,10 @@ export function useDicepool() {
 
 	const stop_clock = ref(false)
 
-	function clear_dicepool() {
+	async function clear_dicepool() {
 		console.log("clearing dicepool")
 		// dicepool.dice = []
-		dicepool.dice.forEach((d: Die) => remove_die(d))
+		await Promise.all(dicepool.dice.map(async (d: Die) => remove_die(d)))
 		dicepool.complications = []
 		push_complications()
 

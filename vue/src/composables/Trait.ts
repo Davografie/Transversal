@@ -42,7 +42,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 	const entity_id = ref(_entity_id)
 	const instances: Ref<TraitSetting[]> = ref([])
 
-	function retrieve_trait() {
+	async function retrieve_trait() {
 		const query_get_trait = gql`query TraitByID($traitId: ID) {
 			traits(traitId: $traitId) {
 				id
@@ -157,58 +157,103 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				query = query_get_entity_trait
 				args = { traitId: trait_id.value, entityId: entity_id.value }
 			}
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{traits: Trait[]}>(
-					query,
-					args,
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult && newResult.traits?.length > 0) {
-					let newTrait = newResult.traits[0]
-					if(newResult.traits[0].rating) {
-						const new_rating = convert_rating_to_dice(
-							newResult.traits[0].rating, // this is actually a number, as it is retrieved from GraphQL
-							newResult.traits[0].ratingType,
-							newResult.traits[0].id,
-							newResult.traits[0].traitSettingId,
-							newResult.traits[0].traitsetId,
-							entity_id.value
-						)
-						newTrait = {
-							...newTrait,
-							rating: new_rating
-						}
-					}
-					if(newResult.traits[0].subTraits) {
-						let newSubTraits = <Trait[]>[]
-						for(let i = 0; i < newResult.traits[0].subTraits.length; i++) {
-							let newSubTrait = newResult.traits[0].subTraits[i]
-							if(newResult.traits[0].subTraits[i].rating) {
-								const new_rating = convert_rating_to_dice(
-									newResult.traits[0].subTraits[i].rating, // this is actually a number, as it is retrieved from GraphQL
-									newResult.traits[0].subTraits[i].ratingType,
-									newResult.traits[0].subTraits[i].id,
-									newResult.traits[0].subTraits[i].traitSettingId,
-									newResult.traits[0].subTraits[i].traitsetId,
-									entity_id.value
-								)
-								newSubTrait = {
-									...newSubTrait,
-									rating: new_rating
-								}
-								newSubTraits.push(newSubTrait)
-							}
-						}
-						newTrait = {
-							...newTrait,
-							subTraits: newSubTraits
-						}
-					}
-					trait.value = newTrait
-				}
+
+			const result = await apolloClient.query({
+				query: query,
+				variables: args,
+				fetchPolicy: 'network-only'
 			})
+
+			if(result && result.data && result.data.traits && result.data.traits.length > 0) {
+				console.log("retrieved trait: ", result.data.traits[0])
+				let newTrait = result.data.traits[0]
+				if(newTrait.rating) {
+					const new_rating = convert_rating_to_dice(
+						newTrait.rating, // this is actually a number, as it is retrieved from GraphQL
+						newTrait.ratingType,
+						newTrait.id,
+						newTrait.traitSettingId,
+						newTrait.traitsetId,
+						entity_id.value
+					)
+					newTrait = { ...newTrait, rating: new_rating }
+				}
+				if(result.data.traits[0].subTraits && result.data.traits[0].subTraits.length > 0) {
+					const new_subTraits = []
+					for(const subTrait of result.data.traits[0].subTraits) {
+						let new_subTrait = { ...subTrait }
+						if(new_subTrait.rating) {
+							const new_rating = convert_rating_to_dice(
+								new_subTrait.rating, // this is actually a number, as it is retrieved from GraphQL
+								new_subTrait.ratingType,
+								new_subTrait.id,
+								new_subTrait.traitSettingId,
+								new_subTrait.traitsetId,
+								entity_id.value
+							)
+							new_subTrait = { ...new_subTrait, rating: new_rating }
+						}
+						new_subTraits.push(new_subTrait)
+					}
+					newTrait = { ...newTrait, subTraits: new_subTraits }
+				}
+
+				trait.value = newTrait
+			}
+
+
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{traits: Trait[]}>(
+			// 		query,
+			// 		args,
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult && newResult.traits?.length > 0) {
+			// 		let newTrait = newResult.traits[0]
+			// 		if(newResult.traits[0].rating) {
+			// 			const new_rating = convert_rating_to_dice(
+			// 				newResult.traits[0].rating, // this is actually a number, as it is retrieved from GraphQL
+			// 				newResult.traits[0].ratingType,
+			// 				newResult.traits[0].id,
+			// 				newResult.traits[0].traitSettingId,
+			// 				newResult.traits[0].traitsetId,
+			// 				entity_id.value
+			// 			)
+			// 			newTrait = {
+			// 				...newTrait,
+			// 				rating: new_rating
+			// 			}
+			// 		}
+			// 		if(newResult.traits[0].subTraits) {
+			// 			let newSubTraits = <Trait[]>[]
+			// 			for(let i = 0; i < newResult.traits[0].subTraits.length; i++) {
+			// 				let newSubTrait = newResult.traits[0].subTraits[i]
+			// 				if(newResult.traits[0].subTraits[i].rating) {
+			// 					const new_rating = convert_rating_to_dice(
+			// 						newResult.traits[0].subTraits[i].rating, // this is actually a number, as it is retrieved from GraphQL
+			// 						newResult.traits[0].subTraits[i].ratingType,
+			// 						newResult.traits[0].subTraits[i].id,
+			// 						newResult.traits[0].subTraits[i].traitSettingId,
+			// 						newResult.traits[0].subTraits[i].traitsetId,
+			// 						entity_id.value
+			// 					)
+			// 					newSubTrait = {
+			// 						...newSubTrait,
+			// 						rating: new_rating
+			// 					}
+			// 					newSubTraits.push(newSubTrait)
+			// 				}
+			// 			}
+			// 			newTrait = {
+			// 				...newTrait,
+			// 				subTraits: newSubTraits
+			// 			}
+			// 		}
+			// 		trait.value = newTrait
+			// 	}
+			// })
 		}
 	}
 
