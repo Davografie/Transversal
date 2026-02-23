@@ -95,7 +95,7 @@
 		inAddingPhase,
 		traitset_dice,
 		change_result_limit
-	} = useDicepool()
+	} = useDicepool(false)
 
 	const {
 		location,

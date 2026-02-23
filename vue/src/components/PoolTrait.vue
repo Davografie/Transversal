@@ -14,7 +14,7 @@
 
 	const emit = defineEmits(['longpress_die'])
 	
-	const dicepool = useDicepool()
+	const dicepool = useDicepool(false)
 	const { trait, retrieve_trait } = useTrait(undefined, undefined, props.traitsetting_id, props.dice[0]?.entityId)
 	const { sfx, retrieve_sfx } = useSFX(undefined, props.dice[0]?.sfxId)
 

@@ -169,7 +169,7 @@
 			&& location.value.key != 'placeholder'
 			&& player.the_entity?.location?.key == props.loc
 		) {
-			console.log("retrieving presence " + location.value.name)
+			console.log("polling location " + location.value.name)
 			retrieve_presence()
 
 			if(

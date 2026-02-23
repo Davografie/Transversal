@@ -49,7 +49,7 @@
 	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset'])
 
 	const player = usePlayerStore()
-	const { traitset_dice } = useDicepool()
+	const { traitset_dice } = useDicepool(false)
 
 	const {
 		traitset,

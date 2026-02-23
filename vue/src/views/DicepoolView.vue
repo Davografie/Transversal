@@ -32,7 +32,7 @@
 	const player = usePlayerStore()
 	const dicepoolStore = useDicepoolStore()
 
-	const dicepool = useDicepool()
+	const dicepool = useDicepool(true)
 
 	const held = ref(false)
 
@@ -67,6 +67,7 @@
 		emit('expand')
 	}
 
+	console.log("starting dicepool polling")
 	dicepool.pull_clock()
 
 	function click_die(die: DieType) {

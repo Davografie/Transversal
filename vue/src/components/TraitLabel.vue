@@ -11,7 +11,7 @@
 	const { trait, retrieve_trait } = useTrait(undefined, undefined, props.trait_setting_id)
 	retrieve_trait()
 
-	const dicepool = useDicepool()
+	const dicepool = useDicepool(false)
 	const dice_in_pool = computed(() => dicepool.trait_dice(props.trait_setting_id))
 </script>
 

@@ -50,7 +50,7 @@
 		check_subtrait,
 		change_result_limit,
 		traitset_dice
-	} = useDicepool()
+	} = useDicepool(false)
 
 	const is_in_pool = computed(() => check_trait(props.trait_setting_id) || check_subtrait(props.trait_setting_id))
 

@@ -9,7 +9,7 @@
 	}>()
 	const emit = defineEmits(['longpress_die'])
 
-	const dicepool = useDicepool()
+	const dicepool = useDicepool(false)
 	const { traitset, retrieve_traitset } = useTraitset(undefined, props.traitset_id)
 	retrieve_traitset()
 	function remove_trait(traitsetting_id: string) {

@@ -31,7 +31,7 @@
 	const router = useRouter()
 
 	const playerStore = usePlayerStore()
-	const { dicepool_limit } = useDicepool()
+	const { dicepool_limit } = useDicepool(false)
 
 	const { players, retrieve_players, create_player, remove_player } = usePlayerList()
 	retrieve_players()

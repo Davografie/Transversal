@@ -19,7 +19,7 @@ export const placeholder_dicepool: Dicepool = {
 	dice: [placeholder_die]
 }
 
-export function useDicepool() {
+export function useDicepool(_polling: boolean = false) {
 	const dicepool = useDicepoolStore()
 	const playerStore = usePlayerStore()
 	const { get_session, get_dicepool_limit } = useSession()
@@ -375,6 +375,7 @@ export function useDicepool() {
 	
 	//	this function pulls the active dicepools from the server
 	function pull_dicepools() {
+		console.log("pulling dicepools")
 		get_session()
 		const url = API_URL + "get-resolutions/" + dicepool.resolutions_rev
 		const { data } = useFetch(url).get().json()
@@ -457,8 +458,9 @@ export function useDicepool() {
 	}
 
 	function pull_clock() {
+		console.log("dicepool polling pull clock")
 		pull_dicepools()
-		if(!stop_clock.value) {
+		if(polling.value) {
 			setTimeout(pull_clock, interval.value)
 		}
 		else {
@@ -466,7 +468,7 @@ export function useDicepool() {
 		}
 	}
 
-	const stop_clock = ref(false)
+	const polling = ref(_polling)
 
 	async function clear_dicepool() {
 		console.log("clearing dicepool")
@@ -515,7 +517,7 @@ export function useDicepool() {
 	}
 
 	onUnmounted(() => {
-		stop_clock.value = true
+		polling.value = false
 	})
 
 	return {
@@ -558,7 +560,7 @@ export function useDicepool() {
 		push_dicepool,
 		pull_dicepools,
 		pull_clock,
-		stop_clock,
+		polling,
 		pullInterval: interval,
 		clear_dicepool,
 		clear_dicepools

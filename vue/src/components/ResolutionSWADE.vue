@@ -3,7 +3,7 @@ import { useDicepoolStore } from '@/stores/DicepoolStore';
 import { useDicepool } from '@/composables/Dicepool';
 import Die from '@/components/Die.vue';
 const dicepoolStore = useDicepoolStore();
-const dicepool = useDicepool();
+const dicepool = useDicepool(false);
 </script>
 
 <template>

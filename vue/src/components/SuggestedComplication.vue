@@ -15,7 +15,7 @@
         'click_die'
     ])
 
-    const dicepool = useDicepool()
+    const dicepool = useDicepool(false)
 
     const { trait, retrieve_trait } = useTrait(
         undefined,
