@@ -44,12 +44,23 @@ class ColorFormatter(logging.Formatter):
 	def format(self, record):
 		# ANSI escape code for bright cyan
 		CYAN = "\033[96m"
+		YELLOW = "\033[93m"
+		ORANGE = "\033[93m"
 		RESET = "\033[0m"
+
+		if record.levelname == "INFO":
+			COLOR = CYAN
+		elif record.levelname == "WARNING":
+			COLOR = YELLOW
+		elif record.levelname == "ERROR":
+			COLOR = ORANGE
+		else:
+			COLOR = RESET
 		original_msg = super().format(record)
 		# Only color the actual message part
 		if record.msg:
 			msg_str = str(record.getMessage())
-			colored_msg = f"{CYAN}{msg_str}{RESET}"
+			colored_msg = f"{COLOR}{msg_str}{RESET}"
 			# Replace only the message part in the formatted string
 			return original_msg.replace(msg_str, colored_msg, 1)
 		return original_msg
@@ -134,7 +145,10 @@ def get_doc_by_id(collection_name: str, doc_id: str):
 		doc = db.collection(collection_name).get(doc_id)
 		doc = {k: v for k, v in doc.items() if v is not None}
 		serialized = serialize_doc(doc)
-		r.hset(doc_id, mapping=serialized)
+		try:
+			r.hset(doc_id, mapping=serialized)
+		except Exception as e:
+			logger.error(f"Failed to store doc {doc_id} in Redis: {e}")
 	return doc
 
 def update_doc(collection_name: str, doc: dict, temp=False):
@@ -153,14 +167,25 @@ def update_doc(collection_name: str, doc: dict, temp=False):
 		try:
 			db.status()
 		except:
-			logger.info("Database is busy writing. Retrying...")
+			logger.error("Database is busy writing. Retrying...")
 		finally:
 			pass
 			# logger.info("Database is not busy writing.")
-		db.collection(collection_name).update(db_doc)
+		# logger.info(f"Updated {collection_name} {doc.get('_id')} to \n\t{doc}")
+		db_doc_filtered = {k: v for k, v in db_doc.items() if not k.startswith('_')}
+		db_doc_db = db.collection(collection_name).get(db_doc.get('_id'))
+		db_doc_db_filtered = {k: v for k, v in db_doc_db.items() if not k.startswith('_')}
+		if db_doc_filtered != db_doc_db_filtered:
+			logger.info(f"Updated {collection_name} {db_doc.get('_id')} to \n\t{db_doc_filtered}")
+			db.collection(collection_name).update(db_doc)
+		else:
+			logger.info(f"No changes to {collection_name} {db_doc.get('_id')}, skipping update")
 
 	serialized = serialize_doc(doc)
-	r.hset(doc.get('_id'), mapping=serialized)
+	try:
+		r.hset(doc.get('_id'), mapping=serialized)
+	except Exception as e:
+		logger.error(f"Redis update failed: {str(e)}")
 
 	return doc
 
@@ -183,6 +208,21 @@ def deserialize_doc(stored):
 			# logger.info(f"JSONDecodeError: {k.decode('utf-8')}: {v.decode('utf-8')}")
 	return doc
 
+def check_aql(query, collections=[]):
+	"""
+	Helper function to check if an AQL query has already been executed.
+	Args:
+		query (str): The AQL query to be checked.
+		collections (list): A list of collections included in the query.
+
+	Returns:
+		bool: True if the query has already been executed, False otherwise.
+	"""
+	query_hash = hashlib.sha256(query.encode('utf-8')).hexdigest()
+	collection_hash = hashlib.sha256(json.dumps(collections).encode('utf-8')).hexdigest()
+	query_key = f"query:{query_hash}:{collection_hash}"
+	return r.exists(query_key)
+
 def execute_aql(query, collections=[]):
 	"""
 	Helper function to execute AQL queries.
@@ -197,10 +237,10 @@ def execute_aql(query, collections=[]):
 	Returns:
 		list: The results of the query.
 	"""
-	logger.info("Executing AQL query: " + query)
+	# logger.info("Executing AQL query: " + query)
 	# create query hash
 	query_hash = hashlib.sha256(query.encode('utf-8')).hexdigest()
-	logger.info("Query hash: " + query_hash)
+	# logger.info("Query hash: " + query_hash)
 	
 	# get all collection revisions
 	revisions = []
@@ -209,7 +249,7 @@ def execute_aql(query, collections=[]):
 
 	# create collection revision hash
 	collection_hash = hashlib.sha256(json.dumps(revisions).encode('utf-8')).hexdigest()
-	logger.info("Collection revision hash: " + collection_hash)
+	# logger.info("Collection revision hash: " + collection_hash)
 
 	# create query key
 	query_key = f"query:{query_hash}:{collection_hash}"
@@ -217,16 +257,23 @@ def execute_aql(query, collections=[]):
 	# check if query has changed
 	if r.exists(query_key):
 		# query has not changed, retrieve result from Redis
-		logger.info("Query has not changed, retrieving result from Redis")
-		return [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
+		# logger.info("Query has not changed, retrieving result from Redis")
+		# return [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
+		result = [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
+		if len(result) == 1 and result[0] == {}:
+			return []
+		return result
 	else:
 		# query has changed, execute query and store result in Redis
-		logger.info("Query has changed, executing query and storing result in Redis")
+		logger.info(f"Query has changed, executing query and storing result in Redis\n\tQuery: {query}")
 		cursor = db.aql.execute(query)
 		result = [doc for doc in cursor]
 		logger.info(f"Query result: {result}")
 		try:
-			r.rpush(query_key, *[json.dumps(doc).encode('utf-8') for doc in result])
+			if len(result) > 0:
+				r.rpush(query_key, *[json.dumps(doc).encode('utf-8') for doc in result])
+			else:
+				r.rpush(query_key, json.dumps({}).encode('utf-8'))
 		except Exception as e:
 			logger.error(f"Error storing query result in Redis: {e}")
 		return result
@@ -246,20 +293,28 @@ def find_docs(collection_name: str, query: dict):
 	"""
 	# check if collection has changed
 	revision = db.collection(collection_name).revision()
-	redis_key = f"find:{collection_name}:{revision}:{json.dumps(query)}"
+	query_hash = hashlib.sha256(json.dumps(query).encode('utf-8')).hexdigest()
+	redis_key = f"find:{collection_name}:{revision}:{query_hash}"
 	if r.exists(redis_key):
 		# collection has not changed, retrieve result from Redis
 		# logger.info("Collection has not changed, retrieving result from Redis")
-		return [json.loads(doc) for doc in r.lrange(redis_key, 0, -1)]
+		result = [json.loads(doc) for doc in r.lrange(redis_key, 0, -1)]
+		if len(result) == 1 and result[0] == {}:
+			return []
+		return result
 	else:
 		# collection has changed, execute query and store result in Redis
-		# logger.info("Collection has changed, executing query and storing result in Redis")
+		logger.info(f"Key has changed to {redis_key}, executing query and storing result in Redis")
 		cursor = db.collection(collection_name).find(query)
 		result = [doc for doc in cursor]
 		# logger.info(f"Query result: {result}")
 		try:
 			if len(result) > 0:
+				logger.info(f"Documents found for query: {query}, storing result in Redis")
 				r.rpush(redis_key, *[json.dumps(doc).encode('utf-8') for doc in result])
+			else:
+				logger.info(f"No documents found for query: {query}, storing empty result in Redis")
+				r.rpush(redis_key, json.dumps({}).encode('utf-8'))
 		except Exception as e:
 			logger.error(f"Error storing query result in Redis: {e}")
 	return []
@@ -281,7 +336,7 @@ def filter_trait_settings_by_location(trait_settings, location_id):
 	hierarchy_ids = [location.get('_id') for location in retrieve_hierarchy(location_id)]
 	# logger.info(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
 	for trait_setting in trait_settings:
-		# logger.info(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting.get('_id')}")
+		# logger.info(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting}")
 		determined = False
 		for location_id in hierarchy_ids:
 			# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in enabled locations")
@@ -299,6 +354,7 @@ def filter_trait_settings_by_location(trait_settings, location_id):
 			# default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
 			default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
 			if len(default_trait_setting) > 0:
+				# logger.info(f"default trait setting: {default_trait_setting}")
 				default_trait_setting = [doc for doc in default_trait_setting][0]
 				for location_id in hierarchy_ids:
 					# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in default enabled locations")
@@ -609,9 +665,11 @@ class SFX(ObjectType):
 		query = f"""FOR trait IN Traits
 			FILTER '{ parent.id }' IN trait.possible_sfxs
 			RETURN trait"""
-		cursor = execute_aql(query, ['Traits'])
-		# cursor = db.aql.execute(query)
-		return [Trait(id=doc.get('_id')) for doc in cursor]
+		traits = execute_aql(query, ['Traits'])
+		for trait in traits:
+			if type(trait.get('_id')) != str:
+				logger.warning(f"trait { trait } has no _id")
+		return [Trait(id=trait.get('_id')) for trait in traits]
 
 class CreateSFX(Mutation):
 	class Arguments:
@@ -2552,9 +2610,9 @@ class Entity(Interface):
 		return parent.description
 
 	def resolve_image(parent, info):
-		# logger.info("Resolving image: ", parent.key)
 		if not parent.key:
 			Entity._hydrate_entity(parent, info)
+		# logger.info(f"Resolving image: {parent.key}")
 		
 		location_key = None
 		if not parent.location:
@@ -2583,7 +2641,7 @@ class Entity(Interface):
 					else:
 						location_key = location_hierarchy[0].get('_key')
 		if parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}"):
-			# logger.info("Resolving image 2: ", parent.key, "/", location_key)
+			# logger.info(f"Resolving image 2: {parent.key}/{location_key}")
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}")[0]
 			ext = os.path.splitext(old_file)[1]
 			save_image(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}/{old_file}", parent.key, location_key)
@@ -2593,13 +2651,13 @@ class Entity(Interface):
 			# return f"{str(parent.key)}/{str(location_key)}/original{ext}"
 			return Portrait(path=f"{str(parent.key)}/{str(location_key)}/", size="original", ext=ext)
 		elif parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/{str(location_key)}"):
-			# logger.info("Resolving image 3: ", parent.key, "/", location_key)
+			# logger.info(f"Resolving image 3: {parent.key}/{location_key}")
 			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
 				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/{str(location_key)}/original{ext}"):
 					# return f"{str(parent.key)}/{str(location_key)}/original{ext}"
 					return Portrait(path=f"{str(parent.key)}/{str(location_key)}/", size="original", ext=ext)
 		elif os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}"):
-			logger.info("Resolving image 4: ", parent.key)
+			# logger.info(f"Resolving image 4: {parent.key}")
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}")[0]
 			logger.info("old_file: ")
 			logger.info(old_file)
@@ -2611,7 +2669,7 @@ class Entity(Interface):
 			# return f"{str(parent.key)}/original{ext}"
 			return Portrait(path=f"{str(parent.key)}/", size="original", ext=ext)
 		else:
-			# logger.info("Resolving image 5: ", parent.key)
+			# logger.info(f"Resolving image 5: {parent.key}")
 			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
 				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/original{ext}"):
 					# return f"{str(parent.key)}/original{ext}"
@@ -2623,8 +2681,10 @@ class Entity(Interface):
 					else:
 						return None
 				# elif (archetype_id := get_doc_by_id('Entities', parent.id).get('archetype_id')) is not None:
-				elif len(find_docs('Relations', { '_from': parent.id, 'type': 'archetype' })) > 0:
+				elif len(archetypes := find_docs('Relations', { '_from': parent.id, 'type': 'archetype' })) > 0:
+					# logger.info(f"Found archetype: {archetypes}")
 					archetype_id = [rel.get('_to') for rel in find_docs('Relations', { '_from': parent.id, 'type': 'archetype' })][0]
+					# logger.info(f"Getting archetype: {archetype_id}")
 					archetype = get_doc_by_id('Entities', archetype_id)
 					if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/{str(location_key)}/original{ext}"):
 						# return f"{archetype.get('_key')}/{str(location_key)}/original{ext}"
