@@ -125,7 +125,7 @@ import ToggleButton from '@/components/UI/ToggleButton.vue'
 						@show_entity="emit('show_entity', $event)"
 						v-if="selected_relation && player.orientation == 'vertical'" />
 					<div class="mid-scroll-space scroll-space" v-if="player.orientation == 'horizontal'"></div>
-					<ToggleButton :default="show_players" truthy="show favs" falsy="show default" @toggle="toggle_players"
+					<ToggleButton :default="show_players" truthy="⭐" falsy="🏷" @toggle="toggle_players"
 						v-if="player.is_gm" />
 					<h2 v-if="player.is_gm && entities.length > 0">
 						{{player.orientation == 'vertical' ? 'characters' :  'PCs'}}
