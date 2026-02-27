@@ -288,7 +288,7 @@ export function useLocation(init?: Location, location_key?: string) {
 				)
 			)
 			watch(result, (newResult) => {
-				if(newResult && newResult.locations[0].entities) {
+				if(newResult && newResult.locations[0].entities && location.value.entities != newResult.locations[0].entities) {
 					location.value = { ...location.value, ...newResult.locations[0]}
 				}
 			}, { once: true })

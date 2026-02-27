@@ -141,10 +141,10 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 				)
 			)
 			watch(result, (newResult) => {
-				if(newResult) {
+				if(newResult && entities.value != newResult.characters) {
 					entities.value = newResult.characters
 				}
-			}, { immediate: true })
+			}, { once: true })
 		}
 	}
 
