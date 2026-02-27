@@ -35,21 +35,23 @@ app = Flask(__name__)
 CORS(app)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - line %(lineno)d - %(message)s')
 stream_handler = logging.StreamHandler()
 
 class ColorFormatter(logging.Formatter):
 	def format(self, record):
-		# ANSI escape code for bright cyan
-		CYAN = "\033[96m"
+		CYAN = "\033[1;96m"
+		BLUE = "\033[94m"
 		YELLOW = "\033[93m"
 		ORANGE = "\033[93m"
 		RESET = "\033[0m"
 
 		if record.levelname == "INFO":
 			COLOR = CYAN
+		elif record.levelname == "DEBUG":
+			COLOR = BLUE
 		elif record.levelname == "WARNING":
 			COLOR = YELLOW
 		elif record.levelname == "ERROR":
@@ -87,7 +89,7 @@ arango_password = os.environ.get("ARANGO_ROOT_PASSWORD")
 arango_db = "transversal"
 
 r = redis.Redis(host='redis', port=6379)
-logger.info(f"Redis connection established.")
+logger.debug(f"Redis connection established.")
 
 # session variables
 dicepool_limit = -1
@@ -124,7 +126,7 @@ db = client.db(
 	username=arango_username,
 	password=arango_password
 )
-logger.info("ArangoDB connection established")
+logger.debug("ArangoDB connection established")
 
 
 def get_doc_by_id(collection_name: str, doc_id: str):
@@ -170,16 +172,16 @@ def update_doc(collection_name: str, doc: dict, temp=False):
 			logger.error("Database is busy writing. Retrying...")
 		finally:
 			pass
-			# logger.info("Database is not busy writing.")
-		# logger.info(f"Updated {collection_name} {doc.get('_id')} to \n\t{doc}")
+			# logger.debug("Database is not busy writing.")
+		# logger.debug(f"Updated {collection_name} {doc.get('_id')} to \n\t{doc}")
 		db_doc_filtered = {k: v for k, v in db_doc.items() if not k.startswith('_')}
 		db_doc_db = db.collection(collection_name).get(db_doc.get('_id'))
 		db_doc_db_filtered = {k: v for k, v in db_doc_db.items() if not k.startswith('_')}
 		if db_doc_filtered != db_doc_db_filtered:
-			logger.info(f"Updated {collection_name} {db_doc.get('_id')} to \n\t{db_doc_filtered}")
+			logger.debug(f"Updated {collection_name} {db_doc.get('_id')} to \n\t{db_doc_filtered}")
 			db.collection(collection_name).update(db_doc)
 		else:
-			logger.info(f"No changes to {collection_name} {db_doc.get('_id')}, skipping update")
+			logger.debug(f"No changes to {collection_name} {db_doc.get('_id')}, skipping update")
 
 	serialized = serialize_doc(doc)
 	try:
@@ -205,7 +207,9 @@ def deserialize_doc(stored):
 			doc[k.decode('utf-8')] = json.loads(v.decode('utf-8'))
 		except json.JSONDecodeError:
 			doc[k.decode('utf-8')] = v.decode('utf-8')
-			# logger.info(f"JSONDecodeError: {k.decode('utf-8')}: {v.decode('utf-8')}")
+			# logger.debug(f"JSONDecodeError: {k.decode('utf-8')}: {v.decode('utf-8')}")
+		except Exception as e:
+			logger.error(f"Failed to decode {k.decode('utf-8')} from Redis: {e}")
 	return doc
 
 def check_aql(query, collections=[]):
@@ -237,10 +241,10 @@ def execute_aql(query, collections=[]):
 	Returns:
 		list: The results of the query.
 	"""
-	# logger.info("Executing AQL query: " + query)
+	# logger.debug("Executing AQL query: " + query)
 	# create query hash
 	query_hash = hashlib.sha256(query.encode('utf-8')).hexdigest()
-	# logger.info("Query hash: " + query_hash)
+	# logger.debug("Query hash: " + query_hash)
 	
 	# get all collection revisions
 	revisions = []
@@ -249,7 +253,7 @@ def execute_aql(query, collections=[]):
 
 	# create collection revision hash
 	collection_hash = hashlib.sha256(json.dumps(revisions).encode('utf-8')).hexdigest()
-	# logger.info("Collection revision hash: " + collection_hash)
+	# logger.debug("Collection revision hash: " + collection_hash)
 
 	# create query key
 	query_key = f"query:{query_hash}:{collection_hash}"
@@ -257,7 +261,7 @@ def execute_aql(query, collections=[]):
 	# check if query has changed
 	if r.exists(query_key):
 		# query has not changed, retrieve result from Redis
-		# logger.info("Query has not changed, retrieving result from Redis")
+		# logger.debug("Query has not changed, retrieving result from Redis")
 		# return [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
 		result = [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
 		if len(result) == 1 and result[0] == {}:
@@ -265,10 +269,10 @@ def execute_aql(query, collections=[]):
 		return result
 	else:
 		# query has changed, execute query and store result in Redis
-		logger.info(f"Query has changed, executing query and storing result in Redis\n\tQuery: {query}")
+		logger.debug(f"Query has changed, executing query and storing result in Redis\n\tQuery: {query}")
 		cursor = db.aql.execute(query)
 		result = [doc for doc in cursor]
-		logger.info(f"Query result: {result}")
+		logger.debug(f"Query result: {result}")
 		try:
 			if len(result) > 0:
 				r.rpush(query_key, *[json.dumps(doc).encode('utf-8') for doc in result])
@@ -297,23 +301,23 @@ def find_docs(collection_name: str, query: dict):
 	redis_key = f"find:{collection_name}:{revision}:{query_hash}"
 	if r.exists(redis_key):
 		# collection has not changed, retrieve result from Redis
-		# logger.info("Collection has not changed, retrieving result from Redis")
+		# logger.debug("Collection has not changed, retrieving result from Redis")
 		result = [json.loads(doc) for doc in r.lrange(redis_key, 0, -1)]
 		if len(result) == 1 and result[0] == {}:
 			return []
 		return result
 	else:
 		# collection has changed, execute query and store result in Redis
-		logger.info(f"Key has changed to {redis_key}, executing query and storing result in Redis")
+		logger.debug(f"Key has changed to {redis_key}, executing query and storing result in Redis")
 		cursor = db.collection(collection_name).find(query)
 		result = [doc for doc in cursor]
-		# logger.info(f"Query result: {result}")
+		# logger.debug(f"Query result: {result}")
 		try:
 			if len(result) > 0:
-				logger.info(f"Documents found for query: {query}, storing result in Redis")
+				logger.debug(f"Documents found for query: {query}, storing result in Redis")
 				r.rpush(redis_key, *[json.dumps(doc).encode('utf-8') for doc in result])
 			else:
-				logger.info(f"No documents found for query: {query}, storing empty result in Redis")
+				logger.debug(f"No documents found for query: {query}, storing empty result in Redis")
 				r.rpush(redis_key, json.dumps({}).encode('utf-8'))
 		except Exception as e:
 			logger.error(f"Error storing query result in Redis: {e}")
@@ -332,63 +336,63 @@ def filter_trait_settings_by_location(trait_settings, location_id):
 		list: Filtered list of trait settings.
 	"""
 	result = []
-	# logger.info(f"filter_trait_settings_by_location:\n\ttrait_settings: {[trait_setting.get('_id') for trait_setting in trait_settings]}")
+	# logger.debug(f"filter_trait_settings_by_location:\n\ttrait_settings: {[trait_setting.get('_id') for trait_setting in trait_settings]}")
 	hierarchy_ids = [location.get('_id') for location in retrieve_hierarchy(location_id)]
-	# logger.info(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
+	# logger.debug(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
 	for trait_setting in trait_settings:
-		# logger.info(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting}")
+		# logger.debug(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting}")
 		determined = False
 		for location_id in hierarchy_ids:
-			# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in enabled locations")
+			# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in enabled locations")
 			if trait_setting.get('locations_enabled') and location_id in trait_setting.get('locations_enabled'):
 				result.append(trait_setting)
 				determined = True
-				# logger.info("filter_trait_settings_by_location:\n\tTrait setting enabled at this location, added to result")
+				# logger.debug("filter_trait_settings_by_location:\n\tTrait setting enabled at this location, added to result")
 				break
 			elif trait_setting.get('locations_disabled') and location_id in trait_setting.get('locations_disabled'):
 				determined = True
-				# logger.info("filter_trait_settings_by_location:\n\tTrait setting disabled at this location, not added")
+				# logger.debug("filter_trait_settings_by_location:\n\tTrait setting disabled at this location, not added")
 				break
 		if not determined and trait_setting.get('_to') is not None and trait_setting.get('_to') != 'Traits/1':
-			# logger.info("filter_trait_settings_by_location:\n\tChecking default trait setting")
+			# logger.debug("filter_trait_settings_by_location:\n\tChecking default trait setting")
 			# default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
 			default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
 			if len(default_trait_setting) > 0:
-				# logger.info(f"default trait setting: {default_trait_setting}")
+				# logger.debug(f"default trait setting: {default_trait_setting}")
 				default_trait_setting = [doc for doc in default_trait_setting][0]
 				for location_id in hierarchy_ids:
-					# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in default enabled locations")
+					# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in default enabled locations")
 					if default_trait_setting.get('locations_enabled') and location_id in default_trait_setting.get('locations_enabled'):
 						result.append(trait_setting)
 						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tDefault trait setting enabled, added to result")
+						# logger.debug("filter_trait_settings_by_location:\n\tDefault trait setting enabled, added to result")
 						break
 					elif default_trait_setting.get('locations_disabled') and location_id in default_trait_setting.get('locations_disabled'):
 						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tDefault trait setting disabled, not added")
+						# logger.debug("filter_trait_settings_by_location:\n\tDefault trait setting disabled, not added")
 						break
 		if not determined and trait_setting.get('_from') is not None and not trait_setting.get('_from').startswith('Traitsets'):
-			# logger.info("filter_trait_settings_by_location:\n\tChecking traitset default setting")
+			# logger.debug("filter_trait_settings_by_location:\n\tChecking traitset default setting")
 			traitset_id = get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset')
 			# traitset_setting = find_docs('TraitSettings', { '_from': traitset_id, '_to': 'Traits/1' })
 			traitset_setting = find_docs('TraitSettings', { '_from': traitset_id, '_to': 'Traits/1' })
 			if len(traitset_setting) > 0:
 				traitset_setting = [doc for doc in traitset_setting][0]
 				for location_id in hierarchy_ids:
-					# logger.info(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in traitset enabled locations")
+					# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in traitset enabled locations")
 					if traitset_setting.get('locations_enabled') and location_id in traitset_setting.get('locations_enabled'):
 						result.append(trait_setting)
 						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tTraitset default setting enabled, added to result")
+						# logger.debug("filter_trait_settings_by_location:\n\tTraitset default setting enabled, added to result")
 						break
 					elif traitset_setting.get('locations_disabled') and location_id in traitset_setting.get('locations_disabled'):
 						determined = True
-						# logger.info("filter_trait_settings_by_location:\n\tTraitset default setting disabled, not added")
+						# logger.debug("filter_trait_settings_by_location:\n\tTraitset default setting disabled, not added")
 						break
 		if not determined:
 			result.append(trait_setting)
-			# logger.info("filter_trait_settings_by_location:\n\tNo location restrictions, added trait setting to result")
-			# logger.info(f"filter_trait_settings_by_location:\n\tNo location restrictions, ignoring trait setting")
+			# logger.debug("filter_trait_settings_by_location:\n\tNo location restrictions, added trait setting to result")
+			# logger.debug(f"filter_trait_settings_by_location:\n\tNo location restrictions, ignoring trait setting")
 			# break
 	return result
 
@@ -520,7 +524,7 @@ class ActivateEntity(Mutation):
 		# check if agency relation exists
 		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
 		if len(relations) == 0:
-			logger.info("creating agency relation, rev: " + db.collection('Relations').revision())
+			logger.debug("creating agency relation, rev: " + db.collection('Relations').revision())
 			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency' })
 		
 		# activate entity for player
@@ -884,7 +888,7 @@ class TraitSetting(ObjectType):
 		return parent.scaling
 
 	def resolve_locations_enabled(parent, info):
-		# logger.info(f"\nresolve_locations_enabled:\tparent:\n{parent}")
+		# logger.debug(f"\nresolve_locations_enabled:\tparent:\n{parent}")
 		if parent.locations_enabled is not None:
 			return parent.locations_enabled
 		if parent.id:
@@ -997,7 +1001,7 @@ class MutateTraitSetting(Mutation):
 					if pockets:
 						to_pocket = [doc for doc in pockets][0]
 						to_pocket['rating'] = to_pocket.get('rating') + [die_type]
-						# logger.info(f"MutateTraitSetting:\tto_pocket: { to_pocket }")
+						# logger.debug(f"MutateTraitSetting:\tto_pocket: { to_pocket }")
 						update_doc('TraitSettings', to_pocket, temp=temp)
 					else:
 						new_doc = {
@@ -1007,7 +1011,7 @@ class MutateTraitSetting(Mutation):
 							'rating': [die_type],
 							'hidden': False
 						}
-						# logger.info(f"MutateTraitSetting:\tnew pocket: { new_doc }")
+						# logger.debug(f"MutateTraitSetting:\tnew pocket: { new_doc }")
 						db.collection('TraitSettings').insert(new_doc)
 
 				# if it's not a resource, but instead an asset, the entire asset is transferred at once
@@ -1057,7 +1061,7 @@ class MutateTraitSetting(Mutation):
 			update_doc('TraitSettings', trait_setting, temp=temp)
 		return MutateTraitSetting(trait=Trait(trait_setting_id=trait_setting.get('_id')))
 		# except Exception as e:
-		# 	logger.info(e)
+		# 	logger.debug(e)
 		# 	return MutateTraitSetting(message=f"MutateTraitSetting failed: {str(e)}")
 
 class CloneTraitSetting(Mutation):
@@ -1163,7 +1167,7 @@ class Trait(ObjectType):
 			raise Exception("trait_setting is None 1")
 
 	def resolve_name(parent, info):
-		# logger.info(f"\nTrait.resolve_name:\ttrait:\n'{ parent }'")
+		# logger.debug(f"\nTrait.resolve_name:\ttrait:\n'{ parent }'")
 		# if parent.name:
 		# 	return parent.name
 		# else:
@@ -1177,7 +1181,7 @@ class Trait(ObjectType):
 		return result
 
 	def resolve_explanation(parent, info):
-		# logger.info(f"resolve_explanation:\ttrait: '{ parent.id }'")
+		# logger.debug(f"resolve_explanation:\ttrait: '{ parent.id }'")
 		result = get_doc_by_id('Traits', parent.id).get('explanation')
 		return result
 
@@ -1185,11 +1189,11 @@ class Trait(ObjectType):
 		return get_doc_by_id('Traits', parent.id).get('traitset')
 
 	def resolve_traitset(parent, info):
-		# logger.info("resolving traitset for trait: ", parent.id)
+		# logger.debug("resolving traitset for trait: ", parent.id)
 		return Traitset(id=get_doc_by_id('Traits', parent.id).get('traitset'))
 
 	def resolve_required_traits(parent, info):
-		# logger.info("resolve_required_traits:\ttrait: ", parent.id)
+		# logger.debug("resolve_required_traits:\ttrait: ", parent.id)
 		if parent.id is None and parent.trait_setting_id:
 			parent.id = get_doc_by_id('TraitSettings', parent.trait_setting_id).get('_to')
 		required_traits = get_doc_by_id('Traits', parent.id).get('required_traits') or []
@@ -1208,10 +1212,10 @@ class Trait(ObjectType):
 		elif info.context.get('trait_setting_id'):
 			return TraitSetting(id=info.context.get('trait_setting_id'))
 		elif parent.id is not None and info.context.get('entity_id') is not None:
-			# logger.info("resolve_trait_setting:\ttrait: ", parent.id, "\tentity_id: ", info.context.get('entity_id'))
+			# logger.debug("resolve_trait_setting:\ttrait: ", parent.id, "\tentity_id: ", info.context.get('entity_id'))
 			# cursor = find_docs('TraitSettings', {'_from': info.context.get('entity_id'), '_to': parent.id})
 			cursor = find_docs('TraitSettings', {'_from': info.context.get('entity_id'), '_to': parent.id})
-			# logger.info("cursor count: ", cursor.count())
+			# logger.debug("cursor count: ", cursor.count())
 			if len(cursor) > 0:
 				return TraitSetting(id=[doc.get('_id') for doc in cursor][0])
 		else:
@@ -1235,11 +1239,11 @@ class Trait(ObjectType):
 			parent.rating = trait_setting.get('rating')
 			return parent.statement
 		elif parent.id is not None and info.context.get('entity_id') is not None:
-			# logger.info("resolve_statement:\ttrait: ", parent.id, "\tentity_id: ", info.context.get('entity_id'))
+			# logger.debug("resolve_statement:\ttrait: ", parent.id, "\tentity_id: ", info.context.get('entity_id'))
 			cursor = find_docs('TraitSettings', {'_from': info.context.get('entity_id'), '_to': parent.id})
-			# logger.info("cursor count: ", cursor.count())
+			# logger.debug("cursor count: ", cursor.count())
 			if len(cursor) > 0:
-				# logger.info('skibedob')
+				# logger.debug('skibedob')
 				return cursor.next().get('statement')
 		else:
 			raise Exception("trait_setting is None 3")
@@ -1298,7 +1302,7 @@ class Trait(ObjectType):
 
 	def resolve_sfxs(parent, info):
 		if parent.trait_setting_id:
-			# logger.info("resolve_sfxs:\ttrait_setting: ", parent.trait_setting_id)
+			# logger.debug("resolve_sfxs:\ttrait_setting: ", parent.trait_setting_id)
 			sfxs = get_doc_by_id('TraitSettings', parent.trait_setting_id).get('sfxs')
 			if sfxs is not None:
 				return [SFX(id=sfx) for sfx in sfxs]
@@ -1580,7 +1584,7 @@ class AssignTrait(Mutation):
 					'statement': traitsetting.statement,
 					'notes': traitsetting.notes
 				}}"""
-		logger.info(f"AssignTrait:\tquerying for trait default:\n{ query }")
+		logger.debug(f"AssignTrait:\tquerying for trait default:\n{ query }")
 		query_result = execute_aql(query, ['TraitSettings'])
 		# cursor = db.aql.execute(query)
 		# retrieving default traitset setting
@@ -1651,7 +1655,7 @@ class AssignTrait(Mutation):
 		})
 
 		# also assign the subtraits
-		# logger.info(f"AssignTrait:\tassigning subtraits for { new_traitsetting.get('_id') } from { old_traitsetting_id }")
+		# logger.debug(f"AssignTrait:\tassigning subtraits for { new_traitsetting.get('_id') } from { old_traitsetting_id }")
 		query = f"""FOR setting IN TraitSettings
 			FILTER setting._from == '{ old_traitsetting_id }'
 			FILTER setting._to != 'Traits/1'
@@ -1802,12 +1806,12 @@ class UnassignSubTrait(Mutation):
 	message = String()
 
 	def mutate(root, info, trait_setting_id=None, subtrait_setting_id=None):
-		# logger.info(f"UnassignSubTrait:\t{ trait_setting_id }")
+		# logger.debug(f"UnassignSubTrait:\t{ trait_setting_id }")
 		if trait_setting_id is not None:
 			trait = get_doc_by_id('TraitSettings', trait_setting_id)
 
 			if trait is not None and 'shortcut_traits' in trait and subtrait_setting_id in trait.get('shortcut_traits'):
-				# logger.info(f"UnassignSubTrait:\t{ trait }")
+				# logger.debug(f"UnassignSubTrait:\t{ trait }")
 				trait['shortcut_traits'].remove(subtrait_setting_id)
 				update_doc('TraitSettings', trait)
 			else:
@@ -1824,7 +1828,7 @@ class UnassignTrait(Mutation):
 	message = String()
 
 	def mutate(root, info, trait_setting_id=None):
-		# logger.info(f"UnassignTrait:\t{ trait_setting_id }")
+		# logger.debug(f"UnassignTrait:\t{ trait_setting_id }")
 		trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
 		# check the instances of the archetype
 		if trait_setting.get('_from').startswith('Entities/'):
@@ -1865,10 +1869,10 @@ class AssignTraitRating(Mutation):
 	trait = Field(Trait)
 
 	def mutate(root, info, trait_id=None, character_id=None, rating=None):
-		# logger.info(f"arguments; trait_id: { trait_id }, character_id: { character_id }, rating: { ', '.join(rating) }")
+		# logger.debug(f"arguments; trait_id: { trait_id }, character_id: { character_id }, rating: { ', '.join(rating) }")
 		if not (trait_id and character_id and rating):
 			errorMessage = f"missing argument(s), trait_id: { trait_id }, character_id: { character_id }, rating: { rating }"
-			# logger.info(errorMessage)
+			# logger.debug(errorMessage)
 			return { 'error': errorMessage }
 		doc = db.collection('character_has_trait').update_match({'_from': character_id, '_to': trait_id}, {'rating': rating})
 		return AssignTraitRating(trait=Trait(id=trait_id, rating=rating))
@@ -2026,7 +2030,7 @@ class Traitset(ObjectType):
 			) for doc in cursor]
 
 		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Entities/'):
-			# logger.info(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")
+			# logger.debug(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")
 			entity = get_doc_by_id('Entities', info.context.get('entity_id'))
 
 			# traits for location are inherited, so special query
@@ -2035,7 +2039,7 @@ class Traitset(ObjectType):
 					sorting = "SORT t.name, setting.statement, MAX(setting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], setting.rating_type, true) ASC"
 				else:
 					sorting = "SORT MAX(setting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], setting.rating_type, true) ASC, t.name, setting.statement"
-				# logger.info(f"Traitset.resolve_traits:\treturning location traits")
+				# logger.debug(f"Traitset.resolve_traits:\treturning location traits")
 				query = f"""FOR location IN Entities
 					FILTER location._id == '{ info.context.get('entity_id') }'
 					FILTER location.type == 'location'
@@ -2097,7 +2101,7 @@ class Traitset(ObjectType):
 					'entity_depth': 0,
 					**doc
 				} for doc in direct_trait_settings]
-				# logger.info(f"Traitset.resolve_traits:\tentity trait_settings: { trait_settings }")
+				# logger.debug(f"Traitset.resolve_traits:\tentity trait_settings: { trait_settings }")
 				direct_trait_settings = filter_trait_settings_by_location(direct_trait_settings, location_id)
 
 				location_hierarchy = retrieve_hierarchy(location_id)
@@ -2108,7 +2112,7 @@ class Traitset(ObjectType):
 				else:
 					sorting = "SORT MAX(traitsettings[0].traitsetting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], traitsettings[0].traitsetting.rating_type, true) ASC, t.name"
 				# inherited_traits = [ts.get('inherited_as') for ts in trait_settings if ts.get('inherited_as') is not None]
-				# logger.info(f"Traitset.resolve_traits:\tinherited_traits: { inherited_traits }")
+				# logger.debug(f"Traitset.resolve_traits:\tinherited_traits: { inherited_traits }")
 				query = f"""LET archetypes = (
 						FOR v, e, p IN 0..20 OUTBOUND '{ entity.get('_id') }' Relations
 						FILTER p.edges[*].type ALL == 'archetype'
@@ -2133,7 +2137,7 @@ class Traitset(ObjectType):
 						entity: ts.entity,
 						traitsetting: ts.traitsetting
 					}}"""
-				# logger.info(f"Traitset.resolve_traits:\tarchetype query: { query }")
+				# logger.debug(f"Traitset.resolve_traits:\tarchetype query: { query }")
 				# inherited_trait_settings = [doc for doc in db.aql.execute(query)]
 				inherited_trait_settings = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
 				inherited_trait_settings = [
@@ -2171,11 +2175,11 @@ class Traitset(ObjectType):
 
 			# neither entity nor relation
 			else:
-				# logger.info(f"Traitset.resolve_traits:\tNo entity or relation found")
+				# logger.debug(f"Traitset.resolve_traits:\tNo entity or relation found")
 				return []
 
 		elif info.context.get('entity_id') is None:
-			# logger.info(f"Traitset.resolve_traits:\tResolving traits for traitsets irrespective of entity")
+			# logger.debug(f"Traitset.resolve_traits:\tResolving traits for traitsets irrespective of entity")
 			query = f"""FOR trait IN Traits
 				FILTER trait.traitset == '{ parent.id }'
 				SORT trait.name ASC
@@ -2204,7 +2208,7 @@ class Traitset(ObjectType):
 	def resolve_default_trait_setting(parent, info):
 		setting = find_docs('TraitSettings', {'_from': parent.id, '_to': 'Traits/1'})
 		if len(setting) == 0:
-			# logger.info("resolve_default_trait_setting:\tdefault trait")
+			# logger.debug("resolve_default_trait_setting:\tdefault trait")
 			setting = find_docs('TraitSettings', {'_from': 'Traits/1', '_to': 'Traits/1'})
 		return [TraitSetting(id=setting['_id']) for setting in setting][0]
 
@@ -2240,7 +2244,7 @@ class Traitset(ObjectType):
 								FILTER r == s.rating
 								RETURN s.score
 				)"""
-			# logger.info("(005) using query: ", set_query)
+			# logger.debug("(005) using query: ", set_query)
 			# set_cursor = db.aql.execute(set_query)
 			set_cursor = execute_aql(set_query, ['TraitSettings', 'Traits'])
 			result = [doc for doc in set_cursor][0]
@@ -2248,13 +2252,13 @@ class Traitset(ObjectType):
 		return 0
 
 	def resolve_traitset_setting(parent, info):
-		# logger.info(f"Traitset.resolve_traitset_settings")
+		# logger.debug(f"Traitset.resolve_traitset_settings")
 		if info.context.get('entity_id') is not None:
-			# logger.info(f"Traitset.resolve_traitset_settings:\tentity_id: { info.context.get('entity_id') }")
+			# logger.debug(f"Traitset.resolve_traitset_settings:\tentity_id: { info.context.get('entity_id') }")
 			traitset_settings = find_docs('TraitsetSettings', {'_from': info.context.get('entity_id'), '_to': parent.id})
 			if len(traitset_settings) > 0:
 				traitset_setting = [doc for doc in traitset_settings][0]
-				# logger.info(f"Traitset.resolve_traitset_settings:\ttraitset_setting: { traitset_setting }")
+				# logger.debug(f"Traitset.resolve_traitset_settings:\ttraitset_setting: { traitset_setting }")
 				return TraitsetSetting(id=traitset_setting.get('_id'), limit=traitset_setting.get('dicepool_limit'))
 		else:
 			return None
@@ -2400,7 +2404,7 @@ class UpdateTraitsetDefault(Mutation):
 				for default_trait_setting in default_trait_settings:
 					default_trait_setting['hidden'] = default_settings.hidden
 					update_doc('TraitSettings', default_trait_setting)
-		# logger.info("Updating default trait setting for traitset: ", traitset_id, " to: ", default_settings)
+		# logger.debug("Updating default trait setting for traitset: ", traitset_id, " to: ", default_settings)
 		if len(find_docs('TraitSettings', {'_from': traitset_id, '_to': 'Traits/1'})) == 1:
 			db.collection('TraitSettings').update_match(
 				{'_from': traitset_id, '_to': 'Traits/1'},
@@ -2612,10 +2616,11 @@ class Entity(Interface):
 	def resolve_image(parent, info):
 		if not parent.key:
 			Entity._hydrate_entity(parent, info)
-		# logger.info(f"Resolving image: {parent.key}")
+		logger.debug(f"Resolving image: {parent.key}")
 		
 		location_key = None
 		if not parent.location:
+			logger.debug(f"not parent.location and parent.entity_type = {parent.entity_type}")
 			if parent.entity_type != 'location':
 				location_id = get_doc_by_id('Entities', parent.id).get('location')
 				location = get_doc_by_id('Entities', location_id)
@@ -2631,6 +2636,7 @@ class Entity(Interface):
 					location_key = location_hierarchy[0].get('_key')
 			else: # if location
 				parents = [rel.get('_to') for rel in find_docs('Relations', { '_from': parent.id, 'type': 'super' })]
+				logger.debug(f"not parent.location and parent.entity_type = {parent.entity_type} and parents: {parents}")
 				if len(parents) > 0:
 					location_id = parents[0]
 					location = get_doc_by_id('Entities', location_id)
@@ -2641,7 +2647,7 @@ class Entity(Interface):
 					else:
 						location_key = location_hierarchy[0].get('_key')
 		if parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}"):
-			# logger.info(f"Resolving image 2: {parent.key}/{location_key}")
+			logger.debug(f"Resolving image 2: {parent.key}/{location_key}")
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}")[0]
 			ext = os.path.splitext(old_file)[1]
 			save_image(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}/{old_file}", parent.key, location_key)
@@ -2651,16 +2657,16 @@ class Entity(Interface):
 			# return f"{str(parent.key)}/{str(location_key)}/original{ext}"
 			return Portrait(path=f"{str(parent.key)}/{str(location_key)}/", size="original", ext=ext)
 		elif parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/{str(location_key)}"):
-			# logger.info(f"Resolving image 3: {parent.key}/{location_key}")
+			logger.debug(f"Resolving image 3: {parent.key}/{location_key}")
 			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
 				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/{str(location_key)}/original{ext}"):
 					# return f"{str(parent.key)}/{str(location_key)}/original{ext}"
 					return Portrait(path=f"{str(parent.key)}/{str(location_key)}/", size="original", ext=ext)
 		elif os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}"):
-			# logger.info(f"Resolving image 4: {parent.key}")
+			logger.debug(f"Resolving image 4: {parent.key}")
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}")[0]
-			logger.info("old_file: ")
-			logger.info(old_file)
+			logger.debug("old_file: ")
+			logger.debug(old_file)
 			ext = os.path.splitext(old_file)[1]
 			# os.rename(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{old_file}", f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/original.jpg")
 			save_image(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{old_file}", parent.key)
@@ -2669,7 +2675,7 @@ class Entity(Interface):
 			# return f"{str(parent.key)}/original{ext}"
 			return Portrait(path=f"{str(parent.key)}/", size="original", ext=ext)
 		else:
-			# logger.info(f"Resolving image 5: {parent.key}")
+			logger.debug(f"Resolving image 5: {parent.key}")
 			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
 				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/original{ext}"):
 					# return f"{str(parent.key)}/original{ext}"
@@ -2682,9 +2688,9 @@ class Entity(Interface):
 						return None
 				# elif (archetype_id := get_doc_by_id('Entities', parent.id).get('archetype_id')) is not None:
 				elif len(archetypes := find_docs('Relations', { '_from': parent.id, 'type': 'archetype' })) > 0:
-					# logger.info(f"Found archetype: {archetypes}")
+					# logger.debug(f"Found archetype: {archetypes}")
 					archetype_id = [rel.get('_to') for rel in find_docs('Relations', { '_from': parent.id, 'type': 'archetype' })][0]
-					# logger.info(f"Getting archetype: {archetype_id}")
+					# logger.debug(f"Getting archetype: {archetype_id}")
 					archetype = get_doc_by_id('Entities', archetype_id)
 					if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{archetype.get('_key')}/{str(location_key)}/original{ext}"):
 						# return f"{archetype.get('_key')}/{str(location_key)}/original{ext}"
@@ -2756,14 +2762,14 @@ class Entity(Interface):
 		cursor = execute_aql(query, ['Relations', 'TraitSettings', 'Traits', 'Traitsets'])
 		trait_settings = [doc for doc in cursor]
 		location = retrieve_location(get_doc_by_id('Entities', parent.id))
-		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(trait_settings)} trait settings, now filtering by location { location.get('name') }")
+		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(trait_settings)} trait settings, now filtering by location { location.get('name') }")
 		filtered_trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 		unique_traitsets = []
 		for traitsetting in filtered_trait_settings:
 			traitset_id = traitsetting.get('traitset')
 			if traitset_id not in unique_traitsets:
 				unique_traitsets.append(traitset_id)
-		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
+		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
 		
 		# retrieve unpopulated sets, filtered by location
 		query = f"""FOR set IN Traitsets
@@ -2781,13 +2787,13 @@ class Entity(Interface):
 		# cursor = db.aql.execute(query)
 		cursor = execute_aql(query, ['TraitSettings', 'Traitsets'])
 		unpopulated_traitsets = [doc for doc in cursor]
-		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(unpopulated_traitsets)} unpopulated trait sets, now filtering by location { location.get('name') }")
+		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(unpopulated_traitsets)} unpopulated trait sets, now filtering by location { location.get('name') }")
 		filtered_unpopulated_traitsets = filter_trait_settings_by_location(unpopulated_traitsets, location.get('_id'))
 		for traitsetting in filtered_unpopulated_traitsets:
 			traitset_id = traitsetting.get('traitset')
 			if traitset_id not in unique_traitsets:
 				unique_traitsets.append(traitset_id)
-		# logger.info(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
+		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
 		return [Traitset(id=traitset) for traitset in unique_traitsets]
 	
 	def resolve_traits(parent, info):
@@ -2848,7 +2854,7 @@ class Entity(Interface):
 			SORT relation.favorite DESC, POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
 
 			RETURN relation"""
-		# logger.info("query: ", query)
+		# logger.debug("query: ", query)
 		# cursor = db.aql.execute(query)
 		cursor = execute_aql(query, ['Relations'])
 		# relations = find_docs('Relations', {'_from': parent.id})
@@ -3020,7 +3026,7 @@ class UpdateEntity(Mutation):
 
 	def mutate(root, info, entity_id, entity_input=None, name=None, location=None, following=None, favorite=None, is_archetype=None, active=None):
 		entity = get_doc_by_id('Entities', entity_id)
-		# logger.info(f"UpdateEntity.mutate:\t0\tparameters:\t{ locals() }")
+		# logger.debug(f"UpdateEntity.mutate:\t0\tparameters:\t{ locals() }")
 		changes = {}
 		if name is not None:
 			changes['name'] = name
@@ -3028,7 +3034,7 @@ class UpdateEntity(Mutation):
 		# the entity changes location
 		if (location or (entity_input and entity_input.get('location'))) and entity.get('type') != 'location':
 			changes['location'] = location or entity_input.pop('location')
-			# logger.info(f"UpdateEntity.mutate:\t1\tchanges: { changes }")
+			# logger.debug(f"UpdateEntity.mutate:\t1\tchanges: { changes }")
 			location_doc = get_doc_by_id('Entities', changes.get('location'))
 			
 			# if the entity changes to a location,
@@ -3047,7 +3053,7 @@ class UpdateEntity(Mutation):
 			zone['_to'] = location or entity_input.pop('location')
 			update_doc('Relations', zone)
 
-		# logger.info(f"UpdateEntity.mutate:\t3\tchanges: { changes }")
+		# logger.debug(f"UpdateEntity.mutate:\t3\tchanges: { changes }")
 		if following is not None:
 			changes['location'] = following
 
@@ -3060,12 +3066,12 @@ class UpdateEntity(Mutation):
 		if active is not None:
 			changes['active'] = active
 
-		# logger.info(f"UpdateEntity.mutate:\t4\tchanges: { changes }")
+		# logger.debug(f"UpdateEntity.mutate:\t4\tchanges: { changes }")
 		if entity_input is not None and entity_input.get('show_to') is not None:
 			known_to = set(entity.get('known_to', []) + entity_input.pop('show_to', []))
 			changes['known_to'] = list(known_to)
 
-		# logger.info(f"UpdateEntity.mutate:\t5\tchanges: { changes }")
+		# logger.debug(f"UpdateEntity.mutate:\t5\tchanges: { changes }")
 		entity = {
 			'_id': entity_id,
 			**{key: value for key, value in entity.items() if not key.startswith('_')},
@@ -3073,7 +3079,7 @@ class UpdateEntity(Mutation):
 			**(entity_input if entity_input is not None else {})
 		}
 
-		# logger.info(f"UpdateEntity.mutate:\t6\tentity: { entity }")
+		# logger.debug(f"UpdateEntity.mutate:\t6\tentity: { entity }")
 
 		update_doc('Entities', entity)
 
@@ -3326,7 +3332,7 @@ class Character(ObjectType):
 							FILTER r == s.rating
 							RETURN s.score
 			)"""
-		# logger.info("(005) using query: ", set_query)
+		# logger.debug("(005) using query: ", set_query)
 		# set_cursor = db.aql.execute(set_query)
 		set_cursor = execute_aql(set_query, ['TraitSettings', 'Traits'])
 		result = [doc for doc in set_cursor][0]
@@ -3359,16 +3365,16 @@ class CreateOrUpdateCharacter(Mutation):
 
 	def mutate(self, info, input, key=None):
 		# characters_collection = db.collection('Entities')
-		# logger.info("mutating character: ", key, " input: ", input)
+		# logger.debug("mutating character: ", key, " input: ", input)
 
 		if key:
 			character_doc = get_doc_by_id('Entities', 'Entities/' + str(key))
 			if character_doc:
-				# logger.info("updating character: ", input)
+				# logger.debug("updating character: ", input)
 				character_doc.update(input)
 				update_doc('Entities', character_doc)
 				if (location_id := input.get('location')) is not None:
-					# logger.info(f"CreateOrUpdateCharacter:\tlocation_id: { location_id }")
+					# logger.debug(f"CreateOrUpdateCharacter:\tlocation_id: { location_id }")
 					loc_doc = get_doc_by_id('Entities', location_id)
 					loc_doc['known_to'] = list(set((loc_doc.get('known_to') or []) + [character_doc.get('_id')]))
 					update_doc('Entities', loc_doc)
@@ -3525,7 +3531,7 @@ class CreateLocation(Mutation):
 	location = Field(Location)
 
 	def mutate(self, info, location_input=None):
-		# logger.info("Creating location: ", location_input)
+		# logger.debug("Creating location: ", location_input)
 		if(location_input):
 			location_input['type'] = 'location'
 			if location_input.get('description') is None:
@@ -3574,7 +3580,7 @@ class Relation(ObjectType):
 	def resolve_from_entity(parent, info):
 		entity_id = get_doc_by_id('Relations', parent.id).get('_from')
 		entity_type = get_doc_by_id('Entities', entity_id).get('type')
-		# logger.info("Relation.resolve_entity:\tentity_id: ", entity_id, "\tentity_type: ", entity_type)
+		# logger.debug("Relation.resolve_entity:\tentity_id: ", entity_id, "\tentity_type: ", entity_type)
 		if entity_type == 'location':
 			return Location(id=entity_id)
 		elif entity_type in ['character', 'gm']:
@@ -3591,7 +3597,7 @@ class Relation(ObjectType):
 	def resolve_to_entity(parent, info):
 		entity_id = get_doc_by_id('Relations', parent.id).get('_to')
 		entity_type = get_doc_by_id('Entities', entity_id).get('type')
-		# logger.info("Relation.resolve_entity:\tentity_id: ", entity_id, "\tentity_type: ", entity_type)
+		# logger.debug("Relation.resolve_entity:\tentity_id: ", entity_id, "\tentity_type: ", entity_type)
 		if entity_type == 'location':
 			return Location(id=entity_id)
 		elif entity_type in ['character', 'gm']:
@@ -3615,7 +3621,7 @@ class Relation(ObjectType):
 						FILTER traitsetting._to == trait._id
 						FILTER trait.traitset == '{traitset_id}'
 						RETURN {{ trait: trait._id, traitsetting: traitsetting._id }}"""
-			# logger.info("Relation.resolve_traitsets:\tquery: ", query)
+			# logger.debug("Relation.resolve_traitsets:\tquery: ", query)
 			# cursor = db.aql.execute(query)
 			cursor = execute_aql(query, ['TraitSettings', 'Traits'])
 			traits = [Trait(id=doc.get('trait'), trait_setting_id=doc.get('traitsetting')) for doc in cursor]
@@ -3699,7 +3705,7 @@ class Query(ObjectType):
 
 	characters = List(Character, key=ID(required=False), available=Boolean(required=False))
 	def resolve_characters(parent, info, key=None, available=None):
-		# logger.info("character resolver, for key: ", key)
+		# logger.debug("character resolver, for key: ", key)
 		if not key and not available:
 			cursor = find_docs('Entities', {'type': 'character'})
 			return [Character(id = doc['_id']) for doc in cursor]
@@ -3749,7 +3755,7 @@ class Query(ObjectType):
 				 is_archetype=Boolean(required=False),
 				 location_id=ID(required=False))
 	def resolve_entities(parent, info, key=None, entity_id=None, entity_type=None, search=None, is_archetype=None, location_id=None):
-		# logger.info("entity resolver, for key: ", key)
+		# logger.debug("entity resolver, for key: ", key)
 		if location_id is not None:
 			hierarchy = retrieve_hierarchy(location_id)
 		if not key and not entity_id and not entity_type:
@@ -3789,7 +3795,7 @@ class Query(ObjectType):
 			query += f"""FILTER e.type == '{ entity_type }'
 			SORT e.name ASC
 			RETURN e"""
-			logger.info("resolve_entities:\tquery: ", query)
+			logger.debug("resolve_entities:\tquery: ", query)
 			# entities = db.aql.execute(query)
 			entities = execute_aql(query, ['Entities'])
 			if entity_type  in ['character', 'gm']:
@@ -3846,7 +3852,7 @@ class Query(ObjectType):
 					FILTER '{ entity_type }' IN traitsets.entity_types
 					SORT traitsets.order ASC
 					RETURN {{ 'id': traitsets._id, 'name': traitsets.name }}"""
-				# logger.info("retrieving traitsets for entity type: ", query)
+				# logger.debug("retrieving traitsets for entity type: ", query)
 				# cursor = db.aql.execute(query)
 				cursor = execute_aql(query, ['Traitsets'])
 				result = [
@@ -3861,28 +3867,28 @@ class Query(ObjectType):
 				for traitset in traitsets:
 					if not entity_type in traitset.get('entity_types'):
 						continue
-					logger.info("retrieving traitsets, checking traitset " + traitset.get('name'))
+					logger.debug("retrieving traitsets, checking traitset " + traitset.get('name'))
 					cursor = find_docs('TraitSettings', {'_from': traitset.get('_id'), '_to': 'Traits/1'})
 					if len(cursor) > 0:
 						default_settings = cursor.next()
 						if default_settings is not None:
 							if default_settings.get('locations_disabled') is not None and len(default_settings.get('locations_disabled')) > 0:
 								for location in hierarchy:
-									logger.info("retrieving traitsets, checking location " + location.get('name'))
+									logger.debug("retrieving traitsets, checking location " + location.get('name'))
 									if location.get('_id') in default_settings.get('locations_enabled'):
-										logger.info("adding traitset " + traitset.get('_id') + " from " + str(default_settings.get('locations_enabled')))
+										logger.debug("adding traitset " + traitset.get('_id') + " from " + str(default_settings.get('locations_enabled')))
 										result.append(Traitset(id = traitset.get('_id'), name = traitset.get('name')))
 										break
 									elif location.get('_id') in default_settings.get('locations_disabled'):
-										logger.info("skipping traitset " + traitset.get('_id') + " since disabled: " + str(default_settings.get('locations_disabled')))
+										logger.debug("skipping traitset " + traitset.get('_id') + " since disabled: " + str(default_settings.get('locations_disabled')))
 										break
 							else:
-								logger.info("adding traitset " + traitset.get('name'))
+								logger.debug("adding traitset " + traitset.get('name'))
 								result.append(Traitset(id = traitset.get('_id'), name = traitset.get('name')))
 					else:
 						result.append(Traitset(id = traitset.get('_id'), name = traitset.get('name')))
-					logger.info("updated result to " + str(result))
-				logger.info("returning " + str(len(result)) + " traitsets", result)
+					logger.debug("updated result to " + str(result))
+				logger.debug("returning " + str(len(result)) + " traitsets", result)
 				return result
 		else:
 			query = f"""FOR traitsets IN Traitsets
@@ -3985,7 +3991,7 @@ class Query(ObjectType):
 
 					SORT t.name, TO_NUMBER(SUBSTRING(default_trait[0].rating[0], 1)) ASC
 					RETURN {{ location_hierarchy: location_hierarchy, trait: t, default: default_trait }}"""
-			# logger.info("resolve_traits\tpotential traits query\n", query)
+			# logger.debug("resolve_traits\tpotential traits query\n", query)
 			# cursor = db.aql.execute(query)
 			cursor = execute_aql(query, ['TraitSettings', 'Traits', 'Relations', 'Entities'])
 			result = []
@@ -4038,7 +4044,7 @@ class Query(ObjectType):
 
 	locations = List(Location, location_id=ID(required=False))
 	def resolve_locations(parent, info, location_id=None):
-		# logger.info("Query.resolve_locations:\tkey: ", key)
+		# logger.debug("Query.resolve_locations:\tkey: ", key)
 		if not location_id:
 			cursor = find_docs('Entities', {'type': 'location'})
 			return [
@@ -4048,7 +4054,7 @@ class Query(ObjectType):
 		else:
 			info.context['entity_id'] = location_id
 			result = Location(id=location_id)
-			# logger.info(result)
+			# logger.debug(result)
 			return [result]
 
 	relations = List(Relation, relation_id=ID(required=False))
@@ -4322,13 +4328,13 @@ def get_session_characters():
 
 @app.route("/upload/<entity_key>", methods = ['POST'])
 def upload_file(entity_key):
-	# logger.info("received request to upload file")
+	# logger.debug("received request to upload file")
 	file = request.files['file']
 	file_extension = os.path.splitext(file.filename)[1]
 	entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key))
-	# logger.info("entity_folder: ", entity_folder)
+	# logger.debug("entity_folder: ", entity_folder)
 	if not os.path.exists(entity_folder):
-		# logger.info("creating folder: ", entity_folder)
+		# logger.debug("creating folder: ", entity_folder)
 		os.makedirs(entity_folder)
 	# filename = f"{ entity_id }{ file_extension }"
 	# filename = secure_filename(file.filename)
@@ -4371,22 +4377,22 @@ def upload_file(entity_key):
 
 @app.route("/upload/<entity_key>/<location_key>", methods = ['POST'])
 def upload_file_location(entity_key, location_key):
-	logger.info("received request to upload file")
+	logger.debug("received request to upload file")
 	file = request.files['file']
 	file_extension = os.path.splitext(file.filename)[1]
 	entity_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), str(location_key))
-	logger.info("entity_folder: " + entity_folder)
+	logger.debug("entity_folder: " + entity_folder)
 	if not os.path.exists(entity_folder):
-		logger.info("creating folder: " + entity_folder)
+		logger.debug("creating folder: " + entity_folder)
 		os.makedirs(entity_folder)
 	# filename = f"{ entity_id }{ file_extension }"
 	# filename = secure_filename(file.filename)
 	image = Image.open(file)
 	hierarchy = retrieve_hierarchy('Entities/' + str(location_key))
-	logger.info("hierarchy: " + str(hierarchy))
+	logger.debug("hierarchy: " + str(hierarchy))
 	location_key = hierarchy[-2].get('_key')
 	path = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), location_key, f"original{ file_extension.lower() }")
-	logger.info("image path: " + path)
+	logger.debug("image path: " + path)
 	if not os.path.exists(os.path.dirname(path)):
 		os.makedirs(os.path.dirname(path))
 	image.save(path)
