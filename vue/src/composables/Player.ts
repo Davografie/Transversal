@@ -33,7 +33,7 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 				}
 			}
 		}`
-		if(apolloClient) {
+		if(apolloClient && _player_id) {
 			const { result } = provideApolloClient(apolloClient)(
 				() => useQuery(
 					query,

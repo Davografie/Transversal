@@ -37,9 +37,11 @@ export const usePlayerStore = defineStore(
 		const is_player = computed(() => !is_gm.value)
 
 		function switch_player(player: Player) {
-			player_id.value = player.id
-			set_player_id(player.id)
-			retrieve_player()
+			if(player.id) {
+				player_id.value = player.id
+				set_player_id(player.id)
+				retrieve_player()
+			}
 		}
 
 		//	character
@@ -68,7 +70,7 @@ export const usePlayerStore = defineStore(
 		const orientation = ref("horizontal")	// horizontal (for landscape, e.g. desktop monitor) or vertical (for portrait, e.g. mobile)
 		const theme = ref("dark")
 		const font_size = ref(16)
-		const input_method = ref<input_methods>(input_methods.KBM)
+		const input_method = ref<input_methods>(input_methods.kbm)
 
 		const {
 			character: player_character,
@@ -205,6 +207,8 @@ export const usePlayerStore = defineStore(
 			mounted.value = true
 			retrieve_the_entity()
 			if(player_id.value) {
+				console.log("retrieving player " + player_id.value)
+				set_player_id(player_id.value)
 				retrieve_player()
 			}
 		})
