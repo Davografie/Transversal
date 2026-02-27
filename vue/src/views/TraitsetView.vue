@@ -280,7 +280,7 @@
 					{{ traitset_limit }}
 					<input type="button" class="button-mnml" value="⊕" @click="traitset_limit++" />
 				</div>
-				<h4>available to entity types</h4>
+				<h4>traitset type</h4>
 				<div id="entity-types">
 					<div class="entity-type" :class="entity_types.includes('character') ? 'active': 'inactive'">
 						<input type="checkbox" id="character" value="character" v-model="entity_types" />
