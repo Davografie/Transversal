@@ -514,6 +514,7 @@
 	}
 	function toggle_quick_switch() {
 		if(entityOverviewType.value != 'QUICK_SWITCH') {
+			player.retrieve_player()
 			toggleEntityOverviewType('QUICK_SWITCH')
 		}
 		else {
@@ -813,13 +814,14 @@
 			</div>
 
 			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
-					v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities?.map(e => e.id).filter(p => p != player.the_entity?.id).length > 0">
+					v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities && player.player.entities.length > 0">
 				<EntityCard
 					class="entity-card"
-					v-for="entity_id in player.player.entities?.map(e => e.id).filter(p => p != player.the_entity?.id)" :key="entity_id"
+					v-for="entity_id in player.player.entities.map(e => e.id)" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
-					@click_entity="quick_switch(entity_id)" />
+					:is_active="player.the_entity?.id != entity_id"
+					@click_entity="player.the_entity?.id != entity_id ? quick_switch(entity_id) : null" />
 			</div>
 
 			<ArchetypePicker class="character-menu" v-if="entityOverviewType == 'ARCHETYPES'" v-show="show_controls" :entity_id="character.id" :entity_type="character.entityType" :location_id="entity.location?.id" />

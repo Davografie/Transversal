@@ -215,6 +215,7 @@ export const usePlayerStore = defineStore(
 			player_name,
 			player,
 			switch_player,
+			retrieve_player,
 			is_player,
 			small_buttons,
 			data_saving,
