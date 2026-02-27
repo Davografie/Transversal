@@ -389,9 +389,12 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			// } : {
 			// 	"entityId": entity_id ?? entity.value.id,
 			// }
-			await mutate(variables).then((result) => {
-				console.log('clone_entity result', result)
-			})
+			// await mutate(variables).then((result) => {
+			// 	console.log('clone_entity result', result)
+			// })
+			const result = await mutate(variables);
+			console.log('clone_entity result', result)
+			return result?.data?.instantiateArchetype?.entity;
 		}
 	}
 

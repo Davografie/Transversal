@@ -27,17 +27,24 @@
 	const { entity, retrieve_small_entity, clone_entity } = useEntity(undefined, props.archetype_id)
 	retrieve_small_entity()
 
-	function add_entity() {
+	async function add_entity() {
 		if(!props.archetype_id) {
 			create_entity(new_entity_name.value, new_entityType.value, props.location_id)
 		}
 		else {
-			clone_entity(new_entity_name.value).then(() => {
-				if(player.is_player && entity.value?.id != props.archetype_id) {
-					player.player_character_key = entity.value?.key
-					router.push({ path: '/entity/' + entity.value?.key })
-				}
-			})
+			// clone_entity(new_entity_name.value).then(() => {
+			// 	if(player.is_player && entity.value?.id != props.archetype_id) {
+			// 		player.player_character_key = entity.value?.key
+			// 		router.push({ path: '/entity/' + entity.value?.key })
+			// 	}
+			// })
+			const new_entity = await clone_entity(new_entity_name.value)
+			console.log('cloned entity: ', new_entity)
+			if(player.is_player && new_entity.id != props.archetype_id) {
+				player.player_character_key = new_entity.key
+				player.retrieve_character()
+				router.push({ path: '/entity/' + new_entity.key })
+			}
 		}
 		emit('created_entity')
 		new_entity_name.value = ''
