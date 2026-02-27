@@ -1146,11 +1146,8 @@
 						var(--color-background) 0px 0px 2px;
 				}
 				.flavortext {
-					text-shadow: var(--color-background) 0px 0px 4px,
-						var(--color-background) 0px 0px 8px,
-						var(--color-background) 0px 0px 16px,
-						var(--color-background) 0px 0px 4px;
-					box-shadow: inset 0 0 50px var(--color-background-mute);
+					text-shadow: var(--text-shadow), var(--text-shadow);
+					box-shadow: inset 0 0 200px var(--color-background);
 					backdrop-filter: blur(20px);
 				}
 			}
