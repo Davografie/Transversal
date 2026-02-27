@@ -286,7 +286,7 @@
 			</div>
 			<CharacterOverview class="setting-page" v-if="view == 'characters'" @show_entity="emit('show_entity', $event)" />
 			<!-- <LocationOverview v-if="view == 'locations'" /> -->
-			<TraitsetOverview class="setting-page" v-if="view == 'traitsets' || (view == 'traitset' && props.orientation == 'horizontal')" @show_traitset="switch_to_traitset" />
+			<TraitsetOverview class="setting-page" v-if="view == 'traitsets'" @show_traitset="switch_to_traitset" />
 			<TraitsetView class="setting-page" v-if="traitset_key && view == 'traitset'" :traitset_key="traitset_key" />
 			<SFXOverview class="setting-page" v-if="view == 'sfxs'" />
 			<RulesView class="setting-page" v-if="view == 'rules'" />
@@ -331,7 +331,7 @@
 			/* width: fit-content; */
 			height: 100vh;
 			text-align: center;
-			width: 100vw;
+			width: calc(100vw - 140px);
 			overflow-x: auto;
 			nav, .page {
 				height: 100%;
@@ -408,7 +408,7 @@
 			}
 			.setting-page {
 				height: 100vh;
-				width: 100vw;
+				/* width: 100vw; */
 				overflow-y: auto;
 				flex-grow: 1;
 			}
