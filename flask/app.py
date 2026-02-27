@@ -314,11 +314,13 @@ def find_docs(collection_name: str, query: dict):
 		# logger.debug(f"Query result: {result}")
 		try:
 			if len(result) > 0:
-				logger.debug(f"Documents found for query: {query}, storing result in Redis")
+				# logger.debug(f"Documents found for query: {query}, storing result in Redis, documents:\n{result}")
 				r.rpush(redis_key, *[json.dumps(doc).encode('utf-8') for doc in result])
+				return result
 			else:
 				logger.debug(f"No documents found for query: {query}, storing empty result in Redis")
 				r.rpush(redis_key, json.dumps({}).encode('utf-8'))
+				return []
 		except Exception as e:
 			logger.error(f"Error storing query result in Redis: {e}")
 	return []
@@ -522,7 +524,9 @@ class ActivateEntity(Mutation):
 	
 	def mutate(self, info, player_id, entity_id):
 		# check if agency relation exists
-		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
+		logger.info(f"Activating entity {entity_id} for player {player_id}")
+		relations = find_docs('Relations', { '_from': player_id, '_to': entity_id, 'type': 'agency' })
+		logger.debug(f"relations: {relations}")
 		if len(relations) == 0:
 			logger.debug("creating agency relation, rev: " + db.collection('Relations').revision())
 			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency' })
