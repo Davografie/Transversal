@@ -21,6 +21,7 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 	}
 
 	function retrieve_player() {
+		console.log('retrieving player: ' + _player_id)
 		const query = gql`query Player($playerId: ID!) {
 			players(playerId: $playerId) {
 				id
@@ -37,7 +38,7 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 				() => useQuery(
 					query,
 					{ playerId: _player_id },
-					{ fetchPolicy: 'cache-first' }
+					{ fetchPolicy: 'no-cache' }
 				)
 			)
 			watch(result, (newResult) => {
