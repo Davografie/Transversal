@@ -3794,8 +3794,7 @@ class Query(ObjectType):
 			cursor = find_docs('Entities', {'type': 'character'})
 			return [Character(id = doc['_id']) for doc in cursor]
 		elif not key and available:
-			cursor = db.collection('Entities').get_many([char.get('character') for char in session_characters])
-			return [Character(id = doc['_id']) for doc in cursor]
+			return [Character(id = char.get('character')) for char in session_characters]
 		else:
 			character = get_doc_by_id('Entities', 'Entities/' + str(key))
 			info.context['entity_id'] = character['_id']

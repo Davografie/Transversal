@@ -7,7 +7,7 @@
 	import Relation from '@/components/Relation.vue'
 	import EntityCard from '@/components/EntityCard.vue'
 	import type { Entity as EntityType, Relation as RelationType } from '@/interfaces/Types'
-import ToggleButton from '@/components/UI/ToggleButton.vue'
+	import ToggleButton from '@/components/UI/ToggleButton.vue'
 
     const props = defineProps<{
 		shown: boolean
@@ -38,7 +38,7 @@ import ToggleButton from '@/components/UI/ToggleButton.vue'
 
 	function poll() {
 		if(!show_players.value) retrieve_characters(true)
-		if(polling_active.value) setTimeout(poll, 7000)
+		if(polling_active.value) setTimeout(poll, 15000)
 	}
 
 	const show_players = ref(false)

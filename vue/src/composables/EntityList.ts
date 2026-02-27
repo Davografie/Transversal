@@ -126,10 +126,6 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 				id
 				name
 				entityType
-				image {
-					path
-					ext
-				}
 				favorite
 				active
 				isArchetype
