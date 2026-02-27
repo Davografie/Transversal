@@ -326,6 +326,27 @@ def find_docs(collection_name: str, query: dict):
 	return []
 
 
+def location_allowed(hierarchy, locations_enabled, locations_disabled) -> bool:
+	"""
+	Recursive method that checks from leaf location up the hierarchy until it finds an enabled or disabled location
+
+	Args:
+		hierarchy (list): A list of location IDs in the hierarchy.
+		locations_enabled (list): A list of enabled location IDs.
+		locations_disabled (list): A list of disabled location IDs.
+
+	Returns:
+		bool: True if the location is enabled, False if the location is disabled, None if it's neither enabled nor disabled.
+	"""
+	if len(hierarchy) == 0:
+		return None
+	if hierarchy[0] in locations_enabled:
+		return True
+	if hierarchy[0] in locations_disabled:
+		return False
+	return location_allowed(hierarchy[1:], locations_enabled, locations_disabled)
+	
+
 def filter_trait_settings_by_location(trait_settings, location_id):
 	"""
 	Systematically filters out traits restricted by the location hierarchy.
@@ -340,63 +361,91 @@ def filter_trait_settings_by_location(trait_settings, location_id):
 	result = []
 	# logger.debug(f"filter_trait_settings_by_location:\n\ttrait_settings: {[trait_setting.get('_id') for trait_setting in trait_settings]}")
 	hierarchy_ids = [location.get('_id') for location in retrieve_hierarchy(location_id)]
-	# logger.debug(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
 	for trait_setting in trait_settings:
-		# logger.debug(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting}")
-		determined = False
-		for location_id in hierarchy_ids:
-			# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in enabled locations")
-			if trait_setting.get('locations_enabled') and location_id in trait_setting.get('locations_enabled'):
-				result.append(trait_setting)
-				determined = True
-				# logger.debug("filter_trait_settings_by_location:\n\tTrait setting enabled at this location, added to result")
-				break
-			elif trait_setting.get('locations_disabled') and location_id in trait_setting.get('locations_disabled'):
-				determined = True
-				# logger.debug("filter_trait_settings_by_location:\n\tTrait setting disabled at this location, not added")
-				break
-		if not determined and trait_setting.get('_to') is not None and trait_setting.get('_to') != 'Traits/1':
-			# logger.debug("filter_trait_settings_by_location:\n\tChecking default trait setting")
-			# default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
-			default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
-			if len(default_trait_setting) > 0:
-				# logger.debug(f"default trait setting: {default_trait_setting}")
-				default_trait_setting = [doc for doc in default_trait_setting][0]
-				for location_id in hierarchy_ids:
-					# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in default enabled locations")
-					if default_trait_setting.get('locations_enabled') and location_id in default_trait_setting.get('locations_enabled'):
-						result.append(trait_setting)
-						determined = True
-						# logger.debug("filter_trait_settings_by_location:\n\tDefault trait setting enabled, added to result")
-						break
-					elif default_trait_setting.get('locations_disabled') and location_id in default_trait_setting.get('locations_disabled'):
-						determined = True
-						# logger.debug("filter_trait_settings_by_location:\n\tDefault trait setting disabled, not added")
-						break
-		if not determined and trait_setting.get('_from') is not None and not trait_setting.get('_from').startswith('Traitsets'):
-			# logger.debug("filter_trait_settings_by_location:\n\tChecking traitset default setting")
-			traitset_id = get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset')
-			# traitset_setting = find_docs('TraitSettings', { '_from': traitset_id, '_to': 'Traits/1' })
-			traitset_setting = find_docs('TraitSettings', { '_from': traitset_id, '_to': 'Traits/1' })
-			if len(traitset_setting) > 0:
-				traitset_setting = [doc for doc in traitset_setting][0]
-				for location_id in hierarchy_ids:
-					# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in traitset enabled locations")
-					if traitset_setting.get('locations_enabled') and location_id in traitset_setting.get('locations_enabled'):
-						result.append(trait_setting)
-						determined = True
-						# logger.debug("filter_trait_settings_by_location:\n\tTraitset default setting enabled, added to result")
-						break
-					elif traitset_setting.get('locations_disabled') and location_id in traitset_setting.get('locations_disabled'):
-						determined = True
-						# logger.debug("filter_trait_settings_by_location:\n\tTraitset default setting disabled, not added")
-						break
-		if not determined:
+		trait_setting_allowed = location_allowed(hierarchy_ids, trait_setting.get('locations_enabled'), trait_setting.get('locations_disabled'))
+		if trait_setting_allowed == True:
 			result.append(trait_setting)
-			# logger.debug("filter_trait_settings_by_location:\n\tNo location restrictions, added trait setting to result")
-			# logger.debug(f"filter_trait_settings_by_location:\n\tNo location restrictions, ignoring trait setting")
-			# break
+			continue
+		elif trait_setting_allowed == False:
+			continue
+
+		# check default trait setting
+		if trait_setting.get('_to') == 'Traits/1':
+			continue
+		default_trait_setting = find_docs('TraitSettings', {'_from': trait_setting.get('_to'), '_to': 'Traits/1'})
+		if len(default_trait_setting) > 0:
+			trait_setting_allowed = location_allowed(hierarchy_ids, default_trait_setting[0].get('locations_enabled'), default_trait_setting[0].get('locations_disabled'))
+			if trait_setting_allowed == True:
+				result.append(trait_setting)
+				continue
+			elif trait_setting_allowed == False:
+				continue
+		
+		# default to enabling
+		result.append(trait_setting)
+		
+
+
+	# logger.debug(f"filter_trait_settings_by_location:\n\tresult: {[trait_setting.get('_id') for trait_setting in result]}")
 	return result
+
+	# logger.debug(f"filter_trait_settings_by_location:\n\thierarchy_ids: {hierarchy_ids}")
+	# for trait_setting in trait_settings:
+	# 	# logger.debug(f"filter_trait_settings_by_location:\n\tProcessing trait setting: {trait_setting}")
+	# 	determined = False
+	# 	for location_id in hierarchy_ids:
+	# 		# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in enabled locations")
+	# 		if trait_setting.get('locations_enabled') and location_id in trait_setting.get('locations_enabled'):
+	# 			result.append(trait_setting)
+	# 			determined = True
+	# 			# logger.debug("filter_trait_settings_by_location:\n\tTrait setting enabled at this location, added to result")
+	# 			break
+	# 		elif trait_setting.get('locations_disabled') and location_id in trait_setting.get('locations_disabled'):
+	# 			determined = True
+	# 			# logger.debug("filter_trait_settings_by_location:\n\tTrait setting disabled at this location, not added")
+	# 			break
+	# 	if not determined and trait_setting.get('_to') is not None and trait_setting.get('_to') != 'Traits/1':
+	# 		# logger.debug("filter_trait_settings_by_location:\n\tChecking default trait setting")
+	# 		# default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
+	# 		default_trait_setting = find_docs('TraitSettings', { '_from': trait_setting.get('_to'), '_to': 'Traits/1' })
+	# 		if len(default_trait_setting) > 0:
+	# 			# logger.debug(f"default trait setting: {default_trait_setting}")
+	# 			default_trait_setting = [doc for doc in default_trait_setting][0]
+	# 			for location_id in hierarchy_ids:
+	# 				# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in default enabled locations")
+	# 				if default_trait_setting.get('locations_enabled') and location_id in default_trait_setting.get('locations_enabled'):
+	# 					result.append(trait_setting)
+	# 					determined = True
+	# 					# logger.debug("filter_trait_settings_by_location:\n\tDefault trait setting enabled, added to result")
+	# 					break
+	# 				elif default_trait_setting.get('locations_disabled') and location_id in default_trait_setting.get('locations_disabled'):
+	# 					determined = True
+	# 					# logger.debug("filter_trait_settings_by_location:\n\tDefault trait setting disabled, not added")
+	# 					break
+	# 	if not determined and trait_setting.get('_from') is not None and not trait_setting.get('_from').startswith('Traitsets'):
+	# 		# logger.debug("filter_trait_settings_by_location:\n\tChecking traitset default setting")
+	# 		traitset_id = get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset')
+	# 		# traitset_setting = find_docs('TraitSettings', { '_from': traitset_id, '_to': 'Traits/1' })
+	# 		traitset_setting = find_docs('TraitSettings', { '_from': traitset_id, '_to': 'Traits/1' })
+	# 		if len(traitset_setting) > 0:
+	# 			traitset_setting = [doc for doc in traitset_setting][0]
+	# 			for location_id in hierarchy_ids:
+	# 				# logger.debug(f"filter_trait_settings_by_location:\n\tChecking location_id {location_id} in traitset enabled locations")
+	# 				if traitset_setting.get('locations_enabled') and location_id in traitset_setting.get('locations_enabled'):
+	# 					result.append(trait_setting)
+	# 					determined = True
+	# 					# logger.debug("filter_trait_settings_by_location:\n\tTraitset default setting enabled, added to result")
+	# 					break
+	# 				elif traitset_setting.get('locations_disabled') and location_id in traitset_setting.get('locations_disabled'):
+	# 					determined = True
+	# 					# logger.debug("filter_trait_settings_by_location:\n\tTraitset default setting disabled, not added")
+	# 					break
+	# 	if not determined:
+	# 		result.append(trait_setting)
+	# 		# logger.debug("filter_trait_settings_by_location:\n\tNo location restrictions, added trait setting to result")
+	# 		# logger.debug(f"filter_trait_settings_by_location:\n\tNo location restrictions, ignoring trait setting")
+	# 		# break
+	# return result
 
 def retrieve_location(entity):
 	"""
@@ -2743,62 +2792,93 @@ class Entity(Interface):
 		if parent.entity_type is None:
 			Entity._hydrate_entity(parent, info)
 		
-		# retrieve all populated sets
-		query = f"""LET archetypes = (
-						FOR v, e, p IN 0..5 OUTBOUND '{ parent.id }' Relations
-						FILTER p.edges[*].type ALL == 'archetype'
-						RETURN v._id
-					)
-					FOR entity IN archetypes
-						FOR trait, traitsetting IN OUTBOUND entity TraitSettings
-						COLLECT traitId = traitsetting._to INTO traitsettings
-					FOR t IN Traits
-						FILTER traitsettings[0].traitsetting._to == t._id
-					FOR set IN Traitsets
-						FILTER t.traitset == set._id
-						FILTER '{ parent.entity_type }' IN set.entity_types
-					SORT set.order ASC
-					RETURN MERGE(
-						traitsettings[0].traitsetting,
-						{{ traitset: t.traitset }}
-					)"""
-		# cursor = db.aql.execute(query)
-		cursor = execute_aql(query, ['Relations', 'TraitSettings', 'Traits', 'Traitsets'])
-		trait_settings = [doc for doc in cursor]
-		location = retrieve_location(get_doc_by_id('Entities', parent.id))
-		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(trait_settings)} trait settings, now filtering by location { location.get('name') }")
-		filtered_trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
-		unique_traitsets = []
-		for traitsetting in filtered_trait_settings:
-			traitset_id = traitsetting.get('traitset')
-			if traitset_id not in unique_traitsets:
-				unique_traitsets.append(traitset_id)
-		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
+		query = f"""FOR ts IN Traitsets
+					FILTER '{ parent.entity_type }' IN ts.entity_types
+					RETURN ts"""
+
+		traitsets = execute_aql(query, ['Traitsets'])
+		# logger.debug(f"Traitsets: {[ts.get('name') + ' (' + str(ts.get('order')) + ')' for ts in traitsets]}")
+		# sort traitsets by order
+		traitsets = sorted(traitsets, key=lambda ts: ts.get('order'))
 		
-		# retrieve unpopulated sets, filtered by location
-		query = f"""FOR set IN Traitsets
-						FILTER '{ parent.entity_type }' IN set.entity_types
-						FILTER set._id NOT IN {unique_traitsets}
-					FOR default IN TraitSettings
-						FILTER set._id == default._from
-						FILTER default._to == 'Traits/1'
-					SORT set.order ASC
-					RETURN {{
-						traitset: set._id,
-						locations_enabled: default.locations_enabled,
-						locations_disabled: default.locations_disabled
-					}}"""
-		# cursor = db.aql.execute(query)
-		cursor = execute_aql(query, ['TraitSettings', 'Traitsets'])
-		unpopulated_traitsets = [doc for doc in cursor]
-		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(unpopulated_traitsets)} unpopulated trait sets, now filtering by location { location.get('name') }")
-		filtered_unpopulated_traitsets = filter_trait_settings_by_location(unpopulated_traitsets, location.get('_id'))
-		for traitsetting in filtered_unpopulated_traitsets:
-			traitset_id = traitsetting.get('traitset')
-			if traitset_id not in unique_traitsets:
-				unique_traitsets.append(traitset_id)
-		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
-		return [Traitset(id=traitset) for traitset in unique_traitsets]
+		# filter by location
+		location = retrieve_location(get_doc_by_id('Entities', parent.id))
+		hierarchy = [loc.get('_id') for loc in retrieve_hierarchy(location.get('_id'))]
+		enabled_traitsets = []
+		for traitset in traitsets:
+			# retrieve locations_enabled and locations_disabled
+			# logger.debug(f"Traitset: {traitset.get('name')}")
+			default_settings = find_docs('TraitSettings', {'_from': traitset.get('_id'), '_to': 'Traits/1'})
+			# logger.debug(f"Default settings: {default_settings}")
+			if len(default_settings) == 0:
+				continue
+			traitset_allowed = location_allowed(hierarchy, default_settings[0].get('locations_enabled'), default_settings[0].get('locations_disabled'))
+			# logger.debug(f"checking hierarchy: {hierarchy}\nenabled: {default_settings[0].get('locations_enabled')}\ndisabled: {default_settings[0].get('locations_disabled')}\nallowed: {traitset_allowed}")
+			if traitset_allowed == True or traitset_allowed is None:
+				enabled_traitsets.append(traitset)
+				continue
+
+		return [
+			Traitset(id=ts.get('_id'), name=ts.get('name'), entity_types=ts.get('entity_types'))
+			for ts in enabled_traitsets
+		]
+		
+		# # retrieve all populated sets
+		# query = f"""LET archetypes = (
+		# 				FOR v, e, p IN 0..5 OUTBOUND '{ parent.id }' Relations
+		# 				FILTER p.edges[*].type ALL == 'archetype'
+		# 				RETURN v._id
+		# 			)
+		# 			FOR entity IN archetypes
+		# 				FOR trait, traitsetting IN OUTBOUND entity TraitSettings
+		# 				COLLECT traitId = traitsetting._to INTO traitsettings
+		# 			FOR t IN Traits
+		# 				FILTER traitsettings[0].traitsetting._to == t._id
+		# 			FOR set IN Traitsets
+		# 				FILTER t.traitset == set._id
+		# 				FILTER '{ parent.entity_type }' IN set.entity_types
+		# 			SORT set.order ASC
+		# 			RETURN MERGE(
+		# 				traitsettings[0].traitsetting,
+		# 				{{ traitset: t.traitset }}
+		# 			)"""
+		# # cursor = db.aql.execute(query)
+		# cursor = execute_aql(query, ['Relations', 'TraitSettings', 'Traits', 'Traitsets'])
+		# trait_settings = [doc for doc in cursor]
+		# location = retrieve_location(get_doc_by_id('Entities', parent.id))
+		# # logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(trait_settings)} trait settings, now filtering by location { location.get('name') }")
+		# filtered_trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
+		# unique_traitsets = []
+		# for traitsetting in filtered_trait_settings:
+		# 	traitset_id = traitsetting.get('traitset')
+		# 	if traitset_id not in unique_traitsets:
+		# 		unique_traitsets.append(traitset_id)
+		# # logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
+		
+		# # retrieve unpopulated sets, filtered by location
+		# query = f"""FOR set IN Traitsets
+		# 				FILTER '{ parent.entity_type }' IN set.entity_types
+		# 				FILTER set._id NOT IN {unique_traitsets}
+		# 			FOR default IN TraitSettings
+		# 				FILTER set._id == default._from
+		# 				FILTER default._to == 'Traits/1'
+		# 			SORT set.order ASC
+		# 			RETURN {{
+		# 				traitset: set._id,
+		# 				locations_enabled: default.locations_enabled,
+		# 				locations_disabled: default.locations_disabled
+		# 			}}"""
+		# # cursor = db.aql.execute(query)
+		# cursor = execute_aql(query, ['TraitSettings', 'Traitsets'])
+		# unpopulated_traitsets = [doc for doc in cursor]
+		# # logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(unpopulated_traitsets)} unpopulated trait sets, now filtering by location { location.get('name') }")
+		# filtered_unpopulated_traitsets = filter_trait_settings_by_location(unpopulated_traitsets, location.get('_id'))
+		# for traitsetting in filtered_unpopulated_traitsets:
+		# 	traitset_id = traitsetting.get('traitset')
+		# 	if traitset_id not in unique_traitsets:
+		# 		unique_traitsets.append(traitset_id)
+		# # logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
+		# return [Traitset(id=traitset) for traitset in unique_traitsets]
 	
 	def resolve_traits(parent, info):
 		trait_settings = [setting for setting in find_docs('TraitSettings', {'_from': parent.id})]
