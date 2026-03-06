@@ -167,6 +167,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				updateEntity(entityId: $entityId, favorite: $favorite) {
 					entity {
 						id
+						favorite
 					}
 				}
 			}`
@@ -176,6 +177,13 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			mutate({
 				entityId: entity_id,
 				favorite: !entity.value.favorite
+			}).then((response) => {
+				if(response?.data?.updateEntity?.entity) {
+					entity.value = {
+						...entity.value,
+						...response.data?.updateEntity?.entity
+					}
+				}
 			})
 		}
 	}

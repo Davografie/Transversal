@@ -117,9 +117,12 @@
 
 	// enable/disable trait edit mode
 	const mode = ref<view_modes>(props.mode ?? view_modes.Neutral)
-	// watch(() => props.mode, (newMode) => {
-	// 	mode.value = newMode ?? view_modes.Neutral
-	// })
+	watch(() => props.mode, (newMode) => {
+		if(newMode == view_modes.Editing) {
+			switch_to_editing()
+		}
+		mode.value = newMode ?? view_modes.Neutral
+	})
 
 	// true for longtaps so that normal taps/clicks don't trigger
 	const held = ref(false)

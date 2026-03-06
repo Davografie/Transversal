@@ -53,7 +53,7 @@
 		}
 		else {
 			editing.value = false
-			dicepool.pullInterval.value = 10000
+			dicepool.pullInterval.value = 20000
 		}
 	})
 
@@ -214,6 +214,9 @@
 					@animationend="phase_pulsate = false">
 					{{ editing ? 'change die' : dicepoolStore.phase.toString() }}
 				</div> -->
+				<div id="playing" :class="{ 'active': player.playing }" @click.stop="player.playing = !player.playing">
+					{{ player.playing ? '▶' : '▷' }}
+				</div>
 				<div id="dicepools" :style="{ 'background-image': dicepool.dicepool_size.value > 0 ? `url('/img/` + ruleset_logo + `.png')` : '' }">
 
 					<div id="dicepool-picker" v-if="dicepool.inResultPhase.value || dicepool.inEffectPhase.value">
@@ -415,6 +418,22 @@
 	}
 	#dicepool-collapsible {
 		background-color: var(--color-background-mute);
+		#playing {
+			text-align: center;
+			background-color: var(--color-background);
+			/* color: var(--color-); */
+			border-bottom: 1px solid var(--color-border);
+			font-size: 1.5em;
+			padding: 0 .4em;
+			float: right;
+			margin: .2em;
+			border-radius: 20%;
+			z-index: 10;
+			position: relative;
+			&.active {
+				color: var(--color-highlight);
+			}
+		}
 	}
 	#dicepools {
 		position: relative;

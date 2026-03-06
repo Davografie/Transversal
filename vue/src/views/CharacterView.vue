@@ -557,6 +557,7 @@
 <template>
 	<div id="entity-wrapper" :class="[{ 'editing': player.editing }, props.orientation]" ref="entity_wrapper">
 		<div id="portrait-lightbox" v-if="show_image" @click="show_image = false">
+			<h1>{{ character.name }}</h1>
 			<img id="portrait_large" v-if="character.image && show_image"
 				:src="img_link_large" />
 		</div>
@@ -1120,10 +1121,20 @@
 			display: flex;
 			justify-content: center;
 			align-items: center;
-		}
-		#portrait_large {
-			max-width: 100vw;
-			max-height: 100vh;
+			backdrop-filter: blur(5px);
+			h1 {
+				font-size: 20em;
+				line-height: 1;
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+			#portrait_large {
+				position: absolute;
+				max-width: 100vw;
+				max-height: 100vh;
+				border: 1em solid var(--color-text);
+			}
 		}
 		#traitsets {
 			border-bottom: 1px solid var(--color-border);

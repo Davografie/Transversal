@@ -184,6 +184,8 @@ export const usePlayerStore = defineStore(
 			}
 		})
 
+		const playing = ref(true)
+
 		function create_player() {
 			if(!uuid.value) {
 				uuid.value = uuidv4()
@@ -241,6 +243,7 @@ export const usePlayerStore = defineStore(
 			plot_points,
 			is_active_player,
 			is_gm,
+			playing,
 			session_id,
 			scene_id,
 			beat_id,
@@ -266,7 +269,8 @@ export const usePlayerStore = defineStore(
 				'player_character_key', 
 				'previous_perspective_ids',
 				'perspective_id', 
-				'is_gm', 
+				'is_gm',
+				'playing',
 				'small_buttons',
 				'data_saving',
 				'traitset_defaults',

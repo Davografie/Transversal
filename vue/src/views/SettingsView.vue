@@ -85,6 +85,7 @@
 		edit_dicepool_limit_manually.value = false
 	}
 
+	// Settings
 	const new_font_size = ref<number>(playerStore.font_size ?? 16)
 	const edit_font_size_manually = ref(false)
 	function update_font_size() {
@@ -239,6 +240,10 @@
 				<div class="setting data-saving-switcher">
 					<label for="data_saving">data saving</label>
 					<ToggleButton truthy="on" falsy="off" :default="playerStore.data_saving" @toggle="toggle_data_saving" />
+				</div>
+				<div class="setting playing-switcher">
+					<label for="playing">playing</label>
+					<ToggleButton truthy="playing" falsy="preparing" :default="playerStore.playing" @toggle="playerStore.playing = !playerStore.playing" />
 				</div>
 				<div class="setting input-switcher">
 					<label for="input_switcher">input switcher</label>

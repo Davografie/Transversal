@@ -168,6 +168,7 @@
 			&& expanded.value
 			&& location.value.key != 'placeholder'
 			&& player.the_entity?.location?.key == props.loc
+			&& player.playing
 		) {
 			console.log("polling location " + location.value.name)
 			retrieve_presence()
@@ -189,6 +190,12 @@
 	const polling_active = ref(expanded.value)
 
 	polling()
+
+	// watch(() => player.playing, (newVal, oldVal) => {
+	// 	if(newVal == true) {
+	// 		polling()
+	// 	}
+	// })
 
 	watch(() => location.value.entities, (newVal, oldVal) => {
 		if(
@@ -220,9 +227,10 @@
 				)
 				|| e.entityType == 'asset'
 				|| e.entityType == 'faction'
-			) && !(
-				e.isArchetype && player.is_player
-			)
+			) && !e.isArchetype
+			// ) && !(
+			// 	e.isArchetype && player.is_player
+			// )
 		)
 	})
 
@@ -583,6 +591,18 @@
 					<input type="text" class="header location-name-edit" v-model="new_location_name" v-if="editing_location && player.is_gm" />
 					<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
 				
+					<div class="archetypes">
+						<EntityCard
+							class="entity-card"
+							v-for="archetype in location.entities?.filter(e => e.isArchetype)"
+							:key="archetype.key"
+							:entity_id="archetype.id"
+							:show_name="false"
+							:show_archetypes="false"
+							@show_entity="(entity_key) => emit('show_entity', entity_key)"
+							override_click @click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
+								overwrite_active = archetype.id : overwrite_active = 'empty'" />
+					</div>
 					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
 						<ActiveNPC
 							class="active-npc"
@@ -882,6 +902,17 @@
 				display: flex;
 				flex-direction: column;
 				overflow-x: hidden;
+				.archetypes {
+					display: flex;
+					justify-content: space-around;
+					overflow-x: auto;
+					.entity-card {
+						width: 50px;
+						min-width: 50px;
+						height: 70px;
+						/* overflow: hidden; */
+					}
+				}
 				.active-npc-wrapper {
 					display: flex;
 					flex-direction: column;

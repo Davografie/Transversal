@@ -26,8 +26,6 @@ export function useDicepool(_polling: boolean = false) {
 
 	const resolutions_count = computed(() => dicepool.resolutions.length)
 
-	const interval = ref(10000)
-
 	const API_URL = inject<string>('API_URL')
 
 	const inAddingPhase = computed(() => dicepool.phase == dicepool.phases.ADDING)
@@ -373,12 +371,38 @@ export function useDicepool(_polling: boolean = false) {
 		mutate_trait_setting({teachTo: _character_id})
 	}
 	
+	// POLLING
+
+	const interval = ref(20000)
+
+	const polling = ref(_polling)
+
+	function pull_clock() {
+		// console.log("polling dicepool")
+		pull_dicepools()
+		if(polling.value && playerStore.playing) {
+			setTimeout(pull_clock, interval.value)
+		}
+		else {
+			console.log("stopping dicepool pull polling")
+		}
+	}
+
+	watch(() => playerStore.playing, () => {
+		if(playerStore.playing) {
+			polling.value = true
+			pull_clock()
+		} else {
+			polling.value = false
+		}
+	})
+	const url = API_URL + "get-resolutions/" + dicepool.resolutions_rev
+	const { data } = useFetch(url).get().json()
 	//	this function pulls the active dicepools from the server
 	function pull_dicepools() {
 		console.log("pulling dicepools")
 		get_session()
-		const url = API_URL + "get-resolutions/" + dicepool.resolutions_rev
-		const { data } = useFetch(url).get().json()
+		
 		watch(data, (newData) => {
 			if(newData.resolutions_rev != dicepool.resolutions_rev) {
 				console.log("dicepool polling: dicepool changed")
@@ -454,21 +478,8 @@ export function useDicepool(_polling: boolean = false) {
 
 				dicepool.resolutions_rev = newData.resolutions_rev
 			}
-		})
+		}, { once: true })
 	}
-
-	function pull_clock() {
-		console.log("dicepool polling pull clock")
-		pull_dicepools()
-		if(polling.value) {
-			setTimeout(pull_clock, interval.value)
-		}
-		else {
-			console.log("stopping dicepool pull polling")
-		}
-	}
-
-	const polling = ref(_polling)
 
 	async function clear_dicepool() {
 		console.log("clearing dicepool")

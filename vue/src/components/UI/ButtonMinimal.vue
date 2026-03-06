@@ -41,6 +41,7 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: end;
+		flex-grow: 1;
 		/* height: 100%; */
 		.icon {
 			width: 2em;

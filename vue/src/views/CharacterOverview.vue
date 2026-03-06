@@ -115,7 +115,8 @@
 			<h1>favorites</h1>
 			<div class="entities">
 				<EntityCard v-for="entity in entities.filter((e) => e.favorite)" :key="entity.key"
-					:entity_id="entity.id" @refresh_favorites="retrieve_entities" />
+					:entity_id="entity.id" @refresh_favorites="retrieve_entities"
+					override_click @click_entity="switch_character(entity)" />
 			</div>
 		</div>
 		<div id="search">

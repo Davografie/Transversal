@@ -71,6 +71,7 @@ export function useLocation(init?: Location, location_key?: string) {
 						name
 						hidden
 						entityType
+						isArchetype
 						active
 						... on Character {
 							available

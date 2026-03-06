@@ -196,7 +196,9 @@
 		}
 		// if(player.is_player) {
 		// }
-		trait_search.value = ""
+		if(!add_multiple_traits.value) {
+			trait_search.value = ""
+		}
 		setTimeout(() => retrieve_potential_traits(), 200)
 		setTimeout(() => retrieve_traitset(), 200)
 	}
@@ -215,7 +217,7 @@
 		}
 	}
 
-	const show_unavailable_traits = ref(player.is_gm)
+	const show_unavailable_traits = ref(false)
 
 	function add_trait() {
 		console.log('adding trait: ' + trait_search.value)
@@ -557,13 +559,13 @@
 						@click.stop="change_limit(-1)">
 						<!-- <div class="icon">⊖</div> -->
 						<img src="/img/icons/minus.png" class="icon" />
-						<div class="label">decrease limit</div>
+						<div class="label" v-if="!player.small_buttons">decrease limit</div>
 					</div>
 					<div type="button" class="button-mnml change-limit limit-increase"
 						@click.stop="change_limit(1)">
 						<!-- <div class="icon">⊕</div> -->
 						<img src="/img/icons/plus.png" class="icon" />
-						<div class="label">increase limit</div>
+						<div class="label" v-if="!player.small_buttons">increase limit</div>
 					</div>
 				</div>
 				<div type="button" class="button-mnml edit-traits" :class="{ 'active': edit_mode }"
@@ -690,7 +692,7 @@
 						:edit_mode="edit_mode"
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
-						:mode="view_modes.Small"
+						:mode="edit_mode ? view_modes.Editing : view_modes.Small"
 						@refetch="retrieve_traitset"
 						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
@@ -750,31 +752,34 @@
 
 
 				<div v-if="potential_traits.length == 0" class="no-results">no available traits to add</div>
+
+				<div class="controls">
 				
-				<input type="button" class="button add-trait-button"
-					:value="adding_trait ?
-						player.small_buttons ? 'x' : 'stop adding trait x' :
-						player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
-					@click="toggle_add_trait" />
-				<div class="button-mnml" @click="add_multiple_traits = !add_multiple_traits">
-					<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
-					<div class="label">add {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
-				</div>
-				<div class="trait-search" v-if="search_potential_traits_visible || potential_traits.length == 0">
-					<input class="trait-search-query" type="text" placeholder="find trait"
-						v-model="trait_search" autocomplete="off" />
-					<input type="button" class="button create-trait-button"
-						:value="'create ' + trait_search"
-						v-if="trait_search.length > 0
-							&& traits.filter(
-								t => t.name.toLowerCase() == trait_search.toLowerCase()
-							).length == 0
-							&& player.is_gm"
-						@click="add_trait" />
-				</div>
-				<div class="search-potential-trait-toggle" :class="search_potential_traits_visible ? 'active' : 'inactive'" v-if="potential_traits.length > 0">
-					<div class="button" @click="search_potential_traits_visible = true" v-if="!search_potential_traits_visible">search for trait</div>
-					<div class="button" @click="search_potential_traits_visible = false" v-else>x</div>
+					<input type="button" class="button add-trait-button"
+						:value="adding_trait ?
+							player.small_buttons ? 'x' : 'stop adding trait x' :
+							player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
+						@click="toggle_add_trait" />
+					<div class="button-mnml" @click="add_multiple_traits = !add_multiple_traits">
+						<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
+						<div class="label">adding {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
+					</div>
+					<div class="trait-search" v-if="search_potential_traits_visible || potential_traits.length == 0">
+						<input class="trait-search-query" type="text" placeholder="find trait"
+							v-model="trait_search" autocomplete="off" />
+						<input type="button" class="button create-trait-button"
+							:value="'create ' + trait_search"
+							v-if="trait_search.length > 0
+								&& traits.filter(
+									t => t.name.toLowerCase() == trait_search.toLowerCase()
+								).length == 0
+								&& player.is_gm"
+							@click="add_trait" />
+					</div>
+					<div class="search-potential-trait-toggle" :class="search_potential_traits_visible ? 'active' : 'inactive'" v-if="potential_traits.length > 0">
+						<div class="button" @click="search_potential_traits_visible = true" v-if="!search_potential_traits_visible">search for trait</div>
+						<div class="button" @click="search_potential_traits_visible = false" v-else>x</div>
+					</div>
 				</div>
 				<div class="trait-list">
 					<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
@@ -969,22 +974,26 @@
 		.add_trait {
 			text-align: center;
 			padding: 1em;
-			.trait-search {
+			.controls {
 				display: flex;
-				justify-content: center;
-				.trait-search-query {
-					font-size: 1.2em;
-					height: 2em;
-					border-radius: 10px;
-					padding: 0 1em;
-				}
-				.create-trait-button {
-					background-color: var(--color-highlight);
-					color: var(--color-highlight-text);
-					margin: 0;
-					margin-left: .2em;
-					border-radius: 0 10px 10px 0;
-					height: 2em;
+				.trait-search {
+					flex-grow: 1;
+					display: flex;
+					justify-content: center;
+					.trait-search-query {
+						font-size: 1.2em;
+						height: 2em;
+						border-radius: 10px;
+						padding: 0 1em;
+					}
+					.create-trait-button {
+						background-color: var(--color-highlight);
+						color: var(--color-highlight-text);
+						margin: 0;
+						margin-left: .2em;
+						border-radius: 0 10px 10px 0;
+						height: 2em;
+					}
 				}
 			}
 			.trait-search.creatable {
@@ -1130,13 +1139,6 @@
 			}
 		}
 	}
-	/* .traitset.gm .set-title {
-		background-color: var(--color-highlight-mute) !important;
-	}
-	.traitset.ts-complications .set-title {
-		background-color: var(--color-hitch-mute) !important;
-		color: var(--color-hitch-text);
-	} */
 </style>
 
 <style>
@@ -1247,7 +1249,7 @@
 						scroll-snap-type: x mandatory;
 						.potential-trait, .excluded-trait {
 							scroll-snap-align: center;
-							max-width: 40%;
+							/* max-width: 40%; */
 						}
 					}
 				}
@@ -1288,8 +1290,6 @@
 					background-color: var(--color-editing-mute);
 				}
 			}
-		}
-		.entity-traits {
 		}
 		&.has-image {
 			/* .traitset.active .set-title {

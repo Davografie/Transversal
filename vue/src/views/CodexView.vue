@@ -39,7 +39,7 @@
 	function poll() {
 		console.log("polling codex")
 		if(!show_players.value) retrieve_characters(true)
-		if(polling_active.value) setTimeout(poll, 15000)
+		if(polling_active.value && player.playing) setTimeout(poll, 15000)
 	}
 
 	const show_players = ref(false)
