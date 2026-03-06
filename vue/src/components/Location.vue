@@ -114,7 +114,7 @@
 
 	function update_name() {
 		update_location({ name: new_location_name.value })
-		setTimeout(() => retrieve_location(), 400)
+		// setTimeout(() => retrieve_location(), 400)
 		editing_location.value = false
 	}
 
@@ -170,7 +170,7 @@
 			&& player.the_entity?.location?.key == props.loc
 			&& player.playing
 		) {
-			console.log("polling location " + location.value.name)
+			console.log("polling location " + location.value.name + " time: " + new Date().getTime())
 			retrieve_presence()
 
 			if(

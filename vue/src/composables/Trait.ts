@@ -286,18 +286,29 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			}
 		}`
 		if(apolloClient && trait_setting_id.value && trait_setting_id.value != "placeholder") {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{traits: Trait[]}>(
-					query,
-					{ traitSettingId: trait_setting_id.value },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult?.traits[0].traitSetting) {
-					trait.value.traitSetting = newResult.traits[0].traitSetting
+			apolloClient.query({
+				query: query,
+				variables: {
+					traitSettingId: trait_setting_id.value
+				},
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				if(result.data.traits[0].traitSetting) {
+					trait.value.traitSetting = result.data.traits[0].traitSetting
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{traits: Trait[]}>(
+			// 		query,
+			// 		{ traitSettingId: trait_setting_id.value },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult?.traits[0].traitSetting) {
+			// 		trait.value.traitSetting = newResult.traits[0].traitSetting
+			// 	}
+			// })
 		}
 	}
 
@@ -312,18 +323,29 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{traits: Trait[]}>(
-					query,
-					{ traitId: trait_id.value },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					trait.value = { ...trait.value, entities: newResult.traits[0].entities }
+			apolloClient.query({
+				query: query,
+				variables: {
+					traitId: trait_id.value
+				},
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				if(result.data.traits[0].entities) {
+					trait.value.entities = result.data.traits[0].entities
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{traits: Trait[]}>(
+			// 		query,
+			// 		{ traitId: trait_id.value },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		trait.value = { ...trait.value, entities: newResult.traits[0].entities }
+			// 	}
+			// })
 		}
 	}
 
@@ -339,18 +361,29 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query,
-					{ traitId: trait_id.value },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					instances.value = newResult.traits[0].traitSettings
+			apolloClient.query({
+				query: query,
+				variables: {
+					traitId: trait_id.value
+				},
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				if(result.data.traits[0].traitSettings) {
+					instances.value = result.data.traits[0].traitSettings
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		query,
+			// 		{ traitId: trait_id.value },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		instances.value = newResult.traits[0].traitSettings
+			// 	}
+			// })
 		}
 	}
 
@@ -511,25 +544,34 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	async function retrieve_statement_examples() : Promise<string[]> {
+	async function retrieve_statement_examples() {
 		const query_get_example_statements = gql`query StatementExamples($traitId: ID) {
 			traits(traitId: $traitId) {
 				statementExamples
 			}
 		}`
 		if(apolloClient && trait_id.value) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query_get_example_statements,
-					{ traitId: trait_id.value },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			const newResult = await new Promise(resolve => {
-				watch(result, (newResult) => resolve(newResult))
+			apolloClient.query({
+				query: query_get_example_statements,
+				variables: {
+					traitId: trait_id.value
+				},
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				return result.data.traits[0].statementExamples
 			})
-			console.log("retrieved statement examples: ", newResult)
-			return newResult.traits[0].statementExamples
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		query_get_example_statements,
+			// 		{ traitId: trait_id.value },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// const newResult = await new Promise(resolve => {
+			// 	watch(result, (newResult) => resolve(newResult))
+			// })
+			// console.log("retrieved statement examples: ", newResult)
+			// return newResult.traits[0].statementExamples
 		}
 		else {
 			return []
@@ -547,17 +589,26 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			}
 		}`
 		if(apolloClient && trait_id.value) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query_get_sfxs,
-					{ traitId: trait_id.value },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				console.log("retrieved possible sfxs: ", JSON.stringify(newResult))
-				trait.value = { ...trait.value, possibleSfxs: newResult.traits[0].possibleSfxs }
+			apolloClient.query({
+				query: query_get_sfxs,
+				variables: {
+					traitId: trait_id.value
+				},
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				trait.value = { ...trait.value, possibleSfxs: result.data.traits[0].possibleSfxs }
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		query_get_sfxs,
+			// 		{ traitId: trait_id.value },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	console.log("retrieved possible sfxs: ", JSON.stringify(newResult))
+			// 	trait.value = { ...trait.value, possibleSfxs: newResult.traits[0].possibleSfxs }
+			// })
 		}
 	}
 
@@ -581,45 +632,79 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		let query = query_get_default_trait
 		let args: { traitId: string | undefined } = { traitId: trait_id.value }
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query,
-					args,
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				console.log(newResult.traits)
-				if(newResult && newResult.traits[0].defaultTraitSetting) {
-					console.log("retrieved default for trait: " + trait_id.value + ": ")
-					console.log(newResult)
-					let convertedRating = <DieType[]>[]
-					if (newResult.traits[0].defaultTraitSetting.rating) {
-						convertedRating = convert_rating_to_dice(
-							newResult.traits[0].defaultTraitSetting.rating,
-							newResult.traits[0].defaultTraitSetting.ratingType,
-							trait_id.value,
-							trait_setting_id.value,
-							undefined,
-							undefined
-						)
-					}
+			apolloClient.query({
+				query: query,
+				variables: args,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				console.log("retrieved default for trait: " + trait_id.value + ": ")
+				console.log(result)
+				let convertedRating = <DieType[]>[]
+				if (result.data.traits[0].defaultTraitSetting.rating) {
+					convertedRating = convert_rating_to_dice(
+						result.data.traits[0].defaultTraitSetting.rating,
+						result.data.traits[0].defaultTraitSetting.ratingType,
+						trait_id.value,
+						result.data.traits[0].defaultTraitSetting.id,
+						undefined,
+						undefined
+					)
+				}
+				default_settings.value = {
+					...default_settings.value,
+					...result.data.traits[0].defaultTraitSetting,
+					rating: convertedRating
+				}
+				if(!default_settings.value) {
+					console.log("no defaults found; setting default settings")
 					default_settings.value = {
-						...newResult.traits[0].defaultTraitSetting,
-						rating: convertedRating
-					}
-					if(!default_settings.value) {
-						console.log("no defaults found; setting default settings")
-						default_settings.value = {
-							ratingType: 'empty',
-							rating: [],
-							locationsEnabled: [],
-							locationsDisabled: [],
-							sfxs: []
-						}
+						ratingType: 'empty',
+						rating: [],
+						locationsEnabled: [],
+						locationsDisabled: [],
+						sfxs: []
 					}
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		query,
+			// 		args,
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	console.log(newResult.traits)
+			// 	if(newResult && newResult.traits[0].defaultTraitSetting) {
+			// 		console.log("retrieved default for trait: " + trait_id.value + ": ")
+			// 		console.log(newResult)
+			// 		let convertedRating = <DieType[]>[]
+			// 		if (newResult.traits[0].defaultTraitSetting.rating) {
+			// 			convertedRating = convert_rating_to_dice(
+			// 				newResult.traits[0].defaultTraitSetting.rating,
+			// 				newResult.traits[0].defaultTraitSetting.ratingType,
+			// 				trait_id.value,
+			// 				trait_setting_id.value,
+			// 				undefined,
+			// 				undefined
+			// 			)
+			// 		}
+			// 		default_settings.value = {
+			// 			...newResult.traits[0].defaultTraitSetting,
+			// 			rating: convertedRating
+			// 		}
+			// 		if(!default_settings.value) {
+			// 			console.log("no defaults found; setting default settings")
+			// 			default_settings.value = {
+			// 				ratingType: 'empty',
+			// 				rating: [],
+			// 				locationsEnabled: [],
+			// 				locationsDisabled: [],
+			// 				sfxs: []
+			// 			}
+			// 		}
+			// 	}
+			// })
 		}
 	}
 

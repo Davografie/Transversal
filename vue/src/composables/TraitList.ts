@@ -75,13 +75,21 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 
 			const args = { "entityId": entity_id }
 			console.log("retrieving entity traits for entity_id: " + entity_id + " with args: " + JSON.stringify(args))
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(query_get_entity_traits, args, { fetchPolicy: 'no-cache' })
-			)
-			watch(result, () => {
-				console.log("entity traits result: " + JSON.stringify(result.value.entities[0].traits))
-				traits.value = result.value.entities[0].traits
+
+			apolloClient.query({
+				query: query_get_entity_traits,
+				variables: args,
+				fetchPolicy: 'no-cache'
+			}).then((result) => {
+				traits.value = result.data.entities[0].traits
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(query_get_entity_traits, args, { fetchPolicy: 'no-cache' })
+			// )
+			// watch(result, () => {
+			// 	console.log("entity traits result: " + JSON.stringify(result.value.entities[0].traits))
+			// 	traits.value = result.value.entities[0].traits
+			// })
 		}
 	}
 
@@ -105,19 +113,34 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 				"potentialOnly": potential_only,
 				"entityId": entity_id
 			}
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(query_get_potential_entity_traits_for_traitset, args, { fetchPolicy: 'no-cache' })
-			)
-			watch(result, () => {
+
+			apolloClient.query({
+				query: query_get_potential_entity_traits_for_traitset,
+				variables: args,
+				fetchPolicy: 'no-cache'
+			}).then((result) => {
 				const { convert_rating_to_dice } = useRating()
 				let new_traits: Trait[] = []
-				for(let i = 0; i < result.value.traits.length; i++) {
-					const trait = result.value.traits[i]
+				for(let i = 0; i < result.data.traits.length; i++) {
+					const trait = result.data.traits[i]
 					trait.defaultTraitSetting.rating = convert_rating_to_dice(trait.defaultTraitSetting.rating ?? [])
 					new_traits.push(trait)
 				}
 				traits.value = new_traits
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(query_get_potential_entity_traits_for_traitset, args, { fetchPolicy: 'no-cache' })
+			// )
+			// watch(result, () => {
+			// 	const { convert_rating_to_dice } = useRating()
+			// 	let new_traits: Trait[] = []
+			// 	for(let i = 0; i < result.value.traits.length; i++) {
+			// 		const trait = result.value.traits[i]
+			// 		trait.defaultTraitSetting.rating = convert_rating_to_dice(trait.defaultTraitSetting.rating ?? [])
+			// 		new_traits.push(trait)
+			// 	}
+			// 	traits.value = new_traits
+			// })
 		}
 	}
 

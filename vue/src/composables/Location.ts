@@ -106,23 +106,33 @@ export function useLocation(init?: Location, location_key?: string) {
 			  }`
 			// console.log(get_location_query)
 			if(apolloClient) {
-				const { result } = provideApolloClient(apolloClient)(
-					() => useQuery<{locations: Location[]}>(
-						get_location_query,
-						{ locationId: location_id.value ?? 'Entities/' + location_key },
-						{ fetchPolicy: 'cache-and-network' }
-					)
-				)
-				watch(result, (newResult) => {
-					if(newResult) {
-						// console.log('retrieved location: ')
-						// console.log(newResult)
-						location.value = {
-							...location.value,
-							...newResult.locations[0]
-						}
+				apolloClient.query({
+					query: get_location_query,
+					variables: { locationId: location_id.value ?? 'Entities/' + location_key },
+					fetchPolicy: 'cache-first'
+				}).then((result) => {
+					location.value = {
+						...location.value,
+						...result.data.locations[0]
 					}
 				})
+				// const { result } = provideApolloClient(apolloClient)(
+				// 	() => useQuery<{locations: Location[]}>(
+				// 		get_location_query,
+				// 		{ locationId: location_id.value ?? 'Entities/' + location_key },
+				// 		{ fetchPolicy: 'cache-and-network' }
+				// 	)
+				// )
+				// watch(result, (newResult) => {
+				// 	if(newResult) {
+				// 		// console.log('retrieved location: ')
+				// 		// console.log(newResult)
+				// 		location.value = {
+				// 			...location.value,
+				// 			...newResult.locations[0]
+				// 		}
+				// 	}
+				// })
 			}
 		}
 	}
@@ -143,22 +153,33 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		  }`
 		if(apolloClient && location_key && location_key != 'placeholder') {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{locations: Location[]}>(
-					get_location_query,
-					{ locationId: location_id.value ?? 'Entities/' + location_key },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					location.value = {
-						...location.value,
-						parent: newResult.locations[0].parent,
-						parents: newResult.locations[0].parents
-					}
+			apolloClient.query({
+				query: get_location_query,
+				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					parent: result.data.locations[0].parent,
+					parents: result.data.locations[0].parents
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{locations: Location[]}>(
+			// 		get_location_query,
+			// 		{ locationId: location_id.value ?? 'Entities/' + location_key },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		location.value = {
+			// 			...location.value,
+			// 			parent: newResult.locations[0].parent,
+			// 			parents: newResult.locations[0].parents
+			// 		}
+			// 	}
+			// })
 		}
 	}
 
@@ -173,21 +194,31 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		  }`
 		if(apolloClient && location_key && location_key != 'placeholder') {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{locations: Location[]}>(
-					get_location_query,
-					{ locationId: location_id.value ?? 'Entities/' + location_key },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					location.value = {
-						...location.value,
-						...newResult.locations[0]
-					}
+			apolloClient.query({
+				query: get_location_query,
+				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					...result.data.locations[0]
 				}
-			}, { once: true })
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{locations: Location[]}>(
+			// 		get_location_query,
+			// 		{ locationId: location_id.value ?? 'Entities/' + location_key },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		location.value = {
+			// 			...location.value,
+			// 			...newResult.locations[0]
+			// 		}
+			// 	}
+			// }, { once: true })
 		}
 	}
 
@@ -202,21 +233,31 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		  }`
 		if(apolloClient && location_key && location_key != 'placeholder') {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{locations: Location[]}>(
-					get_location_query,
-					{ locationId: location_id.value ?? 'Entities/' + location_key },
-					// { fetchPolicy: 'no-cache' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					location.value = {
-						...location.value,
-						...newResult.locations[0]
-					}
+			apolloClient.query({
+				query: get_location_query,
+				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					...result.data.locations[0]
 				}
-			}, { once: true })
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{locations: Location[]}>(
+			// 		get_location_query,
+			// 		{ locationId: location_id.value ?? 'Entities/' + location_key },
+			// 		// { fetchPolicy: 'no-cache' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		location.value = {
+			// 			...location.value,
+			// 			...newResult.locations[0]
+			// 		}
+			// 	}
+			// }, { once: true })
 		}
 	}
 
@@ -241,25 +282,35 @@ export function useLocation(init?: Location, location_key?: string) {
 				console.warn('retrieve_small_location: location key is placeholder')
 				return
 			}
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{locations: Location[]}>(
-					get_location_query,
-					{ locationId: location_id.value ?? 'Entities/' + location_key },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					// console.log('retrieved location: ')
-					// console.log(newResult)
-					// location.value = newResult.locations[0]
-					location.value = {
-						...location.value,
-						...newResult.locations[0]
-					}
+			apolloClient.query({
+				query: get_location_query,
+				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					...result.data.locations[0]
 				}
-			},
-			{ once: true })
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{locations: Location[]}>(
+			// 		get_location_query,
+			// 		{ locationId: location_id.value ?? 'Entities/' + location_key },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		// console.log('retrieved location: ')
+			// 		// console.log(newResult)
+			// 		// location.value = newResult.locations[0]
+			// 		location.value = {
+			// 			...location.value,
+			// 			...newResult.locations[0]
+			// 		}
+			// 	}
+			// },
+			// { once: true })
 		}
 	}
 
@@ -281,18 +332,28 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{locations: Location[]}>(
-					get_location_query,
-					{ locationId: 'Entities/' + location_key },
-					{ fetchPolicy: 'no-cache' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult && newResult.locations[0].entities && location.value.entities != newResult.locations[0].entities) {
-					location.value = { ...location.value, ...newResult.locations[0]}
+			apolloClient.query({
+				query: get_location_query,
+				variables: { locationId: 'Entities/' + location_key },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					...result.data.locations[0]
 				}
-			}, { once: true })
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{locations: Location[]}>(
+			// 		get_location_query,
+			// 		{ locationId: 'Entities/' + location_key },
+			// 		{ fetchPolicy: 'no-cache' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult && newResult.locations[0].entities && location.value.entities != newResult.locations[0].entities) {
+			// 		location.value = { ...location.value, ...newResult.locations[0]}
+			// 	}
+			// }, { once: true })
 		}
 	}
 
@@ -330,21 +391,31 @@ export function useLocation(init?: Location, location_key?: string) {
 				}
 			}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{locations: Location[]}>(
-					get_location_query,
-					{ locationId: location_id.value ?? 'Entities/' + location_key },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					location.value = { 
-						...location.value,
-						...newResult.locations[0]
-					}
+			apolloClient.query({
+				query: get_location_query,
+				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					...result.data.locations[0]
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{locations: Location[]}>(
+			// 		get_location_query,
+			// 		{ locationId: location_id.value ?? 'Entities/' + location_key },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		location.value = { 
+			// 			...location.value,
+			// 			...newResult.locations[0]
+			// 		}
+			// 	}
+			// })
 		}
 	}
 
@@ -365,6 +436,8 @@ export function useLocation(init?: Location, location_key?: string) {
 				updateLocation(locationId: $locationId, locationInput: $locationInput) {
 					location {
 						id
+						name
+						description
 					}
 				}
 			}`
@@ -375,6 +448,11 @@ export function useLocation(init?: Location, location_key?: string) {
 			mutate({
 				locationId: location.value.id,
 				locationInput: input
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					...result.data.updateLocation.location
+				}
 			})
 		}
 	}

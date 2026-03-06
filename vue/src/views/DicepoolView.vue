@@ -67,8 +67,32 @@
 		emit('expand')
 	}
 
-	console.log("starting dicepool polling")
+	// console.log("starting dicepool polling")
+	// dicepool.pull_clock()
+
+	// const time_until_next_poll = computed(() => {
+	// 	return dicepool.pullInterval.value - (Date.now() - dicepool.last_poll_timestamp.value)
+	// })
+
+	// const css_pull_timer = computed<number>(() => {
+	// 	// uses dicepool.pullInterval and dicepool.time_until_next_poll to determine the pull timer
+	// 	// returns percentile
+	// 	return time_until_next_poll.value / dicepool.pullInterval.value * 100
+	// })
+
 	dicepool.pull_clock()
+	const polling = ref(true)
+	const time_until_next_poll = ref(0)
+	const time_until_next_poll_percentile = computed(() => {
+		return time_until_next_poll.value / dicepool.pullInterval.value * 100
+	})
+	function poll() {
+		if(polling) {
+			time_until_next_poll.value = dicepool.pullInterval.value - (Date.now() - dicepool.last_poll_timestamp.value)
+		}
+		setTimeout(poll, 1500)
+	}
+	poll()
 
 	function click_die(die: DieType) {
 		if(!held.value) {
@@ -207,6 +231,9 @@
 				<div id="dicepool-title" class="header" v-else>
 					{{ dicepoolStore.phase.toString() }}
 				</div>
+			</div>
+			<div id="poll-timer-wrapper">
+				<div id="poll-timer">{{ time_until_next_poll }}ms</div>
 			</div>
 			<div id="dicepool-collapsible" v-if="props.expanded">
 				<SessionControl v-if="player.is_gm" />
@@ -415,6 +442,15 @@
 	#dicepool.expanded .title {
 		border-bottom: 1px solid var(--color-border);
 		font-size: 1.5em;
+	}
+	#poll-timer-wrapper {
+		background-color: var(--color-border);
+		#poll-timer {
+			width: v-bind(time_until_next_poll_percentile + '%');
+			height: 4px;
+			background-color: var(--color-highlight);
+			transition: width 1.5s;
+		}
 	}
 	#dicepool-collapsible {
 		background-color: var(--color-background-mute);

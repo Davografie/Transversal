@@ -37,7 +37,7 @@
 	const polling_active = ref(player.is_gm)
 
 	function poll() {
-		console.log("polling codex")
+		console.log("polling codex, time: " + new Date().getTime())
 		if(!show_players.value) retrieve_characters(true)
 		if(polling_active.value && player.playing) setTimeout(poll, 15000)
 	}

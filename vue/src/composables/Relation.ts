@@ -42,20 +42,27 @@ export function useRelation(init?: Relation, relation_id?: string) {
 					favorite
 				}
 			}`
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{relations: Relation[]}>(
-					query_get_character,
-					{ relationId: relation_id },
-					{ fetchPolicy: 'no-cache' }
-				)
-			)
-			watch(result, (newResult) => {
-				console.log('retrieved relation: ')
-				console.log(newResult)
-				if(newResult && newResult.relations.length > 0) {
-					relation.value = newResult.relations[0]
-				}
+			apolloClient.query({
+				query: query_get_character,
+				variables: { relationId: relation_id },
+				fetchPolicy: 'no-cache'
+			}).then((result) => {
+				relation.value = result.data.relations[0]
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{relations: Relation[]}>(
+			// 		query_get_character,
+			// 		{ relationId: relation_id },
+			// 		{ fetchPolicy: 'no-cache' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	console.log('retrieved relation: ')
+			// 	console.log(newResult)
+			// 	if(newResult && newResult.relations.length > 0) {
+			// 		relation.value = newResult.relations[0]
+			// 	}
+			// })
 		}
 	}
 

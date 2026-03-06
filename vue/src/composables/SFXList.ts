@@ -26,20 +26,26 @@ export function useSFXList() {
 		}`
 
 		if(apolloClient) {
-			const { result, refetch } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query_get_sfx_list,
-					null,
-					{ fetchPolicy: 'cache-first' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult && newResult.sfxs) {
-					sfx_list.value = newResult.sfxs
-				}
-			},
-			{ immediate: true })
-			refetch()
+			apolloClient.query({
+				query: query_get_sfx_list,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				sfx_list.value = result.data.sfxs
+			})
+			// const { result, refetch } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		query_get_sfx_list,
+			// 		null,
+			// 		{ fetchPolicy: 'cache-first' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult && newResult.sfxs) {
+			// 		sfx_list.value = newResult.sfxs
+			// 	}
+			// },
+			// { immediate: true })
+			// refetch()
 		}
 	}
 

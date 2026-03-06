@@ -32,20 +32,28 @@ export function useSFX(init?: SFX, sfx_id?: string) {
 			}`
 			// console.log(get_sfx_query)
 			if(apolloClient) {
-				const { result } = provideApolloClient(apolloClient)(
-					() => useQuery<{sfxs: SFX[]}>(
-						get_sfx_query,
-						{ sfxId: sfx_id }
-					)
-				)
-				watch(result, (newResult) => {
-					if(newResult) {
-						// console.log('retrieved sfx: ')
-						// console.log(newResult)
-						sfx.value = newResult.sfxs[0]
+				apolloClient.query({
+					query: get_sfx_query,
+					variables: {
+						sfxId: sfx_id
 					}
-				},
-				{ immediate: true })
+				}).then((result) => {
+					sfx.value = result.data.sfxs[0]
+				})
+				// const { result } = provideApolloClient(apolloClient)(
+				// 	() => useQuery<{sfxs: SFX[]}>(
+				// 		get_sfx_query,
+				// 		{ sfxId: sfx_id }
+				// 	)
+				// )
+				// watch(result, (newResult) => {
+				// 	if(newResult) {
+				// 		// console.log('retrieved sfx: ')
+				// 		// console.log(newResult)
+				// 		sfx.value = newResult.sfxs[0]
+				// 	}
+				// },
+				// { immediate: true })
 			}
 		}
 	}
@@ -60,21 +68,34 @@ export function useSFX(init?: SFX, sfx_id?: string) {
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{sfxs: SFX[]}>(
-					query,
-					{ sfxId: sfx_id }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult?.sfxs[0] && newResult.sfxs[0].traits) {
+			apolloClient.query({
+				query: query,
+				variables: {
+					sfxId: sfx_id
+				}
+			}).then((result) => {
+				if(result.data.sfxs[0] && result.data.sfxs[0].traits) {
 					sfx.value = {
 						...sfx.value,
-						traits: newResult.sfxs[0].traits
+						traits: result.data.sfxs[0].traits
 					}
 				}
-			},
-			{ immediate: true })
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{sfxs: SFX[]}>(
+			// 		query,
+			// 		{ sfxId: sfx_id }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult?.sfxs[0] && newResult.sfxs[0].traits) {
+			// 		sfx.value = {
+			// 			...sfx.value,
+			// 			traits: newResult.sfxs[0].traits
+			// 		}
+			// 	}
+			// },
+			// { immediate: true })
 		}
 	}
 

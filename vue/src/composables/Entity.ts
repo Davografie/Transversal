@@ -104,19 +104,30 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query,
-					{ entityId: entity_id },
-					{ fetchPolicy: 'no-cache' }
-				)
-			)
-			watch(result, () => {
+			apolloClient.query({
+				query: query,
+				variables: { entityId: entity_id },
+				fetchPolicy: 'no-cache'
+			})
+			.then((result) => {
 				entity.value = {
 					...entity.value,
-					...result.value.entities[0]
+					...result.data.entities[0]
 				}
 			})
+		// 	const { result } = provideApolloClient(apolloClient)(
+		// 		() => useQuery(
+		// 			query,
+		// 			{ entityId: entity_id },
+		// 			{ fetchPolicy: 'no-cache' }
+		// 		)
+		// 	)
+		// 	watch(result, () => {
+		// 		entity.value = {
+		// 			...entity.value,
+		// 			...result.value.entities[0]
+		// 		}
+		// 	})
 		}
 	}
 
@@ -146,19 +157,29 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && !entity_id.endsWith('undefined')) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					small_entity_query,
-					{ entityId: entity_id },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, () => {
+			apolloClient.query({
+				query: small_entity_query,
+				variables: { entityId: entity_id },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
 				entity.value = {
 					...entity.value,
-					...result.value.entities[0]
+					...result.data.entities[0]
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		small_entity_query,
+			// 		{ entityId: entity_id },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, () => {
+			// 	entity.value = {
+			// 		...entity.value,
+			// 		...result.value.entities[0]
+			// 	}
+			// })
 		}
 	}
 
@@ -204,19 +225,29 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					relations_query,
-					{ entityId: entity_id },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, () => {
+			apolloClient.query({
+				query: relations_query,
+				variables: { entityId: entity_id },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
 				entity.value = {
 					...entity.value,
-					...result.value.entities[0]
+					...result.data.entities[0]
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		relations_query,
+			// 		{ entityId: entity_id },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, () => {
+			// 	entity.value = {
+			// 		...entity.value,
+			// 		...result.value.entities[0]
+			// 	}
+			// })
 		}
 	}
 
@@ -233,19 +264,29 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					followers_query,
-					{ entityId: entity_id },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, () => {
+			apolloClient.query({
+				query: followers_query,
+				variables: { entityId: entity_id },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
 				entity.value = {
 					...entity.value,
-					...result.value.entities[0]
+					...result.data.entities[0]
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		followers_query,
+			// 		{ entityId: entity_id },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, () => {
+			// 	entity.value = {
+			// 		...entity.value,
+			// 		...result.value.entities[0]
+			// 	}
+			// })
 		}
 	}
 
@@ -263,21 +304,31 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					archetypes_query,
-					{ entityId: entity_id },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, () => {
-				console.log('entity archetypes result', result.value.entities[0])
+			apolloClient.query({
+				query: archetypes_query,
+				variables: { entityId: entity_id },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
 				entity.value = {
 					...entity.value,
-					...result.value.entities[0]
+					...result.data.entities[0]
 				}
-				console.log("entity result", entity.value)
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		archetypes_query,
+			// 		{ entityId: entity_id },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, () => {
+			// 	console.log('entity archetypes result', result.value.entities[0])
+			// 	entity.value = {
+			// 		...entity.value,
+			// 		...result.value.entities[0]
+			// 	}
+			// 	console.log("entity result", entity.value)
+			// })
 		}
 	}
 
@@ -294,19 +345,29 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					instances_query,
-					{ entityId: entity_id },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, () => {
+			apolloClient.query({
+				query: instances_query,
+				variables: { entityId: entity_id },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
 				entity.value = {
 					...entity.value,
-					...result.value.entities[0]
+					...result.data.entities[0]
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		instances_query,
+			// 		{ entityId: entity_id },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, () => {
+			// 	entity.value = {
+			// 		...entity.value,
+			// 		...result.value.entities[0]
+			// 	}
+			// })
 		}
 	}
 

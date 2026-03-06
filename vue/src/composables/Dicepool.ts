@@ -28,6 +28,10 @@ export function useDicepool(_polling: boolean = false) {
 
 	const API_URL = inject<string>('API_URL')
 
+	onUnmounted(() => {
+		polling.value = false
+	})
+
 	const inAddingPhase = computed(() => dicepool.phase == dicepool.phases.ADDING)
 	const inResultPhase = computed(() => dicepool.phase == dicepool.phases.RESULT)
 	const inEffectPhase = computed(() => dicepool.phase == dicepool.phases.EFFECT)
@@ -324,7 +328,7 @@ export function useDicepool(_polling: boolean = false) {
 	}
 	
 	//	this function pushes the current player's dicepool to the server
-	function push_dicepool() {
+	async function push_dicepool() {
 		const resolution: Resolution = {
 			player: {
 				uuid: playerStore.uuid || "",
@@ -334,32 +338,31 @@ export function useDicepool(_polling: boolean = false) {
 			},
 			dice: dicepool.dice
 		}
-		const url = API_URL + "set-dicepool/" + playerStore.uuid
-		const { data } = useFetch(url).post(resolution).json()
-		watch(data, (newData) => {
-			console.log("resolution data set update: ", newData)
-			if(newData && newData.resolutions) {
-				dicepool.resolutions = newData.resolutions
+		const url_set_dicepool = API_URL + "set-dicepool/" + playerStore.uuid
+		const { data } = await useFetch(url_set_dicepool).post(resolution).json()
+		if(data.value) {
+			console.log("resolution data set update: ", data.value)
+			if(data.value.resolutions) {
+				dicepool.resolutions = data.value.resolutions
 			}
 			else {
-				console.log("set dicepool fetch error: ", newData)
+				console.log("set dicepool fetch error: ", data.value)
 			}
-		})
+		}
 	}
 
-	function push_complications() {
-		const url = API_URL + "add-complications/" + playerStore.uuid
-		const { data } = useFetch(url).post({complications: dicepool.complications}).json()
-		
-		watch(data, (newData) => {
-			console.log("complication push data update: ", newData)
-			if(newData && newData.complication_pool) {
-				dicepool.complications = newData.complication_pool.map((cp: any) => cp.complications)
+	async function push_complications() {
+		const url_push_complications = API_URL + "add-complications/" + playerStore.uuid
+		const { data } = await useFetch(url_push_complications).post({complications: dicepool.complications}).json()
+		if(data.value) {
+			console.log("complication push data update: ", data.value)
+			if(data.value.complication_pool) {
+				dicepool.complications = data.value.complication_pool.map((cp: any) => cp.complications)
 			}
 			else {
-				console.log("add complication fetch error: ", newData)
+				console.log("add complication fetch error: ", data.value)
 			}
-		})
+		}
 	}
 
 	async function teach_character(_trait_setting_id: string, _character_id: string) {
@@ -376,11 +379,13 @@ export function useDicepool(_polling: boolean = false) {
 	const interval = ref(20000)
 
 	const polling = ref(_polling)
+	const last_poll_timestamp = ref(0)
 
 	function pull_clock() {
 		// console.log("polling dicepool")
-		pull_dicepools()
 		if(polling.value && playerStore.playing) {
+			pull_dicepools()
+			last_poll_timestamp.value = Date.now()
 			setTimeout(pull_clock, interval.value)
 		}
 		else {
@@ -388,22 +393,34 @@ export function useDicepool(_polling: boolean = false) {
 		}
 	}
 
+	// // this function returns the time until the next dicepool pull in milliseconds
+	// const time_until_next_poll = computed(() => {
+	// 	if(polling.value) {
+	// 		return interval.value - (Date.now() - last_poll_timestamp.value)
+	// 	}
+	// 	else {
+		// 		return 0
+	// 	}
+	// })
+	// pull_clock()
+
 	watch(() => playerStore.playing, () => {
 		if(playerStore.playing) {
 			polling.value = true
-			pull_clock()
 		} else {
 			polling.value = false
 		}
 	})
-	const url = API_URL + "get-resolutions/" + dicepool.resolutions_rev
-	const { data } = useFetch(url).get().json()
+
 	//	this function pulls the active dicepools from the server
-	function pull_dicepools() {
+	async function pull_dicepools() {
 		console.log("pulling dicepools")
 		get_session()
 		
-		watch(data, (newData) => {
+		const url_get_resolutions = API_URL + "get-resolutions/" + dicepool.resolutions_rev
+		const { data } = await useFetch(url_get_resolutions).get().json()
+		if(data.value) {
+			const newData = data.value
 			if(newData.resolutions_rev != dicepool.resolutions_rev) {
 				console.log("dicepool polling: dicepool changed")
 				
@@ -478,7 +495,7 @@ export function useDicepool(_polling: boolean = false) {
 
 				dicepool.resolutions_rev = newData.resolutions_rev
 			}
-		}, { once: true })
+		}
 	}
 
 	async function clear_dicepool() {
@@ -513,8 +530,8 @@ export function useDicepool(_polling: boolean = false) {
 	//	this function clears all dicepools on the server, only for GM
 	function clear_dicepools() {
 		console.log("clearing all dicepools")
-		const url = API_URL + "reset-dicepool"
-		const { data } = useFetch(url).post().json()
+		const url_reset = API_URL + "reset-dicepool"
+		const { data } = useFetch(url_reset).post().json()
 		watch(data, (newData) => {
 			console.log("resolution data update: ", newData)
 			if(newData && newData.success) {
@@ -526,10 +543,6 @@ export function useDicepool(_polling: boolean = false) {
 			}
 		})
 	}
-
-	onUnmounted(() => {
-		polling.value = false
-	})
 
 	return {
 		resolutions_count,
@@ -573,6 +586,7 @@ export function useDicepool(_polling: boolean = false) {
 		pull_clock,
 		polling,
 		pullInterval: interval,
+		last_poll_timestamp,
 		clear_dicepool,
 		clear_dicepools
 	}

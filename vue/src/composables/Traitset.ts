@@ -138,20 +138,29 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			}
 			// console.log("query: " + query + ", args: " + JSON.stringify(args))
 			if(apolloClient) {
-				const { result } = provideApolloClient(apolloClient)(
-					() => useQuery<{traitsets: Traitset[]}>(
-						query,
-						args,
-						{ fetchPolicy: 'cache-and-network' }
-					)
-				)
-				watch(result, (newResult) => {
-					if(newResult && newResult.traitsets.length > 0) {
-						// console.log("retrieved traitset: ")
-						// console.log(newResult)
-						traitset.value = newResult.traitsets[0]
-					}
+				apolloClient.query({
+					query: query,
+					variables: args,
+					fetchPolicy: 'cache-first'
+				}).then((result) => {
+					// console.log("retrieved traitset: ")
+					// console.log(result)
+					traitset.value = result.data.traitsets[0]
 				})
+				// const { result } = provideApolloClient(apolloClient)(
+				// 	() => useQuery<{traitsets: Traitset[]}>(
+				// 		query,
+				// 		args,
+				// 		{ fetchPolicy: 'cache-and-network' }
+				// 	)
+				// )
+				// watch(result, (newResult) => {
+				// 	if(newResult && newResult.traitsets.length > 0) {
+				// 		// console.log("retrieved traitset: ")
+				// 		// console.log(newResult)
+				// 		traitset.value = newResult.traitsets[0]
+				// 	}
+				// })
 			}
 		}
 	}
@@ -178,33 +187,55 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		let args: { traitsetId: string | undefined } = { traitsetId: traitset_id }
 		// console.log("query: " + query + ", args: " + JSON.stringify(args))
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<default_trait_data>(
-					query,
-					args,
-					{ fetchPolicy: 'cache-and-network' }
+			apolloClient.query({
+				query: query,
+				variables: args,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				// console.log("retrieved default trait for traitset: " + JSON.stringify(result.data.traitsets[0].defaultTraitSetting))
+				const { convert_rating_to_dice } = useRating()
+				const default_rating = convert_rating_to_dice(
+					result.data.traitsets[0].defaultTraitSetting.rating,
+					result.data.traitsets[0].defaultTraitSetting.ratingType,
+					undefined,
+					undefined,
+					traitset_id,
+					undefined
 				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					// console.log("retrieved default trait for traitset: " + JSON.stringify(newResult.traitsets[0].defaultTraitSetting))
-					const { convert_rating_to_dice } = useRating()
-					const default_rating = convert_rating_to_dice(
-						newResult.traitsets[0].defaultTraitSetting.rating,
-						newResult.traitsets[0].defaultTraitSetting.ratingType,
-						undefined,
-						undefined,
-						traitset_id,
-						undefined
-					)
-					// console.log(default_rating)
-					default_settings.value = {
-						...default_settings.value,
-						...newResult.traitsets[0].defaultTraitSetting,
-						rating: default_rating
-					}
+				// console.log(default_rating)
+				default_settings.value = {
+					...default_settings.value,
+					...result.data.traitsets[0].defaultTraitSetting,
+					rating: default_rating
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<default_trait_data>(
+			// 		query,
+			// 		args,
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		// console.log("retrieved default trait for traitset: " + JSON.stringify(newResult.traitsets[0].defaultTraitSetting))
+			// 		const { convert_rating_to_dice } = useRating()
+			// 		const default_rating = convert_rating_to_dice(
+			// 			newResult.traitsets[0].defaultTraitSetting.rating,
+			// 			newResult.traitsets[0].defaultTraitSetting.ratingType,
+			// 			undefined,
+			// 			undefined,
+			// 			traitset_id,
+			// 			undefined
+			// 		)
+			// 		// console.log(default_rating)
+			// 		default_settings.value = {
+			// 			...default_settings.value,
+			// 			...newResult.traitsets[0].defaultTraitSetting,
+			// 			rating: default_rating
+			// 		}
+			// 	}
+			// })
 		}
 	}
 

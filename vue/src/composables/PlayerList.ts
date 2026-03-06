@@ -16,17 +16,23 @@ export function usePlayerList() {
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query,
-					null,
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				console.log('retrieved players: ', newResult)
-				players.value = newResult.players
+			apolloClient.query({
+				query: query,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				players.value = result.data.players
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		query,
+			// 		null,
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	console.log('retrieved players: ', newResult)
+			// 	players.value = newResult.players
+			// })
 		}
 	}
 

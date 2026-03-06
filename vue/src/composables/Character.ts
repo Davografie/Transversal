@@ -102,20 +102,26 @@ export function useCharacter(init?: Character, character_key?: string) {
 					}
 				}
 			}`
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{characters: Entity[]}>(
-					query_get_character,
-					null,
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				console.log('retrieved character: ')
-				console.log(newResult)
-				if(newResult?.characters && newResult.characters.length > 0) {
-					character.value = newResult.characters[0]
-				}
+			apolloClient.query({
+				query: query_get_character,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				character.value = result.data.characters[0]
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{characters: Entity[]}>(
+			// 		query_get_character,
+			// 		null,
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	console.log('retrieved character: ')
+			// 	console.log(newResult)
+			// 	if(newResult?.characters && newResult.characters.length > 0) {
+			// 		character.value = newResult.characters[0]
+			// 	}
+			// })
 		}
 	}
 
@@ -135,21 +141,31 @@ export function useCharacter(init?: Character, character_key?: string) {
 		}`
 
 		if(apolloClient && character_key) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					relations_query,
-					{ characterKey: character_key },
-					{ fetchPolicy: 'no-cache' }
-				)
-			)
-			watch(result, () => {
-				if(result.value.characters?.length > 0) {
-					character.value = {
-						...character.value,
-						...result.value.characters[0]
-					}
+			apolloClient.query({
+				query: relations_query,
+				variables: { characterKey: character_key },
+				fetchPolicy: 'no-cache'
+			}).then((result) => {
+				character.value = {
+					...character.value,
+					...result.data.characters[0]
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		relations_query,
+			// 		{ characterKey: character_key },
+			// 		{ fetchPolicy: 'no-cache' }
+			// 	)
+			// )
+			// watch(result, () => {
+			// 	if(result.value.characters?.length > 0) {
+			// 		character.value = {
+			// 			...character.value,
+			// 			...result.value.characters[0]
+			// 		}
+			// 	}
+			// })
 		}
 	}
 

@@ -27,15 +27,20 @@ export function useLocationList(init?: Location[], locales?: boolean, zones?: bo
         }`
         const apolloClient: ApolloClient<any>|undefined = inject('apolloClient')
         if(apolloClient) {
-            const { result } = provideApolloClient(apolloClient)(
-                () => useQuery<{locations: Location[]}>(get_locations_query)
-            )
-            watch(result, (newResult) => {
-                if(newResult) {
-                    locations.value = newResult.locations
-                }
-            },
-            { immediate: true })
+            apolloClient.query({
+                query: get_locations_query
+            }).then((result) => {
+                locations.value = result.data.locations
+            })
+            // const { result } = provideApolloClient(apolloClient)(
+            //     () => useQuery<{locations: Location[]}>(get_locations_query)
+            // )
+            // watch(result, (newResult) => {
+            //     if(newResult) {
+            //         locations.value = newResult.locations
+            //     }
+            // },
+            // { immediate: true })
         }
     }
 

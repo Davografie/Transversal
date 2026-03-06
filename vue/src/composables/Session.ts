@@ -12,7 +12,7 @@ export function useSession() {
 	const player = usePlayerStore()
 	const dicepool_store = useDicepoolStore()
 
-	function get_session() {
+	async function get_session() {
 		const query = gql`query getSession {
 			session {
 				session
@@ -21,16 +21,24 @@ export function useSession() {
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{session: Session}>(query, {}, { fetchPolicy: 'no-cache' })
-			)
-			watch(result, (newResult) => {
-				if(newResult?.session) {
-					player.session_id = newResult.session.session
-					player.scene_id = newResult.session.scene
-					player.beat_id = newResult.session.beat
-				}
-			}, { once: true })
+			apolloClient.query({
+				query: query,
+				fetchPolicy: 'no-cache'
+			}).then((result) => {
+				player.session_id = result.data.session.session
+				player.scene_id = result.data.session.scene
+				player.beat_id = result.data.session.beat
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{session: Session}>(query, {}, { fetchPolicy: 'no-cache' })
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult?.session) {
+			// 		player.session_id = newResult.session.session
+			// 		player.scene_id = newResult.session.scene
+			// 		player.beat_id = newResult.session.beat
+			// 	}
+			// }, { once: true })
 		}
 	}
 
@@ -41,14 +49,20 @@ export function useSession() {
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{session: Session}>(query, {}, { fetchPolicy: 'cache-and-network' })
-			)
-			watch(result, (newResult) => {
-				if(newResult?.session) {
-					dicepool_store.dicepool_limit = newResult.session.dicepoolLimit
-				}
+			apolloClient.query({
+				query: query,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				dicepool_store.dicepool_limit = result.data.session.dicepoolLimit
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{session: Session}>(query, {}, { fetchPolicy: 'cache-and-network' })
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult?.session) {
+			// 		dicepool_store.dicepool_limit = newResult.session.dicepoolLimit
+			// 	}
+			// })
 		}
 	}
 

@@ -32,19 +32,26 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 		}`
 		const variables = { "entityType": entityType }
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{entities: Entity[]}>(
-					get_entities_query,
-					variables,
-					{ fetchPolicy: 'no-cache' }
-				)
-			)
-			// const { result } = useQuery(get_entities_query, null, { fetchPolicy: 'cache-and-network' })
-			watch(result, (newResult) => {
-				if(newResult) {
-					entities.value = newResult.entities
-				}
-			}, { immediate: true })
+			apolloClient.query({
+				query: get_entities_query,
+				variables,
+				fetchPolicy: 'no-cache'
+			}).then((result) => {
+				entities.value = result.data.entities
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{entities: Entity[]}>(
+			// 		get_entities_query,
+			// 		variables,
+			// 		{ fetchPolicy: 'no-cache' }
+			// 	)
+			// )
+			// // const { result } = useQuery(get_entities_query, null, { fetchPolicy: 'cache-and-network' })
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		entities.value = newResult.entities
+			// 	}
+			// }, { immediate: true })
 		}
 	}
 
@@ -67,23 +74,35 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			"isArchetype": true
 		}
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{entities: Entity[]}>(
-					get_archetypes_query,
-					variables,
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					if(entity_type != '' && entity_type != 'npc') {
-						entities.value = newResult.entities
-					}
-					else {
-						entities.value = newResult.entities.filter((e) => ['character', 'npc'].includes(e.entityType))
-					}
+			apolloClient.query({
+				query: get_archetypes_query,
+				variables,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				if(entity_type != '' && entity_type != 'npc') {
+					entities.value = result.data.entities
 				}
-			}, { immediate: true })
+				else {
+					entities.value = result.data.entities.filter((e: Entity) => ['character', 'npc'].includes(e.entityType))
+				}
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{entities: Entity[]}>(
+			// 		get_archetypes_query,
+			// 		variables,
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		if(entity_type != '' && entity_type != 'npc') {
+			// 			entities.value = newResult.entities
+			// 		}
+			// 		else {
+			// 			entities.value = newResult.entities.filter((e) => ['character', 'npc'].includes(e.entityType))
+			// 		}
+			// 	}
+			// }, { immediate: true })
 		}
 	}
 
@@ -104,18 +123,25 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{entities: Entity[]}>(
-					search_entities_query,
-					{ search: query },
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					entities.value = newResult.entities
-				}
-			}, { immediate: true })
+			apolloClient.query({
+				query: search_entities_query,
+				variables: { search: query },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				entities.value = result.data.entities
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{entities: Entity[]}>(
+			// 		search_entities_query,
+			// 		{ search: query },
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		entities.value = newResult.entities
+			// 	}
+			// }, { immediate: true })
 		}
 	}
 
@@ -133,18 +159,25 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 		}`
 		const args = { "available": available ?? false }
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{characters: Entity[]}>(
-					query,
-					args,
-					{ fetchPolicy: 'cache-and-network' }
-				)
-			)
-			watch(result, (newResult) => {
-				if(newResult && entities.value != newResult.characters) {
-					entities.value = newResult.characters
-				}
-			}, { once: true })
+			apolloClient.query({
+				query: query,
+				variables: args,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				entities.value = result.data.characters
+			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{characters: Entity[]}>(
+			// 		query,
+			// 		args,
+			// 		{ fetchPolicy: 'cache-and-network' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult && entities.value != newResult.characters) {
+			// 		entities.value = newResult.characters
+			// 	}
+			// }, { once: true })
 		}
 	}
 

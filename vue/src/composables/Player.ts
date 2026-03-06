@@ -34,17 +34,24 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 			}
 		}`
 		if(apolloClient && _player_id) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery(
-					query,
-					{ playerId: _player_id },
-					{ fetchPolicy: 'no-cache' }
-				)
-			)
-			watch(result, (newResult) => {
-				console.log('retrieved player: ', newResult)
-				player.value = newResult.players[0]
+			apolloClient.query({
+				query: query,
+				variables: { playerId: _player_id },
+				fetchPolicy: 'no-cache'
+			}).then((result) => {
+				player.value = result.data.players[0]
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery(
+			// 		query,
+			// 		{ playerId: _player_id },
+			// 		{ fetchPolicy: 'no-cache' }
+			// 	)
+			// )
+			// watch(result, (newResult) => {
+			// 	console.log('retrieved player: ', newResult)
+			// 	player.value = newResult.players[0]
+			// })
 		}
 	}
 

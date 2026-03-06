@@ -54,16 +54,25 @@ export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_ty
 		// const parameters = entity_id ? { traitsetId: entity_id } : {}
 		// const apolloClient = inject<ApolloClient<Cache>>('apolloClient')
 		if(apolloClient) {
-			const { result, refetch } = provideApolloClient(apolloClient)(
-				() => useQuery<{traitsets: Traitset[]}>(query,
-					parameters, { fetchPolicy: 'cache-and-network' })
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					traitsets.value = newResult.traitsets
+			apolloClient.query({
+				query: query,
+				variables: parameters,
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				if(result.data.traitsets) {
+					traitsets.value = result.data.traitsets
 				}
 			})
-			refetch()
+			// const { result, refetch } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{traitsets: Traitset[]}>(query,
+			// 		parameters, { fetchPolicy: 'cache-and-network' })
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		traitsets.value = newResult.traitsets
+			// 	}
+			// })
+			// refetch()
 		}
 	}
 
@@ -76,15 +85,27 @@ export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_ty
 			}
 		}`
 		if(apolloClient) {
-			const { result } = provideApolloClient(apolloClient)(
-				() => useQuery<{traitsets: Traitset[]}>(query,
-					{ entityType: entity_type, locationRestriction: location_restriction }, { fetchPolicy: 'cache-and-network' })
-			)
-			watch(result, (newResult) => {
-				if(newResult) {
-					traitsets.value = newResult.traitsets
+			apolloClient.query({
+				query: query,
+				variables: {
+					entityType: entity_type,
+					locationRestriction: location_restriction
+				},
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				if(result.data.traitsets) {
+					traitsets.value = result.data.traitsets
 				}
 			})
+			// const { result } = provideApolloClient(apolloClient)(
+			// 	() => useQuery<{traitsets: Traitset[]}>(query,
+			// 		{ entityType: entity_type, locationRestriction: location_restriction }, { fetchPolicy: 'cache-and-network' })
+			// )
+			// watch(result, (newResult) => {
+			// 	if(newResult) {
+			// 		traitsets.value = newResult.traitsets
+			// 	}
+			// })
 		}
 	}
 
