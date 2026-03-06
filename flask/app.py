@@ -176,7 +176,8 @@ def update_doc(collection_name: str, doc: dict, temp=False):
 		# logger.debug(f"Updated {collection_name} {doc.get('_id')} to \n\t{doc}")
 		db_doc_filtered = {k: v for k, v in db_doc.items() if not k.startswith('_')}
 		db_doc_db = db.collection(collection_name).get(db_doc.get('_id'))
-		db_doc_db_filtered = {k: v for k, v in db_doc_db.items() if not k.startswith('_')}
+		# db_doc_db_filtered = {k: v for k, v in db_doc_db.items() if not k.startswith('_')}
+		db_doc_db_filtered = {k: v for k, v in db_doc_db.items() if k != '_id'}
 		if db_doc_filtered != db_doc_db_filtered:
 			logger.debug(f"Updated {collection_name} {db_doc.get('_id')} to \n\t{db_doc_filtered}")
 			db.collection(collection_name).update(db_doc)
@@ -303,8 +304,7 @@ def find_docs(collection_name: str, query: dict):
 		# collection has not changed, retrieve result from Redis
 		# logger.debug("Collection has not changed, retrieving result from Redis")
 		result = [json.loads(doc) for doc in r.lrange(redis_key, 0, -1)]
-		if len(result) == 1 and result[0] == {}:
-			return []
+		result = list(filter(lambda x: x != {}, result))
 		return result
 	else:
 		# collection has changed, execute query and store result in Redis
@@ -1101,6 +1101,7 @@ class MutateTraitSetting(Mutation):
 					**{ key: value for key, value in trait_setting.items() if not key.startswith('_') },
 					'known_to': list(set(trait_setting.get('known_to', []) + [trait_setting_input.get('teach_to')]))
 				}
+			logger.debug(f"MutateTraitSetting:\ttrait_setting: { trait_setting }")
 			update_doc('TraitSettings', trait_setting, temp=temp)
 		else:
 			if trait_setting_input is not None:
@@ -2797,7 +2798,13 @@ class Entity(Interface):
 					RETURN ts"""
 
 		traitsets = execute_aql(query, ['Traitsets'])
-		# logger.debug(f"Traitsets: {[ts.get('name') + ' (' + str(ts.get('order')) + ')' for ts in traitsets]}")
+		logger.debug(f"Traitsets: {[ts.get('name') + ' (' + str(ts.get('order')) + ')' for ts in traitsets]}")
+		
+		# prevent non-iterable error
+		if traitsets is None:
+			logger.error("Traitsets is None")
+			return []
+
 		# sort traitsets by order
 		traitsets = sorted(traitsets, key=lambda ts: ts.get('order'))
 		
@@ -2807,16 +2814,23 @@ class Entity(Interface):
 		enabled_traitsets = []
 		for traitset in traitsets:
 			# retrieve locations_enabled and locations_disabled
-			# logger.debug(f"Traitset: {traitset.get('name')}")
+			logger.debug(f"Traitset: {traitset.get('name')}")
+
 			default_settings = find_docs('TraitSettings', {'_from': traitset.get('_id'), '_to': 'Traits/1'})
-			# logger.debug(f"Default settings: {default_settings}")
+			logger.debug(f"Default settings: {default_settings}")
 			if len(default_settings) == 0:
 				continue
+			
+			
+			logger.debug(f"checking hierarchy: {hierarchy}\nenabled: {default_settings[0].get('locations_enabled')}\ndisabled: {default_settings[0].get('locations_disabled')}")
 			traitset_allowed = location_allowed(hierarchy, default_settings[0].get('locations_enabled'), default_settings[0].get('locations_disabled'))
-			# logger.debug(f"checking hierarchy: {hierarchy}\nenabled: {default_settings[0].get('locations_enabled')}\ndisabled: {default_settings[0].get('locations_disabled')}\nallowed: {traitset_allowed}")
+			logger.debug(f"traitset_allowed: {traitset_allowed}")
 			if traitset_allowed == True or traitset_allowed is None:
 				enabled_traitsets.append(traitset)
 				continue
+		
+		# logger.debug(f"Enabled traitsets: {[ts.get('name') + ' (' + str(ts.get('order')) + ')' for ts in enabled_traitsets]}")
+		logger.debug(f"Returning {len(enabled_traitsets)} traitsets")
 
 		return [
 			Traitset(id=ts.get('_id'), name=ts.get('name'), entity_types=ts.get('entity_types'))
@@ -3953,7 +3967,7 @@ class Query(ObjectType):
 					logger.debug("retrieving traitsets, checking traitset " + traitset.get('name'))
 					cursor = find_docs('TraitSettings', {'_from': traitset.get('_id'), '_to': 'Traits/1'})
 					if len(cursor) > 0:
-						default_settings = cursor.next()
+						default_settings = cursor[0]
 						if default_settings is not None:
 							if default_settings.get('locations_disabled') is not None and len(default_settings.get('locations_disabled')) > 0:
 								for location in hierarchy:
@@ -4655,7 +4669,7 @@ def imagegen(entity_key, force):
 					elif trait.get('name') == 'appearance' and entity_type in ["npc", "asset"]:
 						prompt += ", " + lts.get('statement') if lts.get('statement') else ""
 						prompt += ", " + lts.get('notes') if lts.get('notes') else ""
-			strength = 1.4
+			strength = 1.0
 			strength_list = []
 			for loc in hierarchy:
 				strength *= 0.6
@@ -4842,6 +4856,7 @@ def imagegen(entity_key, force):
 		
 		negative += ", watermark, signature"
 		
+		logger.info(f"generating image\nlora 1: {lora1}\nweight 1: {lora1_weight}\nlora 2: {lora2}\nweight 2: {lora2_weight}\nprompt: {prompt}")
 		generate_image(
 			prompt,
 			negative,
