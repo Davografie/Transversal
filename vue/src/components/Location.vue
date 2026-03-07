@@ -32,7 +32,7 @@
 	import { useLocation } from '@/composables/Location'
 	import { useEntityList } from '@/composables/EntityList'
 
-	import type { Location as LocationType } from '@/interfaces/Types'
+	import type { Entity, Location as LocationType } from '@/interfaces/Types'
 
 	const route = useRoute()
 	const player = usePlayerStore()
@@ -170,7 +170,7 @@
 			&& player.the_entity?.location?.key == props.loc
 			&& player.playing
 		) {
-			console.log("polling location " + location.value.name + " time: " + new Date().getTime())
+			console.log(new Date().toTimeString() + " polling location " + location.value.name)
 			retrieve_presence()
 
 			if(
@@ -405,7 +405,7 @@
 	function hide_location() {
 		set_location_visibility()
 		editing_location.value = false
-		setTimeout(() => retrieve_small_location(), 200)
+		// setTimeout(() => retrieve_small_location(), 200)
 	}
 
 	function switch_perspective(entity_id: string) {
@@ -475,18 +475,23 @@
 		emit('scroll_to_top')
 	}
 
-	function set_presence_watcher() {
-		console.log("setting presence watcher")
-		watch(presence, (oldEntities, newEntities) => {
-			console.log("presence changed")
-			if(oldEntities && newEntities && oldEntities.length != newEntities.length) {
-				const new_entity = newEntities.find(e => !oldEntities.includes(e))
-				if(new_entity) {
-					console.log("changed player perspective to " + new_entity.name)
-					player.set_perspective_id(new_entity.id)
-				}
-			}
-		}, { once: true })
+	function set_presence_watcher(new_clone: Entity) {
+		// console.log("setting presence watcher")
+		console.log("created clone " + JSON.stringify(new_clone))
+		console.log("changed player perspective to " + new_clone.name)
+		player.set_perspective_id(new_clone.id)
+		player.retrieve_perspective()
+		// watch(presence, (oldEntities, newEntities) => {
+		// 	console.log("presence changed")
+		// 	if(oldEntities && newEntities && oldEntities != newEntities) {
+		// 		const new_entity = newEntities.find(e => e.id != player.the_entity?.id && !oldEntities.includes(e))
+		// 		if(new_entity) {
+		// 			console.log("changed player perspective to " + new_entity.name)
+		// 			player.set_perspective_id(new_entity.id)
+		// 		}
+		// 	}
+		// }, { once: true })
+		// retrieve_presence()
 	}
 
 	const show_parents = ref(false)

@@ -377,15 +377,27 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			updateEntity(entityId: $entityId, entityInput: $entityInput) {
 				entity {
 					id
+					name
+					description
 					entityType
+					favorite
+					isArchetype
+					hidden
 				}
 			}
 		}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_update_entity))
-			mutate({
-				"entityId": entity_id ?? entity.value.id,
-				"entityInput": input
+			apolloClient.mutate({
+				mutation: query_update_entity,
+				variables: {
+					"entityId": entity_id ?? entity.value.id,
+					"entityInput": input
+				}
+			}).then((result) => {
+				entity.value = {
+					...entity.value,
+					...result.data.updateEntity.entity
+				}
 			})
 		}
 	}
@@ -397,14 +409,22 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				entity {
 					id
 					entityType
+					active
 				}
 			}
 		}`
 		if(apolloClient && (entity_id || entity.value.id)) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_update_entity))
-			mutate({
-				"entityId": entity_id ?? entity.value.id,
-				"active": true
+			apolloClient.mutate({
+				mutation: query_update_entity,
+				variables: {
+					"entityId": entity_id ?? entity.value.id,
+					"active": true
+				}
+			}).then((result) => {
+				entity.value = {
+					...entity.value,
+					...result.data.updateEntity.entity
+				}
 			})
 		}
 	}
@@ -416,21 +436,29 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				entity {
 					id
 					entityType
+					active
 				}
 			}
 		}`
 		if(apolloClient && entity) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_update_entity))
-			mutate({
-				"entityId": entity_id ?? entity.value.id,
-				"active": false
+			apolloClient.mutate({
+				mutation: query_update_entity,
+				variables: {
+					"entityId": entity_id ?? entity.value.id,
+					"active": false
+				}
+			}).then((result) => {
+				entity.value = {
+					...entity.value,
+					...result.data.updateEntity.entity
+				}
 			})
 		}
 	}
 
 	async function clone_entity(name?: string, location_id?: string) {
 		/* post character changes to the server */
-		console.log('cloning character: ' + entity.value.key)
+		console.log('cloning entity (A): ' + entity.value.name)
 		const query_clone_entity = gql`mutation CloneEntity($entityId: ID!${ name ? ', $name: String' : '' }${ location_id ? ', $locationId: ID' : '' }) {
 			instantiateArchetype(entityId: $entityId${ name ? ', name: $name' : '' }${ location_id ? ', locationId: $locationId' : '' }) {
 				entity {
@@ -441,29 +469,20 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			}
 		}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_clone_entity))
-			console.log('cloning character: ' + entity.value.key)
-			const variables = {
-				"entityId": entity_id ?? entity.value.id
-			}
-			if(name) {
-				variables['name'] = name
-			}
-			if(location_id) {
-				variables['locationId'] = location_id
-			}
-			// name ? {
-			// 	"entityId": entity_id ?? entity.value.id,
-			// 	"name": name
-			// } : {
-			// 	"entityId": entity_id ?? entity.value.id,
-			// }
-			// await mutate(variables).then((result) => {
-			// 	console.log('clone_entity result', result)
-			// })
-			const result = await mutate(variables);
-			console.log('clone_entity result', result)
-			return result?.data?.instantiateArchetype?.entity;
+			let cloned_entity = {}
+			await apolloClient.mutate({
+				mutation: query_clone_entity,
+				variables: {
+					"entityId": entity_id ?? entity.value.id,
+					"name": name,
+					"locationId": location_id
+				}
+			}).then((result) => {
+				console.log('cloned entity (B): ' + JSON.stringify(result.data.instantiateArchetype.entity))
+				// return result.data.instantiateArchetype.entity
+				cloned_entity = result.data.instantiateArchetype.entity
+			})
+			return cloned_entity
 		}
 	}
 

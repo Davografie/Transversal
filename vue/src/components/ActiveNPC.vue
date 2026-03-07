@@ -172,11 +172,6 @@
 			setTimeout(() => player.retrieve_relations(), 100)
 	}
 
-	function instantiate() {
-		clone_entity(undefined, player.the_entity?.location?.id)
-		emit('instantiated_entity')
-	}
-
 	onMounted(() => {
 		// retrieve_entity()
 		retrieve_followers()
@@ -184,6 +179,13 @@
 			retrieve_relation()
 		}
 	})
+
+	async function instantiate() {
+		await clone_entity(undefined, player.the_entity?.location?.id).then(new_clone => {
+			console.log('instantiated entity (D): ', new_clone)
+			emit('instantiated_entity', new_clone)
+		})
+	}
 
 	watch(() => props.entity_id, (newEntity, oldEntity) => {
 		if(newEntity != oldEntity && newEntity != entity.value.id) {
