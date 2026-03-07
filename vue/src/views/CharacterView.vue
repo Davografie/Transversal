@@ -552,6 +552,11 @@
 			scroll_to_traitset(character.value.traitsets[character.value.traitsets?.indexOf(_traitset) + 1])
 		}
 	}
+
+	const filtered_traitsets = computed(() => {
+		if(!character.value.traitsets) { return [] }
+		return character.value.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)
+	})
 </script>
 
 <template>
@@ -855,7 +860,7 @@
 		<div id="traitsets" ref="traitset_wrapper" v-if="character.traitsets">
 			<div class="top-scroll-space"></div>
 			<Traitset
-				v-for="set in character.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)"
+				v-for="set in filtered_traitsets"
 				:key="set.id + character.key"
 				:traitset_id="set.id"
 				:entity_id="character.id"
@@ -1171,6 +1176,7 @@
 			scroll-snap-type: x mandatory;
 			scroll-behavior: smooth;
 			flex-direction: row;
+			/* flex-wrap: wrap; */
 			/* scroll-padding-top: -4em; */
 			/* padding: 1em;
 			padding-top: 2.8em; */

@@ -24,7 +24,7 @@
 		Entity as EntityType
 	} from '@/interfaces/Types'
 
-	import { usePlayerStore } from '@/stores/PlayerStore'
+	import { input_methods, usePlayerStore } from '@/stores/PlayerStore'
 	import { useDicepool } from '@/composables/Dicepool'
 
 	const props = defineProps<{
@@ -325,6 +325,12 @@
 				|| (player.is_player && trait.traitSetting && trait.traitSetting.hidden == false)
 				|| (player.is_player && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
 		})
+	})
+
+	watch(got_traits_to_show, (newVal) => {
+		if(!newVal && player.input_method == input_methods.kbm) {
+			show_traits.value = false
+		}
 	})
 
 	function change_limit(limit: number) {
