@@ -382,15 +382,12 @@ export function useDicepool(_polling: boolean = false) {
 	const last_poll_timestamp = ref(0)
 
 	function pull_clock() {
-		// console.log("polling dicepool")
 		if(polling.value && playerStore.playing) {
+			console.log(new Date().toTimeString() + " polling dicepool")
 			pull_dicepools()
 			last_poll_timestamp.value = Date.now()
-			setTimeout(pull_clock, interval.value)
 		}
-		else {
-			console.log("stopping dicepool pull polling")
-		}
+		setTimeout(pull_clock, interval.value)
 	}
 
 	// // this function returns the time until the next dicepool pull in milliseconds
