@@ -408,8 +408,8 @@
 	}
 
 	function hide_entity() {
-		update_entity({ hidden: !character.value.hidden })
-		setTimeout(() => retrieve_character(), 200)
+		update_entity({ hidden: !entity.value.hidden })
+		// setTimeout(() => retrieve_character(), 200)
 	}
 
 	const entityOverviewTypes = Object.freeze({
@@ -746,10 +746,10 @@
 				</div>
 				<div class="button-mnml" id="hide-entity"
 					title="hide entity"
-					v-if="player.is_gm && character.entityType != 'character'"
+					v-if="player.is_gm && entity.entityType != 'character'"
 					@click="hide_entity">
-					<div class="icon">{{ character.hidden ? '🌑' : '🌕' }}</div>
-					<div class="label" v-if="!player.small_buttons">{{ character.hidden ? 'hiding entity' : 'showing entity' }}</div>
+					<div class="icon">{{ entity.hidden ? '🌑' : '🌕' }}</div>
+					<div class="label" v-if="!player.small_buttons">{{ entity.hidden ? 'hiding entity' : 'showing entity' }}</div>
 				</div>
 				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
 					title="show known to"
