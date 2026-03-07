@@ -108,7 +108,7 @@
 	const { width: pp_width } = useElementSize(plot_point_element)
 	const { width: add_pp_width } = useElementSize(add_plot_point_element)
 	const showing_max_plot_points = computed<number>(() => {
-		return (banner_width.value - useElementSize(add_plot_point_element).width.value) / (useElementSize(plot_point_element).width.value + 10)
+		return (banner_width.value - add_pp_width.value) / (pp_width.value + 10)
 	})
 
 	function decrease_pp() {
