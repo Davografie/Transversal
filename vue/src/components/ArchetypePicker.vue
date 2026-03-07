@@ -40,9 +40,9 @@
 			// update_entity({ "archetypeId": null })
 			unset_archetype(archetype_id)
 		}
-		setTimeout(() => {
-			retrieve_entity_archetypes()
-		}, 200)
+		// setTimeout(() => {
+		// 	retrieve_entity_archetypes()
+		// }, 200)
 	}
 
 	watch(() => entity.value.archetype, (newArchetype) => {

@@ -1,4 +1,4 @@
-import type { ApolloClient } from '@apollo/client'
+import type { ApolloClient, FetchPolicy } from '@apollo/client'
 import { provideApolloClient, useMutation, useQuery } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
 
@@ -290,7 +290,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function retrieve_archetypes() {
+	function retrieve_archetypes(caching: FetchPolicy = 'cache-first') {
 
 		const archetypes_query = gql`query EntityArchetypes($entityId: ID) {
 			entities(entityId: $entityId) {
@@ -307,7 +307,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			apolloClient.query({
 				query: archetypes_query,
 				variables: { entityId: entity_id },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				entity.value = {
 					...entity.value,
@@ -558,7 +558,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * sets the archetype of this entity
 	 * @param archetype_id the id of the archetype entity
 	 */
-	function set_archetype(archetype_id: string) {
+	async function set_archetype(archetype_id: string) {
 		/* create a relation between this character and an entity */
 		const query_create_relation = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
 				createRelation(fromId: $fromId, toId: $toId, type: $type) {
@@ -566,30 +566,50 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				}
 			}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
-			console.log('setting archetype of ' + entity.value.name + ' to ' + archetype_id)
-			mutate({
-				"fromId": entity.value.id,
-				"toId": archetype_id,
-				"type": "archetype"
+			await apolloClient.mutate({
+				mutation: query_create_relation,
+				variables: {
+					"fromId": entity.value.id,
+					"toId": archetype_id,
+					"type": "archetype"
+				}
+			}).then(() => {
+				retrieve_archetypes('no-cache')
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
+			// console.log('setting archetype of ' + entity.value.name + ' to ' + archetype_id)
+			// mutate({
+			// 	"fromId": entity.value.id,
+			// 	"toId": archetype_id,
+			// 	"type": "archetype"
+			// })
 		}
 	}
 
-	function unset_archetype(archetype_id: string) {
+	async function unset_archetype(archetype_id: string) {
 		const query_delete_relation = gql`mutation DeleteRelation($fromId: ID!, $toId: ID!, $type: String) {
 				deleteRelation(fromId: $fromId, toId: $toId, type: $type) {
 					success
 				}
 			}`
 		if(apolloClient && (entity.value.archetype || entity.value.archetypes)) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query_delete_relation))
-			console.log('unsetting archetype of ' + entity.value.name)
-			mutate({
-				"fromId": entity.value.id,
-				"toId": archetype_id,
-				"type": "archetype"
+			await apolloClient.mutate({
+				mutation: query_delete_relation,
+				variables: {
+					"fromId": entity.value.id,
+					"toId": archetype_id,
+					"type": "archetype"
+				}
+			}).then(() => {
+				retrieve_archetypes('no-cache')
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query_delete_relation))
+			// console.log('unsetting archetype of ' + entity.value.name)
+			// mutate({
+			// 	"fromId": entity.value.id,
+			// 	"toId": archetype_id,
+			// 	"type": "archetype"
+			// })
 		}
 	}
 
