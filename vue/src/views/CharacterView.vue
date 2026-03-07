@@ -103,7 +103,7 @@
 	const { width: pp_width } = useElementSize(plot_point_element)
 	const { width: add_pp_width } = useElementSize(add_plot_point_element)
 	const showing_max_plot_points = computed<number>(() => {
-		return (banner_width.value - add_pp_width.value) / (pp_width.value + 10)
+		return (banner_width.value - add_pp_width.value) / (pp_width.value + 20)
 	})
 
 	function decrease_pp() {
@@ -831,10 +831,10 @@
 			</div>
 
 			<div id="archetype-instances" class="character-menu" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
-				<EntityCard v-for="entity in entity.instances" :key="entity.key"
-					:entity_id="entity.id"
+				<EntityCard v-for="instance in entity.instances" :key="instance.key"
+					:entity_id="instance.id"
 					override_click
-					@click_entity="click_instance(entity.id)" />
+					@click_entity="click_instance(instance.id)" />
 			</div>
 			<div id="character-buttons-toggle" @click="show_controls = !show_controls">
 				<span>{{ show_controls ? '🔼' : '🔽' }}</span>
