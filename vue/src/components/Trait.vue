@@ -1143,10 +1143,10 @@
 			<div class="notes" v-html="marked.parse(trait.notes)"
 				v-if="trait.notes
 				&& mode != view_modes.Editing
-				// && (
-				// 	mode != view_modes.Small ||
-				// 	!trait.statement
-				// )
+				&& (
+					mode != view_modes.Small ||
+					!trait.statement
+				)
 				&& (player.is_gm
 					|| props.entity_id == player.player_character.id
 					|| props.entity_id?.startsWith('Relations/')
