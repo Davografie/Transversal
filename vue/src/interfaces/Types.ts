@@ -195,6 +195,7 @@ export interface Entity {
     name: string
     active?: boolean
     description?: string
+    pp?: number
     image?: Image
     imagened?: boolean
     entityType: string
@@ -229,6 +230,7 @@ export interface EntityInput {
     hidden?: boolean
     showTo?: string[]
     knownTo?: string[]
+    pp?: number
 }
 
 export interface Character extends Entity {

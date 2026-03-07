@@ -51,6 +51,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				id
 				name
 				description
+				pp
 				hidden
 				active
 				entityType
@@ -379,6 +380,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					id
 					name
 					description
+					pp
 					entityType
 					favorite
 					isArchetype
