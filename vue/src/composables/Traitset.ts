@@ -5,7 +5,7 @@ import { ref, watch, inject } from 'vue'
 import type { Ref } from 'vue'
 
 import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
-import type { ApolloClient } from '@apollo/client/core'
+import type { ApolloClient, FetchPolicy } from '@apollo/client/core'
 import gql from 'graphql-tag'
 
 import { useRating } from '@/composables/Rating'
@@ -68,7 +68,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		traitset_id = _id
 	}
 
-	function retrieve_traitset() {
+	async function retrieve_traitset(caching: FetchPolicy = 'cache-first') {
 		if(!traitset_id && !traitset.value.id || (traitset_id ?? traitset.value.id) == "placeholder") {
 			console.warn("no traitset id provided")
 		}
@@ -138,10 +138,10 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			}
 			// console.log("query: " + query + ", args: " + JSON.stringify(args))
 			if(apolloClient) {
-				apolloClient.query({
+				await apolloClient.query({
 					query: query,
 					variables: args,
-					fetchPolicy: 'cache-first'
+					fetchPolicy: caching ?? 'cache-first'
 				}).then((result) => {
 					// console.log("retrieved traitset: ")
 					// console.log(result)
@@ -362,17 +362,17 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			}
 		}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_assign_trait))
-			let variables: object = {
-				traitId: trait_id,
-				entityId: entity_id,
-				locationId: location_id,
-				traitSettingInput: trait_setting_input
-			}
-			
-			console.log("assigning trait with variables: ", variables)
-			await mutate(variables)
-			retrieve_traitset()
+			await apolloClient.mutate({
+				mutation: mutate_assign_trait,
+				variables: {
+					traitId: trait_id,
+					entityId: entity_id,
+					locationId: location_id,
+					traitSettingInput: trait_setting_input
+				}
+			}).then(() => {
+				retrieve_traitset('network-only')
+			})
 		}
 	}
 

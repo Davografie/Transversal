@@ -303,24 +303,28 @@
 			{{ entity.description }}
 		</div>
 		<div class="traits">
-			<Traitset
-				v-if="relation_exists && relation.traitsets && relation.traitsets.length > 0"
-				:traitset_id="relation.traitsets[0].id"
-				:entity_id="relation.id"
-				:visible="true"
-				expanded
-				hide_title
-				extensible
-				relationship />
+			<Suspense>
+				<Traitset
+					v-if="relation_exists && relation.traitsets && relation.traitsets.length > 0"
+					:traitset_id="relation.traitsets[0].id"
+					:entity_id="relation.id"
+					:visible="true"
+					expanded
+					hide_title
+					extensible
+					relationship />
+			</Suspense>
 			<template v-for="traitset in entity.traitsets" :key="traitset.id + entity.id">
-			<Traitset
-				:traitset_id="traitset.id"
-				:entity_id="entity.id"
-				expanded
-				hide_title
-				:limit="traitset.limit"
-				v-if="(player.is_player && entity.entityType != 'character' && player.the_entity?.id != entity.id)
-					|| (player.is_gm && entity.entityType == 'character' && entity.id != player.the_entity?.id && traitset.id == 'Traitsets/1')" />
+			<Suspense>
+				<Traitset
+					:traitset_id="traitset.id"
+					:entity_id="entity.id"
+					expanded
+					hide_title
+					:limit="traitset.limit"
+					v-if="(player.is_player && entity.entityType != 'character' && player.the_entity?.id != entity.id)
+						|| (player.is_gm && entity.entityType == 'character' && entity.id != player.the_entity?.id && traitset.id == 'Traitsets/1')" />
+			</Suspense>
 			</template>
 		</div>
 	</div>

@@ -140,15 +140,17 @@
 				<span class="entity-name">{{ entity.name }}</span>
 			</div>
 			<div class="traitsets" v-if="relation.traitsets && show_traitsets && entity.id == relation.toEntity.id">
-				<Traitset v-for="set in relation.traitsets" :key="relation.id + set.id"
-					:traitset_id="set.id"
-					:entity_id="player.the_entity?.id ?? ''"
-					:relation_id="relation.id"
-					:expanded="player.editing ? set.traits && set.traits.length > 0 : true"
-					:extensible="editing_relation || (set.traits && set.traits.length == 0)"
-					relationship
-					visible
-					hide_title />
+				<Suspense>
+					<Traitset v-for="set in relation.traitsets" :key="relation.id + set.id"
+						:traitset_id="set.id"
+						:entity_id="player.the_entity?.id ?? ''"
+						:relation_id="relation.id"
+						:expanded="player.editing ? set.traits && set.traits.length > 0 : true"
+						:extensible="editing_relation || (set.traits && set.traits.length == 0)"
+						relationship
+						visible
+						hide_title />
+				</Suspense>
 			</div>
 		</div>
 		<div class="buttons">

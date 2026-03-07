@@ -2,7 +2,7 @@
 	import _ from 'lodash'
 	import { marked } from 'marked'
 
-	import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+	import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 	import type { Ref } from 'vue'
 
 	import Trait from '@/components/Trait.vue'
@@ -88,7 +88,19 @@
 		false
 	)
 
-	retrieve_traitset()
+
+	onMounted(() => {
+		console.log("traitset " + traitset.value.name + " mounted")
+		if(!got_traits_to_show.value && player.input_method == input_methods.kbm) {
+			show_traits.value = false
+		}
+	})
+
+	onUnmounted(() => {
+		polling_active.value = false
+	})
+	
+	await retrieve_traitset()
 	retrieve_default_settings()
 
 	const limiter: Ref<number> = ref(props.limit ?? traitset.value.limit ?? 1)
@@ -98,38 +110,8 @@
 	const adding_trait: Ref<boolean> = ref(false)
 	const trait_search: Ref<string> = ref("")
 
-	const show_traits: Ref<boolean> = ref(props.expanded || false)
-	watch(() => props.expanded, (newExpanded) => {
-		show_traits.value = newExpanded
-		highlighted_traits.value = []
-	})
-	watch(show_traits, (newShowTraits) => {
-		// only poll when showing traits
-		if(!newShowTraits) {
-			polling_active.value = false
-		}
-		else if(newShowTraits && props.polling && !polling_active.value) {
-			polling_active.value = true
-		}
-	})
-
 	const held = ref(false)
 
-	function toggle_traits() {
-		if(!held.value) {
-			if(!show_traits.value) {
-				retrieve_traitset()
-				emit('set_traitset', traitset.value)
-			}
-			else {
-				show_info.value = false
-				emit('unset_traitset')
-			}
-			show_traits.value = !show_traits.value
-			highlighted_traits.value = []
-			// here should emit scroll-to this traitset
-		}
-	}
 
 	const show_info = ref(false)
 
@@ -150,13 +132,6 @@
 		show_info.value = !show_info.value
 	}
 
-	watch(() => props.expanded, (newExpanded) => {
-		if(!newExpanded) {
-			show_info.value = false
-			adding_trait.value = false
-			trait_search.value = ""
-		}
-	})
 
 
 
@@ -199,8 +174,8 @@
 		if(!add_multiple_traits.value) {
 			trait_search.value = ""
 		}
-		setTimeout(() => retrieve_potential_traits(), 200)
-		setTimeout(() => retrieve_traitset(), 200)
+		// setTimeout(() => retrieve_potential_traits(), 200)
+		// setTimeout(() => retrieve_traitset(), 200)
 	}
 
 	function toggle_add_trait() {
@@ -307,18 +282,8 @@
 
 	polling_active.value ? polling() : null
 
-	onUnmounted(() => {
-		polling_active.value = false
-	})
-
-	function next_sort() {
-		const index = SORTING.findIndex((s) => JSON.stringify(s) === JSON.stringify(sorting.value))
-		sorting.value = SORTING[SORTING.length > index + 1 ? index + 1 : 0]
-		retrieve_traitset()
-	}
-
 	const got_traits_to_show = computed(() => {
-		return traitset.value.traits?.some((trait) => {
+		return (traitset.value.traits?.length ?? 0) > 0 && traitset.value.traits?.some((trait) => {
 			return player.is_gm
 				|| props.relationship
 				|| (player.is_player && entity.value && entity.value.entityType == 'character')
@@ -327,11 +292,54 @@
 		})
 	})
 
-	watch(got_traits_to_show, (newVal) => {
-		if(!newVal && player.input_method == input_methods.kbm) {
-			show_traits.value = false
+	console.log(traitset.value.name + " got traits to show: " + got_traits_to_show.value)
+	const show_traits: Ref<boolean> = ref(got_traits_to_show.value ? props.expanded : false)
+
+	watch(() => props.expanded, (newExpanded) => {
+		if(got_traits_to_show.value) {
+			show_traits.value = newExpanded
+		}
+
+		highlighted_traits.value = []
+
+		if(!newExpanded) {
+			show_info.value = false
+			adding_trait.value = false
+			trait_search.value = ""
 		}
 	})
+
+	function toggle_traits() {
+		if(!held.value) {
+			if(!show_traits.value) {
+				retrieve_traitset()
+				emit('set_traitset', traitset.value)
+			}
+			else {
+				show_info.value = false
+				emit('unset_traitset')
+			}
+			show_traits.value = !show_traits.value
+			highlighted_traits.value = []
+			// here should emit scroll-to this traitset
+		}
+	}
+
+	watch(show_traits, (newShowTraits) => {
+		// only poll when showing traits
+		if(!newShowTraits) {
+			polling_active.value = false
+		}
+		else if(newShowTraits && props.polling && !polling_active.value) {
+			polling_active.value = true
+		}
+	})
+
+	function next_sort() {
+		const index = SORTING.findIndex((s) => JSON.stringify(s) === JSON.stringify(sorting.value))
+		sorting.value = SORTING[SORTING.length > index + 1 ? index + 1 : 0]
+		retrieve_traitset()
+	}
 
 	function change_limit(limit: number) {
 		limiter.value += limit
@@ -452,10 +460,11 @@
 	})
 
 	const refreshing = ref(false)
-	function refresh() {
+	async function refresh() {
 		refreshing.value = true
-		retrieve_traitset()
-		setTimeout(() => refreshing.value = false, 1000)
+		await retrieve_traitset('no-cache').then(() => {
+			refreshing.value = false
+		})
 	}
 
 	const extended = computed(() => {
@@ -652,7 +661,7 @@
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
 						:mode="view_modes.Viewing"
-						@refetch="retrieve_traitset"
+						@refetch="retrieve_traitset('network-only')"
 						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
 						@kill_highlight="kill_highlight_traits"
@@ -699,7 +708,7 @@
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
 						:mode="edit_mode ? view_modes.Editing : view_modes.Small"
-						@refetch="retrieve_traitset"
+						@refetch="retrieve_traitset('network-only')"
 						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
 						@kill_highlight="kill_highlight_traits"

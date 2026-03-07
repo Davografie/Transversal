@@ -733,25 +733,27 @@
 					<div class="border-bottom"></div>
 				</div>
 				<div class="attribute-body">
-					<Traitset
-						v-for="traitset in location.traitsets?.filter(ts => player.is_gm ? true : !ts.entityTypes?.includes('gm'))"
-						:key="traitset.id"
-						:traitset_id="traitset.id"
-						:entity_id="location.id"
-						:location_key="props.loc"
-						:limit="traitset.limit"
-						:expanded="!editing_traits"
-						:visible="editing_traits"
-						:hide_title="!editing_traits"
-						:extensible="editing_traits"
-						:location="true"
-						:polling="player.the_entity?.location?.key == props.loc
-							&& (
-								traitset.id == 'Traitsets/3' // assets
-								|| traitset.id == 'Traitsets/906502' // resources
-							)"
-						@refetch="retrieve_location"
-					/>
+					<Suspense>
+						<Traitset
+							v-for="traitset in location.traitsets?.filter(ts => player.is_gm ? true : !ts.entityTypes?.includes('gm'))"
+							:key="traitset.id"
+							:traitset_id="traitset.id"
+							:entity_id="location.id"
+							:location_key="props.loc"
+							:limit="traitset.limit"
+							:expanded="!editing_traits"
+							:visible="editing_traits"
+							:hide_title="!editing_traits"
+							:extensible="editing_traits"
+							:location="true"
+							:polling="player.the_entity?.location?.key == props.loc
+								&& (
+									traitset.id == 'Traitsets/3' // assets
+									|| traitset.id == 'Traitsets/906502' // resources
+								)"
+							@refetch="retrieve_location"
+						/>
+					</Suspense>
 				</div>
 			</div>
 			<div class="zones attribute" v-if="expanded && (player.is_gm || (location.zones && location.zones.length > 0))" ref="zones">

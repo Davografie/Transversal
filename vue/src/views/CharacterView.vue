@@ -844,24 +844,29 @@
 		</div>
 		<div id="traitsets" ref="traitset_wrapper" v-if="entity.traitsets">
 			<div class="top-scroll-space"></div>
-			<Traitset
-				v-for="set in filtered_traitsets"
-				:key="set.id + entity.key"
-				:traitset_id="set.id"
-				:entity_id="entity.id"
-				:entity="entity"
-				:limit="set.limit"
-				:expanded="((set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE') || player.traitset_defaults == 'EXPANDED') && player.traitset_defaults != 'COLLAPSED'"
-				:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == entity.id))"
-				visible
-				:location_key="entity.location?.key"
-				:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
-				:next="player.traitset_defaults == 'ACTIVE' && entity.traitsets?.indexOf(set) - 1 < entity.traitsets.length && entity.traitsets[entity.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
-				:location="false"
-				:relationship="false"
-				@next="next_traitset(set)"
-				@set_traitset="set_traitset"
-				@unset_traitset="active_traitset_id = ''" />
+			<Suspense>
+				<Traitset
+					v-for="set in filtered_traitsets"
+					:key="set.id + entity.key"
+					:traitset_id="set.id"
+					:entity_id="entity.id"
+					:entity="entity"
+					:limit="set.limit"
+					:expanded="(
+							(set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE')
+							|| player.traitset_defaults == 'EXPANDED'
+						)"
+					:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == entity.id))"
+					visible
+					:location_key="entity.location?.key"
+					:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
+					:next="player.traitset_defaults == 'ACTIVE' && entity.traitsets?.indexOf(set) - 1 < entity.traitsets.length && entity.traitsets[entity.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
+					:location="false"
+					:relationship="false"
+					@next="next_traitset(set)"
+					@set_traitset="set_traitset"
+					@unset_traitset="active_traitset_id = ''" />
+			</Suspense>
 			<div class="bottom-scroll-space"></div>
 		</div>
 		<div id="floating-bottom">
