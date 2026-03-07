@@ -335,25 +335,13 @@ export function useLocation(init?: Location, location_key?: string) {
 			apolloClient.query({
 				query: get_location_query,
 				variables: { locationId: 'Entities/' + location_key },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: 'no-cache'
 			}).then((result) => {
 				location.value = {
 					...location.value,
 					...result.data.locations[0]
 				}
 			})
-			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery<{locations: Location[]}>(
-			// 		get_location_query,
-			// 		{ locationId: 'Entities/' + location_key },
-			// 		{ fetchPolicy: 'no-cache' }
-			// 	)
-			// )
-			// watch(result, (newResult) => {
-			// 	if(newResult && newResult.locations[0].entities && location.value.entities != newResult.locations[0].entities) {
-			// 		location.value = { ...location.value, ...newResult.locations[0]}
-			// 	}
-			// }, { once: true })
 		}
 	}
 
@@ -442,13 +430,14 @@ export function useLocation(init?: Location, location_key?: string) {
 				}
 			}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(
-				() => useMutation(update_location_query)
-			)
-			mutate({
-				locationId: location.value.id,
-				locationInput: input
+			apolloClient.mutate({
+				mutation: update_location_query,
+				variables: {
+					"locationId": location.value.id,
+					"locationInput": input
+				}
 			}).then((result) => {
+				if(!result?.data.updateLocation.location) return
 				location.value = {
 					...location.value,
 					...result.data.updateLocation.location
@@ -478,15 +467,26 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(
-				() => useMutation(create_zone_query)
-			)
-			mutate({
-				locationInput: {
-					name: name,
-					location: location.value.id
+			apolloClient.mutate({
+				mutation: create_zone_query,
+				variables: {
+					"locationInput": {
+						name: name,
+						location: location.value.id
+					}
 				}
+			}).then(() => {
+				retrieve_zones()
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(
+			// 	() => useMutation(create_zone_query)
+			// )
+			// mutate({
+			// 	locationInput: {
+			// 		name: name,
+			// 		location: location.value.id
+			// 	}
+			// })
 		}
 	}
 
@@ -500,11 +500,20 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query_import_entity))
-			mutate({
-				"entityId": entity_id,
-				"locationId": location.value.id
+			apolloClient.mutate({
+				mutation: query_import_entity,
+				variables: {
+					"entityId": entity_id,
+					"locationId": location.value.id
+				}
+			}).then(() => {
+				retrieve_presence()
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query_import_entity))
+			// mutate({
+			// 	"entityId": entity_id,
+			// 	"locationId": location.value.id
+			// })
 		}
 	}
 
@@ -526,7 +535,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		}
 	}
 
-	function make_transversable(from_entity_id: string) {
+	async function make_transversable(from_entity_id: string) {
 		const query = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
 			createRelation(fromId: $fromId, toId: $toId, type: $type) {
 				success
@@ -534,12 +543,20 @@ export function useLocation(init?: Location, location_key?: string) {
 		}`
 
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
-			mutate({
-				"fromId": from_entity_id,
-				"toId": location.value.id,
-				"type": "transversable"
+			await apolloClient.mutate({
+				mutation: query,
+				variables: {
+					"fromId": from_entity_id,
+					"toId": location.value.id,
+					"type": "transversable"
+				}
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
+			// mutate({
+			// 	"fromId": from_entity_id,
+			// 	"toId": location.value.id,
+			// 	"type": "transversable"
+			// })
 		}
 	}
 
@@ -549,17 +566,32 @@ export function useLocation(init?: Location, location_key?: string) {
 			updateEntity(entityId: $entityId, entityInput: $entityInput) {
 				entity {
 					id
+					hidden
 				}
 			}
 		}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
-			mutate({
-				"entityId": location.value.id,
-				"entityInput": {
-					"hidden": hide ?? !location.value.hidden ?? false
+			apolloClient.mutate({
+				mutation: query,
+				variables: {
+					"entityId": location.value.id,
+					"entityInput": {
+						"hidden": hide ?? !location.value.hidden ?? false
+					}
+				}
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					...result.data.updateEntity.entity
 				}
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
+			// mutate({
+			// 	"entityId": location.value.id,
+			// 	"entityInput": {
+			// 		"hidden": hide ?? !location.value.hidden ?? false
+			// 	}
+			// })
 		}
 	}
 
