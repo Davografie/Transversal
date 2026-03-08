@@ -90,7 +90,7 @@
 
 
 	onMounted(() => {
-		console.log("traitset " + traitset.value.name + " mounted")
+		// console.log("traitset " + traitset.value.name + " mounted")
 		if(!got_traits_to_show.value && player.input_method == input_methods.kbm) {
 			show_traits.value = false
 		}
@@ -292,7 +292,7 @@
 		})
 	})
 
-	console.log(traitset.value.name + " got traits to show: " + got_traits_to_show.value)
+	// console.log(traitset.value.name + " got traits to show: " + got_traits_to_show.value)
 	const show_traits: Ref<boolean> = ref(got_traits_to_show.value ? props.expanded : false)
 
 	watch(() => props.expanded, (newExpanded) => {

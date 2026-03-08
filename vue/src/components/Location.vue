@@ -121,17 +121,6 @@
 	const show_location_image = ref(false)
 
 	function click_title() {
-		// if(!held.value) {
-		// 	if(player.is_player) {
-		// 		transverse(location.value)
-		// 	}
-		// 	else {
-		// 		expanded.value = !expanded.value
-		// 		if(expanded.value) {
-		// 			retrieve_location()
-		// 		}
-		// 	}
-		// }
 		if(props.transversable) {
 			transverse(location.value)
 		}
@@ -257,7 +246,7 @@
 		}
 	})
 	watch(() => props.active_entity_id, (newId) => {
-		overwrite_active.value = newId
+		overwrite_active.value = newId ?? ""
 	})
 	watch(overwrite_active, (newId, oldId) => {
 		if(newId && newId != oldId) {
@@ -306,7 +295,6 @@
 
 	function update_flavortext() {
 		update_location({ description: new_flavortext.value })
-		setTimeout(() => retrieve_location(), 400)
 	}
 
 
@@ -345,7 +333,7 @@
 		'/assets/uploads/' + location.value.image?.path +
 		'/small' + location.value.image?.ext)
 	const gradient = ref('100%')
-	const show_small_image = ref(true)
+	const show_small_image = ref(player.data_saving)
 	watch(expanded, (newExpanded) => {
 		if(newExpanded) {
 			gradient.value = '200%'
@@ -405,7 +393,6 @@
 	function hide_location() {
 		set_location_visibility()
 		editing_location.value = false
-		// setTimeout(() => retrieve_small_location(), 200)
 	}
 
 	function switch_perspective(entity_id: string) {
@@ -413,18 +400,15 @@
 		player.retrieve_perspective()
 	}
 
-	onMounted(() => {
-		if(expanded.value) {
-			retrieve_location()
-			console.log("mounted location " + location.value.name + "")
-		}
-		show_small_image.value = player.data_saving
-	})
-
 	onUnmounted(() => {
 		console.log("unmounting location " + location.value.name + ", disabling polling")
 		polling_active.value = false
 	})
+
+	if(expanded.value) {
+		retrieve_location()
+		console.log("mounted location " + location.value.name + "")
+	}
 
 	const zones = ref()
 	const { top } = useElementBounding(zones)
@@ -463,13 +447,6 @@
 		+ ' blur(' + (filter_degree.value * 2) + 'px)')
 	
 	const location_element = ref()
-	// const { left: this_left, width: this_width } = useElementBounding(location_element)
-	// const location_left = computed(() => {
-	// 	return props.parent_left ?? this_left.value
-	// })
-	// const location_width = computed(() => {
-	// 	return props.parent_width ?? this_width.value
-	// })
 	function change_active(entity_id: string) {
 		overwrite_active.value = entity_id
 		emit('scroll_to_top')
@@ -481,17 +458,6 @@
 		console.log("changed player perspective to " + new_clone.name)
 		player.set_perspective_id(new_clone.id)
 		player.retrieve_perspective()
-		// watch(presence, (oldEntities, newEntities) => {
-		// 	console.log("presence changed")
-		// 	if(oldEntities && newEntities && oldEntities != newEntities) {
-		// 		const new_entity = newEntities.find(e => e.id != player.the_entity?.id && !oldEntities.includes(e))
-		// 		if(new_entity) {
-		// 			console.log("changed player perspective to " + new_entity.name)
-		// 			player.set_perspective_id(new_entity.id)
-		// 		}
-		// 	}
-		// }, { once: true })
-		// retrieve_presence()
 	}
 
 	const show_parents = ref(false)

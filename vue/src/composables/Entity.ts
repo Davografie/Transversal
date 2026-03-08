@@ -104,17 +104,18 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			}
 		}`
 
-		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
+		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && entity_id != 'Entities/undefined') {
 			apolloClient.query({
 				query: query,
 				variables: { entityId: entity_id },
 				fetchPolicy: 'no-cache'
-			})
-			.then((result) => {
+			}).then((result) => {
 				entity.value = {
 					...entity.value,
 					...result.data.entities[0]
 				}
+			}).catch((error) => {
+				console.error("error retrieving entity: ", entity_id, "error: ", error)
 			})
 		// 	const { result } = provideApolloClient(apolloClient)(
 		// 		() => useQuery(
@@ -167,6 +168,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					...entity.value,
 					...result.data.entities[0]
 				}
+			}).catch((error) => {
+				console.error(error)
 			})
 			// const { result } = provideApolloClient(apolloClient)(
 			// 	() => useQuery(
@@ -206,6 +209,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 						...response.data?.updateEntity?.entity
 					}
 				}
+			}).catch((error) => {
+				console.error(error)
 			})
 		}
 	}
@@ -235,6 +240,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					...entity.value,
 					...result.data.entities[0]
 				}
+			}).catch((error) => {
+				console.error(error)
 			})
 			// const { result } = provideApolloClient(apolloClient)(
 			// 	() => useQuery(
