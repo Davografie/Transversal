@@ -165,7 +165,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			})
 
 			if(result && result.data && result.data.traits && result.data.traits.length > 0) {
-				console.log("retrieved trait: ", result.data.traits[0])
+				// console.log("retrieved trait: ", result.data.traits[0])
 				let newTrait = result.data.traits[0]
 				if(newTrait.rating) {
 					const new_rating = convert_rating_to_dice(
@@ -551,15 +551,29 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			}
 		}`
 		if(apolloClient && trait_id.value) {
-			apolloClient.query({
+			const { data } = await apolloClient.query({
 				query: query_get_example_statements,
 				variables: {
 					traitId: trait_id.value
 				},
 				fetchPolicy: 'cache-first'
-			}).then((result) => {
-				return result.data.traits[0].statementExamples
 			})
+			return data.traits[0].statementExamples
+			// let result = <string[]>[]
+			// await apolloClient.query({
+			// 	query: query_get_example_statements,
+			// 	variables: {
+			// 		traitId: trait_id.value
+			// 	},
+			// 	fetchPolicy: 'cache-first'
+			// }).then((response) => {
+			// 	result = response.data.traits[0].statementExamples
+			// 	// console.log("retrieved statement examples: ", result.data.traits[0].statementExamples)
+			// 	// return result.data.traits[0].statementExamples
+			// }).catch((error) => {
+			// 	console.error("error retrieving statement examples: ", error)
+			// })
+			// return result
 			// const { result } = provideApolloClient(apolloClient)(
 			// 	() => useQuery(
 			// 		query_get_example_statements,

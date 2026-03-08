@@ -602,7 +602,6 @@
 	const statement_examples = ref<string[]>([])
 	const show_statement_examples = ref(false)
 	async function display_statement_examples() {
-		console.log("displaying statement examples")
 		let temp = await retrieve_statement_examples()
 		statement_examples.value = _.clone(temp).sort(() => 0.5 - Math.random())
 		show_statement_examples.value = true
