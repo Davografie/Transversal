@@ -145,6 +145,8 @@ def get_doc_by_id(collection_name: str, doc_id: str):
 		doc = deserialize_doc(stored)
 	else:
 		doc = db.collection(collection_name).get(doc_id)
+		if doc is None:
+			logger.error(f"Document {doc_id} not found in {collection_name}")
 		doc = {k: v for k, v in doc.items() if v is not None}
 		serialized = serialize_doc(doc)
 		try:
@@ -263,7 +265,6 @@ def execute_aql(query, collections=[]):
 	if r.exists(query_key):
 		# query has not changed, retrieve result from Redis
 		# logger.debug("Query has not changed, retrieving result from Redis")
-		# return [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
 		result = [json.loads(doc) for doc in r.lrange(query_key, 0, -1)]
 		if len(result) == 1 and result[0] == {}:
 			return []
@@ -3302,14 +3303,14 @@ class DeleteEntity(Mutation):
 		def remove_entity(entity_id):
 			# we don't want any dangling relations, so we need to delete those, but because relations
 			# can have traits associated with them we need to delete the trait settings associated with those relations too
-			# first from this entity
+			# first _from this entity
 			relations = find_docs('Relations', {'_from': entity_id})
 			for relation in relations:
 				traits = find_docs('TraitSettings', {'_from': relation.get('_id')})
 				for trait in traits:
 					db.collection('TraitSettings').delete(trait.get('_id'))
 				db.collection('Relations').delete(relation.get('_id'))
-			# but also to this entity
+			# and also _to this entity
 			relations = find_docs('Relations', {'_to': entity_id})
 			for relation in relations:
 				traits = find_docs('TraitSettings', {'_from': relation.get('_id')})
@@ -3326,21 +3327,19 @@ class DeleteEntity(Mutation):
 			query = f"""FOR s IN TraitSettings
 						FILTER { entity_id } IN s.locations_enabled
 						RETURN s"""
-			# cursor = db.aql.execute(query)
 			cursor = execute_aql(query, ['TraitSettings'])
 			for doc in cursor:
 				doc['locations_enabled'].remove(entity_id)
-				if doc['locations_enabled'] == []:
-					# if the locations_enabled list is now empty,
-					# that means the trait was only available at this location
-					# thus we can delete it
-					db.collection('TraitSettings').delete(doc['_id'])
-				else:
-					update_doc('TraitSettings', doc)
+				# if doc['locations_enabled'] == []:
+				# 	# if the locations_enabled list is now empty,
+				# 	# that means the trait was only available at this location
+				# 	# thus we can delete it
+				# 	db.collection('TraitSettings').delete(doc['_id'])
+				# else:
+				update_doc('TraitSettings', doc)
 			query = f"""FOR s IN TraitSettings
 						FILTER { entity_id } IN s.locations_disabled
 						RETURN s"""
-			# cursor = db.aql.execute(query)
 			cursor = execute_aql(query, ['TraitSettings'])
 			for doc in cursor:
 				doc['locations_disabled'].remove(entity_id)
@@ -3353,6 +3352,15 @@ class DeleteEntity(Mutation):
 
 			# remove the image folder
 			shutil.rmtree(f"{app.config['UPLOAD_FOLDER']}/{current_entity.get('_key')}", ignore_errors=True)
+
+			# this entity might be listed in other entities known_to
+			query = f"""FOR e IN Entities
+						FILTER { entity_id } IN e.known_to
+						RETURN e"""
+			cursor = execute_aql(query, ['Entities'])
+			for doc in cursor:
+				doc['known_to'].remove(entity_id)
+				update_doc('Entities', doc)
 
 			# now we can delete the entity
 			db.collection('Entities').delete(entity_id)
@@ -3539,23 +3547,29 @@ class Location(ObjectType):
 		if parent.id == 'Entities/2':
 			# the root location
 			return None
+		
 		query = f"""FOR r IN Relations
 			FILTER r._from == '{ parent.id }'
 			FILTER r.type == 'super'
 			RETURN r._to"""
-		# cursor = db.aql.execute(query)
-		cursor = execute_aql(query, ['Relations'])
-		parent_id = [doc for doc in cursor]
+		parent_id = execute_aql(query, ['Relations'])
+
+		if len(parent_id) > 1:
+			error = "location has none or multiple parents: " + str(parent_id)
+			logger.error(error)
+
+		# remove duplicates
+		parent_id = list(set(parent_id))
+
 		if len(parent_id) == 1:
 			return Location(id=parent_id[0])
 		else:
-			raise Exception("location has none or multiple parents: ", parent_id)
+			raise Exception(error)
 
 	def resolve_parents(parent, info):
 		query = f"""FOR v, e, p IN 0..100 OUTBOUND "{ parent.id }" Relations
 			FILTER p.edges[*].type ALL == 'super'
 			RETURN v._id"""
-		# cursor = db.aql.execute(query)
 		cursor = execute_aql(query, ['Relations', 'Entities'])
 		return [Location(id=doc) for doc in cursor]
 
