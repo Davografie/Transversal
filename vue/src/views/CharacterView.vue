@@ -432,7 +432,7 @@
 	}
 	function remove_known_to(entity_id: string) {
 		update_entity({ knownTo: entity.value.knownTo?.filter(e => e.id != entity_id).map(e => e.id) ?? [] })
-		setTimeout(() => retrieve_small_entity(), 200)
+		// setTimeout(() => retrieve_small_entity(), 200)
 	}
 
 	function cycle_traitset_defaults(reverse = false) {

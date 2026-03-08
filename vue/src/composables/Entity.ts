@@ -392,6 +392,10 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					favorite
 					isArchetype
 					hidden
+					knownTo {
+						id
+						name
+					}
 				}
 			}
 		}`
