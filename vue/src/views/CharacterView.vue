@@ -4,7 +4,7 @@
 	import { useRoute, useRouter } from 'vue-router'
 	import { useFetch, useElementSize, useScroll } from '@vueuse/core'
 
-	import { usePlayerStore } from '@/stores/PlayerStore'
+	import { input_methods, usePlayerStore } from '@/stores/PlayerStore'
 	import { useCharacter } from '@/composables/Character'
 	import { useEntity, entity_icons } from '@/composables/Entity'
 	import { useLocation } from '@/composables/Location'
@@ -265,7 +265,7 @@
 		// at top of traitset scroll the banner is max size
 		// scrolling down shrinks the banner height to min size, depending on scroll Y
 		// where it remains until the user scrolled back up to the top
-		if(player.input_method == 'touch') return min_banner_height
+		if(player.input_method == input_methods.touch) return min_banner_height
 		const scrollY_threshold = 100
 		const scrollY_ratio = Math.min(1, traitset_scrollY.value / scrollY_threshold)
 		const height = max_banner_height - (max_banner_height - min_banner_height) * scrollY_ratio
@@ -1310,6 +1310,11 @@
 	}
 	.landscape {
 		#entity-wrapper {
+			#character-details {
+				#character-portrait {
+					
+				}
+			}
 			/* padding-top: 4em; */
 			#traitsets {
 				.traitset {
