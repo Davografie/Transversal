@@ -2,10 +2,10 @@
 	generate a entity list to use on the entity overview page
 */
 
-import { ref, watch, inject } from 'vue'
+import { ref, inject } from 'vue'
 import type { Ref } from 'vue'
 import type { Entity } from '@/interfaces/Types'
-import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
+import { useMutation, provideApolloClient } from "@vue/apollo-composable"
 import type { ApolloClient } from '@apollo/client/core'
 import gql from 'graphql-tag'
 
@@ -30,28 +30,17 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 				isArchetype
 			}
 		}`
-		const variables = { "entityType": entityType }
+		const variables = { "entityType": entityType.value }
 		if(apolloClient) {
+			console.log('retrieving entities: ', variables)
 			apolloClient.query({
 				query: get_entities_query,
 				variables,
 				fetchPolicy: 'no-cache'
 			}).then((result) => {
+				console.log('retrieved entities: ', result.data.entities)
 				entities.value = result.data.entities
 			})
-			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery<{entities: Entity[]}>(
-			// 		get_entities_query,
-			// 		variables,
-			// 		{ fetchPolicy: 'no-cache' }
-			// 	)
-			// )
-			// // const { result } = useQuery(get_entities_query, null, { fetchPolicy: 'cache-and-network' })
-			// watch(result, (newResult) => {
-			// 	if(newResult) {
-			// 		entities.value = newResult.entities
-			// 	}
-			// }, { immediate: true })
 		}
 	}
 
@@ -86,23 +75,6 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 					entities.value = result.data.entities.filter((e: Entity) => ['character', 'npc'].includes(e.entityType))
 				}
 			})
-			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery<{entities: Entity[]}>(
-			// 		get_archetypes_query,
-			// 		variables,
-			// 		{ fetchPolicy: 'cache-and-network' }
-			// 	)
-			// )
-			// watch(result, (newResult) => {
-			// 	if(newResult) {
-			// 		if(entity_type != '' && entity_type != 'npc') {
-			// 			entities.value = newResult.entities
-			// 		}
-			// 		else {
-			// 			entities.value = newResult.entities.filter((e) => ['character', 'npc'].includes(e.entityType))
-			// 		}
-			// 	}
-			// }, { immediate: true })
 		}
 	}
 
@@ -130,18 +102,6 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			}).then((result) => {
 				entities.value = result.data.entities
 			})
-			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery<{entities: Entity[]}>(
-			// 		search_entities_query,
-			// 		{ search: query },
-			// 		{ fetchPolicy: 'cache-and-network' }
-			// 	)
-			// )
-			// watch(result, (newResult) => {
-			// 	if(newResult) {
-			// 		entities.value = newResult.entities
-			// 	}
-			// }, { immediate: true })
 		}
 	}
 
@@ -166,18 +126,6 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			}).then((result) => {
 				entities.value = result.data.characters
 			})
-			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery<{characters: Entity[]}>(
-			// 		query,
-			// 		args,
-			// 		{ fetchPolicy: 'cache-and-network' }
-			// 	)
-			// )
-			// watch(result, (newResult) => {
-			// 	if(newResult && entities.value != newResult.characters) {
-			// 		entities.value = newResult.characters
-			// 	}
-			// }, { once: true })
 		}
 	}
 
