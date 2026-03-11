@@ -3762,12 +3762,13 @@ class CreateRelation(Mutation):
 	message = String()
 
 	def mutate(root, info, from_id=None, to_id=None, type=None):
+		logger.info(f"CreateRelation:\tfrom_id: { from_id }, to_id: { to_id }, type: { type }")
 		if len(find_docs('Relations', {'_from': from_id, '_to': to_id, 'type': type})) == 0:
 			# if type == 'archetype', remove all other archetypes from entity
 			# if type == 'archetype':
 			# 	db.collection('Relations').delete_match({'_from': from_id, 'type': 'archetype'})
 			db.collection('Relations').insert({ '_from': from_id, '_to': to_id, 'type': type, 'favorite': False })
-			return CreateRelation(success=True)
+			return CreateRelation(success=True, message="Successfully created relation")
 		else:
 			errorMessage = f"relation already exists, from: { from_id }, to: { to_id }"
 			return CreateRelation(success=False, message=errorMessage)

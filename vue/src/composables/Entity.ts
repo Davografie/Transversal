@@ -215,7 +215,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function retrieve_relations() {
+	async function retrieve_relations(caching: FetchPolicy = 'cache-first') {
 
 		const relations_query = gql`query EntityRelations($entityId: ID) {
 			entities(entityId: $entityId) {
@@ -234,7 +234,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			apolloClient.query({
 				query: relations_query,
 				variables: { entityId: entity_id },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				entity.value = {
 					...entity.value,
@@ -549,21 +549,32 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * creates a relation from given entity to set entity, with the type "relation"
 	 * @param entity_id the id of the entity to create a relation from
 	 */
-	function create_relation(entity_id: string) {
+	async function create_relation(entity_id: string) {
 		/* create a relation between this character and an entity */
 		const query_create_relation = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
 				createRelation(fromId: $fromId, toId: $toId, type: $type) {
 					success
+					message
 				}
 			}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
-			console.log('creating relation between: ' + entity.value.id + ' and ' + entity_id)
-			mutate({
-				"fromId": entity_id,
-				"toId": entity.value.id,
-				"type": "relation"
+			await apolloClient.mutate({
+				mutation: query_create_relation,
+				variables: {
+					"fromId": entity_id,
+					"toId": entity.value.id,
+					"type": "relation"
+				}
+			}).then((result) => {
+				console.log(result.data.createRelation.message)
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
+			// console.log('creating relation between: ' + entity.value.id + ' and ' + entity_id)
+			// mutate({
+			// 	"fromId": entity_id,
+			// 	"toId": entity.value.id,
+			// 	"type": "relation"
+			// })
 		}
 	}
 

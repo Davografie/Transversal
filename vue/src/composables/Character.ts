@@ -6,7 +6,7 @@ import type { Ref } from 'vue'
 import { useFetch } from '@vueuse/core'
 import { provideApolloClient, useMutation, useQuery } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
-import type { ApolloClient } from '@apollo/client'
+import type { ApolloClient, FetchPolicy } from '@apollo/client'
 import type { Character, Entity, Location } from '@/interfaces/Types'
 import { placeholder_location } from './Location'
 import { placeholder_traitset } from './Traitset'
@@ -125,7 +125,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 		}
 	}
 
-	function retrieve_relations() {
+	async function retrieve_relations(caching: FetchPolicy = 'cache-first') {
 
 		const relations_query = gql`query CharacterRelations($characterKey: ID) {
 			characters(key: $characterKey) {
@@ -144,7 +144,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 			apolloClient.query({
 				query: relations_query,
 				variables: { characterKey: character_key },
-				fetchPolicy: 'no-cache'
+				fetchPolicy: caching
 			}).then((result) => {
 				character.value = {
 					...character.value,

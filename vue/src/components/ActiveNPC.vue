@@ -102,18 +102,28 @@
 	})
 
 	// add the entity of this card as a relation to the codex of the entity that's currently being played with
-	function click_tag() {
-		if(player.is_gm && player.perspective) {
-			create_relation(player.perspective.id)
-			setTimeout(() => player.retrieve_perspective_relations(), 100)
+	async function click_tag() {
+		if(!player.the_entity?.id) return
+
+		await create_relation(player.the_entity?.id)
+
+		if(player.is_gm) {
+			player.retrieve_perspective_relations('no-cache')
 		}
-		else if(!player.is_gm && player.player_character) {
-			create_relation(player.player_character.id)
-			setTimeout(() => player.retrieve_relations(), 100)
+		else {
+			player.retrieve_relations('no-cache')
 		}
-		setTimeout(() => {
-			set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id ?? '')
-		}, 200)
+		// if(player.is_gm && player.perspective) {
+		// 	create_relation(player.perspective.id)
+		// 	setTimeout(() => player.retrieve_perspective_relations(), 100)
+		// }
+		// else if(!player.is_gm && player.player_character) {
+		// 	create_relation(player.player_character.id)
+		// 	setTimeout(() => player.retrieve_relations(), 100)
+		// }
+		// setTimeout(() => {
+		// 	set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id ?? '')
+		// }, 200)
 	}
 
 	// when the player wants to follow the entity instead of transversing themselves
