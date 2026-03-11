@@ -203,7 +203,7 @@
 		new_subtraits.value = trait.value.possibleSubTraits ?? []
 	}
 
-	function toggle_subtrait(subtrait: TraitType) {
+	async function toggle_subtrait(subtrait: TraitType) {
 		if(new_subtraits.value.map(x => x.id).includes(subtrait.id)) {
 			const i = new_subtraits.value.findIndex(x => x.id == subtrait.id)
 			new_subtraits.value = [...new Set([...new_subtraits.value.slice(0, i), ...new_subtraits.value.slice(i + 1)])]
@@ -211,14 +211,13 @@
 		else {
 			new_subtraits.value = [...new Set([...new_subtraits.value, subtrait])]
 		}
-		mutate_trait({
+		await mutate_trait({
 			possibleSubTraits: new_subtraits.value.map(x => x.id)
-		}).then(() => {
-			retrieve_trait()
 		})
+		// retrieve_trait()
 	}
 
-	function toggle_subtraitset(ts: TraitsetType) {
+	async function toggle_subtraitset(ts: TraitsetType) {
 		if(ts.traits?.every(t => new_subtraits.value.map(x => x.id).includes(t.id))) {
 			new_subtraits.value = new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id))
 		}
@@ -230,11 +229,10 @@
 		}
 		new_subtraits.value = [...new Set(new_subtraits.value)]
 
-		mutate_trait({
+		await mutate_trait({
 			possibleSubTraits: new_subtraits.value.map(x => x.id)
-		}).then(() => {
-			retrieve_trait()
 		})
+		// retrieve_trait()
 	}
 
 	/* POSSIBLE SFXS */

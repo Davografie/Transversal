@@ -1735,7 +1735,7 @@ class AssignTrait(Mutation):
 				**{k: v for k, v in traitset.items() if not k.startswith('_')}
 			})
 
-		return AssignTrait(trait=Trait(id=trait_id))
+		return AssignTrait(trait=Trait(id=trait_id, trait_setting_id=new_traitsetting.get('_id')))
 
 class AssignSubTrait(Mutation):
 	class Arguments:

@@ -144,7 +144,8 @@
 
 	const add_multiple_traits = ref(false)
 
-	function assign_trait_to_entity(trait: TraitType) {
+	async function assign_trait_to_entity(trait: TraitType) {
+		let new_trait: TraitType|null = null
 		if(
 			props.entity_id
 			&& props.entity_id != 'placeholder'
@@ -153,29 +154,44 @@
 			set_entity(props.entity_id)
 			if(!props.relationship) {
 				if(location.value.parents && location.value.parents?.length > 2 && trait.locationRestricted) {
-					assign_trait(trait.id, location.value.parents?.slice(-2, -1)[0].id, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
+					// assign trait restricted to location
+					await assign_trait(trait.id, location.value.parents?.slice(-2, -1)[0].id, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
+						(response) => {
+							new_trait = response
+						}
+					)
 				}
 				else {
-					assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
+					// assign trait to entity
+					await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
+						(response) => {
+							new_trait = response
+						}
+					)
 				}
 			}
 			else {
-				assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
+				// assign trait to relationship
+				await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
+					(response) => {
+						new_trait = response
+					}
+				)
 			}
 		}
 		else {
 			console.error("Can't assign trait to entity: " + props.entity_id)
 		}
+
 		if(!add_multiple_traits.value) {
 			adding_trait.value = false
-		}
-		// if(player.is_player) {
-		// }
-		if(!add_multiple_traits.value) {
 			trait_search.value = ""
+			setTimeout(() => {
+				if(new_trait) {
+					scroll_to_trait(new_trait)
+				}
+			}, 200)
 		}
-		// setTimeout(() => retrieve_potential_traits(), 200)
-		// setTimeout(() => retrieve_traitset(), 200)
 	}
 
 	function toggle_add_trait() {
@@ -389,7 +405,6 @@
 	const filter = ref('')
 	const filtering = ref(false)
 
-// !highlighted_traits.value.includes(t.traitSettingId)
 	const traits_to_display = computed(() => {
 		if(traitset.value.traits) {
 			let result = <TraitType[]>[]
@@ -484,9 +499,8 @@
 		const element = document.getElementById(element_id)
 		if(element) {
 			console.log("element found, scrolling to it")
-			element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+			element.scrollIntoView({ behavior: 'smooth', block: 'center' })
 		}
-		// show_reference.value = false
 	}
 
 	function scroll_to_trait(trait: TraitType) {

@@ -407,7 +407,7 @@
 					<div>locations enabled/disabled</div> -->
 					<input type="button" class="button"
 						:value="'add (' + new_trait_name + ') to ' + traitset.name"
-						@click="create_trait(new_trait_name); retrieve_traitset()" />
+						@click="create_trait(new_trait_name)" />
 				</div>
 			</div>
 		</div>

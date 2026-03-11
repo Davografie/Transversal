@@ -393,6 +393,13 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				mutateTrait(traitId: $traitId, traitInput: $traitInput) {
 					trait {
 						id
+						possibleSubTraits {
+							id
+							name
+							traitset {
+								id
+							}
+						}
 					}
 				}
 			}`
@@ -407,13 +414,27 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		// const query = trait_setting_id.value ? mutate_setting_trait : mutate_trait
 		
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_trait))
-			const variables: object = {
-				traitId: trait.value.id,
-				traitInput: input
-			}
-			console.log("mutating trait: " + trait.value.id + " with variables: ", variables)
-			mutate(variables)
+			await apolloClient.mutate({
+				mutation: mutate_trait,
+				variables: {
+					traitId: trait.value.id,
+					traitInput: input
+				}
+			}).then((result) => {
+				if(result.data.mutateTrait.trait) {
+					trait.value = {
+						...trait.value,
+						...result.data.mutateTrait.trait
+					}
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_trait))
+			// const variables: object = {
+			// 	traitId: trait.value.id,
+			// 	traitInput: input
+			// }
+			// console.log("mutating trait: " + trait.value.id + " with variables: ", variables)
+			// mutate(variables)
 		}
 	}
 

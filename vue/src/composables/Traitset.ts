@@ -317,7 +317,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		defaultRating?: string[]
 	}
 
-	function create_trait(name: string) {
+	async function create_trait(name: string) {
 		const mutate_create_trait = gql`
 			mutation CreateTrait($traitInput: TraitInput!) {
 				createTrait(traitInput: $traitInput) {
@@ -328,27 +328,37 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			}`
 		
 		if(apolloClient) {
-			const { mutate, onDone, onError } = provideApolloClient(apolloClient)(() => useMutation(mutate_create_trait))
-			let trait_setting_input: trait_input_type = {
-				"name": name,
-				"traitsetId": traitset.value.id
-			}
-			console.log("creating trait for traitset: " + traitset.value.id + " with variables: ", trait_setting_input)
-			mutate({traitInput: trait_setting_input})
-				.then((response) => {
-					console.log(response)
-					const new_trait = response?.data?.mutateTrait?.trait
-					console.log('new trait: ', new_trait)
-
-					// Automatically assign the trait if entity_id is set
-					if (entity_id && new_trait?.id) {
-						assign_trait(new_trait.id)
+			await apolloClient.mutate({
+				mutation: mutate_create_trait,
+				variables: {
+					traitInput: {
+						name: name,
+						traitsetId: traitset.value.id
 					}
-				})
-				.catch((error) => {
-					console.error('Error creating trait:', error)
-				})
-			// console.log("new trait: ", new_trait)
+				}
+			})
+			await retrieve_traitset('network-only')
+			// const { mutate, onDone, onError } = provideApolloClient(apolloClient)(() => useMutation(mutate_create_trait))
+			// let trait_setting_input: trait_input_type = {
+			// 	"name": name,
+			// 	"traitsetId": traitset.value.id
+			// }
+			// console.log("creating trait for traitset: " + traitset.value.id + " with variables: ", trait_setting_input)
+			// mutate({traitInput: trait_setting_input})
+			// 	.then((response) => {
+			// 		console.log(response)
+			// 		const new_trait = response?.data?.mutateTrait?.trait
+			// 		console.log('new trait: ', new_trait)
+
+			// 		// Automatically assign the trait if entity_id is set
+			// 		if (entity_id && new_trait?.id) {
+			// 			assign_trait(new_trait.id)
+			// 		}
+			// 	})
+			// 	.catch((error) => {
+			// 		console.error('Error creating trait:', error)
+			// 	})
+			// // console.log("new trait: ", new_trait)
 		}
 	}
 
@@ -358,10 +368,13 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			assignTrait(traitId: $traitId, entityId: $entityId, locationId: $locationId, traitSettingInput: $traitSettingInput) {
 				trait {
 					id
+					name
+					traitSettingId
 				}
 			}
 		}`
 		if(apolloClient) {
+			let trait = null
 			await apolloClient.mutate({
 				mutation: mutate_assign_trait,
 				variables: {
@@ -370,9 +383,12 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					locationId: location_id,
 					traitSettingInput: trait_setting_input
 				}
-			}).then(() => {
+			}).then((response) => {
 				retrieve_traitset('network-only')
+				trait = response?.data?.assignTrait?.trait
 			})
+			console.log("assigned trait: ", trait)
+			return trait
 		}
 	}
 
