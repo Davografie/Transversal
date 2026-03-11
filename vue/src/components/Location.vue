@@ -562,7 +562,15 @@
 					<input type="text" class="header location-name-edit" v-model="new_location_name" v-if="editing_location && player.is_gm" />
 					<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
 				
-					<div class="archetypes">
+					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
+						<ActiveNPC
+							class="active-npc"
+							:entity_id="overwrite_active ?? active_npc"
+							@hide_entity="overwrite_active = 'empty'"
+							@show_entity="(entity_key) => emit('show_entity', entity_key)"
+							@instantiated_entity="set_presence_watcher" />
+					</div>
+					<div class="archetypes" v-else>
 						<EntityCard
 							class="entity-card"
 							v-for="archetype in location.entities?.filter(e => e.isArchetype)"
@@ -570,17 +578,9 @@
 							:entity_id="archetype.id"
 							:show_name="false"
 							:show_archetypes="false"
-							@show_entity="(entity_key) => emit('show_entity', entity_key)"
+							@show_entity="(entity_key: string) => emit('show_entity', entity_key)"
 							override_click @click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
 								overwrite_active = archetype.id : overwrite_active = 'empty'" />
-					</div>
-					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
-						<ActiveNPC
-							class="active-npc"
-							:entity_id="overwrite_active ? overwrite_active : active_npc"
-							@hide_entity="overwrite_active = 'empty'"
-							@show_entity="(entity_key) => emit('show_entity', entity_key)"
-							@instantiated_entity="set_presence_watcher" />
 					</div>
 					<div class="location-image-wrapper" v-if="show_location_image">
 						<img class="location-image" :src="image_link" @click="show_location_image = false" />
