@@ -699,16 +699,16 @@
 
 
 	const add_subtraits = ref(false)
-	function add_subtrait(subtrait: Trait) {
+	async function add_subtrait(subtrait: Trait) {
 		if(trait.value.traitSettingId && !trait.value.subTraits?.map((x) => x.id).includes(subtrait.id)) {
-			assign_subtrait(trait.value.traitSettingId, subtrait.id, props.entity_id)
+			await assign_subtrait(trait.value.traitSettingId, subtrait.id, props.entity_id)
 		}
-		if(!inherited.value) {
-			retrieve_trait()
-		}
-		else {
-			refetch()
-		}
+		// if(!inherited.value) {
+		// 	retrieve_trait()
+		// }
+		// else {
+		// 	refetch()
+		// }
 	}
 	function remove_subtrait(subtrait: Trait) {
 		if(subtrait.traitSettingId) {

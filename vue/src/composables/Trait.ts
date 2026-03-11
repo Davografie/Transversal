@@ -773,24 +773,68 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function assign_subtrait(trait_setting_id: string, subtrait_id: string, entity_id?: string) {
+	async function assign_subtrait(trait_setting_id: string, subtrait_id: string, _entity_id?: string) {
 		if(apolloClient && trait_setting_id && subtrait_id) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
-				mutation Mutation($traitSettingId: ID!, $subtraitId: ID!, $entityId: ID) {
-					assignSubTrait(traitSettingId: $traitSettingId, subtraitId: $subtraitId, entityId: $entityId) {
-						trait {
+			const query = gql`mutation Mutation($traitSettingId: ID!, $subtraitId: ID!, $entityId: ID) {
+				assignSubTrait(traitSettingId: $traitSettingId, subtraitId: $subtraitId, entityId: $entityId) {
+					trait {
+						id
+						subTraits {
 							id
+							traitSettingId
+							rating
 						}
 					}
-				}`
-			))
-			let variables: object = {
-				traitSettingId: trait_setting_id,
-				subtraitId: subtrait_id,
-				entityId: entity_id
-			}
-			console.log("assigning sub-trait: " + subtrait_id + " to trait setting: " + trait_setting_id)
-			mutate(variables)
+				}
+			}`
+			await apolloClient.mutate({
+				mutation: query,
+				variables: {
+					traitSettingId: trait_setting_id,
+					subtraitId: subtrait_id,
+					entityId: _entity_id
+				}
+			}).then((result) => {
+				console.log("mergin trait " + JSON.stringify(trait.value) + " with result: " + JSON.stringify(result.data.assignSubTrait.trait))
+				if(result.data.assignSubTrait.trait.subTraits && result.data.assignSubTrait.trait.subTraits.length > 0) {
+					const new_subTraits = []
+					for(const subTrait of result.data.assignSubTrait.trait.subTraits) {
+						let new_subTrait = { ...subTrait }
+						if(new_subTrait.rating) {
+							const new_rating = convert_rating_to_dice(
+								new_subTrait.rating, // this is actually a number, as it is retrieved from GraphQL
+								new_subTrait.ratingType,
+								new_subTrait.id,
+								new_subTrait.traitSettingId,
+								new_subTrait.traitsetId,
+								entity_id.value
+							)
+							new_subTrait = { ...new_subTrait, rating: new_rating }
+						}
+						new_subTraits.push(new_subTrait)
+					}
+					trait.value = {
+						...trait.value,
+						subTraits: new_subTraits
+					}
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
+			// 	mutation Mutation($traitSettingId: ID!, $subtraitId: ID!, $entityId: ID) {
+			// 		assignSubTrait(traitSettingId: $traitSettingId, subtraitId: $subtraitId, entityId: $entityId) {
+			// 			trait {
+			// 				id
+			// 			}
+			// 		}
+			// 	}`
+			// ))
+			// let variables: object = {
+			// 	traitSettingId: trait_setting_id,
+			// 	subtraitId: subtrait_id,
+			// 	entityId: entity_id
+			// }
+			// console.log("assigning sub-trait: " + subtrait_id + " to trait setting: " + trait_setting_id)
+			// mutate(variables)
 		}
 	}
 

@@ -1834,7 +1834,7 @@ class AssignSubTrait(Mutation):
 
 
 
-				return AssignSubTrait(trait=Trait(id=new_subtrait.get('_to'), trait_setting_id=new_subtrait.get('_id')))
+				return AssignSubTrait(trait=Trait(id=traitsetting.get('_to'), trait_setting_id=trait_setting_id))
 			else:
 				raise Exception("Subtrait already assigned")
 		else:
