@@ -587,8 +587,8 @@
 
 
 	const deletion = ref(false)
-	function delete_trait() {
-		unassign_trait()
+	async function delete_trait() {
+		await unassign_trait()
 		refetch()
 	}
 

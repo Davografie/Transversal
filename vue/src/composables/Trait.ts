@@ -6,7 +6,7 @@ import _ from "lodash"
 import { ref, watch, inject } from "vue"
 import type { Ref } from "vue"
 
-import type { ApolloClient } from '@apollo/client/core'
+import type { ApolloClient, FetchPolicy } from '@apollo/client/core'
 import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
 import gql from 'graphql-tag'
 
@@ -349,7 +349,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function retrieve_instances() {
+	async function retrieve_instances(caching: FetchPolicy = 'cache-first') {
 		const query = gql`query TraitInstances($traitId: ID) {
 			traits(traitId: $traitId) {
 				traitSettings {
@@ -366,7 +366,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				variables: {
 					traitId: trait_id.value
 				},
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				if(result.data.traits[0].traitSettings) {
 					instances.value = result.data.traits[0].traitSettings
@@ -530,17 +530,24 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function unassign_trait() {
+	async function unassign_trait() {
 		console.log("unassigning trait: " + trait_setting_id.value)
+		const query = gql`
+			mutation UnassignTrait($traitSettingId: ID!) {
+				unassignTrait(traitSettingId: $traitSettingId) {
+					success
+				}
+			}`
 		if(apolloClient && trait_setting_id.value) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
-				mutation UnassignTrait($traitSettingId: ID!) {
-					unassignTrait(traitSettingId: $traitSettingId) {
-						success
-					}
-				}`
-			))
-			mutate({ traitSettingId: trait_setting_id.value })
+			await apolloClient.mutate({
+				mutation: query,
+				variables: {
+					traitSettingId: trait_setting_id.value
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(
+			// ))
+			// mutate({ traitSettingId: trait_setting_id.value })
 		}
 	}
 
