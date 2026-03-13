@@ -498,7 +498,11 @@ export function useDicepool(_polling: boolean = false) {
 	async function clear_dicepool() {
 		console.log("clearing dicepool")
 		// dicepool.dice = []
-		await Promise.all(dicepool.dice.map(async (d: Die) => remove_die(d)))
+		// await Promise.all(dicepool.dice.map(async (d: Die) => remove_die(d)))
+		const dice = _.clone(dicepool.dice)
+		for (let i = 0; i < dice.length; i++) {
+			await remove_die(dice[i])
+		}
 		dicepool.complications = []
 		push_complications()
 
