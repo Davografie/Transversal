@@ -99,6 +99,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				}
 				traitsets {
 					id
+					name
 				}
 				favorite
 			}
