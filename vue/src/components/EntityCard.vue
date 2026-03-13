@@ -351,7 +351,7 @@ div.active-npc {
 		position: relative;
 		line-height: 0;
 		.image {
-			min-height: 200px;
+			/* min-height: 200px; */
 			img {
 				max-width: 100%;
 			}
