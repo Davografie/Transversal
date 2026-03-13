@@ -225,7 +225,9 @@
 <template>
 	<div class="active-npc">
 		<div class="card">
-			<img :src="player.data_saving ? image_link_small : image_link_large" ref="image" />
+			<div class="image">
+				<img :src="player.data_saving ? image_link_small : image_link_large" ref="image" />
+			</div>
 			<div class="close-button" @click="emit('hide_entity')">
 				<span class="button-mnml icon">✖</span>
 			</div>
@@ -348,8 +350,11 @@ div.active-npc {
 	div.card {
 		position: relative;
 		line-height: 0;
-		img {
-			max-width: 100%;
+		.image {
+			min-height: 200px;
+			img {
+				max-width: 100%;
+			}
 		}
 		.close-button {
 			position: absolute;

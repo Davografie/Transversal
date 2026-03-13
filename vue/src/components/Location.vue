@@ -132,7 +132,7 @@
 			}
 			else {
 				show_active.value = false
-				overwrite_active.value = ""
+				overwrite_active.value = undefined
 				show_location_image.value = false
 			}
 		}
@@ -225,7 +225,7 @@
 
 	// show_active true shows the active NPC prominently
 	const show_active = ref(true)
-	const overwrite_active = ref<string>("")
+	const overwrite_active = ref<string>()
 	const active_npc = computed(() => {
 		if(player.is_gm) {
 			if(resolutions.filter(r => !r.player.is_gm).length > 0) {
@@ -242,7 +242,7 @@
 	})
 	watch(active_npc, (newNPC, oldNPC) => {
 		if(newNPC != oldNPC) {
-			overwrite_active.value = ""
+			overwrite_active.value = undefined
 		}
 	})
 	watch(() => props.active_entity_id, (newId) => {
