@@ -106,14 +106,12 @@ export function useDicepool(_polling: boolean = false) {
 			// if it's a resource die, then the resource should be given back to that trait
 			trait_setting_id.value = d.traitsettingId
 
-			await retrieve_trait()
-
-			if(
-				trait.value.id
-				&& d.ratingType == 'resource'
+			
+			if(d.ratingType == 'resource'
 				&& trait_setting_id.value
 				&& dicepool.phase != dicepool.phases.RESOLVE
 			) {
+				await retrieve_trait()
 				const new_rating = [...trait.value.rating ?? [], d]
 				mutate_trait_setting_temp({rating: new_rating.map((r) => r.number_rating)})
 				change_result_limit(-1)
@@ -123,7 +121,7 @@ export function useDicepool(_polling: boolean = false) {
 
 
 			dicepool.dice.splice(index, 1)
-			push_dicepool()
+			// push_dicepool()	// now just depends on the regular dicepool push
 		}
 	}
 	
