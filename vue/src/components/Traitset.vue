@@ -21,7 +21,8 @@
 		SFX as SFXType,
 		Trait as TraitType,
 		Die as DieType,
-		Entity as EntityType
+		Entity as EntityType,
+		Traitset
 	} from '@/interfaces/Types'
 
 	import { input_methods, usePlayerStore } from '@/stores/PlayerStore'
@@ -43,7 +44,8 @@
 		relationship?: boolean,
 		location?: boolean,
 		tutorial?: boolean,
-		polling?: boolean
+		polling?: boolean,
+		traitset?: Traitset
 	}>()
 
 	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset'])
@@ -62,7 +64,7 @@
 		sorting,
 		update_traitset_settings
 	} = useTraitset(
-		undefined,
+		props.traitset,
 		props.traitset_id,
 		props.relation_id ?? props.entity_id,
 		SORTING[0].id
@@ -100,7 +102,7 @@
 		polling_active.value = false
 	})
 	
-	await retrieve_traitset()
+	if(!props.traitset) await retrieve_traitset()
 	retrieve_default_settings()
 
 	const limiter: Ref<number> = ref(props.limit ?? traitset.value.limit ?? 1)
@@ -348,6 +350,13 @@
 		}
 		else if(newShowTraits && props.polling && !polling_active.value) {
 			polling_active.value = true
+		}
+	})
+
+	// the user changes location, so reflect that in the traits
+	watch(() => player.the_entity?.location, (newLocation, oldLocation) => {
+		if(newLocation != oldLocation) {
+			retrieve_traitset('network-only')
 		}
 	})
 

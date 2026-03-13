@@ -53,6 +53,7 @@
 		set_entity_id,
 		retrieve_small_entity,
 		retrieve_entity,
+		retrieve_full_entity,
 		retrieve_instances,
 		clone_entity,
 		delete_entity,
@@ -60,7 +61,7 @@
 		prune_location,
 		update_entity
 	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
-	retrieve_entity()
+	retrieve_full_entity()
 
 	function mutate_pp(delta: number) {
 		update_entity({
@@ -310,7 +311,7 @@
 	watch(() => props.entity_key, (newKey) => {
 		if(newKey && (entity.value.key != newKey || entity.value.key != newKey)) {
 			set_entity_id('Entities/' + newKey)
-			retrieve_entity()
+			retrieve_full_entity()
 
 			nextTick(() => character_wrapper.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
 			switching_entities.value = false
@@ -344,16 +345,9 @@
 
 
 	// the GM's perspective changes location, so reflect that in the traits
-	watch(() => player.perspective.location, (newLocation, oldLocation) => {
-		if(player.is_gm && player.perspective.id == entity.value.id && newLocation != oldLocation) {
-			retrieve_entity()
-		}
-	})
-
-	// the player's character changes location, so reflect that in the traits
-	watch(() => player.player_character.location, (newLocation, oldLocation) => {
-		if(!player.is_gm && player.player_character.id == entity.value.id && newLocation != oldLocation) {
-			retrieve_entity()
+	watch(() => player.the_entity?.location, (newLocation, oldLocation) => {
+		if(player.the_entity?.id == entity.value.id && newLocation != oldLocation) {
+			retrieve_small_entity()
 		}
 	})
 
@@ -848,6 +842,7 @@
 				<Traitset
 					v-for="set in filtered_traitsets"
 					:key="set.id + entity.key"
+					:traitset="set"
 					:traitset_id="set.id"
 					:entity_id="entity.id"
 					:entity="entity"

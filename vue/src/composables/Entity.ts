@@ -43,6 +43,47 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		// retrieve_small_entity()
 	}
 
+	function retrieve_small_entity() {
+
+		const small_entity_query = gql`query SmallEntity($entityId: ID) {
+			entities(entityId: $entityId) {
+				key
+				id
+				name
+				entityType
+				isArchetype
+				image {
+					path
+					ext
+				}
+				favorite
+				active
+				... on Character {
+					available
+				}
+				hidden
+				knownTo {
+					id
+				}
+			}
+		}`
+
+		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && !entity_id.endsWith('undefined')) {
+			apolloClient.query({
+				query: small_entity_query,
+				variables: { entityId: entity_id },
+				fetchPolicy: 'cache-first'
+			}).then((result) => {
+				entity.value = {
+					...entity.value,
+					...result.data.entities[0]
+				}
+			}).catch((error) => {
+				console.error(error)
+			})
+		}
+	}
+
 	function retrieve_entity() {
 		console.log("retrieving entity: ", entity_id)
 		const query = gql`query FullEntity($entityId: ID) {
@@ -118,73 +159,115 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			}).catch((error) => {
 				console.error("error retrieving entity: ", entity_id, "error: ", error)
 			})
-		// 	const { result } = provideApolloClient(apolloClient)(
-		// 		() => useQuery(
-		// 			query,
-		// 			{ entityId: entity_id },
-		// 			{ fetchPolicy: 'no-cache' }
-		// 		)
-		// 	)
-		// 	watch(result, () => {
-		// 		entity.value = {
-		// 			...entity.value,
-		// 			...result.value.entities[0]
-		// 		}
-		// 	})
 		}
 	}
 
-	function retrieve_small_entity() {
+	function retrieve_full_entity() {
 
-		const small_entity_query = gql`query SmallEntity($entityId: ID) {
+		const query = gql`query FullEntity($entityId: ID) {
 			entities(entityId: $entityId) {
 				key
 				id
 				name
+				description
+				pp
+				hidden
+				active
 				entityType
 				isArchetype
+				archetype {
+					id
+					image {
+						path
+						ext
+					}
+				}
+				archetypes {
+					id
+				}
 				image {
 					path
 					ext
+					width
+					height
 				}
-				favorite
-				active
-				... on Character {
-					available
+				imagened
+				location {
+					key
+					id
+					name
+					image {
+						path
+						ext
+					}
 				}
-				hidden
+				following {
+					id
+				}
+				relations {
+					id
+					toEntity {
+						id
+					}
+				}
 				knownTo {
 					id
 				}
+				instances {
+					id
+				}
+				traitsets {
+					id
+					name
+					explainer
+					entityTypes
+					duplicates
+					sfxs {
+						id
+					}
+					traits {
+						id
+						traitSettingId
+						name
+						rating
+						inheritable
+						subTraits {
+							traitSettingId
+						}
+						requiredTraits {
+							id
+						}
+						traitSetting {
+							fromEntity {
+								id
+							}
+							knownTo {
+								id
+							}
+							statement
+							notes
+							hidden
+							priority
+						}
+					}
+				}
+				favorite
 			}
 		}`
 
-		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && !entity_id.endsWith('undefined')) {
+		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && entity_id != 'Entities/undefined') {
 			apolloClient.query({
-				query: small_entity_query,
+				query: query,
 				variables: { entityId: entity_id },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: 'no-cache'
 			}).then((result) => {
 				entity.value = {
 					...entity.value,
 					...result.data.entities[0]
 				}
 			}).catch((error) => {
-				console.error(error)
+				console.error("error retrieving entity: ", entity_id, "error: ", error)
 			})
-			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery(
-			// 		small_entity_query,
-			// 		{ entityId: entity_id },
-			// 		{ fetchPolicy: 'cache-and-network' }
-			// 	)
-			// )
-			// watch(result, () => {
-			// 	entity.value = {
-			// 		...entity.value,
-			// 		...result.value.entities[0]
-			// 	}
-			// })
 		}
 	}
 
@@ -648,8 +731,9 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		entity,
 		entity_id,
 		set_entity_id,
-		retrieve_entity,
 		retrieve_small_entity,
+		retrieve_entity,
+		retrieve_full_entity,
 		toggle_favorite,
 		retrieve_relations,
 		retrieve_followers,
