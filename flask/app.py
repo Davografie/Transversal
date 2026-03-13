@@ -729,6 +729,10 @@ class SFX(ObjectType):
 				logger.warning(f"trait { trait } has no _id")
 		return [Trait(id=trait.get('_id')) for trait in traits]
 
+class SfxInput(InputObjectType):
+	name = String(required=True)
+	description = String(required=True)
+
 class CreateSFX(Mutation):
 	class Arguments:
 		name = String(required=True)
@@ -743,22 +747,26 @@ class CreateSFX(Mutation):
 		})
 		return CreateSFX(sfx=SFX(id=sfx.get('id'), name=name, description=description))
 
-class UpdateSFX(Mutation):
+class MutateSFX(Mutation):
 	class Arguments:
 		id = ID(required=True)
+		sfx_input = SfxInput()
 		name = String()
 		description = String()
 
 	sfx = Field(lambda: SFX)
 
-	def mutate(self, info, id, name=None, description=None):
+	def mutate(self, info, id, sfx_input=None, name=None, description=None):
 		sfx = get_doc_by_id('SFXs', id)
+		if sfx_input:
+			sfx['name'] = sfx_input.name
+			sfx['description'] = sfx_input.description
 		if name:
 			sfx['name'] = name
 		if description:
 			sfx['description'] = description
-		update_doc('SFXs', sfx)
-		return UpdateSFX(sfx=SFX(id=id, name=name, description=description))
+		new_sfx = update_doc('SFXs', sfx)
+		return MutateSFX(sfx=SFX(id=id, name=new_sfx.get('name'), description=new_sfx.get('description')))
 
 class DeleteSFX(Mutation):
 	class Arguments:
@@ -1942,13 +1950,28 @@ class DeleteTrait(Mutation):
 	def mutate(root, info, trait_id=None):
 		# deletes the trait document and all traitsetting edges associated with it
 		try:
-			db.collection('Traits').delete(trait_id)
+			# delete all assigned traits
 			settings = find_docs('TraitSettings', {'_to': trait_id})
 			for setting in settings:
 				db.collection('TraitSettings').delete(setting.get('_id'))
+
+			# delete all subtraits and default settings
 			settings = find_docs('TraitSettings', {'_from': trait_id})
 			for setting in settings:
 				db.collection('TraitSettings').delete(setting.get('_id'))
+			
+			# delete from all possible subtraits
+			query = f"""FOR t IN Traits
+						FILTER { trait_id } IN t.possible_sub_traits
+						RETURN {{ 'id': t._id, 'possible_sub_traits': t.possible_sub_traits }}"""
+			traits = execute_aql(query, ['Traits'])
+			for trait in traits:
+				trait.get('possible_sub_traits').remove(trait_id)
+				update_doc('Traits', trait)
+
+			# delete the actual document
+			db.collection('Traits').delete(trait_id)
+
 			return DeleteTrait(success=True)
 		except Exception as e:
 			return DeleteTrait(success=False, error=f"DeleteTrait failed: {str(e)}")
@@ -3179,6 +3202,10 @@ class UpdateEntity(Mutation):
 			known_to = set(entity.get('known_to', []) + entity_input.pop('show_to', []))
 			changes['known_to'] = list(known_to)
 
+		# rename the entity_input key "entity_type" to "type"
+		if entity_input is not None and entity_input.get('entity_type') is not None:
+			entity_input['type'] = entity_input.pop('entity_type')
+
 		# logger.debug(f"UpdateEntity.mutate:\t5\tchanges: { changes }")
 		entity = {
 			'_id': entity_id,
@@ -3187,7 +3214,7 @@ class UpdateEntity(Mutation):
 			**(entity_input if entity_input is not None else {})
 		}
 
-		# logger.debug(f"UpdateEntity.mutate:\t6\tentity: { entity }")
+		logger.debug(f"UpdateEntity.mutate:\t6\tentity: { entity }")
 
 		update_doc('Entities', entity)
 
@@ -4212,7 +4239,7 @@ class Mutation(ObjectType):
 	update_traitset_setting = UpdateTraitsetSetting.Field()
 
 	create_sfx = CreateSFX.Field()
-	mutate_sfx = UpdateSFX.Field()
+	mutate_sfx = MutateSFX.Field()
 	delete_sfx = DeleteSFX.Field()
 
 	create_location = CreateLocation.Field()
@@ -4511,8 +4538,11 @@ def upload_file_location(entity_key, location_key):
 	image = Image.open(file)
 	hierarchy = retrieve_hierarchy('Entities/' + str(location_key))
 	logger.debug("hierarchy: " + str(hierarchy))
-	location_key = hierarchy[-2].get('_key')
-	path = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), location_key, f"original{ file_extension.lower() }")
+	if len(hierarchy) > 1:
+		location_key = hierarchy[-2].get('_key')
+		path = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), location_key, f"original{ file_extension.lower() }")
+	else:
+		path = os.path.join(app.config['UPLOAD_FOLDER'], str(entity_key), location_key, f"original{ file_extension.lower() }")
 	logger.debug("image path: " + path)
 	if not os.path.exists(os.path.dirname(path)):
 		os.makedirs(os.path.dirname(path))

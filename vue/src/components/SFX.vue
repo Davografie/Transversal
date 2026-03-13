@@ -26,7 +26,7 @@
     })
 
     const player = usePlayerStore()
-    const { sfx, retrieve_sfx } = useSFX(undefined, props.sfx_id)
+    const { sfx, retrieve_sfx, change_sfx } = useSFX(undefined, props.sfx_id)
 
     retrieve_sfx()
 
@@ -39,9 +39,9 @@
         if(player.editing && !props.editing) return
         // show_description.value = !show_description.value
         if(show_description.value) {
+			emit('collapse')
+		} else {
             emit('expand')
-        } else {
-            emit('collapse')
         }
     }
 
@@ -69,24 +69,51 @@
     }
 
     const show_description = ref(props.expanded && !props.adding)
+    const new_name = ref("")
+    const new_description = ref("")
+    const is_editing = ref(false)
+    function toggle_edit() {
+        is_editing.value = !is_editing.value
+        if(is_editing.value) {
+            new_name.value = sfx.value.name
+            new_description.value = sfx.value.description
+        }
+    }
+    function save_sfx() {
+        change_sfx({ name: new_name.value, description: new_description.value })
+        toggle_edit()
+    }
 </script>
 
 <template>
     <div class="sfx" :class="[
                 show_description ? 'expanded' : 'collapsed',
                 props.adding ? 'adding' : 'playing',
+                is_editing ? 'editing' : ''
             ]">
-        <div class="sfx-title" :title="show_description ? 'collapse' : 'expand'" @click.stop="click_card">
-            ✨ {{ sfx?.name }}
-            <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
+        <div class="viewing" v-if="!is_editing">
+            <div class="sfx-title" :title="show_description ? 'collapse' : 'expand'" @click.stop="click_card">
+                ✨ {{ sfx?.name }}
+                <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
+            </div>
+            <div class="sfx-description" v-if="show_description && sfx?.description && !is_editing"
+                v-html="rendered_description" @click.stop="activate" title="play">
+            </div>
         </div>
-        <div class="sfx-description" v-if="show_description && sfx?.description"
-            v-html="rendered_description" @click.stop="activate" title="play">
+        <div class="editing" v-else>
+            ✨ <input class="edit-name" type="text" placeholder="name" v-model="new_name" />
+            <textarea class="edit-description" placeholder="description" v-model="new_description" />
         </div>
-        <input type="button" class="button" value="add" @click.stop="add" 
-            v-if="show_description && props.adding" />
-        <input type="button" class="button" value="remove" @click.stop="remove" 
-            v-if="show_description && !props.adding && props.editing" />
+        <div class="buttons">
+            <input type="button" class="add button" value="add" @click.stop="add" 
+                v-if="show_description && props.adding" />
+            <input type="button" class="save button" value="save" @click.stop="save_sfx" 
+                v-if="is_editing" />
+            <input type="button" class="toggle-edit button" :value="is_editing ? 'cancel' : 'edit'" @click.stop="toggle_edit"
+                v-if="player.is_gm && props.editing" />
+            <input type="button" class="remove button" value="remove" @click.stop="remove" 
+                v-if="show_description && !props.adding && props.editing" />
+        </div>
     </div>
 </template>
 
@@ -111,6 +138,39 @@
         }
         .tutorial {
             font-size: .8em;
+        }
+        .buttons {
+            .add, .save {
+                background-color: var(--color-highlight);
+                color: var(--color-highlight-text);
+            }
+            .toggle-edit {
+                background-color: var(--color-editing);
+                color: var(--color-editing-text);
+            }
+			.remove {
+				background-color: var(--color-hitch);
+				color: var(--color-hitch-text);
+			}
+        }
+        &.editing {
+            /* background-color: var(--color-editing);
+            color: var(--color-editing-text); */
+            border: 1px solid var(--color-editing);
+            border-radius: .4em;
+            margin: .4em;
+            .edit-name {
+                font-size: 1.4em;
+            }
+            .edit-description {
+                width: calc(100% - 2em);
+                min-height: 4em;
+                margin: .4em;
+            }
+            .buttons {
+                display: flex;
+                justify-content: center;
+            }
         }
     }
     .sfx.collapsed {

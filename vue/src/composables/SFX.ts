@@ -99,20 +99,36 @@ export function useSFX(init?: SFX, sfx_id?: string) {
 		}
 	}
 
-	function change_sfx(input: SFXInput) {
+	async function change_sfx(input: SFXInput) {
 		if(apolloClient) {
-			const query = gql`mutation UpdateSfx($updateSfxId: ID!, $input: SfxInput!) {
-				updateSfx(id: $updateSfxId, input: $input) {
-					success
-					message
+			const query = gql`mutation MutateSfx($sfxId: ID!, $input: SfxInput!) {
+				mutateSfx(id: $sfxId, sfxInput: $input) {
+					sfx {
+						name
+						description
+					}
 				}
 			}`
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
-			let variables: object = {
-				updateSfxId: sfx_id,
-				input: input
-			}
-			mutate(variables)
+			apolloClient.mutate({
+				mutation: query,
+				variables: {
+					sfxId: sfx_id,
+					input: input
+				}
+			}).then((result) => {
+				if(result.data.mutateSfx.sfx) {
+					sfx.value = {
+						...sfx.value,
+						...result.data.mutateSfx.sfx
+					}
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
+			// let variables: object = {
+			// 	updateSfxId: sfx_id,
+			// 	input: input
+			// }
+			// mutate(variables)
 		}
 	}
 

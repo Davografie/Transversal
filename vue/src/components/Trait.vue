@@ -19,7 +19,7 @@
 	// import DiePicker from '@/components/DiePicker.vue'
 	import SFX from '@/components/SFX.vue'
 	import SubTrait from '@/components/SubTrait.vue'
-	import EntityCard from './EntityCard.vue'
+	import EntityButton from './EntityButton.vue'
 
 	import { usePlayerStore } from '@/stores/PlayerStore'
 	
@@ -1058,7 +1058,7 @@
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
 						trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',]">
 				<div class="to-entity" v-if="trait.traitSetting?.toEntity">
-					<EntityCard :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" class="trait-to-entity" is_active />
+					<EntityButton :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" class="trait-to-entity" is_active />
 				</div>
 				<div class="trait-text">
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
@@ -1205,7 +1205,7 @@
 							<span v-if="!trait.traitSetting?.knownTo?.length">
 								<i>no one</i>
 							</span>
-							<EntityCard
+							<EntityButton
 								v-for="entity_id in trait.traitSetting?.knownTo?.map((x) => x.id)" :key="entity_id"
 								:entity_id="entity_id"
 								:override_click="true"
@@ -1217,7 +1217,7 @@
 							<span v-if="!showable_characters.filter((x: EntityType) => !trait.traitSetting?.knownTo?.map((y: EntityType) => y.id).includes(x.id)).length">
 								<i>no one</i>
 							</span>
-							<EntityCard
+							<EntityButton
 								v-for="entity in showable_characters.filter((x: EntityType) => !trait.traitSetting?.knownTo?.map((y: EntityType) => y.id).includes(x.id))" :key="entity.id"
 								:entity_id="entity.id"
 								:override_click="true"
@@ -1269,8 +1269,8 @@
 							@remove="remove_sfx(sfx.id)"
 							:editing="mode == view_modes.Editing"
 							:adding="false"
-							:expanded="mode != view_modes.Small"
-							v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
+							:expanded="mode != view_modes.Small || expanded_sfx.id == sfx.id" />
+							<!-- v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" /> -->
 						<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
 					</template>
 				</div>
@@ -1860,6 +1860,38 @@
 			.sub-traits {
 				border-top: 1px solid var(--color-border);
 			}
+			.edit-buttons {
+				border-top: 1px solid var(--color-editing);
+				border-radius: 0 0 10px 10px;
+				overflow: hidden;
+				.button-mnml {
+					background-color: transparent;
+				}
+				.play-button {
+					box-shadow: inset 0 0 80px var(--color-highlight);
+					text-shadow: 0 0 20px var(--color-highlight);
+				}
+				.save-button {
+					box-shadow: inset 0 0 80px var(--color-highlight);
+					text-shadow: 0 0 20px var(--color-highlight);
+				}
+				.save-temp-button {
+					box-shadow: inset 0 0 80px var(--color-editing);
+					text-shadow: 0 0 20px var(--color-editing);
+				}
+				.edit-button {
+					box-shadow: inset 0 0 80px var(--color-editing);
+					text-shadow: 0 0 20px var(--color-editing);
+				}
+				.cancel-button {
+					box-shadow: inset 0 0 80px var(--color-background);
+					text-shadow: 0 0 20px var(--color-background);
+				}
+				.remove-button {
+					box-shadow: inset 0 0 80px var(--color-hitch);
+					text-shadow: 0 0 20px var(--color-hitch);
+				}
+			}
 			&.with-statement {
 				/* font-size: .8em; */
 			}
@@ -2068,11 +2100,12 @@
 						}
 					}
 				}
-				&.hidden {
-					.trait-inner {
-						box-shadow: inset 0 0 20px var(--color-disabled);
-						padding: 10px;
-					}
+			}
+			&.hidden {
+				opacity: .8;
+				.trait-inner {
+					box-shadow: inset 0 0 20px var(--color-disabled);
+					/* padding: 10px; */
 				}
 			}
 		}
@@ -2217,18 +2250,6 @@
 				}
 				.button-mnml.active {
 					background-color: var(--color-background-mute);
-				}
-			}
-			.edit-buttons {
-				border-top: 1px solid var(--color-editing);
-				.save-button {
-					border-radius: 0 0 0 10px;
-				}
-				.cancel-button {
-					border-radius: 0;
-				}
-				.remove-button {
-					border-radius: 0 0 10px 0;
 				}
 			}
 		}
