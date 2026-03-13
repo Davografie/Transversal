@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import RulesView from '@/views/RulesView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import CharacterView from '@/views/CharacterView.vue'
+import FactionView from '@/views/FactionView.vue'
 import CharacterOverview from '@/views/CharacterOverview.vue'
 import CurrentLocationView from '@/views/CurrentLocationView.vue'
 import TraitsetOverview from '@/views/TraitsetOverview.vue'
@@ -68,6 +69,11 @@ const router = createRouter({
 					path: 'entity/:entity_key',
 					name: 'Entity',
 					component: CharacterView
+				},
+				{
+					path: 'faction/:faction_key',
+					name: 'Faction',
+					component: FactionView
 				},
 				{
 					path: 'settings',
