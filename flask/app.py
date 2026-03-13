@@ -316,6 +316,7 @@ def find_docs(collection_name: str, query: dict):
 		try:
 			if len(result) > 0:
 				# logger.debug(f"Documents found for query: {query}, storing result in Redis, documents:\n{result}")
+				# result = [dict(t) for t in {tuple(d.items()) for d in result}]
 				r.rpush(redis_key, *[json.dumps(doc).encode('utf-8') for doc in result])
 				return result
 			else:
@@ -3352,7 +3353,7 @@ class DeleteEntity(Mutation):
 
 			# if this entity is a location, also remove it from other traits' locations_enabled/disabled
 			query = f"""FOR s IN TraitSettings
-						FILTER { entity_id } IN s.locations_enabled
+						FILTER '{ entity_id }' IN s.locations_enabled
 						RETURN s"""
 			cursor = execute_aql(query, ['TraitSettings'])
 			for doc in cursor:
@@ -3365,7 +3366,7 @@ class DeleteEntity(Mutation):
 				# else:
 				update_doc('TraitSettings', doc)
 			query = f"""FOR s IN TraitSettings
-						FILTER { entity_id } IN s.locations_disabled
+						FILTER '{ entity_id }' IN s.locations_disabled
 						RETURN s"""
 			cursor = execute_aql(query, ['TraitSettings'])
 			for doc in cursor:
@@ -3382,7 +3383,7 @@ class DeleteEntity(Mutation):
 
 			# this entity might be listed in other entities known_to
 			query = f"""FOR e IN Entities
-						FILTER { entity_id } IN e.known_to
+						FILTER '{ entity_id }' IN e.known_to
 						RETURN e"""
 			cursor = execute_aql(query, ['Entities'])
 			for doc in cursor:
