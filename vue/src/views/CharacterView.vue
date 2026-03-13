@@ -1144,9 +1144,14 @@
 			bottom: 100px;
 			left: 0;
 			z-index: 5;
+			.reference {
+				max-height: calc(100vh - 200px - 2em);
+				overflow-y: auto;
+			}
 			.button-mnml {
 				background-color: var(--color-background);
 				border: 1px solid var(--color-border);
+				height: 2em;
 			}
 		}
 	}
