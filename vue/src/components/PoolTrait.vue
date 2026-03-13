@@ -56,7 +56,7 @@
 			:class="trait_class">
 		<div class="pool-trait-wrapper">
 			<div class="pool-trait-description">
-				<div class="trait-name">
+				<div class="trait-name" v-if="!trait.statement">
 					{{ trait.name }}
 				</div>
 				<div class="trait-statement" v-if="trait.statement">
@@ -68,7 +68,10 @@
 			</div>
 			<div class="pool-trait-rating">
 				<Die class="pool-die" v-for="die in props.dice.filter((d) => (d.traitsettingId == props.traitsetting_id && !d.subTraitsettingId) || 
-					(d.subTraitsettingId && d.subTraitsettingId == props.traitsetting_id))" :die="die" in_pool
+					(d.subTraitsettingId && d.subTraitsettingId == props.traitsetting_id))"
+					:die="die"
+					in_pool
+					size="2em"
 					v-touch:hold="() => longpress_die(die)"
 					@click.right="() => longpress_die(die)"
 					@click.stop="click_die(die)" />
@@ -89,6 +92,9 @@
 		/* border-bottom: 1px solid var(--color-border); */
 		display: flex;
 		justify-content: space-between;
+		align-items: center;
+		position: relative;
+		max-height: 1.6em;
 		&:hover {
 			box-shadow: inset 0 0 10px var(--color-highlight);
 			cursor: crosshair;
@@ -97,8 +103,15 @@
 			color: var(--color-disabled);
 		}
 		.subtraits {
-			display: flex;
-			flex-direction: column;
+			/* display: flex;
+			flex-direction: column; */
+			/* line-height: 0.2em; */
+		}
+		.pool-trait-rating {
+			/* float: right; */
+			/* position: absolute;
+			right: 0; */
+			transform: translateY(-.4em);
 		}
 	}
 	.pool-wrapper {

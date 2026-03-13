@@ -49,7 +49,9 @@
 <style scoped>
 	.pool-entity-wrapper.pool-wrapper {
 		/* padding-left: 1em; */
-		max-width: 24rem;
+		/* max-width: 24rem; */
+		/* width: 100%; */
+		/* flex-grow: 1; */
 		text-align: left;
 		.divider {
 			border-bottom: 1px solid var(--color-highlight);

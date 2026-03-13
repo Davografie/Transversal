@@ -47,7 +47,7 @@
 	
 	watch(() => props.expanded, (newExpanded) => {
 		if(newExpanded == true) {
-			verbose_dice.value = false
+			// verbose_dice.value = false
 			dicepool.pullInterval.value = 3000
 			dicepool.pull_dicepools()
 		}
@@ -236,126 +236,121 @@
 				<div id="poll-timer">{{ time_until_next_poll }}ms</div>
 			</div>
 			<div id="dicepool-collapsible" v-if="props.expanded">
-				<SessionControl v-if="player.is_gm" />
-				<!-- <div id="phase" :class="{ 'pulsate': phase_pulsate }"
-					@animationend="phase_pulsate = false">
-					{{ editing ? 'change die' : dicepoolStore.phase.toString() }}
-				</div> -->
-				<div id="playing" :class="{ 'active': player.playing }" @click.stop="player.playing = !player.playing">
-					{{ player.playing ? '▶' : '▷' }}
-				</div>
-				<div id="dicepools" :style="{ 'background-image': dicepool.dicepool_size.value > 0 ? `url('/img/` + ruleset_logo + `.png')` : '' }">
+				<div id="dicepool-inner">
+					<!-- <input type="button" class="button-mnml" id="dicepool-details-view"
+						:value="verbose_dice ?
+							player.small_buttons ? '👁' : '👁 detail view' :
+							player.small_buttons ? '🔘' : '🔘 simple view'"
+						@click.stop="verbose_dice = !verbose_dice" /> -->
+					<SessionControl v-if="player.is_gm" />
+					<div id="dicepools" :style="{ 'background-image': dicepool.dicepool_size.value > 0 ? `url('/img/` + ruleset_logo + `.png')` : '' }">
 
-					<div id="dicepool-picker" v-if="dicepool.inResultPhase.value || dicepool.inEffectPhase.value">
+						<div id="dicepool-picker" v-if="dicepool.inResultPhase.value || dicepool.inEffectPhase.value">
 
-						<span class="info-half result" :class="[{ 'active': dicepool.inResultPhase.value }, { 'pulsate': result_pulsate }]"
-								@click.stop="dicepool.set_result_phase()"
-								@animationend="result_pulsate = false">
-							<div class="header">result{{ ': ' + dicepool.result.value }}</div>
-							<div class="info-half-wrapper">
-								<input type="button" class="button-mnml" value="-" @click.stop="dicepool.change_result_limit(-1)"
-									v-if="dicepool.result_limit.value > 1 && dicepool.inResultPhase.value" />
-								<Die v-for="die in dicepoolStore.dice.filter((d) => d.isResultDie && d.ratingType != 'resource')" :key="die.id" :die="die" in_pool
-									@click.stop="dicepool.inResultPhase.value ? die.isResultDie = false : dicepool.set_result_phase()" />
-								<span class="slot" v-for="i of dicepool.result_limit.value - dicepool.result_size.value" :key="i">
-									{{ die_shapes.default_inactive }}
-								</span>
-								<input type="button" class="button-mnml" value="+" @click.stop="dicepool.change_result_limit(1)"
-									v-if="dicepool.inResultPhase.value" />
-							</div>
-						</span>
+							<span class="info-half result" :class="[{ 'active': dicepool.inResultPhase.value }, { 'pulsate': result_pulsate }]"
+									@click.stop="dicepool.set_result_phase()"
+									@animationend="result_pulsate = false">
+								<div class="header">result{{ ': ' + dicepool.result.value }}</div>
+								<div class="info-half-wrapper">
+									<input type="button" class="button-mnml" value="-" @click.stop="dicepool.change_result_limit(-1)"
+										v-if="dicepool.result_limit.value > 1 && dicepool.inResultPhase.value" />
+									<Die v-for="die in dicepoolStore.dice.filter((d) => d.isResultDie && d.ratingType != 'resource')" :key="die.id" :die="die" in_pool
+										@click.stop="dicepool.inResultPhase.value ? die.isResultDie = false : dicepool.set_result_phase()" />
+									<span class="slot" v-for="i of dicepool.result_limit.value - dicepool.result_size.value" :key="i">
+										{{ die_shapes.default_inactive }}
+									</span>
+									<input type="button" class="button-mnml" value="+" @click.stop="dicepool.change_result_limit(1)"
+										v-if="dicepool.inResultPhase.value" />
+								</div>
+							</span>
 
-						<span class="info-half effect" :class="[{ 'active': dicepool.inEffectPhase.value }, { 'pulsate': effect_pulsate }]"
-								@click.stop="dicepool.set_effect_phase()"
-								@animationend="effect_pulsate = false">
-							<div class="header">effect</div>
-							<div class="info-half-wrapper">
-								<input type="button" class="button-mnml" value="-" @click.stop="dicepool.change_effect_limit(-1)"
-									v-if="dicepool.effect_limit.value > 1 && dicepool.inEffectPhase.value" />
-								<Die v-for="die in dicepoolStore.dice.filter((d) => d.isEffectDie)" :die="die" in_pool
-										@click.stop="dicepool.inEffectPhase.value ? die.isEffectDie = false : dicepool.set_effect_phase()" />
-								<span class="slot" v-for="i of dicepool.effect_limit.value - dicepool.effect_size.value" :key="i">
-									{{ die_shapes.default_inactive }}
-								</span>
-								<input type="button" class="button-mnml" value="+" @click.stop="dicepool.change_effect_limit(1)"
-									v-if="dicepool.inEffectPhase.value" />
-							</div>
-						</span>
+							<span class="info-half effect" :class="[{ 'active': dicepool.inEffectPhase.value }, { 'pulsate': effect_pulsate }]"
+									@click.stop="dicepool.set_effect_phase()"
+									@animationend="effect_pulsate = false">
+								<div class="header">effect</div>
+								<div class="info-half-wrapper">
+									<input type="button" class="button-mnml" value="-" @click.stop="dicepool.change_effect_limit(-1)"
+										v-if="dicepool.effect_limit.value > 1 && dicepool.inEffectPhase.value" />
+									<Die v-for="die in dicepoolStore.dice.filter((d) => d.isEffectDie)" :die="die" in_pool
+											@click.stop="dicepool.inEffectPhase.value ? die.isEffectDie = false : dicepool.set_effect_phase()" />
+									<span class="slot" v-for="i of dicepool.effect_limit.value - dicepool.effect_size.value" :key="i">
+										{{ die_shapes.default_inactive }}
+									</span>
+									<input type="button" class="button-mnml" value="+" @click.stop="dicepool.change_effect_limit(1)"
+										v-if="dicepool.inEffectPhase.value" />
+								</div>
+							</span>
 
-					</div>
-
-					<ResolutionSWADE v-if="dicepool.inSwadeResultPhase.value && dicepoolStore.dice[0].result" />
-
-					<div id="pool-dice">
-						<div id="gm-die-picker" v-if="dicepool.inAddingPhase.value && !editing_die">
-							<DiePicker @change-die="add_custom_dice" custom />
 						</div>
 
-						<div id="the-meat"
-								v-if="!dicepool.inResolvePhase.value">
-							<div id="chosen-dice">
-								<input type="button" class="button-mnml" id="dicepool-details-view"
-									:value="verbose_dice ?
-										player.small_buttons ? '👁' : '👁 detail view' :
-										player.small_buttons ? '🔘' : '🔘 simple view'"
-									@click.stop="verbose_dice = !verbose_dice" />
-								<div id="chosen-dice-wrapper">
-									<div id="verbose-dice" v-if="verbose_dice">
-										<PoolEntity v-for="entity in new Set(dicepoolStore.dice.map(d => d.entityId)).values()" :key="entity"
-											:entity_id="entity ?? ''" :dice="dicepoolStore.dice.filter(d => d.entityId == entity)"
-											@longpress_die="(die: DieType) => longtap_die(die)" />
-									</div>
-									<div id="simple-dice" v-else>
-										<div id="average-result" v-if="dicepoolStore.dice.length > 0">
-											{{ (dicepoolStore.dice.map((d) => d.sides).reduce((acc, curr) => acc + (curr / 2), 0) / dicepoolStore.dice.length ) * dicepool.result_limit.value }}
+						<ResolutionSWADE v-if="dicepool.inSwadeResultPhase.value && dicepoolStore.dice[0].result" />
+
+						<div id="pool-dice">
+							<div id="gm-die-picker" v-if="dicepool.inAddingPhase.value && !editing_die">
+								<DiePicker @change-die="add_custom_dice" custom />
+							</div>
+
+							<div id="the-meat"
+									v-if="!dicepool.inResolvePhase.value">
+								<div id="chosen-dice">
+									<div id="chosen-dice-wrapper">
+										<div id="verbose-dice" v-if="verbose_dice">
+											<PoolEntity v-for="entity in new Set(dicepoolStore.dice.map(d => d.entityId)).values()" :key="entity"
+												:entity_id="entity ?? ''" :dice="dicepoolStore.dice.filter(d => d.entityId == entity)"
+												@longpress_die="(die: DieType) => longtap_die(die)" />
 										</div>
-										<template v-for="die in dicepool.interactive_dice.value" :key="die.id">
-											<DieComponent
-												v-if="die.id != editing_die?.id"
-												:class="{ 'editing': editing_die && die.id == editing_die.id }"
-												:die="die"
-												size="5em"
-												is_choice
-												in_pool
-												v-touch:hold="()=>longtap_die(die)"
-												@click.stop="()=>click_die(die)"
-												@click.right="()=>longtap_die(die)"
-												@contextmenu.prevent="(e) => e.preventDefault()" />
-											<DiePicker
-												v-if="die.id == editing_die?.id"
-												radial
-												size="5em"
-												@change-die="(r) => edit_die(r)"
-												:die="editing_die"
-												@cancel="editing_die = undefined; editing = false" show_effects :custom="false" />
-										</template>
+										<div id="simple-dice" v-else>
+											<div id="average-result" v-if="dicepoolStore.dice.length > 0">
+												{{ (dicepoolStore.dice.map((d) => d.sides).reduce((acc, curr) => acc + (curr / 2), 0) / dicepoolStore.dice.length ) * dicepool.result_limit.value }}
+											</div>
+											<template v-for="die in dicepool.interactive_dice.value" :key="die.id">
+												<DieComponent
+													v-if="die.id != editing_die?.id"
+													:class="{ 'editing': editing_die && die.id == editing_die.id }"
+													:die="die"
+													size="5em"
+													is_choice
+													in_pool
+													v-touch:hold="()=>longtap_die(die)"
+													@click.stop="()=>click_die(die)"
+													@click.right="()=>longtap_die(die)"
+													@contextmenu.prevent="(e) => e.preventDefault()" />
+												<DiePicker
+													v-if="die.id == editing_die?.id"
+													radial
+													size="5em"
+													@change-die="(r) => edit_die(r)"
+													:die="editing_die"
+													@cancel="editing_die = undefined; editing = false" show_effects :custom="false" />
+											</template>
+										</div>
 									</div>
 								</div>
+								<div id="edit-die" v-if="editing && verbose_dice">
+									<DiePicker
+										@change-die="(r) => edit_die(r)"
+										:die="editing_die"
+										@cancel="editing_die = undefined; editing = false" show_effects :custom="false" />
+								</div>
+								<div id="suggested-complications" v-if="dicepool.inAddingPhase.value">
+									<template v-for="complication in new Set(dicepoolStore.suggested_complications.map(d => d.traitsettingId)).values()"
+											:key="complication">
+										<SuggestedComplication
+											:complication="dicepoolStore.suggested_complications.filter(d => d.traitsettingId == complication)"
+											@click_complication="click_complication(complication)"
+											@click_die="click_complication_die"
+											v-if="dicepoolStore.suggested_complications.filter(d => d.traitsettingId == complication).length > 0" />
+									</template>
+								</div>
 							</div>
-							<div id="edit-die" v-if="editing && verbose_dice">
-								<DiePicker
-									@change-die="(r) => edit_die(r)"
-									:die="editing_die"
-									@cancel="editing_die = undefined; editing = false" show_effects :custom="false" />
-							</div>
-							<div id="suggested-complications" v-if="dicepool.inAddingPhase.value">
-								<template v-for="complication in new Set(dicepoolStore.suggested_complications.map(d => d.traitsettingId)).values()"
-										:key="complication">
-									<SuggestedComplication
-										:complication="dicepoolStore.suggested_complications.filter(d => d.traitsettingId == complication)"
-										@click_complication="click_complication(complication)"
-										@click_die="click_complication_die"
-										v-if="dicepoolStore.suggested_complications.filter(d => d.traitsettingId == complication).length > 0" />
-								</template>
-							</div>
-						</div>
 
-					</div>
-					<div id="opposing-pools">
-						<PoolPlayer
-							v-for="opposing_pool in dicepoolStore.resolutions.filter(r => r.player.uuid != player.uuid || dicepool.inResolvePhase.value)"
-							:key="opposing_pool.player.uuid"
-							:resolution="opposing_pool" />
+						</div>
+						<div id="opposing-pools">
+							<PoolPlayer
+								v-for="opposing_pool in dicepoolStore.resolutions.filter(r => r.player.uuid != player.uuid || dicepool.inResolvePhase.value)"
+								:key="opposing_pool.player.uuid"
+								:resolution="opposing_pool" />
+						</div>
 					</div>
 				</div>
 				<div id="buttons" :class="[dicepoolStore.dice.length < 3 ? 'empty-dicepool' : 'dicepool-presence', dicepoolStore.resolutions.length == 0 ? '' : '']">
@@ -377,55 +372,206 @@
 		flex-direction: column;
 		align-items: center;
 		min-height: 40px;
-	}
-	#dicepool-wrapper {
-		min-width: 33vw;
-		#dicepool-collapsible {
-			backdrop-filter: blur(5px);
+		max-height: 90vh;
+		#dicepool-wrapper {
+			min-width: 33vw;
+			.title {
+				font-weight: 500;
+				color: var(--color-background);
+				border-top: 1px solid var(--color-border);
+				cursor: pointer;
+				height: 40px;
+				#dicepool-title {
+					display: flex;
+					justify-content: center;
+					align-items: center;
+					height: 100%;
+				}
+				#dicepool-limit {
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+					height: 100%;
+					gap: 1em;
+					#dicepool-size {
+						display: flex;
+						justify-content: space-evenly;
+						align-items: center;
+						flex-grow: 1;
+						span {
+							display: block;
+							flex-grow: 1;
+							text-align: center;
+						}
+					}
+					.button-mnml {
+						background-color: transparent;
+						padding: .5em 1em;
+						margin: 0;
+						line-height: 0;
+						border: none;
+					}
+				}
+				&:hover {
+					background-color: var(--color-highlight-mute);
+				}
+			}
+			#poll-timer-wrapper {
+				background-color: var(--color-border);
+				#poll-timer {
+					width: v-bind(time_until_next_poll_percentile + '%');
+					height: 4px;
+					background-color: var(--color-highlight);
+					transition: width 1.5s;
+				}
+			}
+			#dicepool-collapsible {
+				background-color: var(--color-background-mute);
+				backdrop-filter: blur(5px);
+				#dicepool-inner {
+					max-height: calc(90vh - 40px - 3em);
+					overflow: hidden;
+					#playing {
+						text-align: center;
+						background-color: var(--color-background);
+						/* color: var(--color-); */
+						border-bottom: 1px solid var(--color-border);
+						font-size: 1.5em;
+						padding: 0 .4em;
+						float: right;
+						margin: .2em;
+						border-radius: 20%;
+						z-index: 10;
+						position: relative;
+						&.active {
+							color: var(--color-highlight);
+						}
+					}
+					#dicepools {
+						position: relative;
+						background-repeat: no-repeat;
+						background-position: calc(100% - 20px) calc(100% - 20px);
+						background-size: min(200px, 20vw);
+						#dicepool-picker {
+							display: flex;
+							.info-half {
+								width: 50%;
+								height: 100px;
+								border: 1px solid var(--color-border);
+								margin: 10px;
+								display: flex;
+								flex-direction: column;
+								justify-content: space-evenly;
+								.info-half-wrapper{
+									display: flex;
+									justify-content: space-evenly;
+									align-items: center;
+									.slot, .button-mnml {
+										font-size: 2em;
+									}
+								}
+								&.active {
+									border: 1px solid var(--color-highlight);
+								}
+							}
+						}
+						#pool-dice {
+							display: flex;
+							#gm-die-picker {
+								width: 48px;
+								border-right: 1px solid var(--color-border);
+							}
+							#the-meat {
+								flex-grow: 1;
+								display: flex;
+								flex-direction: column;
+								justify-content: space-around;
+								background-size: 20%;
+								background-repeat: no-repeat;
+								background-position: right 20px bottom 20px;
+								#dicepool-details-view {
+									float: left;
+								}
+								#chosen-dice {
+									position: relative;
+									height: 100%;
+									padding: 1em;
+									line-height: 1em;
+									#chosen-dice-wrapper {
+										/* display: flex;
+										flex-wrap: wrap;
+										justify-content: center;
+										align-items: center;
+										gap: .4em; */
+										height: 100%;
+										max-height: 60vh;
+										overflow-y: auto;
+									}
+									.die.editing {
+										border: 1px solid red;
+									}
+									#button-verbose {
+										position: absolute;
+										top: 10px;
+										right: 10px;
+										z-index: 1;
+									}
+									#simple-dice {
+										display: flex;
+										flex-wrap: wrap;
+										justify-content: space-evenly;
+										align-items: space-evenly;
+										max-width: 200px;
+										width: 100%;
+										height: 100%;
+										.die {
+											margin: .4em;
+											cursor: crosshair;
+										}
+									}
+								}
+								#suggested-complications {
+									display: flex;
+									flex-wrap: wrap;
+								}
+							}
+						}
+					}
+					#opposing-pools {
+						display: flex;
+						justify-content: space-around;
+						gap: .4em;
+					}
+				}
+			}
+			#buttons {
+				width: 100%;
+				height: 3em;
+				.dicepool-button {
+					border: none;
+					padding: .5em;
+					font-size: 1.2em;
+					width: 50%;
+					&#btn_reset {
+						background-color: var(--color-hitch);
+						color: var(--color-hitch-text);
+					}
+				}
+				&.empty-dicepool {
+					border-top: 1px solid var(--color-border);
+				}
+				&.dicepool-presence {
+					border-top: 1px solid var(--color-highlight);
+					#btn_roll, #btn_set {
+						background-color: var(--color-highlight);
+						color: var(--color-highlight-text);
+					}
+				}
+			}
 		}
 	}
 	.triptych #dicepool-wrapper {
 		width: 100vw;
-	}
-	#dicepool .title {
-		font-weight: 500;
-		color: var(--color-background);
-		border-top: 1px solid var(--color-border);
-		cursor: pointer;
-		#dicepool-title {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			height: 100%;
-		}
-		#dicepool-limit {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			height: 100%;
-			gap: 1em;
-			#dicepool-size {
-				display: flex;
-				justify-content: space-evenly;
-				align-items: center;
-				flex-grow: 1;
-				span {
-					display: block;
-					flex-grow: 1;
-					text-align: center;
-				}
-			}
-			.button-mnml {
-				background-color: transparent;
-				padding: .5em 1em;
-				margin: 0;
-				line-height: 0;
-				border: none;
-			}
-		}
-		&:hover {
-			background-color: var(--color-highlight-mute);
-		}
 	}
 	#dicepool:not(.empty) .title {
 		background-color: var(--color-highlight);
@@ -442,178 +588,6 @@
 	#dicepool.expanded .title {
 		border-bottom: 1px solid var(--color-border);
 		font-size: 1.5em;
-	}
-	#poll-timer-wrapper {
-		background-color: var(--color-border);
-		#poll-timer {
-			width: v-bind(time_until_next_poll_percentile + '%');
-			height: 4px;
-			background-color: var(--color-highlight);
-			transition: width 1.5s;
-		}
-	}
-	#dicepool-collapsible {
-		background-color: var(--color-background-mute);
-		#playing {
-			text-align: center;
-			background-color: var(--color-background);
-			/* color: var(--color-); */
-			border-bottom: 1px solid var(--color-border);
-			font-size: 1.5em;
-			padding: 0 .4em;
-			float: right;
-			margin: .2em;
-			border-radius: 20%;
-			z-index: 10;
-			position: relative;
-			&.active {
-				color: var(--color-highlight);
-			}
-		}
-	}
-	#dicepools {
-		position: relative;
-		background-repeat: no-repeat;
-		background-position: calc(100% - 20px) calc(100% - 20px);
-		background-size: min(200px, 20vw);
-		
-	}
-	#phase {
-		text-align: center;
-		border-bottom: 1px solid var(--color-border);
-	}
-	#dicepool-picker {
-		display: flex;
-		.info-half {
-			width: 50%;
-			height: 100px;
-			border: 1px solid var(--color-border);
-			margin: 10px;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-evenly;
-			.info-half-wrapper{
-				display: flex;
-				justify-content: space-evenly;
-				align-items: center;
-				.slot, .button-mnml {
-					font-size: 2em;
-				}
-			}
-			&.active {
-				border: 1px solid var(--color-highlight);
-			}
-		}
-	}
-	#pool-dice {
-		display: flex;
-		#gm-die-picker {
-			width: 48px;
-			border-right: 1px solid var(--color-border);
-		}
-		#the-meat {
-			flex-grow: 1;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-around;
-			background-size: 20%;
-			background-repeat: no-repeat;
-			background-position: right 20px bottom 20px;
-			#dicepool-details-view {
-				float: left;
-			}
-			#chosen-dice {
-				position: relative;
-				height: 100%;
-				padding: 1em;
-				line-height: 1em;
-				#chosen-dice-wrapper {
-					display: flex;
-					flex-wrap: wrap;
-					justify-content: center;
-					align-items: center;
-					gap: .4em;
-					height: 100%;
-					max-height: 60vh;
-					/* overflow-y: auto; */
-				}
-				.die.editing {
-					border: 1px solid red;
-				}
-				#button-verbose {
-					position: absolute;
-					top: 10px;
-					right: 10px;
-					z-index: 1;
-				}
-				#simple-dice {
-					display: flex;
-					flex-wrap: wrap;
-					justify-content: space-evenly;
-					align-items: space-evenly;
-					max-width: 200px;
-					width: 100%;
-					height: 100%;
-					.die {
-						margin: .4em;
-						cursor: crosshair;
-					}
-				}
-			}
-			#suggested-complications {
-				display: flex;
-				flex-wrap: wrap;
-			}
-		}
-	}
-	#opposing-pools {
-		display: flex;
-		justify-content: space-around;
-		gap: .4em;
-	}
-	#resolutions {
-		/* border-left: 1px solid var(--color-border); */
-		padding: .4em;
-		display: flex;
-		justify-content: center;
-		flex-wrap: wrap;
-		gap: .4em;
-	}
-	.edit-die-option {
-		text-align: center;
-		padding: .2em 0;
-	}
-	.pickable-die  {
-		margin: 0 .2em;
-	}
-	#resolutions-title {
-		font-weight: bold;
-		text-align: center;
-	}
-	#buttons {
-		width: 100%;
-	}
-	.dicepool-button {
-		border: none;
-		padding: .5em;
-		font-size: 1.2em;
-		width: 50%;
-	}
-	#btn_reset {
-		background-color: var(--color-hitch);
-		color: var(--color-hitch-text);
-	}
-	.empty-dicepool#buttons {
-		border-top: 1px solid var(--color-border);
-	}
-	.dicepool-presence {
-		#buttons {
-			border-top: 1px solid var(--color-highlight);
-		}
-		#btn_roll, #btn_set {
-			background-color: var(--color-highlight);
-			color: var(--color-highlight-text);
-		}
 	}
 </style>
 

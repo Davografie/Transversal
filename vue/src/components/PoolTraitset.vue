@@ -19,7 +19,9 @@
 
 <template>
 	<div class="pool-traitset-wrapper pool-wrapper">
-		{{  traitset.name }}
+		<div class="traitset-name" v-if="traitset">
+			{{  traitset.name }}
+		</div>
 		<template v-for="traitsetting in new Set(props.dice.map((d) => d.traitsettingId ?? 'custom')).values()" :key="traitsetting">
 			<PoolTrait v-if="traitsetting"
 				:traitsetting_id="traitsetting"
@@ -36,5 +38,11 @@
 	}
 	.pool-traitset-wrapper {
 		padding: .4em 1em;
+		.traitset-name {
+			/* line-height: 0; */
+			/* background-color: var(--color-background);
+			border-left: 1px solid var(--color-border);
+			border-right: 1px solid var(--color-border); */
+		}
 	}
 </style>
