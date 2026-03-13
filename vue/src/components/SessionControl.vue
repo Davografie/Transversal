@@ -32,6 +32,9 @@ watch(() => player.beat_id, () => {
 		<input type="button" class="button-mnml" id="new-session" value="new session" @click="next_something('session')" />
 		<input type="button" class="button-mnml" id="new-scene" value="next scene" @click="next_something('scene')" />
 		<input type="button" class="button-mnml" id="new-beat" value="next beat" @click="next_something('beat')" />
+		<div id="playing" class="button-mnml" :class="{ 'active': player.playing }" @click.stop="player.playing = !player.playing">
+			{{ player.playing ? '▶' : '▷' }}
+		</div>
 	</div>
 </template>
 
