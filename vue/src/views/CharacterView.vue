@@ -1286,7 +1286,7 @@
 			overflow-y: auto;
 			height: 100vh;
 			#character-details {
-				padding: 0 .4em;
+				padding: .4em;
 				#character-portrait {
 					/* padding: 1em; */
 					img, #portrait-upload-wrapper {
