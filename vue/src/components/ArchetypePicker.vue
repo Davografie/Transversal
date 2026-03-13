@@ -3,7 +3,7 @@
 	import { useEntity } from '@/composables/Entity'
 	import { useEntityList } from '@/composables/EntityList'
 
-	import EntityCard from '@/components/EntityCard.vue'
+	import EntityButton from '@/components/EntityButton.vue'
 
 	const props = defineProps<{
 		entity_id: string
@@ -70,7 +70,7 @@
 			<span>each archetype has several traits which will be inherited when selected</span>
 		</div>
 		<div class="archetypes">
-			<EntityCard
+			<EntityButton
 				class="entity-card"
 				v-for="archetype in entity.archetypes" :key="archetype.id"
 				:entity_id="archetype.id"
@@ -78,7 +78,7 @@
 				@click="select_archetype(archetype.id)"
 				override_click
 				show_archetypes />
-			<EntityCard
+			<EntityButton
 				class="entity-card"
 				v-for="archetype in entities.filter((archetype) => archetype.id != props.entity_id && !entity.archetypes?.map(archetype => archetype.id).includes(archetype.id))" :key="archetype.id"
 				:entity_id="archetype.id"

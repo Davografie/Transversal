@@ -1,110 +1,68 @@
 <script setup lang="ts">
-	import { ref, computed, watch } from 'vue'
+	import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
-	// import Die from './Die.vue'
-	import { useEntity } from '@/composables/Entity'
-	// import { useDicepoolStore } from '@/stores/DicepoolStore'
+	import { useElementBounding, useWindowSize } from '@vueuse/core'
+
 	import { usePlayerStore } from '@/stores/PlayerStore'
 
-	import type { Character as CharacterType } from '@/interfaces/Types'
+	import { useEntity } from '@/composables/Entity'
+	import { useRelation } from '@/composables/Relation'
+	import { useLocation } from '@/composables/Location'
+	
+	import Traitset from '@/components/Traitset.vue'
+	import type { Relation } from '@/interfaces/Types'
 
-	const player = usePlayerStore()
-	// const dicepool = useDicepoolStore()
-
-	const props = defineProps({
-		entity_id:			{	type: String,	required: true	},
-		show_unavailable:	{	type: Boolean,	default: false	},
-		override_click:		{	type: Boolean,	default: false	},
-		right_click_favorite:{	type: Boolean,	default: false	},
-		show_archetypes:	{	type: Boolean,	default: false	},
-		show_icon:			{	type: Boolean,	default: false	},
-		show_name:			{	type: Boolean,	default: true	},
-		is_relationship:	{	type: Boolean,	default: false	},
-		is_follower:		{	type: Boolean,	default: false	},
-		is_active:			{	type: Boolean,	default: undefined	},
-		options_direction:	{	type: String,	default: 'right'	},
-	})
+	const props = defineProps<{
+		entity_id: string
+	}>()
 
 	const emit = defineEmits([
-		'refresh_favorites',	// done after long-pressing the card changing its favorite status
-		'hide_location',		// after navigating to the entity of the card
-		'click_entity',			// after clicking the card
+		'hide_entity',
+		'show_entity',
+		'instantiated_entity',
 	])
 
+	const player = usePlayerStore()
 
-	// prepare the entity variable for the card
 	const {
 		entity,
-		retrieve_small_entity,
-		retrieve_followers,
 		set_entity_id,
+		retrieve_small_entity,
+		retrieve_entity,
+		retrieve_archetypes,
+		retrieve_followers,
 		create_relation,
 		entity_type_icon,
+		clone_entity,
+		set_location,
 		toggle_favorite
 	} = useEntity(undefined, props.entity_id)
 
-	retrieve_small_entity()
-	retrieve_followers()	// this doesn't get triggered as often as it should yet
-							// it should also update in locations when the presence is polled
+	retrieve_entity()
+	retrieve_archetypes()
 
-	watch(() => props.entity_id, (newEntityId) => {
-		if(entity.value?.id != newEntityId) {
-			set_entity_id(props.entity_id)
-			retrieve_small_entity()
-		}
+	const relation_exists = computed(() => {
+		return player.the_entity?.relations?.map(r => r.toEntity.id).includes(props.entity_id)
 	})
 
-	const visible = computed(() => {
-		if(entity.value.key == '1') {
-			// hide GM
-			return false
-		}
-		else if(
-			entity.value.entityType == 'character'
-			&& player.is_player
-			&& player.the_entity?.id != entity.value.id
-			&& props.show_unavailable
-		) {
-			return (entity.value as CharacterType).available ?? true
-		}
-		else if(entity.value.isArchetype && player.is_player && !props.show_archetypes) {
-			return false
-		}
-		else {
-			return true
-		}
-	})
+	const {
+		relation,
+		set_relation_id,
+		retrieve_relation,
+		delete_relation
+	} = useRelation(
+		undefined,
+		relation_exists.value ?
+			player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id
+			: ''
+	)
 
-
-	// the entity displayed in the card is the same as the entity that's currently being played with
-	const current_character = computed(() => {
-		return (player.is_gm && player.perspective.id == entity.value.id) ||
-			(!player.is_gm && player.player_character_key == entity.value.key)
-	})
-
-
-	// add the entity of this card as a relation to the codex of the entity that's currently being played with
-	function click_tag() {
-		if(player.is_gm && player.perspective) {
-			create_relation(player.perspective.id)
-			player.retrieve_perspective_relations()
-		}
-		else if(!player.is_gm && player.player_character) {
-			create_relation(player.player_character.id)
-			player.retrieve_relations()
-		}
-		retrieve_small_entity()
-		editing_card.value = false
-	}
-
-
-	// set the entity of this card as the entity that's played with
-	function click_icon() {
-		if(player.is_gm) {
-			player.perspective.id = entity.value.id
-			editing_card.value = false
-		}
-	}
+	const {
+		location,
+		retrieve_location,
+		set_location_key,
+		make_transversable
+	} = useLocation(undefined, entity.value.key)
 
 
 	// check to see if the entity of this card can be added as a relation
@@ -119,465 +77,335 @@
 		}
 	})
 
-
-	// when clicking the entity card, navigate to the entity page
-	function click_card() {
-		if(
-			!held.value
-		) {
-			if(props.override_click) {
-				emit('click_entity')
+	const image = ref()
+	const { width: image_width } = useElementBounding(image)
+	const { height: window_height } = useWindowSize()
+	const card_width = computed(() => {
+		if(entity.value.image?.height && entity.value.image?.width) {
+			if(entity.value.image.width > entity.value.image.height) {
+				return entity.value.image.width
 			}
 			else {
-				editing_card.value = !editing_card.value
+				return Math.min(entity.value.image.width, entity.value.image.width / entity.value.image.height * (window_height.value * 0.6))
 			}
 		}
-	}
+	})
 
+	const image_link_large = computed(() => {
+		return '/assets/uploads/' + entity.value.image?.path +
+			'large' + entity.value.image?.ext
+	})
 
-	// variable that tracks long-press to favorite an entity
-	const held = ref(false)
-	const editing_card = ref(false)
+	const image_link_small = computed(() => {
+		return '/assets/uploads/' + entity.value.image?.path +
+			'small' + entity.value.image?.ext
+	})
 
-	function longpress_card() {
-		if(props.right_click_favorite) {
-			toggle_favorite()
-			emit('refresh_favorites')
+	// add the entity of this card as a relation to the codex of the entity that's currently being played with
+	async function click_tag() {
+		if(!player.the_entity?.id) return
+
+		await create_relation(player.the_entity?.id)
+
+		if(player.is_gm) {
+			player.retrieve_perspective_relations('no-cache')
 		}
-		else if(!props.is_follower && props.options_direction != 'none') {
-			held.value = true
-			editing_card.value = !editing_card.value
-			setTimeout(() => held.value = false, 500)
+		else {
+			player.retrieve_relations('no-cache')
 		}
+		// if(player.is_gm && player.perspective) {
+		// 	create_relation(player.perspective.id)
+		// 	setTimeout(() => player.retrieve_perspective_relations(), 100)
+		// }
+		// else if(!player.is_gm && player.player_character) {
+		// 	create_relation(player.player_character.id)
+		// 	setTimeout(() => player.retrieve_relations(), 100)
+		// }
+		// setTimeout(() => {
+		// 	set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id ?? '')
+		// }, 200)
 	}
-
 
 	// when the player wants to follow the entity instead of transversing themselves
 	const followable = computed(() => {
-		return player.the_entity?.following?.id != entity.value.id	// already following
-			&& player.the_entity?.id != entity.value.id				// can't follow yourself
-			&& player.the_entity?.entityType != 'location'			// locations can't follow
-			&& !(player.is_player && props.is_relationship)			// GM can follow from distance, players can't
-			&& !entity.value.isArchetype							// archetypes aren't actually part of the environment (yet)
-			// && (
-			// 	// anyone can enter an asset
-			// 	entity.value.entityType == 'asset'
-			// 	// following a faction is group travel
-			// 	|| entity.value.entityType == 'faction'
-			// 	// npc's can follow npc's
-			// 	|| (player.perspective.entityType == 'npc' && entity.value.entityType == 'npc')
-			// 	// GM's can follow characters
-			// 	|| (player.is_gm && player.perspective.id == 'Entities/1' && entity.value.entityType == 'character')
-			// )
+		return (		// exclusive
+				player.the_entity?.following?.id != entity.value.id		// already following
+				&& player.the_entity?.id != entity.value.id				// can't follow yourself
+				&& entity.value.following?.id != player.the_entity?.id	// can't follow that which follows you
+				// && player.the_entity?.entityType != 'location'			// locations can't follow
+				&& !(
+					player.is_player
+					&& entity.value.location?.id != player.the_entity?.location?.id
+					&& entity.value.entityType != 'location'
+				)														// GM can follow from distance, players can't
+				&& !entity.value.isArchetype							// archetypes aren't actually part of the environment (yet)
+			)
+			&& (		// inclusive
+				player.is_gm
+				|| (
+					player.is_player
+					&& entity.value.location?.id == player.the_entity?.location?.id
+					&& entity.value.entityType != 'location'
+				)														// player can follow characters, NPC's and assets from the same location
+				|| (
+					player.is_player
+					&& entity.value.entityType == 'location'
+				)														// fast-travel to locations
+			)
 	})
 
 	function click_follow() {
 		player.is_player ? player.set_location(entity.value) : player.set_perspective_location(entity.value)
-		editing_card.value = false
 	}
 
 	function click_unfollow() {
 		if(player.the_entity?.location) {
 			player.is_player ? player.set_location(player.the_entity.location) : player.set_perspective_location(player.the_entity.location)
 		}
-		editing_card.value = false
 	}
-	
 
-	// styling variables
-	const image_link_small = computed (() => {
-		if(entity.value.archetype) {
-			return '/assets/uploads/' + entity.value.archetype.id.split('/').pop() + '/small' + entity.value.archetype.image?.ext
+	function click_import() {
+		if(player.the_entity?.location) {
+			set_location(player.the_entity.location)
 		}
-		else if (entity.value.image) {
-			return '/assets/uploads/' + entity.value.image.path + '/small' + entity.value.image?.ext
-		}
-		else {
-			return '/assets/uploads/' + entity.value.entityType + '/small.png'
+	}
+
+	function switch_perspective(entity_id: string) {
+		player.set_perspective_id(entity_id)
+		player.retrieve_perspective()
+	}
+
+	function remove_relation() {
+		delete_relation()
+		player.is_gm ?
+			setTimeout(() => player.retrieve_perspective_relations(), 100) :
+			setTimeout(() => player.retrieve_relations(), 100)
+	}
+
+	onMounted(() => {
+		// retrieve_entity()
+		retrieve_followers()
+		if(player.the_entity?.relations?.map(r => r.toEntity.id).includes(props.entity_id)) {
+			retrieve_relation()
 		}
 	})
 
-	const backgroundStyle = computed(() => {
-		return {
-			backgroundImage: `url(${image_link_small.value})`,
-			backgroundSize: 'cover',
-			backgroundPosition: 'center 10%',
-		};
+	async function instantiate() {
+		await clone_entity(undefined, player.the_entity?.location?.id).then(new_clone => {
+			console.log('instantiated entity (D): ', new_clone)
+			emit('instantiated_entity', new_clone)
+		})
+	}
+
+	watch(() => props.entity_id, (newEntity, oldEntity) => {
+		if(newEntity != oldEntity && newEntity != entity.value.id) {
+			set_entity_id(newEntity)
+			retrieve_entity()
+			if(player.the_entity?.relations?.map(r => r.toEntity.id).includes(newEntity)) {
+				set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == newEntity)?.id || '')
+				retrieve_relation()
+			}
+			else {
+				relation.value = {} as Relation
+			}
+		}
+	})
+	watch(() => entity.value.id, () => {
+		retrieve_archetypes()
+		retrieve_followers()
+	})
+	watch(entity, (newEntity) => {
+		if(entity.value.entityType == 'location') {
+			set_location_key(newEntity.key)
+			retrieve_location()
+		}
 	})
 </script>
 
 <template>
-	<div :to="'/entity/' + entity?.key"
-			class="entity-card"
-			:class="[
-				entity.image ? '' : 'no-image',
-				{ 'current': current_character || player.the_entity?.following?.id == entity.id },
-				{ 'favorite': player.is_gm && entity.favorite },
-				{ 'archetype': entity.isArchetype },
-				{ 'editing': editing_card },
-				{ 'active': props.is_active ?? entity.active },
-				entity.entityType,
-				editing_card || (
-					(props.is_active ?? entity.active)
-					|| entity.entityType == 'faction'
-					|| props.is_relationship
-				) ? 'clear' : 'faded'
-			]"
-			@click="click_card"
-			v-touch:hold="longpress_card"
-			@click.right="longpress_card"
-			@contextmenu="(e) => e.preventDefault()"
-			v-if="visible">
-		<div class="card-wrapper" :style="backgroundStyle">
-		</div>
-		<p class="entity-type" v-if="player.is_gm && props.show_icon != false">{{ entity_type_icon }}</p>
-		<p class="archetype-label" v-if="entity.isArchetype && props.show_archetypes">*</p>
-		<p class="name" v-if="props.show_name">{{ entity?.name }}</p>
-		<transition name="options-transition">
-			<div class="options" :class="props.options_direction" v-if="editing_card">
-				<!-- <div class="name">{{ entity?.name }}</div> -->
+	<div class="active-npc">
+		<div class="card">
+			<img :src="player.data_saving ? image_link_small : image_link_large" ref="image" />
+			<div class="close-button" @click="emit('hide_entity')">
+				<span class="button-mnml icon">✖</span>
+			</div>
+			<div class="buttons">
+				<div class="button-mnml entity-type-icon"
+						@click.stop="switch_perspective(entity.id)"
+						v-if="player.is_gm && player.the_entity?.id != entity.id">
+					<span class="icon">{{ entity_type_icon }}</span>
+					<span class="label">{{ player.small_buttons ? '' : 'take control'}}</span>
+				</div>
+				<div class="button-mnml entity-type-icon"
+						@click.stop="emit('show_entity', entity.key)"
+						v-if="player.is_gm && player.the_entity?.id != entity.id && player.orientation == 'vertical'">
+					<span class="icon">👁</span>
+					<span class="label">{{ player.small_buttons ? '' : 'open entity'}}</span>
+				</div>
 				<div class="button-mnml codex-button"
 						:class="{ 'small-button': !player.small_buttons }"
 						@click.stop="click_tag"
 						v-if="relation_possible">
 					<span class="icon">🏷</span>
-					<span class="label">{{ player.small_buttons ? '' : '\nadd to contacts'}}</span>
+					<span class="label">{{ player.small_buttons ? '' : 'add to contacts'}}</span>
 				</div>
-				<div class="button-mnml entity-type-icon"
-						@click.stop="click_icon"
-						v-if="props.show_icon || editing_card">
-					<span class="icon">{{ entity_type_icon }}</span>
+				<div class="button-mnml transversable-button"
+						:class="{ 'small-button': !player.small_buttons }"
+						@click.stop="make_transversable(player.the_entity?.id)"
+						v-if="player.the_entity?.entityType == 'location' && entity.entityType == 'location'">
+					<span class="icon">⤠</span>
+					<span class="label">{{ player.small_buttons ? '' : 'make transversable'}}</span>
+				</div>
+				<div class="button-mnml import-button"
+						@click.stop="click_import"
+						v-if="player.is_gm && entity.location?.id != player.the_entity?.location?.id">
+					<span class="icon">⬇</span>
+					<span class="label">{{ player.small_buttons ? '' : 'import'}}</span>
 				</div>
 				<div class="button-mnml follow-button"
-						:class="{ 'small-button': !player.small_buttons }"
+						:class="[{ 'small-button': !player.small_buttons }, { 'disabled': player.the_entity?.location?.id == entity.id }]"
 						@click.stop="click_follow"
 						v-if="followable">
 					<span class="icon">⬆</span>
-					<span class="label">{{ player.small_buttons ? '' : entity.entityType != 'location' ? '\nfollow' : '\ntransverse'}}</span>
+					<span class="label">{{ player.small_buttons ? '' : entity.entityType != 'location' ? 'follow' : 'transverse'}}</span>
 				</div>
 				<div class="button-mnml unfollow-button"
 						@click.stop="click_unfollow"
 						v-if="player.the_entity?.following && player.the_entity?.following.id == entity.id">
 					<span class="icon">⍏</span>
-					<span class="label">{{ player.small_buttons ? '' : '\nunfollow'}}</span>
+					<span class="label">{{ player.small_buttons ? '' : 'unfollow'}}</span>
+				</div>
+				<div class="button-mnml copy-button"
+						@click.stop="instantiate"
+						v-if="entity.isArchetype">
+					<span class="icon">⧉</span>
+					<span class="label">{{ player.small_buttons ? '' : 'spawn'}}</span>
+				</div>
+				<div class="button-mnml favorite-button"
+						@click.stop="toggle_favorite"
+						v-if="player.is_gm && entity.entityType == 'character'">
+					<span class="icon" v-if="!entity.favorite">★</span>
+					<span class="icon" v-else>☆</span>
+					<span class="label" v-if="!entity.favorite">{{ player.small_buttons ? '' : 'favorite'}}</span>
+					<span class="label" v-else>{{ player.small_buttons ? '' : 'unfavorite'}}</span>
+				</div>
+				<div class="button-mnml remove-relation-button"
+						@click.stop="remove_relation"
+						v-if="player.the_entity?.relations?.map(r => r.toEntity.id).includes(entity.id)">
+					<span class="icon">💔</span>
+					<span class="label">{{ player.small_buttons ? '' : 'remove'}}</span>
 				</div>
 			</div>
-		</transition>
+		</div>
+		<h2 class="name header" v-if="player.is_gm || !relation_possible">
+			{{ entity.name }}
+		</h2>
+		<span class="location" v-if="entity.location?.name" @click="emit('show_entity', entity.location.key)">
+			🗺 {{ entity.location.name }}
+		</span>
+		<div class="archetypes" v-if="player.is_gm">
+			<span class="archetype" v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id"
+				@click="emit('show_entity', archetype.key)">
+				{{ archetype.name }}
+			</span>
+		</div>
+		<div class="description" v-if="entity.description">
+			{{ entity.description }}
+		</div>
+		<div class="traits">
+			<Suspense>
+				<Traitset
+					v-if="relation_exists && relation.traitsets && relation.traitsets.length > 0"
+					:traitset_id="relation.traitsets[0].id"
+					:entity_id="relation.id"
+					:visible="true"
+					expanded
+					hide_title
+					extensible
+					relationship />
+			</Suspense>
+			<template v-for="traitset in entity.traitsets" :key="traitset.id + entity.id">
+			<Suspense>
+				<Traitset
+					:traitset_id="traitset.id"
+					:entity_id="entity.id"
+					expanded
+					hide_title
+					:limit="traitset.limit"
+					v-if="(player.is_player && entity.entityType != 'character' && player.the_entity?.id != entity.id)
+						|| (player.is_gm && entity.entityType == 'character' && entity.id != player.the_entity?.id && traitset.id == 'Traitsets/1')" />
+			</Suspense>
+			</template>
+		</div>
 	</div>
 </template>
 
-<style>
-	/* not scoped because it's used by other components:
-	- CharacterOverview
-	- LocationView */
-	/* .entity-card.faction {
-		height: 50px;
-		width: 200px;
-		.card-wrapper {
-			height: inherit;
-			width: inherit;
-		}
-	} */
-	.entity-card {
-		text-align: center;
+<style scoped>
+div.active-npc {
+	padding-bottom: 1em;
+	min-width: 16em;
+	width: v-bind(card_width + 'px');
+	div.card {
 		position: relative;
-		padding: 0;
-		cursor: pointer;
-		width: 100px;
-		.entity-type {
+		line-height: 0;
+		img {
+			max-width: 100%;
+		}
+		.close-button {
 			position: absolute;
-			top: -10px;
-			left: -5px;
-			font-size: 1.2em;
-			font-weight: bold;
-			color: var(--color-text);
-			z-index: 1;
-		}
-		.card-wrapper {
-			height: inherit;
-			width: inherit;
-			display: flex;
-			flex-direction: column;
-			border-radius: inherit;
-			justify-content: end;
-			color: var(--color-text);
-			padding: 0.5rem;
-			position: relative;
-			z-index: 1;
-			/* background-image: linear-gradient(to top, var(--color-background) 0, var(--color-background-mute) 15%, transparent 30%); */
-			p {
-				vertical-align: middle;
-			}
-			input {
-				display: block;
-			}
-			.followers {
-				position: absolute;
-				display: flex;
-				gap: .2em;
-				left: 50%;
-				transform: translateX(-50%);
-				bottom: -1.6em;
-				.follower {
-					height: 32px;
-					width: 32px;
-					.card-wrapper {
-						border-width: 2px;
-					}
-					.name {
-						display: none;
-					}
-				}
-			}
-			.dice {
-				position: absolute;
-				height: 140px;
-				overflow: hidden;
-				top: -20px;
-				width: 120px;
-				left: -10px;
-				display: flex;
-				flex-wrap: wrap;
-				justify-content: space-between;
-				align-content: space-between;
-				gap: 2px;
-				.die {
-					margin: 2px;
-				}
-			}
-			.score {
-				font-size: .8em;
-				position: absolute;
-				top: 0px;
-				right: 2px;
-				color: var(--color-border);
-			}
-			.availability {
-				font-size: .8em;
-				position: absolute;
-				bottom: 2px;
-				right: 4px;
-				color: var(--color-border);
-			}
-			.live .availability {
-				color: var(--color-highlight);
-			}
-			.subtitle {
-				font-size: .8em;
-			}
-			.vision {
-				font-style: italic;
-				font-size: .8em;
-			}
-		}
-		.options {
-			interpolate-size: allow-keywords;
-			position: absolute;
-			display: flex;
-			gap: 1em;
-			align-items: center;
-			/* background-color: var(--color-background-mute); */
-			backdrop-filter: blur(3px);
-			box-shadow: inset 0 0 100px var(--color-background-mute);
-			width: auto;
-			max-width: 60vw;
-			overflow: hidden;
-			&.right {
-				left: 50%;
-				top: 0;
-				height: 100%;
-				padding-left: 50px;
-				padding-right: 1em;
-				border-radius: 0 40px 40px 0;
-			}
-			&.left {
-				right: 50%;
-				top: 0;
-				height: 100%;
-				padding-right: 50px;
-				padding-left: 1em;
-				border-radius: 40px 0 0 40px;
-			}
-			&.bottom {
-				top: 100%;
-				left: 0;
-				width: 100%;
-				flex-direction: column;
-			}
-			&.top {
-				bottom: 100%;
-				left: 0;
-				width: 100%;
-				flex-direction: column;
-			}
-			&.inside {
-				top: 50%;
-				left: 50%;
-				transform: translate(-50%, -50%);
-				/* position: absolute; */
-				z-index: 2;
-				width: inherit;
-				height: inherit;
-				border-radius: inherit;
-			}
-			> .button-mnml {
-				.icon{
-					font-size: 1.6em;
-				}
-			}
-			.name {
-				padding: .4em 0;
-				max-height: 100%;
-				/* overflow: hidden; */
-				/* width: fit-content; */
-				font-size: 1.2em;
-				/* text-wrap: nowrap; */
-			}
-			.codex-button {
-				text-align: left;
-				padding: 0 .4em;
-			}
-		}
-		.options-transition-enter-active,
-		.options-transition-leave-active {
-			transition: all 1s ease;
-		}
-		.options-transition-enter-from,
-		.options-transition-leave-to {
-			width: 0;
-			padding-left: 0 !important;
-		}
-		.options-transition-enter-to,
-		.options-transition-leave-from {
-			width: auto;
-			padding-left: 1em;
-		}
-		&.no-image {
-			.card-wrapper {
-				border: 1px solid var(--color-border);
-			}
-			background-color: var(--color-background-mute);
-		}
-		&.faded {
-			color: var(--color-text);
-			.card-wrapper {
-				background-color: var(--color-background-mute);
-			}
-		}
-		&.live {
-			color: var(--color-highlight);
-		}
-		&.favorite {
-			.name {
-				color: var(--color-highlight);
-			}
-		}
-		&.archetype {
-			.archetype-label {
-				position: absolute;
-				z-index: 1;
-				font-size: 2em;
-				top: .4em;
-				right: 0;
-				line-height: 0;
-			}
-			.card-wrapper {
-				background-color: var(--color-background-mute);
-			}
-		}
-	}
-	.dark {
-		.entity-card {
-			border-radius: 200px;
-			box-shadow: 0 0 20px var(--color-background);
+			top: .4em;
+			right: 0;
+			padding: .3em;
+			font-size: 2em;
 			text-shadow: var(--text-shadow);
-			border: 1px solid var(--color-background-mute);
-			height: 100px;
-			.name {
-				position: absolute;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				transform: translateY(20%);
-				text-align: center;
-				font-weight: bold;
-				-webkit-font-smoothing: antialiased;
-				z-index: 5;
-			}
-			.button {
-				border: 1px solid var(--color-border);
-				border-radius: 20px;
-				padding: 0 .6em;
-				background-color: var(--color-background-mute);
-			}
-			.entity-type-icon {
-				text-shadow: none;
-			}
-			&.faded {
-				opacity: .6;
-			}
 		}
-		.entity-card.current,
-		.entity-card.active {
-			box-shadow: 0 0 20px var(--color-highlight);
-			border: none;
-			.card-wrapper {
-				border: 3px solid var(--color-highlight);
-			}
-		}
-		.entity-card:hover {
-			box-shadow: 0 0 10px var(--color-text);
-		}
-	}
-	.light {
-		.entity-card {
-			box-sizing: content-box;
-			border: 1px solid var(--color-border);
-			.card-wrapper {
-				height: 100px;
-			}
-			.name {
-				background-color: var(--color-background-soft);
-			}
-			.codex-button, .entity-type-icon, .follow-button {
-				text-shadow: 0 0 5px var(--color-background), 0 0 5px var(--color-background);
-				border-radius: 20px;
-				background-color: var(--color-background-mute);
-				border: 1px solid var(--color-border);
-				span {
-					display: block;
-				}
-			}
-			.codex-button.small-button {
-				width: 80%;
-				text-align: center;
-				transform: translateX(40px) translateY(-20px);
-			}
-			.follow-button.small-button {
-				width: 80%;
-				transform: translateX(-40px) translateY(20px);
-			}
-			&.current {
-				border: 3px solid var(--color-highlight);
-				box-shadow: 0 0 20px var(--color-highlight);
-			}
-			&.faded {
-				.card-wrapper {
-					border: 2px dashed var(--color-border-hover);
-				}
-			}
-			&:hover {
-				.card-wrapper {
-					border: 3px solid var(--color-border-hover);
-				}
-			}
-			&.active {
-				background-color: var(--color-highlight);
-				.name {
-					background-color: var(--color-highlight);
-					color: var(--color-highlight-text);
+		.buttons {
+			line-height: normal;
+			/* position: absolute; */
+			bottom: 0;
+			display: flex;
+			width: 100%;
+			overflow-x: auto;
+			background-color: var(--color-background);
+			.button-mnml {
+				flex-grow: 1;
+				padding: .3em;
+				font-size: 1.2em;
+				display: flex;
+				flex-direction: column;
+				&:hover {
+					flex-grow: 1.4;
 				}
 			}
 		}
 	}
+	.archetypes {
+		display: flex;
+		justify-content: space-evenly;
+		color: var(--color-gm-light);
+	}
+	.description {
+		font-style: italic;
+	}
+}
+</style>
+
+<style>
+.dark {
+	div.active-npc {
+		border-radius: 30px;
+		/* overflow: hidden; */
+		box-shadow: 0 0 20px var(--color-background);
+		background-color: var(--color-background-mute);
+		img {
+			border-radius: 30px 30px 0 0;
+		}
+	}
+}
+.light {
+	div.active-npc {
+		background-color: var(--color-background);
+		border: 4px double var(--color-border);
+	}
+}
 </style>

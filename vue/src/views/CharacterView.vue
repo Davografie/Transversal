@@ -15,7 +15,7 @@
 	import PlotPoint from '@/components/PlotPoint.vue'
 	import Traitset from '@/components/Traitset.vue'
 	import AllTraits from '@/components/AllTraits.vue'
-	import EntityCard from '@/components/EntityCard.vue'
+	import EntityButton from '@/components/EntityButton.vue'
 	import ArchetypePicker from '@/components/ArchetypePicker.vue'
 	import ButtonMinimal from '@/components/UI/ButtonMinimal.vue'
 
@@ -627,7 +627,7 @@
 							<a v-else @click="player.set_perspective_location(entity.location ?? entity.location)">{{ entity.location?.name }} ⬇</a>
 							<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
 								instance of
-								<EntityCard
+								<EntityButton
 									v-for="archetype in entity.archetypes"
 									:entity_id="archetype.id"
 									override_click
@@ -806,7 +806,7 @@
 
 			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
 					v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities && player.player.entities.length > 0">
-				<EntityCard
+				<EntityButton
 					class="entity-card"
 					v-for="entity_id in player.player.entities.map(e => e.id)" :key="entity_id"
 					:entity_id="entity_id"
@@ -823,7 +823,7 @@
 					<div class="explainer">click to remove from known to</div>
 				</div>
 				<div class="entity-cards">
-					<EntityCard v-for="entity in entity.knownTo" :key="entity.key"
+					<EntityButton v-for="entity in entity.knownTo" :key="entity.key"
 						:entity_id="entity.id"
 						override_click
 						@click_entity="remove_known_to(entity.id)" />
@@ -831,7 +831,7 @@
 			</div>
 
 			<div id="archetype-instances" class="character-menu" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
-				<EntityCard v-for="instance in entity.instances" :key="instance.key"
+				<EntityButton v-for="instance in entity.instances" :key="instance.key"
 					:entity_id="instance.id"
 					override_click
 					@click_entity="click_instance(instance.id)" />

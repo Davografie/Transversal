@@ -8,8 +8,8 @@
 	import { usePlayerStore } from '@/stores/PlayerStore'
 	const player = usePlayerStore()
 
-	const EntityCard = defineAsyncComponent(() => import('@/components/EntityCard.vue'))
-	import NewEntityCard from '@/components/NewEntityCard.vue'
+	const EntityButton = defineAsyncComponent(() => import('@/components/EntityButton.vue'))
+	import EntityNewButton from '@/components/EntityNewButton.vue'
 	import ToggleButton from '@/components/UI/ToggleButton.vue'
 	import { useEntityList } from '@/composables/EntityList'
 	import type { Entity as EntityType } from '@/interfaces/Types'
@@ -114,7 +114,7 @@
 		<div id="favorites" v-if="player.is_gm && entities.filter((e) => e.favorite).length > 0">
 			<h1>favorites</h1>
 			<div class="entities">
-				<EntityCard v-for="entity in entities.filter((e) => e.favorite)" :key="entity.key"
+				<EntityButton v-for="entity in entities.filter((e) => e.favorite)" :key="entity.key"
 					:entity_id="entity.id" @refresh_favorites="retrieve_entities"
 					override_click @click_entity="switch_character(entity)" />
 			</div>
@@ -131,12 +131,12 @@
 		<div id="characters">
 			<h1 @click="display_characters">characters</h1>
 			<div class="entities" v-show="show_characters">
-				<NewEntityCard
+				<EntityNewButton
 					location_id="Entities/1"
 					entity_type="character"
 					archetype_id="Entities/3"
 					options_direction="inside" />
-				<EntityCard
+				<EntityButton
 					v-for="entity in entities.filter((e) => e.entityType == 'character'
 						&& e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1
 						&& (
@@ -167,7 +167,7 @@
 							@click="new_entity_name ? create_character(new_entity_name, new_entityType) : show_character_creation = false" />
 					</div>
 				</div>
-				<EntityCard
+				<EntityButton
 					v-for="entity in entities.filter((e) =>
 						e.entityType == 'npc'
 						&& e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1
@@ -197,7 +197,7 @@
 							@click="new_entity_name ? create_character(new_entity_name, new_entityType) : show_character_creation = false" />
 					</div>
 				</div>
-				<EntityCard v-for="entity in entities.filter((e) => e.entityType == 'faction' && e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1)" :key="entity.key"
+				<EntityButton v-for="entity in entities.filter((e) => e.entityType == 'faction' && e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1)" :key="entity.key"
 					:entity_id="entity.id" @refresh_favorites="retrieve_entities"
 					override_click
 					@click_entity="switch_character(entity)" />
@@ -217,7 +217,7 @@
 							@click="new_entity_name ? create_character(new_entity_name, new_entityType) : show_character_creation = false" />
 					</div>
 				</div>
-				<EntityCard v-for="entity in entities.filter((e) => e.entityType == 'asset' && e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1)" :key="entity.key"
+				<EntityButton v-for="entity in entities.filter((e) => e.entityType == 'asset' && e.name.toLowerCase().indexOf(search.trim().toLowerCase()) != -1)" :key="entity.key"
 					:entity_id="entity.id" @refresh_favorites="retrieve_entities"
 					override_click
 					@click_entity="switch_character(entity)" />

@@ -3,7 +3,7 @@
 	import { useLocation } from '@/composables/Location'
 	import { usePlayerStore } from '@/stores/PlayerStore'
 
-	import EntityCard from '@/components/EntityCard.vue'
+	import EntityButton from '@/components/EntityButton.vue'
 
 	const props = defineProps<{
 		location_key: string,
@@ -77,7 +77,7 @@
 		</div>
 		<div class="entity-cards">
 			<template v-for="entity in filtered_presence" :key="entity.key">
-				<EntityCard
+				<EntityButton
 					:entity_id="entity.id"
 					is_active
 					override_click

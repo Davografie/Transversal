@@ -22,11 +22,11 @@
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
 
 	import Traitset from '@/components/Traitset.vue'
-	import EntityCard from './EntityCard.vue'
-	import NewEntityCard from './NewEntityCard.vue'
+	import EntityButton from './EntityButton.vue'
+	import EntityNewButton from './EntityNewButton.vue'
 	import Location from '@/components/Location.vue'
 	import Presence from '@/components/Presence.vue'
-	import ActiveNPC from '@/components/ActiveNPC.vue'
+	import EntityCard from '@/components/EntityCard.vue'
 	// const LocationItem = defineAsyncComponent(() => import('@/components/Location.vue'))
 
 	import { useLocation } from '@/composables/Location'
@@ -541,7 +541,7 @@
 			<div class="content" v-if="expanded">
 				<div class="left">
 					<div class="presence attribute" v-if="presence && presence.length > 0">
-						<EntityCard
+						<EntityButton
 							class="entity-card"
 							v-if="presence && presence.length > 1"
 							v-for="entity in presence.slice(Math.ceil(presence.length / 2))"
@@ -552,7 +552,7 @@
 							override_click
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
 								overwrite_active = entity.id : overwrite_active = 'empty'" />
-						<NewEntityCard
+						<EntityNewButton
 							:location_id="location.id"
 							options_direction="right"
 							v-if="player.is_gm" />
@@ -563,7 +563,7 @@
 					<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
 				
 					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
-						<ActiveNPC
+						<EntityCard
 							class="active-npc"
 							:entity_id="overwrite_active ?? active_npc"
 							@hide_entity="overwrite_active = 'empty'"
@@ -571,7 +571,7 @@
 							@instantiated_entity="set_presence_watcher" />
 					</div>
 					<div class="archetypes" v-else>
-						<EntityCard
+						<EntityButton
 							class="entity-card"
 							v-for="archetype in location.entities?.filter(e => e.isArchetype)"
 							:key="archetype.key"
@@ -588,7 +588,7 @@
 				</div>
 				<div class="right">
 					<div class="presence attribute" v-if="presence && presence.length > 0">
-						<EntityCard
+						<EntityButton
 							class="entity-card"
 							v-if="presence && presence.length > 0"
 							v-for="entity in presence.slice(0, Math.ceil(presence.length / 2))"
@@ -614,7 +614,7 @@
 							<input type="button" class="button" value="search" v-if="import_search" @click="search_import" />
 						</div>
 						<div class="entity-cards" v-if="import_search">
-							<EntityCard v-for="entity in entities"
+							<EntityButton v-for="entity in entities"
 								:key="entity.key"
 								:entity_id="entity.id"
 								override_click
@@ -826,23 +826,6 @@
 				}
 			}
 		}
-		&.hidden {
-			&.is-not-expanded {
-				box-shadow: inset 0 0 30px var(--color-text);
-				/* border: 2px solid var(--color-text); */
-				opacity: 0.5;
-				>.location-component-wrapper >.title .location-name {
-					/* text-shadow: 0 0 3px var(--color-text);
-					color: transparent; */
-					/* text-shadow: 0 0 50px var(--color-background), 0 0 50px var(--color-background), 0 0 100px var(--color-background); */
-				}
-			}
-			&.is-expanded {
-				>.title .location-name {
-					color: var(--color-disabled);
-				}
-			}
-		}
 		.content {
 			padding: 0 1em 3em;
 			display: grid;
@@ -877,12 +860,15 @@
 				overflow-x: hidden;
 				.archetypes {
 					display: flex;
-					justify-content: space-around;
-					overflow-x: auto;
+					flex-wrap: wrap;
+					justify-content: center;
+					gap: 1em;
+					/* overflow-x: auto; */
+					padding: 1em;
 					.entity-card {
 						width: 50px;
 						min-width: 50px;
-						height: 70px;
+						/* height: 70px; */
 						/* overflow: hidden; */
 					}
 				}
@@ -964,8 +950,6 @@
 					}
 				}
 			}
-		}
-		.attribute {
 			&.description {
 				position: relative;
 				.flavortext {
@@ -979,6 +963,23 @@
 				.location-portrait {
 					max-height: 240px;
 					border: 5px solid var(--color-background);
+				}
+			}
+		}
+		&.hidden {
+			&.is-not-expanded {
+				box-shadow: inset 0 0 30px var(--color-text);
+				/* border: 2px solid var(--color-text); */
+				opacity: 0.5;
+				>.location-component-wrapper >.title .location-name {
+					/* text-shadow: 0 0 3px var(--color-text);
+					color: transparent; */
+					/* text-shadow: 0 0 50px var(--color-background), 0 0 50px var(--color-background), 0 0 100px var(--color-background); */
+				}
+			}
+			&.is-expanded {
+				>.title .location-name {
+					color: var(--color-disabled);
 				}
 			}
 		}
@@ -1024,75 +1025,75 @@
 				}
 			}
 		}
-	}
-	.location-component.no-image {
-		background-color: var(--color-background-mute);
-	}
-	.location-component.is-not-expanded {
-		margin: .2em;
-		.title {
-			position: relative;
-			width: 100%;
-			height: 100%;
-			white-space: preline;
-			line-height: 4em;
-			padding: 4em 3em;
-			.corner-button {
-				display: flex;
-				position: absolute;
-				margin: 0;
-				font-size: 1.2em;
-			}
+		&.no-image {
+			background-color: var(--color-background-mute);
 		}
-	}
-	.location-component.is-expanded {
-		position: relative;
-		&.player {
-			min-height: 75vh;
-		}
-		/* border: 1px solid var(--color-background); */
-		width: 100%;
-		>.location-component-wrapper {
-			>.title {
-				padding: 1em 3em 0 3em;
+		&.is-not-expanded {
+			margin: .2em;
+			.title {
+				position: relative;
+				width: 100%;
+				height: 100%;
+				white-space: preline;
+				line-height: 4em;
+				padding: 4em 3em;
 				.corner-button {
+					display: flex;
 					position: absolute;
 					margin: 0;
 					font-size: 1.2em;
 				}
-				.button.save {
-					position: initial;
-				}
-				.transverse-button {
-					top: 10em;
-					left: 0;
-					bottom: unset;
-					border-bottom: none;
-					border-left: none;
-					border-radius: 0 10px 10px 0;
-				}
-				.hide-button {
-					top: 5.5em;
-					border-bottom: none;
-					border-right: none;
-				}
-				.copy-id {
-					top: 10em;
-					right: 0;
-					bottom: unset;
-					border-bottom: none;
-					border-right: none;
-					border-radius: 10px 0 0 10px;
+			}
+		}
+		&.is-expanded {
+			position: relative;
+			&.player {
+				min-height: 75vh;
+			}
+			/* border: 1px solid var(--color-background); */
+			width: 100%;
+			>.location-component-wrapper {
+				>.title {
+					padding: 1em 3em 0 3em;
+					.corner-button {
+						position: absolute;
+						margin: 0;
+						font-size: 1.2em;
+					}
+					.button.save {
+						position: initial;
+					}
+					.transverse-button {
+						top: 10em;
+						left: 0;
+						bottom: unset;
+						border-bottom: none;
+						border-left: none;
+						border-radius: 0 10px 10px 0;
+					}
+					.hide-button {
+						top: 5.5em;
+						border-bottom: none;
+						border-right: none;
+					}
+					.copy-id {
+						top: 10em;
+						right: 0;
+						bottom: unset;
+						border-bottom: none;
+						border-right: none;
+						border-radius: 10px 0 0 10px;
+					}
 				}
 			}
 		}
-	}
-	.location-component.new-location {
-		justify-content: center;
-		.new-zone {
-			text-align: center;
-			font-size: 1.2em;
-			padding: 1em;
+		&.new-location {
+			justify-content: center;
+			.new-zone {
+				text-align: center;
+				font-size: 1.2em;
+				padding: 1em;
+			}
 		}
 	}
 </style>
@@ -1121,9 +1122,14 @@
 					border-radius: calc(60px - 1em);
 				}
 			}
-			div.content div.center div.location-image-wrapper img {
-				max-width: 100%;
-				box-shadow: 0 0 10px var(--color-background);
+			div.content div.center {
+				div.location-image-wrapper img {
+					max-width: 100%;
+					box-shadow: 0 0 10px var(--color-background);
+				}
+				.archetypes .entity-card {
+					height: 70px;
+				}
 			}
 			.entities {
 				padding: 0 0 1em 0;

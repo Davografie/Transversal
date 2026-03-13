@@ -5,7 +5,7 @@
 	import { usePlayerStore } from '@/stores/PlayerStore'
 	import { useEntityList } from '@/composables/EntityList'
 	import Relation from '@/components/Relation.vue'
-	import EntityCard from '@/components/EntityCard.vue'
+	import EntityButton from '@/components/EntityButton.vue'
 	import type { Entity as EntityType, Relation as RelationType } from '@/interfaces/Types'
 	import ToggleButton from '@/components/UI/ToggleButton.vue'
 
@@ -133,7 +133,7 @@
 					</h2>
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0">
 						<template v-for="(entity, index) in entities.filter(e => show_players ? e.favorite : true)" :key="entity.id">
-							<EntityCard
+							<EntityButton
 								class="entity-card"
 								:entity_id="entity.id"
 								override_click
@@ -146,7 +146,7 @@
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="(player.the_entity?.relations?.length ?? 0) > 0">
 						<template v-if="!show_players"
 								v-for="(relation, index) in player.the_entity?.relations?.filter(r => !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
-							<EntityCard
+							<EntityButton
 								class="entity-card"
 								:entity_id="relation.toEntity?.id"
 								options_direction="none"
@@ -156,7 +156,7 @@
 								@click_entity="click_relation(relation)" />
 						</template>
 						<template v-if="show_players" v-for="(character, index) in entities.filter(e => e.favorite && e.entityType != 'character')" :key="character.id">
-							<EntityCard
+							<EntityButton
 								class="entity-card"
 								:entity_id="character.id"
 								options_direction="none"
