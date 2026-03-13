@@ -142,6 +142,15 @@
 		}
 	}
 
+	function click_rating() {
+		if(mode.value == view_modes.Editing) {
+			edit_rating.value = true
+		}
+		else {
+			play_trait()
+		}
+	}
+
 	function play_trait() {
 		/* add trait to dicepool */
 		console.log("play_trait")
@@ -1133,7 +1142,7 @@
 					<Rating v-if="trait.rating"
 						:rating="new_rating.length > 0 ? new_rating : trait.rating"
 						:rating-type="trait.ratingType"
-						@click.stop="play_trait"
+						@click.stop="click_rating"
 						@deplete-resource="deplete_resource"
 						@deplete-challenge="(d) => mode == view_modes.Editing ? edit_rating = true : deplete_challenge(d)" />
 				</div>
