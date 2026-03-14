@@ -5,10 +5,10 @@
 
 	import { usePlayerStore } from '@/stores/PlayerStore';
 
+	import CharacterView from '@/views/CharacterView.vue';
 	import CurrentLocationView from '@/views/CurrentLocationView.vue';
 	import CodexView from '@/views/CodexView.vue';
 	import DicepoolView from '@/views/DicepoolView.vue';
-	import CharacterView from '@/views/CharacterView.vue';
 	import SettingsView from '@/views/SettingsView.vue';
 
 	import type { Location as LocationType } from '@/interfaces/Types';
@@ -61,7 +61,8 @@
 				:location_key="player.the_entity?.location?.key ?? ''"
 				@show_entity="(ett_key) => show_entity('Entities/' + ett_key)"
 				@transverse="transverse"
-				:active_entity_id="active_entity_id" />
+				:active_entity_id="active_entity_id"
+				v-if="player.the_entity?.location" />
 			<CodexView id="codex" class="panel"
 				@show_entity="show_entity"
 				shown />
