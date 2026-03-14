@@ -70,14 +70,12 @@ export const usePlayerStore = defineStore(
 		const orientation = ref("horizontal")	// horizontal (for landscape, e.g. desktop monitor) or vertical (for portrait, e.g. mobile)
 		const theme = ref("dark")
 		const font_size = ref(16)
-		const input_method = ref<input_methods>(input_methods.kbm)
+		const input_method = ref<input_methods>(orientation.value == "horizontal" ? input_methods.kbm : input_methods.touch)
 
 		const {
 			character: player_character,
 			retrieve_character,
 			retrieve_relations,
-			activate_character,
-			deactivate_character,
 			set_character_key,
 			set_location
 		} = useCharacter(undefined, player_character_key?.value)
@@ -98,12 +96,8 @@ export const usePlayerStore = defineStore(
 			previous_perspective_ids.value = Array.from(new Set(previous_perspective_ids.value)).slice(0, 13)
 		}
 
-		watch(player_character, (newCharacter, oldCharacter) => {
-			// if(oldCharacter) {
-			// 	deactivate_character()
-			// }
+		watch(player_character, (newCharacter) => {
 			if(!newCharacter.active) {
-				// activate_character(uuid.value)
 				activate_entity(newCharacter)
 			}
 		})
@@ -114,8 +108,8 @@ export const usePlayerStore = defineStore(
 			set_entity_id: set_perspective_id,
 			retrieve_entity: retrieve_perspective,
 			retrieve_relations: retrieve_perspective_relations,
+			delete_relation: delete_perspective_relation,
 			set_location: set_perspective_location,
-			activate_entity: activate_perspective,
 			deactivate_entity
 		} = useEntity(undefined, perspective_id.value)
 
@@ -237,6 +231,7 @@ export const usePlayerStore = defineStore(
 			perspective,
 			retrieve_perspective,
 			retrieve_perspective_relations,
+			delete_perspective_relation,
 			set_perspective_location,
 			the_entity,
 			retrieve_the_entity,
