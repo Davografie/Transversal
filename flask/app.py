@@ -574,6 +574,19 @@ class ActivateEntity(Mutation):
 	player = Field(lambda: Player)
 	
 	def mutate(self, info, player_id, entity_id):
+		"""
+		Stores the entity as a character for the player.
+
+		Args:
+			player_id (str): The ID of the player.
+			entity_id (str): The ID of the entity.
+		"""
+		# limit to 12 characters
+		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
+		if len(relations) > 12:
+			for relation in relations[12:]:
+				db.collection('Relations').delete({ '_id': relation.get('_id') })
+
 		# check if agency relation exists
 		logger.info(f"Activating entity {entity_id} for player {player_id}")
 		relations = find_docs('Relations', { '_from': player_id, '_to': entity_id, 'type': 'agency' })
@@ -591,12 +604,13 @@ class ActivateEntity(Mutation):
 		else:
 			for char in session_characters:
 				if char['player'] == player_id:
-					# deactivate the previous character
+					# deactivate the previous character in ADB
 					if char['character'] is not None:
 						character_doc = get_doc_by_id('Entities', str(char['character']))
 						character_doc['active'] = False
 						update_doc('Entities', character_doc)
 					char['character'] = entity_id
+
 		# activate the character in ADB
 		entity_doc = get_doc_by_id('Entities', entity_id)
 		entity_doc['active'] = True
