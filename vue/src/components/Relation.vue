@@ -158,7 +158,7 @@
 				@click="click_icon" :value="entity_type_icon + (player.small_buttons ? '' : '\n' + entity.name)" />
 
 			<input type="button" class="button-mnml transverse"
-				:value="player.small_buttons ? '⬇' : '⬇\ngo to location'"
+				:value="player.small_buttons ? '⬆' : '⬆\ngo to location'"
 				v-if="entity.entityType == 'location'"
 				@click.stop="change_location" />
 
