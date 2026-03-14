@@ -252,14 +252,22 @@
 									@animationend="result_pulsate = false">
 								<div class="header">result{{ ': ' + dicepool.result.value }}</div>
 								<div class="info-half-wrapper">
-									<input type="button" class="button-mnml" value="-" @click.stop="dicepool.change_result_limit(-1)"
+									<input type="button" class="button-mnml" value="-"
+										@click.stop="dicepool.change_result_limit(-1)"
 										v-if="dicepool.result_limit.value > 1 && dicepool.inResultPhase.value" />
-									<Die v-for="die in dicepoolStore.dice.filter((d) => d.isResultDie && d.ratingType != 'resource')" :key="die.id" :die="die" in_pool
-										@click.stop="dicepool.inResultPhase.value ? die.isResultDie = false : dicepool.set_result_phase()" />
+									<div id="result-dice">
+										<Die
+											v-for="die in dicepoolStore.dice.filter((d) => d.isResultDie && d.ratingType != 'resource')" :key="die.id"
+											:die="die"
+											in_pool
+											:is_choice="dicepool.inResultPhase.value"
+											@click.stop="dicepool.inResultPhase.value ? die.isResultDie = false : dicepool.set_result_phase()" />
+									</div>
 									<span class="slot" v-for="i of dicepool.result_limit.value - dicepool.result_size.value" :key="i">
 										{{ die_shapes.default_inactive }}
 									</span>
-									<input type="button" class="button-mnml" value="+" @click.stop="dicepool.change_result_limit(1)"
+									<input type="button" class="button-mnml" value="+"
+										@click.stop="dicepool.change_result_limit(1)"
 										v-if="dicepool.inResultPhase.value" />
 								</div>
 							</span>
@@ -271,8 +279,12 @@
 								<div class="info-half-wrapper">
 									<input type="button" class="button-mnml" value="-" @click.stop="dicepool.change_effect_limit(-1)"
 										v-if="dicepool.effect_limit.value > 1 && dicepool.inEffectPhase.value" />
-									<Die v-for="die in dicepoolStore.dice.filter((d) => d.isEffectDie)" :die="die" in_pool
+									<div id="effect-dice">
+										<Die v-for="die in dicepoolStore.dice.filter((d) => d.isEffectDie)"
+											:die="die"
+											in_pool
 											@click.stop="dicepool.inEffectPhase.value ? die.isEffectDie = false : dicepool.set_effect_phase()" />
+									</div>
 									<span class="slot" v-for="i of dicepool.effect_limit.value - dicepool.effect_size.value" :key="i">
 										{{ die_shapes.default_inactive }}
 									</span>
@@ -295,8 +307,12 @@
 								<div id="chosen-dice">
 									<div id="chosen-dice-wrapper">
 										<div id="verbose-dice" v-if="verbose_dice">
-											<PoolEntity v-for="entity in new Set(dicepoolStore.dice.map(d => d.entityId)).values()" :key="entity"
-												:entity_id="entity ?? ''" :dice="dicepoolStore.dice.filter(d => d.entityId == entity)"
+											<PoolEntity
+												v-for="entity in new Set(dicepoolStore.dice.map(d => d.entityId)).values()" :key="entity"
+												:entity_id="entity ?? ''"
+												:dice="dicepoolStore.dice.filter(d => d.entityId == entity)"
+												:result_limit="dicepool.result_limit.value"
+												:effect_limit="dicepool.effect_limit.value"
 												@longpress_die="(die: DieType) => longtap_die(die)" />
 										</div>
 										<div id="simple-dice" v-else>
@@ -428,9 +444,11 @@
 			#dicepool-collapsible {
 				background-color: var(--color-background-mute);
 				backdrop-filter: blur(5px);
+				/* overflow-y: auto; */
 				#dicepool-inner {
 					max-height: calc(90vh - 40px - 3em);
-					overflow: hidden;
+					/* overflow: hidden; */
+					overflow-y: auto;
 					#playing {
 						text-align: center;
 						background-color: var(--color-background);
@@ -455,19 +473,24 @@
 						#dicepool-picker {
 							display: flex;
 							.info-half {
-								width: 50%;
-								height: 100px;
+								/* width: 50%; */
+								/* height: 100px; */
 								border: 1px solid var(--color-border);
 								margin: 10px;
 								display: flex;
 								flex-direction: column;
 								justify-content: space-evenly;
+								flex-grow: 1;
 								.info-half-wrapper{
 									display: flex;
 									justify-content: space-evenly;
 									align-items: center;
 									.slot, .button-mnml {
 										font-size: 2em;
+									}
+									#result-dice, #effect-dice {
+										display: flex;
+										flex-wrap: wrap;
 									}
 								}
 								&.active {
