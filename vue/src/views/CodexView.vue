@@ -64,7 +64,7 @@
 
 	watch(() => player.the_entity, (newEntity, oldEntity) => {
 		if(newEntity && newEntity.id !== oldEntity?.id) {
-			player.is_gm ? player.retrieve_perspective_relations() : player.retrieve_relations()
+			player.is_gm ? player.retrieve_perspective_relations() : player.retrieve_character_relations()
 		}
 	})
 

@@ -266,7 +266,7 @@
 	function add_to_codex() {
 		if(the_entity.value) {
 			add_location_relationship(the_entity.value.id)
-			player.is_gm ? player.retrieve_perspective_relations() : player.retrieve_relations()
+			player.is_gm ? player.retrieve_perspective_relations() : player.retrieve_character_relations()
 		}
 	}
 

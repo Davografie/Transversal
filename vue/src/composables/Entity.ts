@@ -257,7 +257,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			}
 		}`
 
-		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && entity_id != 'Entities/undefined') {
+		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && entity_id != 'Entities/undefined' && entity_id != 'Entities/placeholder') {
 			apolloClient.query({
 				query: query,
 				variables: { entityId: entity_id },

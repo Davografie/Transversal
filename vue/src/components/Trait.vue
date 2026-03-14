@@ -2,7 +2,7 @@
 	import _ from 'lodash'
 	import { marked } from 'marked'
 
-	import { ref, type Ref, computed, watch } from 'vue'
+	import { ref, type Ref, computed, watch, onMounted } from 'vue'
 
 	import useClipboard from 'vue-clipboard3'
 
@@ -83,7 +83,13 @@
 		transfer_resource
 	} = useTrait(props.trait, props.trait_id, props.trait_setting_id, props.entity_id)
 	
-	retrieve_trait()
+	// retrieve_trait()
+
+	onMounted(() => {
+		if(trait.value.id == 'placeholder') {
+			retrieve_trait()
+		}
+	})
 
 	const {
 		add_die,

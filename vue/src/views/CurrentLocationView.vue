@@ -75,7 +75,7 @@
 	function transverse(loc: LocationType) {
 		panel.value?.scrollTo(0, 0)
 		if(player.is_player && player.player_character && loc) {
-			player.set_location(loc)
+			player.set_character_location(loc)
 		}
 		else if(player.is_gm && player.perspective && loc) {
 			player.set_perspective_location(loc)

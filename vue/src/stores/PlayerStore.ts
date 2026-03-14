@@ -44,8 +44,9 @@ export const usePlayerStore = defineStore(
 			}
 		}
 
-		//	character
+		//	character, important to store separately for cookie
 		const player_character_key: Ref<string|undefined> = ref()
+		const player_character_id: Ref<string|undefined> = ref()
 		const previous_perspective_ids: Ref<Array<string>> = ref([])
 
 		// const 
@@ -72,19 +73,32 @@ export const usePlayerStore = defineStore(
 		const font_size = ref(16)
 		const input_method = ref<input_methods>(orientation.value == "horizontal" ? input_methods.kbm : input_methods.touch)
 
-		const {
-			character: player_character,
-			retrieve_character,
-			retrieve_relations,
-			set_character_key,
-			set_location
-		} = useCharacter(undefined, player_character_key?.value)
+		// const {
+		// 	character: player_character,
+		// 	retrieve_character,
+		// 	retrieve_relations,
+		// 	set_character_key,
+		// 	set_location
+		// } = useCharacter(undefined, player_character_key?.value)
 		
-		watch(player_character_key, (newCharacterKey) => {
-			if(newCharacterKey && !is_gm.value) {
-				set_character_key(newCharacterKey)
-			}
-		})
+		// watch(player_character_key, (newCharacterKey) => {
+		// 	if(newCharacterKey && !is_gm.value) {
+		// 		set_character_key(newCharacterKey)
+		// 	}
+		// })
+
+		const {
+			entity: player_character,
+			set_entity_id: set_player_character_id,
+			retrieve_full_entity: retrieve_character,
+			retrieve_relations: retrieve_character_relations,
+			set_location: set_character_location,
+		} = useEntity(undefined, player_character_id.value)
+
+		function set_character_id(id: string) {
+			player_character_id.value = id
+			set_player_character_id(id)
+		}
 
 		function save_perspective_id(new_perspective_id: string) {
 			if(!new_perspective_id) return
@@ -186,22 +200,22 @@ export const usePlayerStore = defineStore(
 			}
 		}
 
-		function retrieve_the_entity() {
-			if(perspective_id.value && perspective.value.id != perspective_id.value && is_gm.value) {
-				console.log("retrieving perspective")
-				set_perspective_id(perspective_id.value)
-				retrieve_perspective()
-			}
-			if(player_character_key.value && player_character.value.key != player_character_key.value && !is_gm.value) {
-				console.log("retrieving character")
-				set_character_key(player_character_key.value)
-				retrieve_character()
-			}
-		}
+		// function retrieve_the_entity() {
+		// 	if(perspective_id.value && perspective.value.id != perspective_id.value && is_gm.value) {
+		// 		console.log("retrieving perspective, from " + perspective.value.id + " to " + perspective_id.value)
+		// 		set_perspective_id(perspective_id.value)
+		// 		retrieve_perspective()
+		// 	}
+		// 	if(player_character_key.value && player_character.value.key != player_character_key.value && !is_gm.value) {
+		// 		console.log("retrieving character")
+		// 		set_character_key(player_character_key.value)
+		// 		retrieve_character()
+		// 	}
+		// }
 
 		onMounted(() => {
 			mounted.value = true
-			retrieve_the_entity()
+			// retrieve_the_entity()
 			if(player_id.value) {
 				console.log("retrieving player " + player_id.value)
 				set_player_id(player_id.value)
@@ -223,9 +237,11 @@ export const usePlayerStore = defineStore(
 			player_character,
 			player_character_key,
 			previous_perspective_ids,
+			player_character_id,
 			retrieve_character,
-			retrieve_relations,
-			set_location,
+			retrieve_character_relations,
+			set_character_location,
+			set_character_id,
 			perspective_id,
 			set_perspective_id,
 			perspective,
@@ -234,7 +250,7 @@ export const usePlayerStore = defineStore(
 			delete_perspective_relation,
 			set_perspective_location,
 			the_entity,
-			retrieve_the_entity,
+			// retrieve_the_entity,
 			plot_points,
 			is_active_player,
 			is_gm,
@@ -261,9 +277,12 @@ export const usePlayerStore = defineStore(
 				'uuid',
 				'player_id',
 				'player_name', 
-				'player_character_key', 
+				'player_character_key',
+				'player_character_id',
+				'player_character',
 				'previous_perspective_ids',
 				'perspective_id', 
+				'perspective',
 				'is_gm',
 				'playing',
 				'small_buttons',

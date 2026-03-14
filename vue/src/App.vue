@@ -59,7 +59,7 @@
 			player.set_perspective_location(loc)
 		}
 		else if(!player.is_gm && player.player_character) {
-			player.set_location(loc)
+			player.set_character_location(loc)
 		}
 	}
 
@@ -91,7 +91,7 @@
 			// location_image_link.value = '/assets/uploads/' + location.value.image?.path + '/original' + location.value.image?.ext
 			watch(location, () => {
 				if(player.is_player) {
-					player.set_location(location.value)
+					player.set_character_location(location.value)
 				}
 				else {
 					player.set_perspective_location(location.value)
@@ -129,6 +129,11 @@
 		// set_location_key(route.params.location_key as string)
 		// retrieve_small_location()
 		// location_image_link.value = '/assets/uploads/' + location.value.image?.path + '/original' + location.value.image?.ext
+		if(!player.the_entity?.id || player.the_entity.key == 'placeholder') {
+			console.log('no entity, redirecting to settings')
+			console.log('player.the_entity: ' + JSON.stringify(player.the_entity))
+			router.push({ path: '/location/2/settings' })
+		}
 		if(player.is_gm) {
 			set_dicepool_limit(dicepool_store.dicepool_limit)
 		}

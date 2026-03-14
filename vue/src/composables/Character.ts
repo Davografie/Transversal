@@ -43,7 +43,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 			if(init) {
 				charkey = init.key
 			}
-			else if(character_key) {
+			if(!charkey && character_key) {
 				charkey = character_key
 			}
 			else {

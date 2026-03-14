@@ -29,7 +29,7 @@
 			player.set_perspective_location(loc)
 		}
 		else if(!player.is_gm && player.player_character) {
-			player.set_location(loc)
+			player.set_character_location(loc)
 		}
 	}
 

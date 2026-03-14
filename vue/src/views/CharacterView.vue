@@ -60,7 +60,7 @@
 		create_relation,
 		prune_location,
 		update_entity
-	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
+	} = useEntity(player.the_entity?.key == props.entity_key ? player.the_entity : undefined, 'Entities/' + (props.entity_key ?? route.params.id))
 	// retrieve_small_entity()
 
 	function mutate_pp(delta: number) {
@@ -306,8 +306,14 @@
 	})
 
 	watch(() => props.entity_key, (newKey) => {
+		if(player.the_entity && player.the_entity?.key == newKey && !entity.value.key) {
+			console.log('setting entity value from player store')
+			entity.value = player.the_entity
+		}
 		if(newKey && entity.value.key != newKey) {
 			console.log('setting entity key: ' + newKey)
+			console.log('entity.value.key: ' + entity.value.key)
+			console.log('player.the_entity.key: ' + player.the_entity?.key)
 			set_entity_id('Entities/' + newKey)
 			retrieve_full_entity()
 
@@ -444,7 +450,10 @@
 			// 	set_entity_id(newId ?? '')
 			// })
 		}
-		if(!entity.value.id) {
+		if(player.the_entity && !entity.value.id) {
+			entity.value = player.the_entity
+		}
+		if(!entity.value.id || entity.value.key == 'placeholder') {
 			retrieve_full_entity()
 		}
 		character_wrapper.value?.scrollIntoView({ behavior: 'smooth' })
@@ -458,10 +467,12 @@
 			player.retrieve_perspective()
 		}
 		else if(player.is_player) {
-			player.player_character_key = entity_id.substring(9)
-			nextTick(() => {
-				player.retrieve_character()
-			})
+			// player.player_character_key = entity_id.substring(9)
+			// nextTick(() => {
+			// 	player.retrieve_character()
+			// })
+			player.set_character_id(entity_id)
+			player.retrieve_character()
 		}
 		// switching_entities.value = false
 		entityOverviewType.value = 'NONE'
@@ -694,7 +705,7 @@
 				<ButtonMinimal
 					:class="{ 'active': entityOverviewType == 'QUICK_SWITCH'}"
 					:function="ButtonTypes.SWITCH"
-					v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
+					v-if="(player.player.entities?.length ?? 0) > 0"
 					@click="toggle_quick_switch" />
 
 				<div class="button-mnml" id="archetype"

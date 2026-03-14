@@ -111,7 +111,7 @@
 			player.retrieve_perspective_relations('no-cache')
 		}
 		else {
-			player.retrieve_relations('no-cache')
+			player.retrieve_character_relations('no-cache')
 		}
 		// if(player.is_gm && player.perspective) {
 		// 	create_relation(player.perspective.id)
@@ -119,7 +119,7 @@
 		// }
 		// else if(!player.is_gm && player.player_character) {
 		// 	create_relation(player.player_character.id)
-		// 	setTimeout(() => player.retrieve_relations(), 100)
+		// 	setTimeout(() => player.retrieve_character_relations(), 100)
 		// }
 		// setTimeout(() => {
 		// 	set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id ?? '')
@@ -155,12 +155,12 @@
 	})
 
 	function click_follow() {
-		player.is_player ? player.set_location(entity.value) : player.set_perspective_location(entity.value)
+		player.is_player ? player.set_character_location(entity.value) : player.set_perspective_location(entity.value)
 	}
 
 	function click_unfollow() {
 		if(player.the_entity?.location) {
-			player.is_player ? player.set_location(player.the_entity.location) : player.set_perspective_location(player.the_entity.location)
+			player.is_player ? player.set_character_location(player.the_entity.location) : player.set_perspective_location(player.the_entity.location)
 		}
 	}
 
@@ -181,13 +181,13 @@
 		}
 		else {
 			delete_relation().then(() => {
-				player.retrieve_relations('network-only')
+				player.retrieve_character_relations('network-only')
 			})
 		}
 		// delete_relation()
 		// player.is_gm ?
 		// 	setTimeout(() => player.retrieve_perspective_relations(), 100) :
-		// 	setTimeout(() => player.retrieve_relations(), 100)
+		// 	setTimeout(() => player.retrieve_character_relations(), 100)
 	}
 
 	onMounted(() => {

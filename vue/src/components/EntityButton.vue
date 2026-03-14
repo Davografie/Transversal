@@ -91,7 +91,7 @@
 		}
 		else if(!player.is_gm && player.player_character) {
 			create_relation(player.player_character.id)
-			player.retrieve_relations()
+			player.retrieve_character_relations()
 		}
 		retrieve_small_entity()
 		editing_card.value = false
@@ -172,13 +172,13 @@
 	})
 
 	function click_follow() {
-		player.is_player ? player.set_location(entity.value) : player.set_perspective_location(entity.value)
+		player.is_player ? player.set_character_location(entity.value) : player.set_perspective_location(entity.value)
 		editing_card.value = false
 	}
 
 	function click_unfollow() {
 		if(player.the_entity?.location) {
-			player.is_player ? player.set_location(player.the_entity.location) : player.set_perspective_location(player.the_entity.location)
+			player.is_player ? player.set_character_location(player.the_entity.location) : player.set_perspective_location(player.the_entity.location)
 		}
 		editing_card.value = false
 	}

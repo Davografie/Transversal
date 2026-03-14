@@ -89,7 +89,7 @@
 	function update_codex() {
 		player.is_gm ?
 			player.retrieve_perspective_relations() :
-			player.retrieve_relations()
+			player.retrieve_character_relations()
 	}
 
 	function remove_relation() {
@@ -110,7 +110,7 @@
 			player.set_perspective_location(entity.value)
 		}
 		else {
-			player.set_location(entity.value)
+			player.set_character_location(entity.value)
 		}
 		emit('hide_codex')
 	}

@@ -41,17 +41,6 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 			}).then((result) => {
 				player.value = result.data.players[0]
 			})
-			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery(
-			// 		query,
-			// 		{ playerId: _player_id },
-			// 		{ fetchPolicy: 'no-cache' }
-			// 	)
-			// )
-			// watch(result, (newResult) => {
-			// 	console.log('retrieved player: ', newResult)
-			// 	player.value = newResult.players[0]
-			// })
 		}
 	}
 

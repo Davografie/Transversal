@@ -40,11 +40,15 @@
 
 	function switch_character(entity: EntityType) {
 		if(player.is_gm) {
+			console.log("gm perspective changed to character: " + entity.name + "/" + entity.key)
 			player.set_perspective_id(entity.id)
 			player.retrieve_perspective()
 		}
 		else if(player.is_player) {
+			console.log("switching character: " + entity.name + "/" + entity.key)
 			player.player_character_key = entity.key
+			player.set_character_id(entity.id)
+			player.retrieve_character()
 		}
 	}
 
@@ -115,6 +119,14 @@
 			<h1>favorites</h1>
 			<div class="entities">
 				<EntityButton v-for="entity in entities.filter((e) => e.favorite)" :key="entity.key"
+					:entity_id="entity.id" @refresh_favorites="retrieve_entities"
+					override_click @click_entity="switch_character(entity)" />
+			</div>
+		</div>
+		<div id="favorites" v-if="player.is_player && (player.player.entities?.length ?? 0) > 0">
+			<h1>characters</h1>
+			<div class="entities">
+				<EntityButton v-for="entity in player.player.entities" :key="entity.key"
 					:entity_id="entity.id" @refresh_favorites="retrieve_entities"
 					override_click @click_entity="switch_character(entity)" />
 			</div>
