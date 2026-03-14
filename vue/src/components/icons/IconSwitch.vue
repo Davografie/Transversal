@@ -17,18 +17,18 @@
 		margin: .5em;
 	}
 	.cls-1 {
-		fill: var(--color-background);
-		stroke: var(--color-border);
+		fill: var(--color-text);
+		/* stroke: var(--color-border); */
 		stroke-width: 5px;
 	}
-
+	
 	.cls-2 {
-		stroke: var(--color-background);
+		/* stroke: var(--color-background); */
 		stroke-miterlimit: 10;
 	}
-
+	
 	.cls-2, .cls-3 {
-		fill: var(--color-text);
+		fill: var(--color-background);
 	}
 
 	.cls-3 {
