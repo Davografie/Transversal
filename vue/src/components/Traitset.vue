@@ -430,6 +430,7 @@
 					|| (player.is_player && entity.value.entityType == 'character')
 					|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
 					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
+					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting.fromEntity?.id == entity.value.id)
 					|| props.tutorial
 				)
 			})
