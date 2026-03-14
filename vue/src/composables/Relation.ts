@@ -84,17 +84,23 @@ export function useRelation(init?: Relation, relation_id?: string) {
 		retrieve_relation()
 	}
 
-	function delete_relation() {
+	async function delete_relation() {
+		const mutation_delete_relation = gql`mutation DeleteRelation($relationId: ID!) {
+			deleteRelation(relationId: $relationId) {
+				success
+			}
+		}`
 		if(apolloClient && relation.value.id) {
-			const mutation_delete_relation = gql`mutation DeleteRelation($relationId: ID!) {
-				deleteRelation(relationId: $relationId) {
-					success
+			await apolloClient.mutate({
+				mutation: mutation_delete_relation,
+				variables: {
+					relationId: relation.value.id
 				}
-			}`
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutation_delete_relation))
-			mutate({
-				relationId: relation.value.id
 			})
+		// 	const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutation_delete_relation))
+		// 	mutate({
+		// 		relationId: relation.value.id
+		// 	})
 		}
 	}
 

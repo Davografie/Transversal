@@ -164,6 +164,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 
 	function retrieve_full_entity() {
 
+		console.log("retrieving full entity! ", entity_id)
+
 		const query = gql`query FullEntity($entityId: ID) {
 			entities(entityId: $entityId) {
 				key
@@ -340,6 +342,24 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			// 		...result.value.entities[0]
 			// 	}
 			// })
+		}
+	}
+
+	async function delete_relation(relation_id: string) {
+		const mutation_delete_relation = gql`mutation DeleteRelation($relationId: ID!) {
+			deleteRelation(relationId: $relationId) {
+				success
+			}
+		}`
+		if(apolloClient && relation_id) {
+			await apolloClient.mutate({
+				mutation: mutation_delete_relation,
+				variables: {
+					relationId: relation_id
+				}
+			}).then(() => {
+				retrieve_relations()
+			})
 		}
 	}
 
@@ -736,6 +756,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		retrieve_full_entity,
 		toggle_favorite,
 		retrieve_relations,
+		delete_relation,
 		retrieve_followers,
 		retrieve_archetypes,
 		retrieve_instances,
