@@ -5,16 +5,16 @@
 	import { useFetch, useElementSize, useScroll } from '@vueuse/core'
 
 	import { input_methods, usePlayerStore } from '@/stores/PlayerStore'
-	import { useCharacter } from '@/composables/Character'
+	// import { useCharacter } from '@/composables/Character'
 	import { useEntity, entity_icons } from '@/composables/Entity'
 	import { useLocation } from '@/composables/Location'
-	import { useTraitsetList } from '@/composables/TraitsetList'
+	// import { useTraitsetList } from '@/composables/TraitsetList'
 	import type { Traitset as TraitsetType } from '@/interfaces/Types'
 	import { ButtonTypes } from '@/composables/Button'
 
 	import PlotPoint from '@/components/PlotPoint.vue'
 	import Traitset from '@/components/Traitset.vue'
-	import AllTraits from '@/components/AllTraits.vue'
+	// import AllTraits from '@/components/AllTraits.vue'
 	import EntityButton from '@/components/EntityButton.vue'
 	import ArchetypePicker from '@/components/ArchetypePicker.vue'
 	import ButtonMinimal from '@/components/UI/ButtonMinimal.vue'
@@ -61,7 +61,7 @@
 		prune_location,
 		update_entity
 	} = useEntity(undefined, 'Entities/' + (props.entity_key ?? route.params.id))
-	retrieve_full_entity()
+	// retrieve_small_entity()
 
 	function mutate_pp(delta: number) {
 		update_entity({
@@ -75,9 +75,6 @@
 		retrieve_presence,
 		set_location_key
 	} = useLocation(undefined, entity.value?.location?.id)
-
-	const { traitsets, retrieve_traitsets } = useTraitsetList(undefined, entity.value.id, undefined)
-	retrieve_traitsets()
 
 
 	// entity name and type
@@ -309,7 +306,8 @@
 	})
 
 	watch(() => props.entity_key, (newKey) => {
-		if(newKey && (entity.value.key != newKey || entity.value.key != newKey)) {
+		if(newKey && entity.value.key != newKey) {
+			console.log('setting entity key: ' + newKey)
 			set_entity_id('Entities/' + newKey)
 			retrieve_full_entity()
 
@@ -439,11 +437,15 @@
 
 	onMounted(() => {
 		if(route.name == 'Landing') {
-			watch(() => player.the_entity?.id, (newId) => {
-				console.log('Welcome! Setting character key from cookie: ' + player.the_entity)
-				// set_character_key(newKey ?? '')
-				set_entity_id(newId ?? '')
-			})
+			console.log('Welcome! Setting character key from cookie: ' + player.the_entity)
+			set_entity_id(player.the_entity?.id ?? '')
+			// watch(() => player.the_entity?.id, (newId) => {
+			// 	// set_character_key(newKey ?? '')
+			// 	set_entity_id(newId ?? '')
+			// })
+		}
+		if(!entity.value.id) {
+			retrieve_full_entity()
 		}
 		character_wrapper.value?.scrollIntoView({ behavior: 'smooth' })
 		reset_scroll()
@@ -870,7 +872,7 @@
 				<div class="label" v-if="!player.small_buttons">to top</div>
 			</div>
 			<div class="reference" v-if="show_reference">
-				<div class="scroll-item" v-for="traitset in traitsets.filter(ts => entity.traitsets?.map(t => t.id).includes(ts.id))">
+				<div class="scroll-item" v-for="traitset in entity.traitsets?.filter(ts => entity.traitsets?.map(t => t.id).includes(ts.id))">
 					<a @click="scroll_to_traitset(traitset)">
 						{{ traitset.name }}
 					</a>
