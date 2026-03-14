@@ -1,7 +1,7 @@
 /*
 	dicepool composable logic
 */
-import { ref, computed, watch, inject, onUnmounted } from "vue"
+import { ref, computed, type ComputedRef, watch, inject, onUnmounted } from "vue"
 import { useFetch } from "@vueuse/core"
 
 import { useDie, placeholder_die } from "@/composables/Die"
@@ -43,11 +43,17 @@ export function useDicepool(_polling: boolean = false) {
 	 * @param n the change in result limit
 	 */
 	function change_result_limit(n: number, traitsettingId?: string) {
-		// dicepool.result_limit += n
-		if(!traitsettingId) {
-			traitsettingId = 'custom'
+		if(dicepool.dice.filter(d => d.isResultDie).length <= result_limit.value + n) {
+			if(!traitsettingId) {
+				traitsettingId = 'custom'
+			}
+			if(dicepool.result_limit_mod[traitsettingId]) {
+				dicepool.result_limit_mod[traitsettingId] += n
+			}
+			else {
+				dicepool.result_limit_mod[traitsettingId] = n
+			}
 		}
-		dicepool.result_limit_mod[traitsettingId] = n
 	}
 
 	function change_effect_limit(n: number) {
@@ -109,7 +115,7 @@ export function useDicepool(_polling: boolean = false) {
 			
 			if(d.ratingType == 'resource'
 				&& trait_setting_id.value
-				&& dicepool.phase != dicepool.phases.RESOLVE
+				&& dicepool.phase == dicepool.phases.ADDING
 			) {
 				await retrieve_trait()
 				const new_rating = [...trait.value.rating ?? [], d]
@@ -264,7 +270,7 @@ export function useDicepool(_polling: boolean = false) {
 	}
 
 	const result_size = computed(() => dicepool.dice.filter(d => d.isResultDie && d.ratingType != 'resource').length)
-	const result_limit = computed(() => Object.values(dicepool.result_limit_mod).reduce((sum, val) => sum + val, dicepool.base_result_limit))
+	const result_limit: ComputedRef<number> = computed(() => Object.values(dicepool.result_limit_mod).reduce((sum, val) => sum + val, dicepool.base_result_limit))
 	const result = computed(() => dicepool.dice.filter(d => d.isResultDie && !d.disabled).reduce((sum, d) => sum + d.result, 0))
 	const effect_size = computed(() => dicepool.dice.filter(d => d.isEffectDie).length)
 	const effect_limit = computed(() => dicepool.effect_limit)
