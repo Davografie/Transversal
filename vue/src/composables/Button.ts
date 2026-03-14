@@ -10,6 +10,7 @@ import IconTraitsetsClosed from "@/components/icons/IconTraitsetsClosed.vue";
 import IconScaling from "@/components/icons/IconScaling.vue";
 import IconKnownTo from "@/components/icons/IconKnownTo.vue";
 import IconTrash from "@/components/icons/IconTrash.vue";
+import IconSettings from "@/components/icons/IconSettings.vue";
 
 export enum ButtonTypes {
 	ADD_ARCHETYPE = 'add_archetype',
@@ -21,7 +22,8 @@ export enum ButtonTypes {
 	TRAITSET_CLOSED = 'traitset_closed',
 	SCALING = 'scaling',
 	KNOWN_TO = 'known_to',
-	TRASH = 'trash'
+	TRASH = 'trash',
+	SETTINGS = 'settings'
 }
 
 export function useButtonTypes(_type: ButtonTypes) {
@@ -47,6 +49,8 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return 'known to';
 			case ButtonTypes.TRASH:
 				return 'trash';
+			case ButtonTypes.SETTINGS:
+				return 'settings';
 			default:
 				return '';
 		}
@@ -73,6 +77,8 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return IconKnownTo
 			case ButtonTypes.TRASH:
 				return IconTrash
+			case ButtonTypes.SETTINGS:
+				return IconSettings
 		}
 	})
 	return {

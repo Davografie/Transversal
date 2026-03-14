@@ -802,13 +802,10 @@
 						<div class="label">cancel</div>
 					</div>
 				</div>
-				<div class="button-mnml" id="settings-button"
-					title="settings"
-					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })">
-					<!-- <div class="icon">⚙</div> -->
-					<img src="/img/icons/settings.png" class="icon" />
-					<div class="label" v-if="!player.small_buttons">settings</div>
-				</div>
+
+				<ButtonMinimal
+					:function="ButtonTypes.SETTINGS"
+					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
 			</div>
 
 			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
