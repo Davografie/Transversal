@@ -105,9 +105,9 @@ export function useSFXList() {
 		}
 	}
 
-	onMounted(() => {
-		retrieve_sfx_list()
-	})
+	// onMounted(() => {
+	// 	retrieve_sfx_list()
+	// })
 
 	return { sfx_list, retrieve_sfx_list, create_sfx, update_sfx, delete_sfx }
 }
