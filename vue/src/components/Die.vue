@@ -8,7 +8,7 @@
 	const props = defineProps<{
 		die: Die,
 		amount?: number,
-		is_choice?: boolean,
+		is_choice?: boolean, // user can interact with the die
 		in_pool?: boolean,
 		size?: string
 	}>()
@@ -31,10 +31,18 @@
 
 	const is_disabled = computed(() => {
 		if(dicepool.phase == phases.RESULT) {
-			return props.is_choice && (props.die.isHitch || props.die.isResultDie || props.die.isEffectDie || props.die.disabled)
+			return props.is_choice && (
+				props.die.isHitch
+				|| props.die.isEffectDie
+				|| props.die.disabled
+			)
 		}
 		else if(dicepool.phase == phases.EFFECT) {
-			return props.is_choice && (props.die.isHitch == true || props.die.isResultDie == true || props.die.isEffectDie == true || props.die.disabled)
+			return props.is_choice && (
+				props.die.isHitch == true
+				|| props.die.isResultDie == true
+				|| props.die.disabled
+			)
 		}
 		else {
 			return false

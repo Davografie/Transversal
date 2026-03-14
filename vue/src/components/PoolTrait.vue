@@ -31,7 +31,7 @@
 				die.isResultDie = !die.isResultDie
 				if(dicepool.result_size.value == dicepool.result_limit.value) dicepool.next()
 			}
-			else if(dicepool.inEffectPhase.value) {
+			else if(dicepool.inEffectPhase.value && !die.isResultDie) {
 				die.isEffectDie = !die.isEffectDie
 			}
 		}
@@ -71,6 +71,7 @@
 					(d.subTraitsettingId && d.subTraitsettingId == props.traitsetting_id))"
 					:die="die"
 					in_pool
+					is_choice
 					size="2em"
 					v-touch:hold="() => longpress_die(die)"
 					@click.right="() => longpress_die(die)"
