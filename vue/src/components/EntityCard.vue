@@ -176,10 +176,18 @@
 	}
 
 	function remove_relation() {
-		delete_relation()
-		player.is_gm ?
-			setTimeout(() => player.retrieve_perspective_relations(), 100) :
-			setTimeout(() => player.retrieve_relations(), 100)
+		if(player.is_gm) {
+			player.delete_perspective_relation(relation.value.id)
+		}
+		else {
+			delete_relation().then(() => {
+				player.retrieve_relations('network-only')
+			})
+		}
+		// delete_relation()
+		// player.is_gm ?
+		// 	setTimeout(() => player.retrieve_perspective_relations(), 100) :
+		// 	setTimeout(() => player.retrieve_relations(), 100)
 	}
 
 	onMounted(() => {
@@ -286,7 +294,7 @@
 				<div class="button-mnml favorite-button"
 						@click.stop="toggle_favorite"
 						v-if="player.is_gm && entity.entityType == 'character'">
-					<span class="icon" v-if="!entity.favorite">★</span>
+					<span class="icon" v-if="entity.favorite">★</span>
 					<span class="icon" v-else>☆</span>
 					<span class="label" v-if="!entity.favorite">{{ player.small_buttons ? '' : 'favorite'}}</span>
 					<span class="label" v-else>{{ player.small_buttons ? '' : 'unfavorite'}}</span>
