@@ -5,9 +5,12 @@
 	import { useRelation } from '@/composables/Relation'
 	import type { Die } from '@/interfaces/Types'
 	import { RouterLink } from 'vue-router'
+	import { die_shapes } from '@/composables/Die'
 	const props = defineProps<{
 		entity_id: string
 		dice: Die[]
+		result_limit?: number
+		effect_limit?: number
 	}>()
 	const emit = defineEmits(['longpress_die'])
 	const { entity, retrieve_entity, set_entity_id } = useEntity(undefined, props.entity_id)
@@ -29,9 +32,17 @@
 
 <template>
 	<div class="pool-entity-wrapper pool-wrapper">
-		<RouterLink class="entity_name" :to="'/entity/' + entity.key" v-if="props.dice.some((d) => d.traitsetId != 'Traitsets/1')">
-			{{ entity.name }}
-		</RouterLink>
+		<div v-if="props.dice.some((d) => d.traitsetId != 'Traitsets/1')">
+			<RouterLink class="entity_name" :to="'/entity/' + entity.key">
+				{{ entity.name }}
+			</RouterLink>
+			<span v-for="i in props.result_limit" :key="i">
+				{{ die_shapes.default_inactive }}
+			</span>
+			<span v-for="i in props.effect_limit" :key="i">
+				{{ die_shapes.default_active }}
+			</span>
+		</div>
 		<div class="entity_name complication-entity" v-else>
 			{{ entity.name }}
 		</div>
