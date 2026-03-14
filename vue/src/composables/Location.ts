@@ -223,8 +223,8 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		  }`
 		if(apolloClient) {
-			if(location_key == 'placeholder') {
-				console.warn('retrieve_small_location: location key is placeholder')
+			if(!location_key || location_key == 'undefined' || location_key == 'placeholder') {
+				console.warn('retrieve_small_location, location_key: ' + location_key)
 				return
 			}
 			apolloClient.query({
@@ -237,7 +237,7 @@ export function useLocation(init?: Location, location_key?: string) {
 					...result.data.locations[0]
 				}
 			}).catch((error) => {
-				console.error(error)
+				console.error("Error while trying to retrieve location " + location_key, error)
 			})
 		}
 	}
