@@ -797,16 +797,11 @@
 
 				<div class="controls">
 				
-					<input type="button" class="button add-trait-button"
-						:value="adding_trait ?
-							player.small_buttons ? 'x' : 'stop adding trait x' :
-							player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
-						@click="toggle_add_trait" />
 					<div class="button-mnml" @click="add_multiple_traits = !add_multiple_traits">
 						<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
 						<div class="label">adding {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
 					</div>
-					<div class="trait-search" v-if="search_potential_traits_visible || potential_traits.length == 0">
+					<div class="trait-search" v-if="player.is_gm || potential_traits.length == 0">
 						<input class="trait-search-query" type="text" placeholder="find trait"
 							v-model="trait_search" autocomplete="off" />
 						<input type="button" class="button create-trait-button"
@@ -818,10 +813,16 @@
 								&& player.is_gm"
 							@click="add_trait" />
 					</div>
-					<div class="search-potential-trait-toggle" :class="search_potential_traits_visible ? 'active' : 'inactive'" v-if="potential_traits.length > 0">
+					<!-- <div class="search-potential-trait-toggle" :class="search_potential_traits_visible ? 'active' : 'inactive'" v-if="potential_traits.length > 0">
 						<div class="button" @click="search_potential_traits_visible = true" v-if="!search_potential_traits_visible">search for trait</div>
 						<div class="button" @click="search_potential_traits_visible = false" v-else>x</div>
-					</div>
+					</div> -->
+
+					<input type="button" class="button add-trait-button"
+						:value="adding_trait ?
+							player.small_buttons ? 'x' : 'stop adding trait x' :
+							player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
+						@click="toggle_add_trait" />
 				</div>
 				<div class="trait-list">
 					<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
@@ -1018,6 +1019,7 @@
 			padding: 1em;
 			.controls {
 				display: flex;
+				justify-content: space-between;
 				.trait-search {
 					flex-grow: 1;
 					display: flex;
