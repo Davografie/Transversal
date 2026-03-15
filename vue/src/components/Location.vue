@@ -458,6 +458,7 @@
 	function set_presence_watcher(new_clone: Entity) {
 		console.log("created clone " + JSON.stringify(new_clone))
 		console.log("changed player perspective to " + new_clone.name)
+		retrieve_presence()
 		player.set_perspective(new_clone.id)
 	}
 
