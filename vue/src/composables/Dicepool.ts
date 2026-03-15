@@ -166,8 +166,8 @@ export function useDicepool(_polling: boolean = false) {
 			}
 			dicepool.dice.forEach(d => {
 				const { roll: rollSwade } = useDie(d, undefined)
-				rollSwade(true)
-				d.raises = Math.floor(((d.result ?? 4) - 4) / 4)
+				rollSwade(false)
+				d.raises = Math.ceil(((d.result ?? 3) - 3) / 3)
 				d.isResultDie = true
 				d.isResolved = true
 			})

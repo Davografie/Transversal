@@ -20,7 +20,7 @@ const dicepool = useDicepool(false);
 					</span>
 				</div>
 			</div>
-			<div class="swade-result swade-fail" v-else-if="dicepoolStore.dice[0].result < 4">
+			<div class="swade-result swade-fail" v-else-if="dicepoolStore.dice[0].result < 3">
 				<h1>no bueno, you fail</h1>
 				<div class="details">
 					<span class="detail">
@@ -31,7 +31,7 @@ const dicepool = useDicepool(false);
 					</span>
 				</div>
 			</div>
-			<div class="swade-result swade-success" v-else-if="dicepoolStore.dice[0].result < 8">
+			<div class="swade-result swade-success" v-else-if="dicepoolStore.dice[0].result < 6">
 				<h1>marginal success</h1>
 				<div class="details">
 					<span class="detail">
@@ -42,7 +42,7 @@ const dicepool = useDicepool(false);
 					</span>
 				</div>
 			</div>
-			<div class="swade-result swade-raise" v-else-if="dicepoolStore.dice[0].result < 12">
+			<div class="swade-result swade-raise" v-else-if="dicepoolStore.dice[0].result < 9">
 				<h1>great success!</h1>
 				<div class="details">
 					<span class="detail">
@@ -53,7 +53,7 @@ const dicepool = useDicepool(false);
 					</span>
 				</div>
 			</div>
-			<div class="swade-result swade-raise" v-else-if="dicepoolStore.dice[0].result < 16">
+			<div class="swade-result swade-raise" v-else-if="dicepoolStore.dice[0].result < 12">
 				<h1>excellent!!</h1>
 				<div class="details">
 					<span class="detail">
