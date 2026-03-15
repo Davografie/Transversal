@@ -129,12 +129,16 @@ db = client.db(
 logger.debug("ArangoDB connection established")
 
 
-def get_doc_by_id(collection_name: str, doc_id: str):
+def get_doc_by_id(collection_name: str, doc_id: str) -> dict:
 	"""
 	Helper function to get a document by ID from a collection and store it in Redis.
-	@param collection_name: Name of the collection
-	@param doc_id: ID of the document
-	@return: Document data
+	
+	Args:
+		collection_name (str): The name of the collection to get the document from.
+		doc_id (str): The ID of the document to get.
+	
+	Returns:
+		dict: The document as a dictionary.
 	"""
 	# first check if the doc is in redis
 	# throw an exception if doc_id is convertible to a number
@@ -155,12 +159,17 @@ def get_doc_by_id(collection_name: str, doc_id: str):
 			logger.error(f"Failed to store doc {doc_id} in Redis: {e}")
 	return doc
 
-def update_doc(collection_name: str, doc: dict, temp=False):
+def update_doc(collection_name: str, doc: dict, temp=False) -> dict:
 	"""
 	Helper function to update a document in a collection and update it in Redis.
-	@param collection_name: Name of the collection
-	@param doc: Document data
-	@return: Updated document data
+	
+	Args:
+		collection_name (str): Name of the collection
+		doc (dict): Document data
+		temp (bool): Whether the document is temporary
+	
+	Returns:
+		dict: The updated document
 	"""
 	if not temp:
 		db_doc = { k: v for k, v in doc.items() if not (k.startswith('_rev') or k.startswith('_key')) }
@@ -521,6 +530,10 @@ class Player(ObjectType):
 
 	def resolve_entities(parent, info):
 		relations = find_docs('Relations', { '_from': parent.id, 'type': 'agency' })
+
+		# sort relations by 'count' in descending order, default to 0 if count is not set
+		relations = sorted(relations, key=lambda x: x.get('count', 0), reverse=True)
+
 		result = []
 		# for every entity, get the entity and check the type to make sure to return the proper object
 		for relation in relations:
@@ -540,6 +553,7 @@ class Player(ObjectType):
 			elif entity.get('type') == 'location':
 				# yield Location(id=entity.get('_id'))
 				result.append(Location(id=entity.get('_id')))
+
 		return result
 
 class CreatePlayer(Mutation):
@@ -582,10 +596,10 @@ class ActivateEntity(Mutation):
 			entity_id (str): The ID of the entity.
 		"""
 		# limit to 12 characters
-		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
-		if len(relations) > 12:
-			for relation in relations[12:]:
-				db.collection('Relations').delete({ '_id': relation.get('_id') })
+		# relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
+		# if len(relations) > 12:
+		# 	for relation in relations[12:]:
+		# 		db.collection('Relations').delete({ '_id': relation.get('_id') })
 
 		# check if agency relation exists
 		logger.info(f"Activating entity {entity_id} for player {player_id}")
@@ -593,7 +607,15 @@ class ActivateEntity(Mutation):
 		logger.debug(f"relations: {relations}")
 		if len(relations) == 0:
 			logger.debug("creating agency relation, rev: " + db.collection('Relations').revision())
-			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency' })
+			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency', 'count': 1 })
+		elif len(relations) == 1:
+			# update the count
+			relation = relations[0]
+			if relation.get('count') is None:
+				relation['count'] = 1
+			new_count = relation.get('count') + 1
+			relation['count'] = new_count
+			update_doc('Relations', relation)
 		
 		# activate entity for player
 		global session_characters

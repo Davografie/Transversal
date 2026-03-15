@@ -21,7 +21,7 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 	}
 
 	function retrieve_player() {
-		console.log('retrieving player: ' + _player_id)
+		// console.log('retrieving player: ' + _player_id)
 		const query = gql`query Player($playerId: ID!) {
 			players(playerId: $playerId) {
 				id

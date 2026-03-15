@@ -811,7 +811,7 @@
 					v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities && player.player.entities.length > 0">
 				<EntityButton
 					class="entity-card"
-					v-for="entity_id in player.player.entities.map(e => e.id)" :key="entity_id"
+					v-for="entity_id in player.player.entities.map(e => e.id).slice(0, 12)" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
 					:is_active="player.the_entity?.id != entity_id"
