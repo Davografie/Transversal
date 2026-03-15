@@ -134,11 +134,6 @@
 		// set_location_key(route.params.location_key as string)
 		// retrieve_small_location()
 		// location_image_link.value = '/assets/uploads/' + location.value.image?.path + '/original' + location.value.image?.ext
-		if(!player.the_entity?.id || player.the_entity.key == 'placeholder') {
-			console.log('no entity, redirecting to settings')
-			console.log('player.the_entity: ' + JSON.stringify(player.the_entity))
-			router.push({ path: '/location/2/settings' })
-		}
 		if(player.is_gm) {
 			set_dicepool_limit(dicepool_store.dicepool_limit)
 		}
@@ -147,14 +142,20 @@
 	// make sure that new users get redirected to settings
 	// or if the location key doesn't make sense
 	watch(route, (newRoute) => {
+		// console.log("new route, name: ", newRoute.name, ", matched: ", newRoute.matched)
 		if(newRoute.name == 'Landing' || ['undefined', 'placeholder'].includes(newRoute.params.location_key as string)) {
 			if(player.the_entity?.location?.key && player.the_entity?.location?.key != 'placeholder') {
 				router.push({ path: '/location/' + player.the_entity?.location?.key })
 			}
 			else {
-				console.log('redirecting to settings, newRoute.name = ', newRoute.name)
+				// console.log('redirecting to settings, newRoute.name = ', newRoute.name)
 				router.push({ path: '/location/2/settings' })
 			}
+		}
+		else if((!player.the_entity?.id || player.the_entity.key == 'placeholder') && !route.matched.map(match => match.name).includes('Settings')) {
+			// console.log('no entity, redirecting from ' + (newRoute.name as string) + ' to settings')
+			// console.log('player.the_entity: ' + JSON.stringify(player.the_entity))
+			router.push({ path: '/location/2/settings' })
 		}
 	})
 
