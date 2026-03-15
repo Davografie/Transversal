@@ -134,6 +134,9 @@
 		// set_location_key(route.params.location_key as string)
 		// retrieve_small_location()
 		// location_image_link.value = '/assets/uploads/' + location.value.image?.path + '/original' + location.value.image?.ext
+		if(!player.the_entity?.id || player.the_entity.key == 'placeholder') {
+			player.input_method = player.orientation == 'horizontal' ? input_methods.kbm : input_methods.touch
+		}
 		if(player.is_gm) {
 			set_dicepool_limit(dicepool_store.dicepool_limit)
 		}
