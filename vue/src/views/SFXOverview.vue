@@ -4,6 +4,7 @@
 	import { useSFXList } from '@/composables/SFXList'
 	import SfxEdit from '@/components/SfxEdit.vue'
 	const { sfx_list, retrieve_sfx_list, create_sfx, update_sfx, delete_sfx } = useSFXList()
+	retrieve_sfx_list()
 	const new_sfx_name: Ref<string> = ref('')
 	const new_sfx_description: Ref<string> = ref('')
 	function new_sfx() {
