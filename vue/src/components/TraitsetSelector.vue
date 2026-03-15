@@ -14,7 +14,12 @@
 		traitsets,
 		retrieve_traitsets,
 		retrieve_traitsets_by_type_and_location
-	} = useTraitsetList(undefined, props.entity_id, props.entity?.entityType ?? props.entity_type, props.entity?.location?.id)
+	} = useTraitsetList(
+		undefined,
+		props.entity_id,
+		props.entity_type ?? props.entity?.entityType,
+		props.entity?.location?.id
+	)
 
 	retrieve_traitsets_by_type_and_location()
 
