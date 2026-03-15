@@ -120,7 +120,7 @@ export const usePlayerStore = defineStore(
 		const {
 			entity: perspective,
 			set_entity_id: set_perspective_id,
-			retrieve_entity: retrieve_perspective,
+			retrieve_full_entity: retrieve_perspective,
 			retrieve_relations: retrieve_perspective_relations,
 			delete_relation: delete_perspective_relation,
 			set_location: set_perspective_location,
