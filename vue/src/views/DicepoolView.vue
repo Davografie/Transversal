@@ -253,7 +253,7 @@
 								<div class="header">result{{ ': ' + dicepool.result.value }}</div>
 								<div class="info-half-wrapper">
 									<input type="button" class="button-mnml" value="-"
-										@click.stop="dicepool.change_result_limit(-1)"
+										@click.stop="dicepool.change_result_limit(-1, undefined, true)"
 										v-if="dicepool.result_limit.value > 1 && dicepool.inResultPhase.value" />
 									<div id="result-dice">
 										<Die
@@ -267,7 +267,7 @@
 										{{ die_shapes.default_inactive }}
 									</span>
 									<input type="button" class="button-mnml" value="+"
-										@click.stop="dicepool.change_result_limit(1)"
+										@click.stop="dicepool.change_result_limit(1, undefined, true)"
 										v-if="dicepool.inResultPhase.value" />
 								</div>
 							</span>

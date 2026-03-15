@@ -42,12 +42,12 @@ export function useDicepool(_polling: boolean = false) {
 	 * Changes the result limit by `+n`
 	 * @param n the change in result limit
 	 */
-	function change_result_limit(n: number, traitsettingId?: string) {
+	function change_result_limit(n: number, traitsettingId?: string, cumulative: boolean = false) {
 		if(dicepool.dice.filter(d => d.isResultDie).length <= result_limit.value + n) {
 			if(!traitsettingId) {
 				traitsettingId = 'custom'
 			}
-			if(dicepool.result_limit_mod[traitsettingId]) {
+			if(dicepool.result_limit_mod[traitsettingId] && cumulative) {
 				dicepool.result_limit_mod[traitsettingId] += n
 			}
 			else {
