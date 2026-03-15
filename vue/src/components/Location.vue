@@ -194,10 +194,14 @@
 				!newVal?.map(e => e.id).includes(player.the_entity?.id ?? '')
 				|| (player.the_entity?.following && !newVal?.map(e => e.id).includes(player.the_entity?.following.id ?? ''))
 			)
+			&& !(
+				// compare the newVal and the oldVal arrays, only check id's
+				newVal?.map(e => e.id).join(',') == oldVal?.map(e => e.id).join(',')
+			)
 		) {
 			console.log("changing player location")
 			player.is_player ? player.retrieve_character() : player.retrieve_perspective()
-			console.log("presence changed from " + oldVal + " to " + newVal + ", changed player location to " + player.the_entity?.location?.key)
+			console.log("presence changed from " + oldVal?.map(e => e.name) + " to " + newVal?.map(e => e.name) + ", changed player location to " + player.the_entity?.location?.key)
 		}
 	})
 
