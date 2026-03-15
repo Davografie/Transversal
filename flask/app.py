@@ -3178,6 +3178,7 @@ class EntityInput(InputObjectType):
 	hidden = Boolean()
 	show_to = List(ID)
 	known_to = List(ID)
+	is_archetype = Boolean()
 
 class CreateEntity(Mutation):
 	class Arguments:
