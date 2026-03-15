@@ -2877,6 +2877,23 @@ class Entity(Interface):
 		# 		enabled_traitsets.append(traitset)
 		# 		continue
 		
+		# # traitsets without traits are put at the end
+		# for traitset in traitsets:
+		# 	# relationships get special treatment later
+		# 	if 'relation' not in traitset.get('entity_types'):
+		# 		query = f"""FOR setting IN TraitSettings
+		# 					FOR trait IN Traits
+		# 					FILTER setting._from == '{ parent.id }'
+		# 					FILTER setting._to == trait._id
+		# 					FILTER trait.traitset == '{ traitset.get('_id') }'
+		# 					RETURN setting"""
+		# 		settings = execute_aql(query, ['TraitSettings', 'Traits'])
+		# 		if len(settings) == 0:
+		# 			# remove traitset and add to end
+		# 			enabled_traitsets = [ts for ts in enabled_traitsets if ts.get('_id') != traitset.get('_id')]
+		# 			enabled_traitsets.append(traitset)
+		# 			continue
+		
 		# # logger.debug(f"Enabled traitsets: {[ts.get('name') + ' (' + str(ts.get('order')) + ')' for ts in enabled_traitsets]}")
 		# logger.debug(f"Returning {len(enabled_traitsets)} traitsets")
 
@@ -2905,14 +2922,36 @@ class Entity(Interface):
 						{{ traitset: t.traitset }}
 					)"""
 		# cursor = db.aql.execute(query)
-		cursor = execute_aql(query, ['Relations', 'TraitSettings', 'Traits', 'Traitsets'])
-		trait_settings = [doc for doc in cursor]
+		trait_settings = execute_aql(query, ['Relations', 'TraitSettings', 'Traits', 'Traitsets'])
+		# trait_settings = [doc for doc in cursor]
 		location = retrieve_location(get_doc_by_id('Entities', parent.id))
+		hierarchy = [loc.get('_id') for loc in retrieve_hierarchy(location.get('_id'))]
 		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(trait_settings)} trait settings, now filtering by location { location.get('name') }")
 		filtered_trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 		unique_traitsets = []
 		for traitsetting in filtered_trait_settings:
 			traitset_id = traitsetting.get('traitset')
+			if traitset_id not in unique_traitsets:
+				# check if traitset is allowed in location
+				traitset_default_setting = find_docs('TraitSettings', { '_from': traitset_id, '_to': 'Traits/1' })
+				if len(traitset_default_setting) == 0:
+					continue
+				traitset_allowed = location_allowed(hierarchy, traitset_default_setting[0].get('locations_enabled'), traitset_default_setting[0].get('locations_disabled'))
+				if traitset_allowed == True or traitset_allowed is None:
+					unique_traitsets.append(traitset_id)
+
+		# check relationship traitsets
+		query = f"""FOR relation IN Relations
+						FILTER relation._from == '{ parent.id }'
+						FILTER relation.type == 'relation'
+					FOR setting IN TraitSettings
+						FILTER setting._from == relation._id
+					FOR trait IN Traits
+						FILTER setting._to == trait._id
+					RETURN trait"""
+		traits = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
+		for trait in traits:
+			traitset_id = trait.get('traitset')
 			if traitset_id not in unique_traitsets:
 				unique_traitsets.append(traitset_id)
 		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
@@ -2930,9 +2969,8 @@ class Entity(Interface):
 						locations_enabled: default.locations_enabled,
 						locations_disabled: default.locations_disabled
 					}}"""
-		# cursor = db.aql.execute(query)
-		cursor = execute_aql(query, ['TraitSettings', 'Traitsets'])
-		unpopulated_traitsets = [doc for doc in cursor]
+		unpopulated_traitsets = execute_aql(query, ['TraitSettings', 'Traitsets'])
+		
 		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tretrieved {len(unpopulated_traitsets)} unpopulated trait sets, now filtering by location { location.get('name') }")
 		filtered_unpopulated_traitsets = filter_trait_settings_by_location(unpopulated_traitsets, location.get('_id'))
 		for traitsetting in filtered_unpopulated_traitsets:
