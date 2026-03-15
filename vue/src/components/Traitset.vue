@@ -98,6 +98,19 @@
 		}
 	})
 
+	const polling_active = ref(props.polling ?? false)
+	
+	function polling() {
+		console.log("polling traitset " + traitset.value.name + " for entity " + props.entity_id)
+		if(polling_active.value) {
+			retrieve_traitset()
+			setTimeout(polling, 15000)
+		}
+		// console.log("traitset polling disabled")
+	}
+
+	polling_active.value ? polling() : null
+
 	onUnmounted(() => {
 		polling_active.value = false
 	})
@@ -286,19 +299,6 @@
 			editing_potential_traits.value.push(trait_id)
 		}
 	}
-
-	const polling_active = ref(props.polling ?? false)
-	
-	function polling() {
-		// console.log("polling traitset " + traitset.value.name + " for entity " + props.entity_id)
-		// if(polling_active.value) {
-		// 	retrieve_traitset()
-		// 	setTimeout(polling, 15000)
-		// }
-		console.log("traitset polling disabled")
-	}
-
-	polling_active.value ? polling() : null
 
 	const got_traits_to_show = computed(() => {
 		return (traitset.value.traits?.length ?? 0) > 0 && traitset.value.traits?.some((trait) => {
