@@ -658,9 +658,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * @param location the location to set the entity to
 	 */
 	function set_location(location: Location) {
-		// entity.value.location = location
 		update_entity({ location: location.id })
-		retrieve_entity()
 	}
 
 	/**

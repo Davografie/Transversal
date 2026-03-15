@@ -52,7 +52,6 @@
 		entity,
 		set_entity_id,
 		retrieve_small_entity,
-		retrieve_entity,
 		retrieve_full_entity,
 		retrieve_instances,
 		clone_entity,
