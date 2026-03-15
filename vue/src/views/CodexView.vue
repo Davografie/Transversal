@@ -50,7 +50,8 @@
 	}
 
 	onMounted(() => {
-		player.retrieve_perspective_relations();
+		console.log("mounted codex")
+		// player.retrieve_perspective_relations();
 		if(player.is_gm) { poll() }
 		({ arrivedState } = useScroll(codexContacts))
 	})
@@ -64,7 +65,8 @@
 
 	watch(() => player.the_entity, (newEntity, oldEntity) => {
 		if(newEntity && newEntity.id !== oldEntity?.id) {
-			player.is_gm ? player.retrieve_perspective_relations() : player.retrieve_character_relations()
+			console.log("retrieve relations for new entity")
+			// player.is_gm ? player.retrieve_perspective_relations() : player.retrieve_character_relations()
 		}
 	})
 
