@@ -174,7 +174,7 @@
 			limit: traitset_limit.value,
 			sfxs: new_sfxs.value.map(sfx => sfx.id)
 		})
-		setTimeout(() => retrieve_traitset(), 200)
+		// setTimeout(() => retrieve_traitset(), 200)
 	}
 	
 	const show_default_rating = computed(() => {
@@ -230,7 +230,7 @@
 
 	const refresh = async () => {
 		refreshing.value = true
-		retrieve_traitset()
+		retrieve_traitset('network-only')
 		refreshing.value = false
 	}
 </script>

@@ -253,18 +253,43 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 				traitset {
 					id
 					name
+					explainer
+					entityTypes
+					locationRestricted
+					sfxs {
+						id
+						name
+					}
+					limit
+					duplicates
+					traits {
+						id
+						name
+					}
 				}
 			}
 		}`
 		
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
-			let variables: object = {
-				traitsetId: traitset.value.id,
-				traitsetInput: traitset_input
-			}
-			console.log("updating traitset with variables: ", variables)
-			mutate(variables)
+			apolloClient.mutate({
+				mutation: query,
+				variables: {
+					traitsetId: traitset_id,
+					traitsetInput: traitset_input
+				}
+			}).then((result) => {
+				traitset.value = {
+					...traitset.value,
+					...result.data.mutateTraitset.traitset
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query))
+			// let variables: object = {
+			// 	traitsetId: traitset.value.id,
+			// 	traitsetInput: traitset_input
+			// }
+			// console.log("updating traitset with variables: ", variables)
+			// mutate(variables)
 		}
 	}
 
