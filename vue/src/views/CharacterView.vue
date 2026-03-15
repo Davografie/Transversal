@@ -262,6 +262,7 @@
 		// at top of traitset scroll the banner is max size
 		// scrolling down shrinks the banner height to min size, depending on scroll Y
 		// where it remains until the user scrolled back up to the top
+		if(editing_portrait.value) return max_banner_height
 		if(player.input_method == input_methods.touch) return min_banner_height
 		const scrollY_threshold = 100
 		const scrollY_ratio = Math.min(1, traitset_scrollY.value / scrollY_threshold)
@@ -358,9 +359,10 @@
 	// character options
 	function pick_character() {
 		if(entity.value && entity.value.key != 'placeholder') {
+			console.log("picking character: " + entity.value.name + "/" + entity.value.key)
 			if(player.is_gm) {
-				player.set_perspective_id(entity.value.id)
-				player.retrieve_perspective()
+				player.set_perspective(entity.value.id)
+				// player.retrieve_perspective()
 			}
 			else if(player.is_player) {
 				player.player_character_key = entity.value.key
@@ -371,8 +373,9 @@
 
 	function switch_gm() {
 		if(player.is_gm) {
-			player.set_perspective_id('Entities/1')
-			player.retrieve_perspective()
+			console.log("switching to GM perspective")
+			player.set_perspective('Entities/1')
+			// player.retrieve_perspective()
 		}
 	}
 
@@ -385,8 +388,9 @@
 			delete_entity()
 		}
 		deletion.value = false
-		player.set_perspective_id('Entities/1')
-		player.retrieve_perspective()
+		console.log("switching to GM perspective")
+		player.set_perspective('Entities/1')
+		// player.retrieve_perspective()
 	}
 
 	function relate() {
@@ -461,9 +465,10 @@
 
 	const switching_entities = ref(false)
 	function switch_to_entity(entity_id: string) {
+		console.log("switching to entity: " + entity_id)
 		if(player.is_gm) {
-			player.set_perspective_id(entity_id)
-			player.retrieve_perspective()
+			player.set_perspective(entity_id)
+			// player.retrieve_perspective()
 		}
 		else if(player.is_player) {
 			// player.player_character_key = entity_id.substring(9)

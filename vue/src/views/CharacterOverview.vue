@@ -41,8 +41,7 @@
 	function switch_character(entity: EntityType) {
 		if(player.is_gm) {
 			console.log("gm perspective changed to character: " + entity.name + "/" + entity.key)
-			player.set_perspective_id(entity.id)
-			player.retrieve_perspective()
+			player.set_perspective(entity.id)
 		}
 		else if(player.is_player) {
 			console.log("switching character: " + entity.name + "/" + entity.key)

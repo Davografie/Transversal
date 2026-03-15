@@ -62,8 +62,8 @@
 
 	function take_gm_perspective() {
 		if(player.is_gm) {
-			player.set_perspective_id('Entities/1')
-			player.retrieve_perspective()
+			player.set_perspective('Entities/1')
+			// player.retrieve_perspective()
 		}
 	}
 

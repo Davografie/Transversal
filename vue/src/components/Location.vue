@@ -400,8 +400,7 @@
 	}
 
 	function switch_perspective(entity_id: string) {
-		player.set_perspective_id(entity_id)
-		player.retrieve_perspective()
+		player.set_perspective(entity_id)
 	}
 
 	onUnmounted(() => {
@@ -457,11 +456,9 @@
 	}
 
 	function set_presence_watcher(new_clone: Entity) {
-		// console.log("setting presence watcher")
 		console.log("created clone " + JSON.stringify(new_clone))
 		console.log("changed player perspective to " + new_clone.name)
-		player.set_perspective_id(new_clone.id)
-		player.retrieve_perspective()
+		player.set_perspective(new_clone.id)
 	}
 
 	const show_parents = ref(false)
