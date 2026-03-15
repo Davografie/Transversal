@@ -167,7 +167,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * 
 	 * Carefull! This is a big query
 	 */
-	function retrieve_full_entity() {
+	async function retrieve_full_entity() {
 		const query = gql`query FullEntity($entityId: ID) {
 			entities(entityId: $entityId) {
 				key
@@ -518,6 +518,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			}
 		}`
 		if(apolloClient) {
+			console.log("updating entity ", (entity_id ?? entity.value.id), " input: ", input)
 			apolloClient.mutate({
 				mutation: query_update_entity,
 				variables: {
@@ -560,7 +561,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function deactivate_entity(entity_key?: string) {
+	function deactivate_entity(_entity_id?: string) {
 		/* post character changes to the server */
 		const query_update_entity = gql`mutation DeactivateEntity($entityId: ID!, $active: Boolean) {
 			updateEntity(entityId: $entityId, active: $active) {
@@ -572,10 +573,11 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			}
 		}`
 		if(apolloClient && entity) {
+			console.log("deactivating entity, _entity_id: ", _entity_id, ", entity_id: ", entity_id, ", entity.id: ", entity.value.id)
 			apolloClient.mutate({
 				mutation: query_update_entity,
 				variables: {
-					"entityId": entity_id ?? entity.value.id,
+					"entityId": _entity_id ?? entity_id ?? entity.value.id,
 					"active": false
 				}
 			}).then((result) => {
@@ -665,24 +667,30 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * creates a relation from given entity to set entity, with the type "relation"
 	 * @param entity_id the id of the entity to create a relation from
 	 */
-	async function create_relation(entity_id: string) {
+	async function create_relation(from_id: string = entity.value.id, to_id: string = entity.value.id) {
 		/* create a relation between this character and an entity */
 		const query_create_relation = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
 				createRelation(fromId: $fromId, toId: $toId, type: $type) {
 					success
 					message
+					relation {
+						id
+					}
 				}
 			}`
 		if(apolloClient) {
-			await apolloClient.mutate({
+			apolloClient.mutate({
 				mutation: query_create_relation,
 				variables: {
-					"fromId": entity_id,
-					"toId": entity.value.id,
+					"fromId": from_id,
+					"toId": to_id,
 					"type": "relation"
 				}
 			}).then((result) => {
 				console.log(result.data.createRelation.message)
+				if(from_id == entity.value.id) {
+					retrieve_relations()
+				}
 			})
 			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
 			// console.log('creating relation between: ' + entity.value.id + ' and ' + entity_id)
