@@ -1077,8 +1077,8 @@
 				
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
 						trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',]">
-				<div class="to-entity" v-if="trait.traitSetting?.toEntity">
-					<EntityButton :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" class="trait-to-entity" is_active />
+				<div class="trait-image" v-if="trait.traitSetting?.toEntity && !props.entity_id?.startsWith('Relations/')">
+					<EntityButton :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" :show_name="false" class="trait-to-entity" is_active />
 				</div>
 				<div class="trait-text">
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
@@ -1835,6 +1835,7 @@
 			text-shadow: none;
 			.descriptor {
 				/* padding: 0 1em; */
+				overflow: hidden;
 				.rating {
 					margin-left: .2em;
 				}
@@ -1843,6 +1844,15 @@
 				}
 				.statement {
 					padding-left: .6em;
+				}
+				.trait-image {
+					transform: translateX(-.8em) translateY(-.6em);
+					position: relative;
+					width: 70px;
+					.trait-to-entity {
+						position: absolute;
+						height: 120px;
+					}
 				}
 			}
 			.explanation {
