@@ -105,25 +105,12 @@
 	async function click_tag() {
 		if(!player.the_entity?.id) return
 
-		await create_relation(player.the_entity?.id)
-
 		if(player.is_gm) {
-			player.retrieve_perspective_relations('no-cache')
+			player.create_perspective_relation(player.the_entity?.id, entity.value.id)
 		}
 		else {
-			player.retrieve_character_relations('no-cache')
+			player.create_character_relation(player.the_entity?.id, entity.value.id)
 		}
-		// if(player.is_gm && player.perspective) {
-		// 	create_relation(player.perspective.id)
-		// 	setTimeout(() => player.retrieve_perspective_relations(), 100)
-		// }
-		// else if(!player.is_gm && player.player_character) {
-		// 	create_relation(player.player_character.id)
-		// 	setTimeout(() => player.retrieve_character_relations(), 100)
-		// }
-		// setTimeout(() => {
-		// 	set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == props.entity_id)?.id ?? '')
-		// }, 200)
 	}
 
 	// when the player wants to follow the entity instead of transversing themselves
@@ -171,8 +158,7 @@
 	}
 
 	function switch_perspective(entity_id: string) {
-		player.set_perspective_id(entity_id)
-		player.retrieve_perspective()
+		player.set_perspective(entity_id)
 	}
 
 	function remove_relation() {
@@ -184,14 +170,9 @@
 				player.retrieve_character_relations('network-only')
 			})
 		}
-		// delete_relation()
-		// player.is_gm ?
-		// 	setTimeout(() => player.retrieve_perspective_relations(), 100) :
-		// 	setTimeout(() => player.retrieve_character_relations(), 100)
 	}
 
 	onMounted(() => {
-		// retrieve_entity()
 		retrieve_followers()
 		if(player.the_entity?.relations?.map(r => r.toEntity.id).includes(props.entity_id)) {
 			retrieve_relation()

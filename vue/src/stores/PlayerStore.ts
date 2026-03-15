@@ -92,6 +92,7 @@ export const usePlayerStore = defineStore(
 			set_entity_id: set_player_character_id,
 			retrieve_full_entity: retrieve_character,
 			retrieve_relations: retrieve_character_relations,
+			create_relation: create_character_relation,
 			set_location: set_character_location,
 		} = useEntity(undefined, player_character_id.value)
 
@@ -122,14 +123,23 @@ export const usePlayerStore = defineStore(
 			set_entity_id: set_perspective_id,
 			retrieve_full_entity: retrieve_perspective,
 			retrieve_relations: retrieve_perspective_relations,
+			create_relation: create_perspective_relation,
 			delete_relation: delete_perspective_relation,
 			set_location: set_perspective_location,
 			deactivate_entity
 		} = useEntity(undefined, perspective_id.value)
 
-		watch(() => perspective.value.id, (newPerspectiveId) => {
-			perspective_id.value = newPerspectiveId
-		})
+		async function set_perspective(new_perspective_id: string) {
+			deactivate_entity(perspective_id.value)
+			perspective_id.value = new_perspective_id
+			set_perspective_id(new_perspective_id)
+			await retrieve_perspective()
+			activate_entity(perspective.value)
+		}
+
+		// watch(() => perspective.value.id, (newPerspectiveId) => {
+		// 	perspective_id.value = newPerspectiveId
+		// })
 
 		const the_entity = computed(() => {
 			if(!is_gm.value && player_character.value) {
@@ -140,46 +150,47 @@ export const usePlayerStore = defineStore(
 			}
 		})
 
-		watch(() => the_entity.value, (newEntity, oldEntity) => {
-			console.log("the entity changed")
+		// watch(() => the_entity.value, (newEntity, oldEntity) => {
+		// 	console.log("the entity changed from " + oldEntity?.name + " to " + newEntity?.name)
 
-			if(newEntity?.location && oldEntity && oldEntity.location && newEntity.location.id != oldEntity.location.id) {
-				//	update the title to the location when transversing
-				console.log("Changing title from " + oldEntity?.location?.name + " to " + newEntity.location.name)
-				useTitle(newEntity.location.name)
-			}
+		// 	if(newEntity?.location && oldEntity && oldEntity.location && newEntity.location.id != oldEntity.location.id) {
+		// 		//	update the title to the location when transversing
+		// 		console.log("Changing title from " + oldEntity?.location?.name + " to " + newEntity.location.name)
+		// 		useTitle(newEntity.location.name)
+		// 	}
 
-			if(newEntity && newEntity.id == 'Entities/1' && oldEntity && newEntity.id != oldEntity.id && oldEntity.location) {
-				//	set GM location to where the user left off
-				set_perspective_location(oldEntity.location)
-			}
-			if(newEntity && oldEntity && newEntity.id != oldEntity.id) {
-				console.log("switching from " + oldEntity.name + "/" + oldEntity.key + " to " + newEntity.name + "/" + newEntity.key)
-				if(oldEntity && oldEntity.id != 'placeholder') {
-					deactivate_entity(oldEntity.key)
-					save_perspective_id(oldEntity.id)
-				}
-				if(newEntity && is_gm.value) {
-					// activate_perspective()
-					activate_entity(newEntity)
-				}
-			}
-		})
+		// 	if(newEntity && newEntity.id == 'Entities/1' && oldEntity && newEntity.id != oldEntity.id && oldEntity.location) {
+		// 		//	set GM location to where the user left off
+		// 		console.log("Setting GM location to " + oldEntity.location.name)
+		// 		set_perspective_location(oldEntity.location)
+		// 	}
+		// 	if(newEntity && newEntity.id == perspective_id.value && oldEntity && newEntity.id != oldEntity.id) {
+		// 		console.log("switching from " + oldEntity.name + " (" + oldEntity.id + ") to " + newEntity.name + " (" + newEntity.id + ")")
+		// 		if(oldEntity?.id && oldEntity.id != 'placeholder') {
+		// 			deactivate_entity(oldEntity.id)
+		// 			save_perspective_id(oldEntity.id)
+		// 		}
+		// 		if(newEntity && is_gm.value) {
+		// 			// activate_perspective()
+		// 			activate_entity(newEntity)
+		// 		}
+		// 	}
+		// })
 		
 		// switching between gm and player
 		watch(is_gm, (newIsGm, oldIsGm) => {
 			if(newIsGm != oldIsGm && mounted.value) {
-				console.log("gm changed from " + oldIsGm + " to " + newIsGm)
+				console.log("GM changed from " + oldIsGm + " to " + newIsGm)
 
 				//	retrieve the entity when switching between gm and player
 				if(perspective_id.value && perspective.value.id != perspective_id.value && newIsGm) {
-					console.log("changing perspective from " + perspective.value.id + " to " + perspective_id.value)
+					console.warn("changing perspective from " + perspective.value.id + " to " + perspective_id.value)
 					set_perspective_id(perspective_id.value)
-					retrieve_perspective()
+					// retrieve_perspective()
 				}
-				if(player_character_key.value && !newIsGm) {
-					console.log("retrieving character of " + player_character_key.value)
-					set_character_key(player_character_key.value)
+				if(player_character_id.value && !newIsGm) {
+					console.log("retrieving character of " + player_character_id.value)
+					set_character_id(player_character_id.value)
 					retrieve_character()
 				}
 
@@ -221,6 +232,11 @@ export const usePlayerStore = defineStore(
 				set_player_id(player_id.value)
 				retrieve_player()
 			}
+			if(perspective_id.value) {
+				console.log("retrieving perspective " + perspective_id.value)
+				set_perspective(perspective_id.value)
+				// retrieve_perspective()
+			}
 		})
 
 		return {
@@ -240,13 +256,15 @@ export const usePlayerStore = defineStore(
 			player_character_id,
 			retrieve_character,
 			retrieve_character_relations,
+			create_character_relation,
 			set_character_location,
 			set_character_id,
 			perspective_id,
-			set_perspective_id,
+			set_perspective,
 			perspective,
 			retrieve_perspective,
 			retrieve_perspective_relations,
+			create_perspective_relation,
 			delete_perspective_relation,
 			set_perspective_location,
 			the_entity,
@@ -279,10 +297,10 @@ export const usePlayerStore = defineStore(
 				'player_name', 
 				'player_character_key',
 				'player_character_id',
-				'player_character',
+				// 'player_character',
 				'previous_perspective_ids',
 				'perspective_id', 
-				'perspective',
+				// 'perspective',
 				'is_gm',
 				'playing',
 				'small_buttons',
