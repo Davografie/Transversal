@@ -73,6 +73,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			console.warn("no traitset id provided")
 		}
 		else {
+			// console.log("retrieving traitset: " + traitset_id + (entity_id ? " for entity: " + entity_id : ""))
 			const query_get_traitset = gql`query TraitsetByID($traitsetId: ID, $sorting: String) {
 				traitsets(traitsetId: $traitsetId, sorting: $sorting) {
 					id

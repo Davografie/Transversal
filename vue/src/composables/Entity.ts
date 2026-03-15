@@ -162,10 +162,12 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
+	/**
+	 * Retrieves the full entity from the server
+	 * 
+	 * Carefull! This is a big query
+	 */
 	function retrieve_full_entity() {
-
-		console.log("retrieving full entity! ", entity_id)
-
 		const query = gql`query FullEntity($entityId: ID) {
 			entities(entityId: $entityId) {
 				key
@@ -258,6 +260,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && entity_id != 'Entities/undefined' && entity_id != 'Entities/placeholder') {
+			console.log("retrieving full entity! ", entity_id)
 			apolloClient.query({
 				query: query,
 				variables: { entityId: entity_id },
@@ -385,6 +388,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					...entity.value,
 					...result.data.entities[0]
 				}
+			}).catch((error) => {
+				console.error("error retrieving followers: ", entity_id, "error: ", error)
 			})
 			// const { result } = provideApolloClient(apolloClient)(
 			// 	() => useQuery(

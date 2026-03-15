@@ -162,6 +162,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				query: query,
 				variables: args,
 				fetchPolicy: 'network-only'
+			}).catch((error) => {
+				console.error("error retrieving trait(" + trait_id.value + "): ", error)
 			})
 
 			if(result && result.data && result.data.traits && result.data.traits.length > 0) {

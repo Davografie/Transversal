@@ -87,7 +87,9 @@
 
 	onMounted(() => {
 		if(trait.value.id == 'placeholder') {
-			retrieve_trait()
+			retrieve_trait().catch((error) => {
+				console.error("Error retrieving trait: " + trait.value.id, error)
+			})
 		}
 	})
 
