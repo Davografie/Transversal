@@ -492,10 +492,13 @@
 		})
 	}
 
+	/**
+	 * Determines whether the traitset should be extended to allow adding traits
+	 */
 	const extended = computed(() => {
 		return (
-			got_traits_to_show
-			|| ((props.extensible || show_info || edit_mode || traitset.traits?.length == 0) && player.is_gm)
+			got_traits_to_show.value
+			|| ((props.extensible || show_info || edit_mode || traitset.value.traits?.length == 0) && player.is_gm)
 			|| (player.is_player && player.player_character.id == props.entity_id)
 			|| (props.relationship && props.extensible)
 			|| (props.location && props.extensible)
@@ -656,7 +659,7 @@
 		</div>
 
 
-		<div class="traits" v-if="show_traits" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
+		<div class="traits" v-if="show_traits || extended" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
 			<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0">
 				<!-- <div class="sfx-sparkles">✨</div> -->
