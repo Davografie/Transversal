@@ -25,11 +25,13 @@
 	})
 
 	const order_changed = ref(false)
+	const changed_index = ref(0)
 	function order_change(event: any) {
 		const { oldIndex, newIndex } = event
 		order_changed.value = true
 		let ts = traitset_order.value.splice(oldIndex, 1)[0]
 		traitset_order.value.splice(newIndex, 0, ts)
+		changed_index.value = newIndex
 	}
 	function save_order() {
 		change_traitset_order(traitset_order.value)
@@ -38,11 +40,9 @@
 
 	const new_traitset: Ref<string> = ref('')
 	function add_traitset() {
-		create_traitset(new_traitset.value, entity_types.value).then(() => {
-			retrieve_traitsets()
-		})
+		create_traitset(new_traitset.value, entity_types.value)
 		new_traitset.value = ''
-		entity_types.value = []
+		// entity_types.value = []
 	}
 </script>
 
@@ -90,13 +90,24 @@
 		<div id="traitset-list">
 			<div id="traitset-list-wrapper">
 				<ol v-sortable @update="order_change">
-					<li
-							v-for="traitset in traitsets.filter(
+					<!-- <li v-for="traitset in traitsets.filter(
 								ts => entity_types.every(
 									et => ts.entityTypes?.includes(et)))
 								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase()))"
 							@click="emit('show_traitset', traitset.key)"
 							:class="{ 'subtraitset': traitset.entityTypes?.includes('subtrait')}">
+						<span>{{ traitset.name }}</span>
+					</li> -->
+					<li v-for="traitset in traitsets"
+							@click="emit('show_traitset', traitset.key)"
+							:class="[
+								{ 'subtraitset': traitset.entityTypes?.includes('subtrait') },
+								{ 'emphasized': traitsets.filter(
+								ts => entity_types.every(
+									et => ts.entityTypes?.includes(et)))
+								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase())).includes(traitset) },
+								{ 'changed': changed_index == traitset_order.indexOf(traitset.id) }
+							]">
 						<span>{{ traitset.name }}</span>
 					</li>
 				</ol>
@@ -126,9 +137,18 @@
 			font-size: 1.2em;
 			padding: .2em;
 			cursor: grab;
-			&.subtraitset span {
+			/* &.subtraitset span {
 				background-color: var(--color-highlight);
 				color: var(--color-highlight-text);
+			} */
+			&.emphasized span {
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+				font-size: 1.4em;
+			}
+			&.changed {
+				background-color: var(--color-editing);
+				color: var(--color-editing-text);
 			}
 			&:hover {
 				background-color: var(--color-highlight);

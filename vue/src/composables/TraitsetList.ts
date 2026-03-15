@@ -113,20 +113,31 @@ export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_ty
 		const mutate_create_traitset = gql`mutation CreateTraitset($name: String!, $entityTypes: [String]) {
 			createTraitset(name: $name, entityTypes: $entityTypes) {
 				traitset {
+					key
 					id
 					name
+					entityTypes
 				}
 			}
 		}`
 		if(apolloClient) {
-			const { mutate, onDone, onError } = provideApolloClient(apolloClient)(() => useMutation(mutate_create_traitset))
-			let variables: object = {
-				name: name,
-				entityTypes: entity_types
-			}
-			// console.log("updating traitset with variables: ", variables)
-			mutate(variables)
-			retrieve_traitsets()
+			apolloClient.mutate({
+				mutation: mutate_create_traitset,
+				variables: {
+					name: name,
+					entityTypes: entity_types
+				}
+			}).then((result) => {
+				traitsets.value = traitsets.value.concat(result.data.createTraitset.traitset)
+			})
+			// const { mutate, onDone, onError } = provideApolloClient(apolloClient)(() => useMutation(mutate_create_traitset))
+			// let variables: object = {
+			// 	name: name,
+			// 	entityTypes: entity_types
+			// }
+			// // console.log("updating traitset with variables: ", variables)
+			// mutate(variables)
+			// retrieve_traitsets()
 		}
 	}
 
