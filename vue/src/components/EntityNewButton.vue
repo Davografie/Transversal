@@ -29,7 +29,9 @@
 
 	async function add_entity() {
 		if(!props.archetype_id) {
-			create_entity(new_entity_name.value, new_entityType.value, props.location_id)
+			const new_entity = await create_entity(new_entity_name.value, new_entityType.value, props.location_id)
+			player.is_gm ? player.set_perspective(new_entity.id) : player.set_character_id(new_entity.id)
+			emit('created_entity', new_entity)
 		}
 		else {
 			// clone_entity(new_entity_name.value).then(() => {
@@ -45,8 +47,10 @@
 				player.retrieve_character()
 				router.push({ path: '/entity/' + new_entity.key })
 			}
+			else {
+				emit('created_entity', new_entity)
+			}
 		}
-		emit('created_entity')
 		new_entity_name.value = ''
 		show_entity_creation.value = false
 	}

@@ -557,6 +557,7 @@
 						<EntityNewButton
 							:location_id="location.id"
 							options_direction="right"
+							@created_entity="retrieve_presence"
 							v-if="player.is_gm" />
 					</div>
 				</div>

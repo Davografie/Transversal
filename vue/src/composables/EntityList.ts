@@ -129,6 +129,13 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 		}
 	}
 
+	/**
+	 * create a new entity
+	 * @param name the new entity's name
+	 * @param entity_type the type of the new entity
+	 * @param location_id where to spawn the new entity
+	 * @returns the created entity
+	 */
 	async function create_entity(name: string, entity_type: string, location_id?: string) {
 		const create_entity_query = gql`mutation CreateEntity($entityType: String!, $name: String!, $location: ID) {
 			createEntity(entityType: $entityType, name: $name, location: $location) {
@@ -141,17 +148,26 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			}
 		}`
 		if(apolloClient) {
-			const { mutate: create } = provideApolloClient(apolloClient)(() => useMutation(create_entity_query))
-			let input: any = { "name": name, "entityType": entity_type }
-			if(location_id) { input = { ...input, "location": location_id } }
-			// create(input)
-			try {
-				const result = await create(input);
-				return result?.data?.createEntity?.entity; // Extract and return the entity data
-			} catch (error) {
-				console.error('Error creating entity:', error);
-				throw error; // Re-throw the error if needed
-			}
+			const new_entity = await apolloClient.mutate({
+				mutation: create_entity_query,
+				variables: {
+					"entityType": entity_type,
+					"name": name,
+					"location": location_id
+				}
+			})
+			return new_entity.data.createEntity.entity
+			// const { mutate: create } = provideApolloClient(apolloClient)(() => useMutation(create_entity_query))
+			// let input: any = { "name": name, "entityType": entity_type }
+			// if(location_id) { input = { ...input, "location": location_id } }
+			// // create(input)
+			// try {
+			// 	const result = await create(input);
+			// 	return result?.data?.createEntity?.entity; // Extract and return the entity data
+			// } catch (error) {
+			// 	console.error('Error creating entity:', error);
+			// 	throw error; // Re-throw the error if needed
+			// }
 		}
 	}
 
