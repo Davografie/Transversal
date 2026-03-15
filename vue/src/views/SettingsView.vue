@@ -136,31 +136,37 @@
 	function go_to(new_view: string) {
 		view.value = new_view
 		container.value.scrollLeft = 140
+		const loc_key = playerStore.the_entity?.location?.key ?? (route.params.location_key ?? '2') as string
 		if(new_view == 'location') {
-			router.push({ path: '/location/' + playerStore.the_entity?.location?.key })
+			router.push({ path: '/location/' + loc_key })
 		}
 		else if(new_view == 'settings') {
-			router.push({ path: '/location/' + playerStore.the_entity?.location?.key + '/settings' })
+			router.push({ path: '/location/' + loc_key + '/settings' })
 		}
 		else {
-			router.push({ path: '/location/' + playerStore.the_entity?.location?.key + '/settings/' + new_view })
+			router.push({ path: '/location/' + loc_key + '/settings/' + new_view })
 		}
 	}
 
 	watch(route, () => {
 		if(route.name == 'Landing' && playerStore.the_entity?.location?.key) {
+			console.log("redirecting to settings")
 			router.push({ path: '/location/' + playerStore.the_entity?.location.key + '/settings' })
 		}
 		else if(route.name == 'Landing') {
 			router.push({ name: 'Character overview' })
 		}
-		if(route.matched.length > 2 && route.matched[3].name?.toString().toLowerCase() != view.value) {
-			view.value = route.matched[2].name?.toString().toLowerCase() ?? 'settings'
-			if(route.params.traitset_key) {
-				traitset_key.value = route.params.traitset_key as string
+		if(route.matched.length > 2) {
+			console.log("route match length = " + route.matched.length)
+			console.log("route matched = ", route.matched)
+			if(route.matched[2].name?.toString().toLowerCase() != view.value) {
+				view.value = route.matched[2].name?.toString().toLowerCase() ?? 'settings'
+				if(route.params.traitset_key) {
+					traitset_key.value = route.params.traitset_key as string
+				}
 			}
 		}
-	})
+	}, { immediate: true })
 
 	function switch_input(new_input: input_methods) {
 		playerStore.input_method = new_input

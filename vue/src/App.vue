@@ -152,6 +152,7 @@
 				router.push({ path: '/location/' + player.the_entity?.location?.key })
 			}
 			else {
+				console.log('redirecting to settings, newRoute.name = ', newRoute.name)
 				router.push({ path: '/location/2/settings' })
 			}
 		}
