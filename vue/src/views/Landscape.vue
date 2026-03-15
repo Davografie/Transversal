@@ -24,15 +24,6 @@
 	//	changed by show_entity()
 	const active_entity_id = ref<string|undefined>()
 
-	function transverse(loc: LocationType) {
-		if(player.is_gm && player.perspective && player.perspective.entityType != 'faction') {
-			player.set_perspective_location(loc)
-		}
-		else if(!player.is_gm && player.player_character) {
-			player.set_character_location(loc)
-		}
-	}
-
 	function show_entity(entity_id: string) {
 		if(active_entity_id.value != entity_id) {
 			active_entity_id.value = entity_id
@@ -60,7 +51,6 @@
 			<CurrentLocationView id="current-location" class="panel"
 				:location_key="player.the_entity?.location?.key ?? ''"
 				@show_entity="(ett_key) => show_entity('Entities/' + ett_key)"
-				@transverse="transverse"
 				:active_entity_id="active_entity_id"
 				v-if="player.the_entity?.location" />
 			<CodexView id="codex" class="panel"

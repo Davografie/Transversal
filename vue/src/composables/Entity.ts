@@ -505,6 +505,15 @@ export function useEntity(init?: Entity, entity_id?: string) {
 						id
 						name
 					}
+					location {
+						key
+						id
+						name
+						image {
+							path
+							ext
+						}
+					}
 				}
 			}
 		}`

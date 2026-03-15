@@ -81,7 +81,7 @@
 			player.set_perspective_location(loc)
 		}
 		console.log("transversing to: " + loc.name)
-		router.push({ path: '/location/' + loc.key })
+		//router.push({ path: '/location/' + loc.key })
 		emit('transverse')
 	}
 
