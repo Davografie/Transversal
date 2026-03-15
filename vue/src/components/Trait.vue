@@ -455,6 +455,7 @@
 		if(props.location_key) set_location_key(props.location_key)
 		retrieve_location()
 		retrieve_trait_setting()
+		retrieve_possible_sfxs()
 		if(
 			trait.value.traitSetting?.locationsEnabled
 			&& trait.value.traitSetting?.locationsEnabled?.length > 0
@@ -665,7 +666,7 @@
 	const new_sfx_description = ref<string>('')
 
 	function toggle_sfxs() {
-		retrieve_possible_sfxs()
+		// retrieve_possible_sfxs()
 		show_sfxs.value = !show_sfxs.value
 	}
 
@@ -1031,7 +1032,7 @@
 				<div class="button-mnml sfx-button"
 						:class="show_sfxs ? 'active' : 'inactive'"
 						@click="toggle_sfxs"
-						v-if="sfx_list && sfx_list?.length > 0 && can_edit">
+						v-if="(trait.possibleSfxs?.length ?? 0) > 0 && can_edit">
 					<div class="icon">✨</div>
 					<div class="label" v-if="!player.small_buttons">{{ show_sfxs ? 'cancel' : 'add sfx' }}</div>
 				</div>

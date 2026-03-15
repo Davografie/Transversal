@@ -37,7 +37,7 @@
     function click_card() {
         console.log('click card')
         if(player.editing && !props.editing) return
-        // show_description.value = !show_description.value
+        if(props.adding) show_description.value = !show_description.value
         if(show_description.value) {
 			emit('collapse')
 		} else {
@@ -105,13 +105,13 @@
             <textarea class="edit-description" placeholder="description" v-model="new_description" />
         </div>
         <div class="buttons">
-            <input type="button" class="add button" value="add" @click.stop="add" 
+            <input type="button" class="add button" value="add" @click.stop="add"
                 v-if="show_description && props.adding" />
-            <input type="button" class="save button" value="save" @click.stop="save_sfx" 
+            <input type="button" class="save button" value="save" @click.stop="save_sfx"
                 v-if="is_editing" />
             <input type="button" class="toggle-edit button" :value="is_editing ? 'cancel' : 'edit'" @click.stop="toggle_edit"
-                v-if="player.is_gm && props.editing" />
-            <input type="button" class="remove button" value="remove" @click.stop="remove" 
+                v-if="player.is_gm && props.editing && show_description" />
+            <input type="button" class="remove button" value="remove" @click.stop="remove"
                 v-if="show_description && !props.adding && props.editing" />
         </div>
     </div>
