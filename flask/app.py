@@ -349,7 +349,7 @@ def location_allowed(hierarchy, locations_enabled, locations_disabled) -> bool:
 	Returns:
 		bool: True if the location is enabled, False if the location is disabled, None if it's neither enabled nor disabled.
 	"""
-	if len(hierarchy) == 0:
+	if len(hierarchy) == 0 or (locations_enabled is None and locations_disabled is None):
 		return None
 	if hierarchy[0] in locations_enabled:
 		return True
@@ -3410,6 +3410,12 @@ class DeleteEntity(Mutation):
 	def mutate(root, info, entity_id, rmtree=False):
 
 		def remove_entity(entity_id):
+			"""
+			Removes an entity from the database, separate method for bulk editing
+
+			Args:
+				entity_id (str): The ID of the entity to remove
+			"""
 			# we don't want any dangling relations, so we need to delete those, but because relations
 			# can have traits associated with them we need to delete the trait settings associated with those relations too
 			# first _from this entity
@@ -3474,6 +3480,7 @@ class DeleteEntity(Mutation):
 			# now we can delete the entity
 			db.collection('Entities').delete(entity_id)
 
+		# this is the actual function for removing entities
 		try:
 			current_entity = get_doc_by_id('Entities', entity_id)
 
