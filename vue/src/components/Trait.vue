@@ -592,9 +592,9 @@
 		mode.value = view_modes.Neutral
 		edit_rating.value = false
 		show_sfxs.value = false
-		setTimeout(() => {
-			refetch(); retrieve_trait()
-		}, 200)
+		// setTimeout(() => {
+		// 	refetch(); retrieve_trait()
+		// }, 200)
 	}
 
 	function cancel_edit() {
@@ -957,7 +957,7 @@
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
 				{ 'clickable': mode != view_modes.Editing },
 				{ 'inherited': inherited },
-				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm },
+				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm && mode == view_modes.Small },
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"

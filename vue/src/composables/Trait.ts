@@ -261,7 +261,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 
 	const { convert_rating_to_dice } = useRating()
 
-	function retrieve_trait_setting() {
+	function retrieve_trait_setting(caching: FetchPolicy = 'cache-first') {
 		const query = gql`query TraitSettingByID($traitSettingId: ID) {
 			traits(traitSettingId: $traitSettingId) {
 				traitSetting {
@@ -293,7 +293,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				variables: {
 					traitSettingId: trait_setting_id.value
 				},
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				if(result.data.traits[0].traitSetting) {
 					trait.value.traitSetting = result.data.traits[0].traitSetting
@@ -441,7 +441,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function mutate_trait_setting(input: TraitSettingInput) {
+	async function mutate_trait_setting(input: TraitSettingInput) {
 		if(!trait_setting_id.value) {
 			console.error("mutate_trait_setting called without trait_setting_id")
 		}
@@ -454,12 +454,21 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				}
 			}`
 		if(apolloClient && trait_setting_id.value) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_setting_trait))
-			let variables: object = {
-				traitSettingId: trait_setting_id.value,
-				traitSettingInput: input
-			}
-			mutate(variables)
+			await apolloClient.mutate({
+				mutation: mutate_setting_trait,
+				variables: {
+					traitSettingId: trait_setting_id.value,
+					traitSettingInput: input
+				}
+			})
+			await retrieve_trait('network-only')
+			retrieve_trait_setting('network-only')
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_setting_trait))
+			// let variables: object = {
+			// 	traitSettingId: trait_setting_id.value,
+			// 	traitSettingInput: input
+			// }
+			// mutate(variables)
 		}
 	}
 
