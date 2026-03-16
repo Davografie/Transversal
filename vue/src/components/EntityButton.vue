@@ -495,10 +495,9 @@
 			height: 100px;
 			.name {
 				position: absolute;
-				left: 0;
-				right: 0;
+				left: 50%;
 				bottom: 0;
-				transform: translateY(20%);
+				transform: translateX(-50%) translateY(20%);
 				text-align: center;
 				font-weight: bold;
 				-webkit-font-smoothing: antialiased;
