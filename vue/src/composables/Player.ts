@@ -44,7 +44,7 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 		}
 	}
 
-	function activate_entity(entity: Entity) {
+	async function activate_entity(entity_id: string) {
 		const query_update_entity = gql`mutation ActivateEntity($playerId: ID!, $entityId: ID!) {
 			activateEntity(playerId: $playerId, entityId: $entityId) {
 				player {
@@ -52,14 +52,21 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 				}
 			}
 		}`
-		if(apolloClient && player.value.id != 'placeholder') {
-			const { mutate } = provideApolloClient(apolloClient)(
-				() => useMutation(query_update_entity)
-			)
-			mutate({
-				playerId: player.value.id,
-				entityId: entity.id
+		if(apolloClient && (_player_id || player.value.id != 'placeholder')) {
+			await apolloClient.mutate({
+				mutation: query_update_entity,
+				variables: {
+					playerId: _player_id ?? player.value.id,
+					entityId: entity_id
+				}
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(
+			// 	() => useMutation(query_update_entity)
+			// )
+			// mutate({
+			// 	playerId: player.value.id,
+			// 	entityId: entity.id
+			// })
 		}
 	}
 

@@ -113,7 +113,7 @@ export const usePlayerStore = defineStore(
 
 		watch(player_character, (newCharacter) => {
 			if(!newCharacter.active) {
-				activate_entity(newCharacter)
+				activate_entity(newCharacter.id)
 			}
 		})
 
@@ -126,15 +126,21 @@ export const usePlayerStore = defineStore(
 			create_relation: create_perspective_relation,
 			delete_relation: delete_perspective_relation,
 			set_location: set_perspective_location,
+			set_archetype: set_perspective_archetype,
+			unset_archetype: unset_perspective_archetype,
 			deactivate_entity
 		} = useEntity(undefined, perspective_id.value)
 
 		async function set_perspective(new_perspective_id: string) {
-			deactivate_entity(perspective_id.value)
+			console.log("setting perspective to " + new_perspective_id)
+			if(perspective_id.value != new_perspective_id) {
+				console.log("deactivating perspective ", perspective_id.value)
+				deactivate_entity(perspective_id.value)
+			}
 			perspective_id.value = new_perspective_id
 			set_perspective_id(new_perspective_id)
+			activate_entity(perspective_id.value)
 			await retrieve_perspective()
-			activate_entity(perspective.value)
 		}
 
 		// watch(() => perspective.value.id, (newPerspectiveId) => {
@@ -267,6 +273,8 @@ export const usePlayerStore = defineStore(
 			create_perspective_relation,
 			delete_perspective_relation,
 			set_perspective_location,
+			set_perspective_archetype,
+			unset_perspective_archetype,
 			the_entity,
 			// retrieve_the_entity,
 			plot_points,
