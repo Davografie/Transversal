@@ -42,7 +42,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 	const entity_id = ref(_entity_id)
 	const instances: Ref<TraitSetting[]> = ref([])
 
-	async function retrieve_trait() {
+	async function retrieve_trait(caching: FetchPolicy = 'cache-first') {
 		const query_get_trait = gql`query TraitByID($traitId: ID) {
 			traits(traitId: $traitId) {
 				id
@@ -161,7 +161,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			const result = await apolloClient.query({
 				query: query,
 				variables: args,
-				fetchPolicy: 'network-only'
+				fetchPolicy: caching
 			}).catch((error) => {
 				console.error("error retrieving trait(" + trait_id.value + "): ", error)
 			})
@@ -395,6 +395,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				mutateTrait(traitId: $traitId, traitInput: $traitInput) {
 					trait {
 						id
+						locationRestricted
 						possibleSubTraits {
 							id
 							name
@@ -656,7 +657,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function retrieve_default_settings() {
+	function retrieve_default_settings(caching: FetchPolicy = 'cache-first') {
 		const query_get_default_trait = gql`query TraitDefaults($traitId: ID) {
 			traits(traitId: $traitId) {
 				defaultTraitSetting {
@@ -679,7 +680,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			apolloClient.query({
 				query: query,
 				variables: args,
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				console.log("retrieved default for trait: " + trait_id.value + ": ")
 				console.log(result)
@@ -756,22 +757,41 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		const mutate_update_trait = gql`mutation Mutation($defaultSettings: TraitSettingInput!, $traitId: ID!) {
 			updateTraitDefault(defaultSettings: $defaultSettings, traitId: $traitId) {
 				trait {
-					name
 					defaultTraitSetting {
+						id
+						ratingType
 						rating
+						locationsEnabled
+						locationsDisabled
+						sfxs {
+							id
+						}
+						hidden
 					}
 				}
 			}
 		}`
 		
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_update_trait))
-			let variables: object = {
-				traitId: trait_id.value,
-				defaultSettings: new_defaults
-			}
-			console.log("updating trait defaults with variables: ", variables)
-			mutate(variables)
+			apolloClient.mutate({
+				mutation: mutate_update_trait,
+				variables: {
+					defaultSettings: new_defaults,
+					traitId: trait_id.value
+				}
+			}).then((result) => {
+				default_settings.value = {
+					...default_settings.value,
+					...result.data.updateTraitDefault.trait.defaultTraitSetting
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_update_trait))
+			// let variables: object = {
+			// 	traitId: trait_id.value,
+			// 	defaultSettings: new_defaults
+			// }
+			// console.log("updating trait defaults with variables: ", variables)
+			// mutate(variables)
 		}
 	}
 

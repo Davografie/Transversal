@@ -819,23 +819,26 @@ class DeleteSFX(Mutation):
 				FILTER '{ id }' IN trait.possible_sfxs
 				RETURN trait"""
 			results = execute_aql(query, ['Traits'])
-			# results = db.aql.execute(query)
 			for result in results:
 				new_sfxs = result.get('possible_sfxs')
 				new_sfxs.remove(id)
 				update_doc('Traits', result, {'possible_sfxs': new_sfxs})
+
 			# Remove SFX from all TraitSettings
 			query = f"""FOR ts IN TraitSettings
 				FILTER '{ id }' IN ts.sfxs
 				RETURN ts"""
 			results = execute_aql(query, ['TraitSettings'])
-			# results = db.aql.execute(query)
 			for result in results:
 				new_sfxs = result.get('sfxs')
 				new_sfxs.remove(id)
 				update_doc('TraitSettings', result, {'sfxs': new_sfxs})
+			
+			# Delete the actual SFX
 			db.collection('SFXs').delete(id)
+
 			return DeleteSFX(success=True, message="SFX deleted")
+		
 		except Exception as e:
 			return DeleteSFX(success=False, message=f"DeleteSFX failed: {str(e)}")
 
@@ -1302,7 +1305,10 @@ class Trait(ObjectType):
 	def resolve_location_restricted(parent, info):
 		if not parent.location_restricted:
 			Trait._hydrate_trait(parent, info)
-		return parent.location_restricted or get_doc_by_id('Traitsets', parent.traitset_id).get('location_restricted')
+		if parent.location_restricted is not None:
+			return parent.location_restricted
+		else:
+			return get_doc_by_id('Traitsets', parent.traitset_id).get('location_restricted')
 
 	def resolve_trait_setting(parent, info):
 		if parent.trait_setting:
@@ -1589,14 +1595,14 @@ class UpdateTraitDefault(Mutation):
 	trait = Field(lambda: Trait)
 
 	def mutate(root, info, trait_id, default_settings):
-		if len(find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})) > 1:
-			traits = find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})
+		if len(traits := find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})) > 1:
 			db.collection('TraitSettings').delete_many([trait.get('_id') for trait in traits])
-		if len(find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})) == 1:
-			db.collection('TraitSettings').update_match(
-				{ '_from': trait_id, '_to': 'Traits/1' },
-				default_settings
-			)
+		if traits == 1:
+			update_doc('TraitSettings', traits[0])
+			# db.collection('TraitSettings').update_match(
+			# 	{ '_from': trait_id, '_to': 'Traits/1' },
+			# 	default_settings
+			# )
 		else:
 			db.collection('TraitSettings').insert(
 				{

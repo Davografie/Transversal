@@ -124,7 +124,7 @@
 			trait_completed = true
 			if(trait_completed && default_completed) refreshing.value = false
 		})
-		retrieve_default_settings()
+		retrieve_default_settings('network-only')
 		watch(default_settings, (newDefaults) => {
 			console.log("default settings: ", newDefaults)
 			if(newDefaults) {
@@ -356,10 +356,15 @@
 					falsy="this trait is visible"
 					:default="default_settings?.hidden ?? false"
 					@toggle="toggle_hidden" />
-				<ToggleButton truthy="location restricted"
-					falsy="location unrestricted"
-					:default="trait.locationRestricted ?? false"
-					@toggle="mutate_trait({'locationRestricted': !trait.locationRestricted}); retrieve_trait()" />
+				<div class="location-restricted">
+					<ToggleButton truthy="location restricted"
+						falsy="location unrestricted"
+						:default="trait.locationRestricted ?? false"
+						@toggle="mutate_trait({'locationRestricted': !trait.locationRestricted});" />
+					<label for="location-restricted">
+						if location restricted, upon assigning trait to entity or relation, the trait will be restricted to the current universe (i.e. the multiverse's direct descendant)
+					</label>
+				</div>
 				
 				<h2 @click="toggle_instances">instances</h2>
 				<div class="instances" v-if="instances && show_instances">
