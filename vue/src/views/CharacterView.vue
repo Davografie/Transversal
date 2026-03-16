@@ -819,6 +819,7 @@
 					v-for="entity_id in player.player.entities.map(e => e.id).slice(0, 12)" :key="entity_id"
 					:entity_id="entity_id"
 					override_click
+					show_archetypes
 					:is_active="player.the_entity?.id != entity_id"
 					@click_entity="player.the_entity?.id != entity_id ? quick_switch(entity_id) : null" />
 			</div>
