@@ -90,15 +90,10 @@
 		<div id="traitset-list">
 			<div id="traitset-list-wrapper">
 				<ol v-sortable @update="order_change">
-					<!-- <li v-for="traitset in traitsets.filter(
+					<li v-for="traitset in traitsets.filter(
 								ts => entity_types.every(
 									et => ts.entityTypes?.includes(et)))
 								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase()))"
-							@click="emit('show_traitset', traitset.key)"
-							:class="{ 'subtraitset': traitset.entityTypes?.includes('subtrait')}">
-						<span>{{ traitset.name }}</span>
-					</li> -->
-					<li v-for="traitset in traitsets"
 							@click="emit('show_traitset', traitset.key)"
 							:class="[
 								{ 'subtraitset': traitset.entityTypes?.includes('subtrait') },
@@ -110,6 +105,18 @@
 							]">
 						<span>{{ traitset.name }}</span>
 					</li>
+					<!-- <li v-for="traitset in traitsets"
+							@click="emit('show_traitset', traitset.key)"
+							:class="[
+								{ 'subtraitset': traitset.entityTypes?.includes('subtrait') },
+								{ 'emphasized': traitsets.filter(
+								ts => entity_types.every(
+									et => ts.entityTypes?.includes(et)))
+								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase())).includes(traitset) },
+								{ 'changed': changed_index == traitset_order.indexOf(traitset.id) }
+							]">
+						<span>{{ traitset.name }}</span>
+					</li> -->
 				</ol>
 			</div>
 			<div id="save-button-wrapper">
