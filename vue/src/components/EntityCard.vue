@@ -12,6 +12,9 @@
 	import Traitset from '@/components/Traitset.vue'
 	import type { Relation } from '@/interfaces/Types'
 
+	import ButtonMinimal from '@/components/UI/ButtonMinimal.vue'
+	import { ButtonTypes } from '@/composables/Button'
+
 	const props = defineProps<{
 		entity_id: string
 	}>()
@@ -233,13 +236,16 @@
 					<span class="icon">👁</span>
 					<span class="label">{{ player.small_buttons ? '' : 'open entity'}}</span>
 				</div>
-				<div class="button-mnml codex-button"
+				<ButtonMinimal :function="ButtonTypes.RELATION"
+					@click.stop="click_tag"
+					v-if="relation_possible" />
+				<!-- <div class="button-mnml codex-button"
 						:class="{ 'small-button': !player.small_buttons }"
 						@click.stop="click_tag"
 						v-if="relation_possible">
 					<span class="icon">🏷</span>
 					<span class="label">{{ player.small_buttons ? '' : 'add to contacts'}}</span>
-				</div>
+				</div> -->
 				<div class="button-mnml transversable-button"
 						:class="{ 'small-button': !player.small_buttons }"
 						@click.stop="make_transversable(player.the_entity?.id)"
@@ -266,6 +272,12 @@
 					<span class="icon">⍏</span>
 					<span class="label">{{ player.small_buttons ? '' : 'unfollow'}}</span>
 				</div>
+				<ButtonMinimal :function="ButtonTypes.ADD_ARCHETYPE"
+					v-if="!player.the_entity?.archetypes?.map(arch => arch.id).includes(entity.id) && entity.isArchetype"
+					@click.stop="player.set_perspective_archetype(entity.id)" />
+				<ButtonMinimal :function="ButtonTypes.REMOVE_ARCHETYPE"
+					v-if="player.the_entity?.archetypes?.map(arch => arch.id).includes(entity.id) && entity.isArchetype"
+					@click.stop="player.unset_perspective_archetype(entity.id)" />
 				<div class="button-mnml copy-button"
 						@click.stop="instantiate"
 						v-if="entity.isArchetype">
