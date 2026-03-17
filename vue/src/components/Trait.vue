@@ -415,19 +415,29 @@
 	}
 
 	function deplete_challenge(d: DieType) {
-		const index = new_rating.value.findIndex((r) => r.id == d.id)
-		if(index >= 0) {
-			const { die, change_type } = useDie(d)
-			if(die.value.number_rating > 0) change_type(die.value.number_rating - 1)
-			else change_type(die.value.number_rating + 1)
-			if(die.value.number_rating != 0) {
-				new_rating.value.splice(index, 1, die.value)
-			}
-			else {
-				new_rating.value.splice(index, 1)
-			}
+		// (d) => mode == view_modes.Editing ? edit_rating = true : deplete_challenge(d)
+		console.log("depleting challenge: ", d)
+		if(mode.value == view_modes.Small) {
+			play_trait()
 		}
-		mutate_trait_setting({ 'rating': new_rating.value.map((r) => r.number_rating ) })
+		if(mode.value == view_modes.Editing) {
+			edit_rating.value = true
+		}
+		else {
+			const index = new_rating.value.findIndex((r) => r.id == d.id)
+			if(index >= 0) {
+				const { die, change_type } = useDie(d)
+				if(die.value.number_rating > 0) change_type(die.value.number_rating - 1)
+				else change_type(die.value.number_rating + 1)
+				if(die.value.number_rating != 0) {
+					new_rating.value.splice(index, 1, die.value)
+				}
+				else {
+					new_rating.value.splice(index, 1)
+				}
+			}
+			mutate_trait_setting({ 'rating': new_rating.value.map((r) => r.number_rating ) })
+		}
 	}
 
 	const traitset_limit_reached = computed(() => {
@@ -1070,13 +1080,13 @@
 				<ButtonMinimal :function="ButtonTypes.LOCATION_PIN"
 					v-if="can_edit && !props.entity_id?.startsWith('Relations/')"
 					@click.stop="restrict_location = !restrict_location" />
-				<div class="button-mnml restrict-location-button"
+				<!-- <div class="button-mnml restrict-location-button"
 						:class="restrict_location ? 'active' : 'inactive'"
 						@click="restrict_location = !restrict_location"
 						v-if="can_edit && !props.entity_id?.startsWith('Relations/')">
 					<div class="icon">🗺</div>
 					<div class="label" v-if="!player.small_buttons">{{ restrict_location ? 'cancel' : 'restrict by location' }}</div>
-				</div>
+				</div> -->
 			</div>
 				
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
@@ -1159,7 +1169,7 @@
 						:rating-type="trait.ratingType"
 						@click.stop="click_rating"
 						@deplete-resource="deplete_resource"
-						@deplete-challenge="(d) => mode == view_modes.Editing ? edit_rating = true : deplete_challenge(d)" />
+						@deplete-challenge="deplete_challenge" />
 				</div>
 			</div>
 
@@ -1320,49 +1330,46 @@
 
 			<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0">
 				<div class="section-icon">⪽</div>
-				<div>
-					<div class="sub-traits-list positive">
-						<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) > 0)" :key="subtrait.traitSettingId">
-							<SubTrait v-if="subtrait.traitSettingId"
-								:trait_setting_id="subtrait.traitSettingId"
-								:editing_trait="mode == view_modes.Editing"
-								:edit_mode="props.edit_mode"
-								:entity_id="props.entity_id"
-								:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-								:parent_traitsetting_id="trait.traitSetting?.id ?? trait.traitSettingId"
-								@click_subtrait="click_subtrait(subtrait, true)"
-								@next_traitset="emit('next_traitset')"
-								@remove_subtrait="remove_subtrait(subtrait)" />
-						</template>
-					</div>
+				<div class="sub-traits-list positive">
+					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) > 0)" :key="subtrait.traitSettingId">
+						<SubTrait v-if="subtrait.traitSettingId"
+							:trait_setting_id="subtrait.traitSettingId"
+							:editing_trait="mode == view_modes.Editing"
+							:edit_mode="props.edit_mode"
+							:mode="mode"
+							:entity_id="props.entity_id"
+							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
+							:parent_traitsetting_id="trait.traitSetting?.id ?? trait.traitSettingId"
+							@click_subtrait="click_subtrait(subtrait, true)"
+							@next_traitset="emit('next_traitset')"
+							@remove_subtrait="remove_subtrait(subtrait)" />
+					</template>
 				</div>
-				<div>
-					<div class="sub-traits-list neutral">
-						<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) == 0)" :key="subtrait.traitSettingId">
-							<SubTrait v-if="subtrait.traitSettingId"
-								:trait_setting_id="subtrait.traitSettingId"
-								:editing_trait="mode == view_modes.Editing"
-								:edit_mode="props.edit_mode"
-								:entity_id="props.entity_id"
-								:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-								@click_subtrait="click_subtrait(subtrait)"
-								@remove_subtrait="remove_subtrait(subtrait)" />
-						</template>
-					</div>
+				<div class="sub-traits-list neutral">
+					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) == 0)" :key="subtrait.traitSettingId">
+						<SubTrait v-if="subtrait.traitSettingId"
+							:trait_setting_id="subtrait.traitSettingId"
+							:editing_trait="mode == view_modes.Editing"
+							:edit_mode="props.edit_mode"
+							:mode="mode"
+							:entity_id="props.entity_id"
+							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
+							@click_subtrait="click_subtrait(subtrait)"
+							@remove_subtrait="remove_subtrait(subtrait)" />
+					</template>
 				</div>
-				<div>
-					<div class="sub-traits-list negative">
-						<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) < 0)" :key="subtrait.traitSettingId">
-							<SubTrait v-if="subtrait.traitSettingId"
-								:trait_setting_id="subtrait.traitSettingId"
-								:editing_trait="mode == view_modes.Editing"
-								:edit_mode="props.edit_mode"
-								:entity_id="props.entity_id"
-								:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-								@click_subtrait="click_subtrait(subtrait)"
-								@remove_subtrait="remove_subtrait(subtrait)" />
-						</template>
-					</div>
+				<div class="sub-traits-list negative">
+					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) < 0)" :key="subtrait.traitSettingId">
+						<SubTrait v-if="subtrait.traitSettingId"
+							:trait_setting_id="subtrait.traitSettingId"
+							:editing_trait="mode == view_modes.Editing"
+							:edit_mode="props.edit_mode"
+							:mode="mode"
+							:entity_id="props.entity_id"
+							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
+							@click_subtrait="click_subtrait(subtrait)"
+							@remove_subtrait="remove_subtrait(subtrait)" />
+					</template>
 				</div>
 			</div>
 
