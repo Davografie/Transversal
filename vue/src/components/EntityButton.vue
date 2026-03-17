@@ -44,6 +44,7 @@
 	} = useEntity(undefined, props.entity_id)
 
 	retrieve_small_entity()
+	defineExpose({ entity })
 	retrieve_followers()	// this doesn't get triggered as often as it should yet
 							// it should also update in locations when the presence is polled
 

@@ -160,6 +160,8 @@
 			&& player.playing
 		) {
 			console.log(new Date().toTimeString() + " polling location " + location.value.name)
+			entity_button_refs_left.value = []
+			entity_button_refs_right.value = []
 			retrieve_presence()
 
 			if(
@@ -186,6 +188,10 @@
 	// 	}
 	// })
 
+	// this is to push entity button update after presence change
+	const entity_button_refs_left = ref([] as any)
+	const entity_button_refs_right = ref([] as any)
+
 	watch(() => location.value.entities, (newVal, oldVal) => {
 		if(
 			newVal != oldVal
@@ -202,6 +208,30 @@
 			console.log("changing player location")
 			player.is_player ? player.retrieve_character() : player.retrieve_perspective()
 			console.log("presence changed from " + oldVal?.map(e => e.name) + " to " + newVal?.map(e => e.name) + ", changed player location to " + player.the_entity?.location?.key)
+		}
+
+		if(newVal) {
+			// update entity buttons (entity.active)
+			for(let i = 0; i < newVal.length; i++) {
+				const left_entity = entity_button_refs_left.value.filter(eb => eb.entity.id == newVal[i].id)
+				const right_entity = entity_button_refs_right.value.filter(eb => eb.entity.id == newVal[i].id)
+				if(left_entity.length > 0 && newVal[i].active != left_entity[0].entity.active) {
+					console.log("updating entity " + newVal[i].name + " active from " + left_entity[0].entity.active + " to " + newVal[i].active)
+					entity_button_refs_left.value.filter(eb => eb.entity.id == newVal[i].id)[0].entity = {
+						...entity_button_refs_left.value.filter(eb => eb.entity.id == newVal[i].id)[0].entity,
+						active: newVal[i].active
+					}
+				}
+				if(right_entity.length > 0 && newVal[i].active != right_entity[0].entity.active) {
+					console.log("updating entity " + newVal[i].name + " active from " + right_entity[0].entity.active + " to " + newVal[i].active)
+					entity_button_refs_right.value.filter(eb => eb.entity.id == newVal[i].id)[0].entity = {
+						...entity_button_refs_right.value.filter(eb => eb.entity.id == newVal[i].id)[0].entity,
+						active: newVal[i].active
+					}
+				}
+			}
+			entity_button_refs_left.value = []
+			entity_button_refs_right.value = []
 		}
 	})
 
@@ -346,13 +376,13 @@
 			gradient.value = '100%'
 		}
 	})
-	watch(location, (newLocation) => {
-		if(newLocation.image) {
-			image_link.value = '/assets/uploads/' + newLocation.image.path +
+	watch(() => location.value.image, (newImage) => {
+		if(newImage) {
+			image_link.value = '/assets/uploads/' + newImage.path +
 				'/' + (player.data_saving ? 'small' : 'large') +
-				newLocation.image.ext
-			image_link_small.value = '/assets/uploads/' + newLocation.image.path +
-				'/small' + newLocation.image.ext
+				newImage.ext
+			image_link_small.value = '/assets/uploads/' + newImage.path +
+				'/small' + newImage.ext
 		}
 	})
 
@@ -548,6 +578,7 @@
 							v-if="presence && presence.length > 1"
 							v-for="entity in presence.slice(Math.ceil(presence.length / 2))"
 							:key="entity.key"
+							:ref="el => entity_button_refs_left.push(el)"
 							:entity_id="entity.id"
 							options_direction="right"
 							:show_name="false"
@@ -596,6 +627,7 @@
 							v-if="presence && presence.length > 0"
 							v-for="entity in presence.slice(0, Math.ceil(presence.length / 2))"
 							:key="entity.key"
+							:ref="el => entity_button_refs_right.push(el)"
 							:entity_id="entity.id"
 							options_direction="left"
 							:show_name="false"
@@ -738,7 +770,7 @@
 					<div class="location-component new-location" v-if="player.is_gm && (player.editing || editing_zones)">
 						<input class="new-zone" type="text" placeholder="create zone" v-model="newZone" />
 						<input type="button" class="button" v-if="newZone" value="create zone"
-							@click="create_zone(newZone); retrieve_location(); newZone = ''" />
+							@click="create_zone(newZone); newZone = ''" />
 					</div>
 					<Location v-for="zone in filtered_zones" :key="zone.key"
 						:loc="zone.key"
