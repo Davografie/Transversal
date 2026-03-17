@@ -13,6 +13,7 @@ import IconScaling from "@/components/icons/IconScaling.vue";
 import IconKnownTo from "@/components/icons/IconKnownTo.vue";
 import IconTrash from "@/components/icons/IconTrash.vue";
 import IconSettings from "@/components/icons/IconSettings.vue";
+import IconLocationPin from "@/components/icons/IconLocationPin.vue";
 
 export enum ButtonTypes {
 	ADD_ARCHETYPE = 'add_archetype',
@@ -27,7 +28,8 @@ export enum ButtonTypes {
 	SCALING = 'scaling',
 	KNOWN_TO = 'known_to',
 	TRASH = 'trash',
-	SETTINGS = 'settings'
+	SETTINGS = 'settings',
+	LOCATION_PIN = 'location_pin'
 }
 
 export function useButtonTypes(_type: ButtonTypes) {
@@ -59,6 +61,8 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return 'trash';
 			case ButtonTypes.SETTINGS:
 				return 'settings';
+			case ButtonTypes.LOCATION_PIN:
+				return 'restrict by location';
 			default:
 				return '';
 		}
@@ -91,6 +95,8 @@ export function useButtonTypes(_type: ButtonTypes) {
 				return IconTrash
 			case ButtonTypes.SETTINGS:
 				return IconSettings
+			case ButtonTypes.LOCATION_PIN:
+				return IconLocationPin
 		}
 	})
 	return {

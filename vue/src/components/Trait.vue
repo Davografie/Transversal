@@ -454,7 +454,7 @@
 		reset_temporary_attributes()
 		if(props.location_key) set_location_key(props.location_key)
 		retrieve_location()
-		retrieve_trait_setting()
+		retrieve_trait_setting('network-only')
 		retrieve_possible_sfxs()
 		if(
 			trait.value.traitSetting?.locationsEnabled
@@ -801,16 +801,16 @@
 		}
 	})
 
-	function steal() {
+	async function steal() {
 		if(trait.value.ratingType == 'resource' && new Set(trait.value.rating?.map(d => d.number_rating)).size > 1) {
 			transfer_resource_mode.value = !transfer_resource_mode.value
 		}
 		else if(player.the_entity && props.entity_id != player.the_entity?.id) {
-			change_trait_entity(player.the_entity.id)
+			await change_trait_entity(player.the_entity.id)
 			emit('refetch')
 		}
 		else if(player.the_entity && player.the_entity?.location && props.entity_id == player.the_entity?.id) {
-			change_trait_entity(player.the_entity.location?.id)
+			await change_trait_entity(player.the_entity.location?.id)
 			emit('refetch')
 		}
 	}
@@ -1067,6 +1067,9 @@
 					<div class="icon">🧠</div>
 					<div class="label" v-if="!player.small_buttons">show PC</div>
 				</div>
+				<ButtonMinimal :function="ButtonTypes.LOCATION_PIN"
+					v-if="can_edit && !props.entity_id?.startsWith('Relations/')"
+					@click.stop="restrict_location = !restrict_location" />
 				<div class="button-mnml restrict-location-button"
 						:class="restrict_location ? 'active' : 'inactive'"
 						@click="restrict_location = !restrict_location"
@@ -1405,20 +1408,17 @@
 					<div class="label" v-if="!player.small_buttons">close</div>
 					<!-- {{ player.small_buttons ? '✖' : '✖ cancel' }} -->
 				</div>
-					
-				<div type="button" class="button-mnml remove-button"
-						@click.stop="deletion = true"
-						v-if="can_edit && !inherited && mode == view_modes.Editing && !deletion">
-					<div class="icon">🗑</div>
-					<div class="label" v-if="!player.small_buttons">perma-delete</div>
-					<!-- {{ player.small_buttons ? '🗑' : '🗑 permanently remove trait' }} -->
-				</div>
+				<ButtonMinimal :function="ButtonTypes.TRASH" label="perma-delete"
+					class="remove-button"
+					@click.stop="deletion = true"
+					v-if="can_edit && !inherited && mode == view_modes.Editing && !deletion" />
 				<div id="delete-confirmation" v-if="deletion">
-					<div class="button-mnml confirm" id="confirm-delete"
+					<ButtonMinimal :function="ButtonTypes.TRASH" label="confirm" />
+					<!-- <div class="button-mnml confirm" id="confirm-delete"
 							title="confirm deletion">
 						<div class="icon">🗑</div>
 						<div class="label">confirm</div>
-					</div>
+					</div> -->
 					<div class="button-mnml verify" id="verify-delete"
 							title="confirm and delete"
 							@click="delete_trait">

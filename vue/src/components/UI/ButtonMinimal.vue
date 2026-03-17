@@ -8,7 +8,8 @@
 	import { ButtonTypes, useButtonTypes } from '@/composables/Button';
 
 	const props = defineProps<{
-		function: ButtonTypes
+		function: ButtonTypes,
+		label?: string
 	}>()
 
 	const player = usePlayerStore()
@@ -29,7 +30,7 @@
 		<!-- <IconAddArchetype v-if="props.function == 'add_archetype'" /> -->
 		<component class="icon" :is="the_component" />
 		<div class="label" v-if="!player.small_buttons">
-			{{ label }}
+			{{ props.label ?? label }}
 		</div>
 	</div>
 </template>
