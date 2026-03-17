@@ -366,12 +366,13 @@ export function useLocation(init?: Location, location_key?: string) {
 	}
 	function remove_zone() {}
 
-	function create_zone(name: string) {
+	async function create_zone(name: string) {
 		const create_zone_query = gql`mutation CreateZone($locationInput: LocationInput!) {
 			createLocation(locationInput: $locationInput) {
 				location {
 					id
 					key
+					name
 				}
 			}
 		}`
@@ -384,8 +385,14 @@ export function useLocation(init?: Location, location_key?: string) {
 						location: location.value.id
 					}
 				}
-			}).then(() => {
-				retrieve_zones()
+			}).then((result) => {
+				location.value = {
+					...location.value,
+					zones: [
+						...(location.value.zones ?? []),
+						result.data.createLocation.location
+					]
+				}
 			})
 		}
 	}
