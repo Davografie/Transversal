@@ -671,8 +671,7 @@
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
 			<div id="character-buttons" :class="[player.small_buttons ? 'small-buttons' : 'verbose-buttons', scrolling_up ? 'scrolling-up' : 'scrolling-down']" v-show="show_controls">
 
-				<ButtonMinimal
-					:function="ButtonTypes.GM"
+				<ButtonMinimal :function="ButtonTypes.GM"
 					@click="switch_gm"
 					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'" />
 
@@ -747,7 +746,7 @@
 				</div>
 				<div class="button-mnml" id="hide-entity"
 					title="hide entity"
-					v-if="player.is_gm && entity.entityType != 'character'"
+					v-if="player.is_gm && (entity.entityType != 'character' || entity.isArchetype)"
 					@click="hide_entity">
 					<div class="icon">{{ entity.hidden ? '🌑' : '🌕' }}</div>
 					<div class="label" v-if="!player.small_buttons">{{ entity.hidden ? 'hiding entity' : 'showing entity' }}</div>
@@ -824,7 +823,13 @@
 					@click_entity="player.the_entity?.id != entity_id ? quick_switch(entity_id) : null" />
 			</div>
 
-			<ArchetypePicker class="character-menu" v-if="entityOverviewType == 'ARCHETYPES'" v-show="show_controls" :entity_id="entity.id" :entity_type="entity.entityType" :location_id="entity.location?.id" />
+			<ArchetypePicker class="character-menu"
+				v-if="entityOverviewType == 'ARCHETYPES'"
+				v-show="show_controls"
+				:entity_id="entity.id"
+				:entity_type="entity.entityType"
+				:location_id="entity.location?.id"
+				@update_archetype="retrieve_full_entity" />
 
 			<div id="character-known-to" class="character-menu" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0" v-show="show_controls">
 				<div class="info">

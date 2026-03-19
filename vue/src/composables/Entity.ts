@@ -1,9 +1,11 @@
 import type { ApolloClient, FetchPolicy } from '@apollo/client'
-import { provideApolloClient, useMutation, useQuery } from '@vue/apollo-composable'
+import { provideApolloClient, useMutation } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
 
-import { ref, computed, inject, watch } from 'vue'
+import { ref, computed, inject } from 'vue'
 import type { Entity, EntityInput, Location } from '@/interfaces/Types'
+
+import { useFetch } from '@vueuse/core'
 
 export const entity_icons: Record<string, string> = {
 	"character": "👤",
@@ -18,6 +20,7 @@ export const entity_icons: Record<string, string> = {
 export function useEntity(init?: Entity, entity_id?: string) {
 	const apolloClient: ApolloClient<any>|undefined = inject('apolloClient')
 	const entity = ref({} as Entity)
+	const API_URL = import.meta.env.VITE_API_URL
 
 	const entity_type_icon = computed(() => {
 		if(entity.value && entity.value.entityType == 'character'){
@@ -210,8 +213,12 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				}
 				relations {
 					id
+					fromEntity {
+						id
+					}
 					toEntity {
 						id
+						entityType
 					}
 				}
 				knownTo {
@@ -663,6 +670,26 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		update_entity({ location: location.id })
 	}
 
+	async function set_entity_location(entity_id: string, location_id: string) {
+		/* change an entity's location */
+		const query_update_entity_location = gql`mutation UpdateEntityLocation($entityId: ID!, $locationId: ID!) {
+			updateEntity(location: $locationId, entityId: $entityId) {
+				entity {
+					id
+				}
+			}
+		}`
+		if(apolloClient) {
+			await apolloClient.mutate({
+				mutation: query_update_entity_location,
+				variables: {
+					"entityId": entity_id,
+					"locationId": location_id
+				}
+			})
+		}
+	}
+
 	/**
 	 * creates a relation from given entity to set entity, with the type "relation"
 	 * @param entity_id the id of the entity to create a relation from
@@ -761,6 +788,18 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
+	/**
+	 * send generate image request
+	 * @param force override is_player check
+	 */
+	function imagen(force: boolean = false) {
+		const url = API_URL + "imagen/" + entity.value.key + "/" + force
+		interface API_result {
+			success: boolean
+		}
+		useFetch<API_result>(url, { method: 'POST' }).post().json()
+	}
+
 	// onMounted(() => {
 	// 	if(entity_id && !entity.value) {
 	// 		retrieve_entity()
@@ -790,6 +829,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		create_relation,
 		set_archetype,
 		unset_archetype,
+		set_entity_location,
+		imagen,
 		entity_type_icon
 	}
 }

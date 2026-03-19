@@ -128,6 +128,7 @@ export const usePlayerStore = defineStore(
 			set_location: set_perspective_location,
 			set_archetype: set_perspective_archetype,
 			unset_archetype: unset_perspective_archetype,
+			set_entity_location,
 			deactivate_entity
 		} = useEntity(undefined, perspective_id.value)
 
@@ -140,7 +141,13 @@ export const usePlayerStore = defineStore(
 			perspective_id.value = new_perspective_id
 			set_perspective_id(new_perspective_id)
 			activate_entity(perspective_id.value)
-			await retrieve_perspective()
+			if(new_perspective_id == "Entities/1" && perspective.value.location) {
+				await set_entity_location(new_perspective_id, perspective.value.location.id)
+				await retrieve_perspective()
+			}
+			else {
+				await retrieve_perspective()
+			}
 		}
 
 		// watch(() => perspective.value.id, (newPerspectiveId) => {

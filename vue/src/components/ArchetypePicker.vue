@@ -11,6 +11,8 @@
 		location_id?: string
 	}>()
 
+	const emit = defineEmits(['update_archetype'])
+
 	const {
 		entity,
 		retrieve_small_entity,
@@ -31,15 +33,16 @@
 	const selected_archetype = ref<string | null>(entity.value.archetype?.id ?? null)
 	const selected_archetypes = ref<string[]>(entity.value.archetypes?.map(archetype => archetype.id) ?? [])
 
-	function select_archetype(archetype_id: string) {
+	async function select_archetype(archetype_id: string) {
 		if(!entity.value.archetypes?.map(archetype => archetype.id).includes(archetype_id)) {
 			// update_entity({ "archetypeId": selected_archetype.value })
-			set_archetype(archetype_id)
+			await set_archetype(archetype_id)
 		}
 		else {
 			// update_entity({ "archetypeId": null })
-			unset_archetype(archetype_id)
+			await unset_archetype(archetype_id)
 		}
+		emit('update_archetype')
 		// setTimeout(() => {
 		// 	retrieve_entity_archetypes()
 		// }, 200)

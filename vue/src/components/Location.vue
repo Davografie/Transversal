@@ -13,7 +13,8 @@
 		computed,
 		watch,
 		onMounted,
-		onUnmounted
+		onUnmounted,
+		nextTick
 	} from 'vue'
 	import { useRoute } from 'vue-router'
 	import { useElementBounding, useWindowSize } from '@vueuse/core'
@@ -67,7 +68,8 @@
 		update_location,
 		make_transversable,
 		set_location_visibility,
-		import_entity
+		import_entity,
+		imagen
 	} = useLocation(undefined, props.loc)
 
 	retrieve_small_location()
@@ -102,6 +104,7 @@
 	}
 
 	const new_location_name = ref(location.value.name)
+	const location_name_edit_ref = ref<HTMLInputElement>()
 
 	function longpress_location_header() {
 		held.value = true
@@ -109,12 +112,18 @@
 		new_flavortext.value = location.value.flavortext
 		editing_location.value = !editing_location.value
 		title_pulsate.value = true
-		setTimeout(() => held.value = false, 500)
+		nextTick(() => {
+			if(location_name_edit_ref.value) {
+				location_name_edit_ref.value.focus()
+			}
+		})
+		setTimeout(() => {
+			held.value = false
+		}, 500)
 	}
 
 	function update_name() {
 		update_location({ name: new_location_name.value })
-		// setTimeout(() => retrieve_location(), 400)
 		editing_location.value = false
 	}
 
@@ -521,9 +530,19 @@
 						@animationend="title_pulsate = false"
 						v-touch:hold="longpress_location_header"
 						@click.right="longpress_location_header"
-						@contextmenu="(e) => e.preventDefault()">
+						@contextmenu="(e: MouseEvent) => e.preventDefault()"
+						v-if="!editing_location">
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
+
+				<input type="text" class="header location-name"
+					ref="location_name_edit_ref"
+					v-model="new_location_name"
+					v-show="editing_location && player.is_gm"
+					@click.stop />
+				<input type="button" class="button" value="save"
+					v-if="location.name != new_location_name && editing_location"
+					@click="update_name" />
 
 				<input type="button" class="button transverse-button corner-button"
 					:value="player.small_buttons ? '⬇' : '⬇\ntransverse'"
@@ -567,6 +586,10 @@
 					@click.stop="copy"
 					:value="player.small_buttons ? '#' : '#\ncopy id'"
 					v-if="player.is_gm && editing_location" />
+				
+				<input type="button" class="imagen-button button corner-button" @click.stop="imagen(true)"
+					:value="player.small_buttons ? '📷' : '📷\nimage'"
+					v-if="player.is_gm && editing_location" />
 
 			</div>
 
@@ -592,10 +615,7 @@
 							v-if="player.is_gm" />
 					</div>
 				</div>
-				<div class="center">
-					<input type="text" class="header location-name-edit" v-model="new_location_name" v-if="editing_location && player.is_gm" />
-					<input type="button" class="button" value="save" v-if="location.name != new_location_name && editing_location" @click="update_name" />
-				
+				<div class="center">				
 					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
 						<EntityCard
 							class="active-npc"
@@ -611,7 +631,7 @@
 							:key="archetype.key"
 							:entity_id="archetype.id"
 							:show_name="false"
-							:show_archetypes="false"
+							show_archetypes
 							@show_entity="(entity_key: string) => emit('show_entity', entity_key)"
 							override_click @click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
 								overwrite_active = archetype.id : overwrite_active = 'empty'" />
@@ -803,14 +823,19 @@
 				display: flex;
 				flex-direction: column;
 				.location-name {
-					flex-grow: 2;
 					font-size: 2em;
+					background-color: transparent;
 				}
 				.location-name-edit {
 					text-align: center;
 				}
-				.button {
+				.corner-button {
 					z-index: 2;
+					position: absolute;
+					margin: 0;
+					font-size: 1.2em;
+				}
+				.imagen-button {
 				}
 				.link-button {
 					top: 0;
@@ -1065,18 +1090,30 @@
 		}
 		&.is-not-expanded {
 			margin: .2em;
-			.title {
-				position: relative;
-				width: 100%;
+			.location-component-wrapper {
 				height: 100%;
-				white-space: preline;
-				line-height: 4em;
-				padding: 4em 3em;
-				.corner-button {
+				.title {
+					position: relative;
+					width: 100%;
+					height: 100%;
+					white-space: preline;
+					/* line-height: 4em; */
+					/* padding: 4em 3em; */
 					display: flex;
-					position: absolute;
-					margin: 0;
-					font-size: 1.2em;
+					flex-direction: column;
+					justify-content: center;
+					.corner-button {
+						display: flex;
+						position: absolute;
+						margin: 0;
+						font-size: 1.2em;
+						&.imagen-button {
+							bottom: 0;
+							left: 50%;
+							transform: translateX(-50%);
+							border-radius: 10px 10px 0 0;
+						}
+					}
 				}
 			}
 		}
@@ -1090,10 +1127,8 @@
 			>.location-component-wrapper {
 				>.title {
 					padding: 1em 3em 0 3em;
-					.corner-button {
-						position: absolute;
-						margin: 0;
-						font-size: 1.2em;
+					.location-name {
+						flex-grow: 2;
 					}
 					.button.save {
 						position: initial;
@@ -1106,10 +1141,18 @@
 						border-left: none;
 						border-radius: 0 10px 10px 0;
 					}
-					.hide-button {
+					.hide-button, .imagen-button {
 						top: 5.5em;
+					}
+					/* .hide-button {
 						border-bottom: none;
 						border-right: none;
+					} */
+					.imagen-button {
+						right: 0;
+						border-top: none;
+						border-left: none;
+						border-radius: 10px 0 0 10px;
 					}
 					.copy-id {
 						top: 10em;

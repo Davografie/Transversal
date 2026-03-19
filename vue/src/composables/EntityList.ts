@@ -136,7 +136,7 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 	 * @param location_id where to spawn the new entity
 	 * @returns the created entity
 	 */
-	async function create_entity(name: string, entity_type: string, location_id?: string) {
+	async function create_entity(name: string, entity_type: string, location_id?: string, is_archetype?: boolean) {
 		const create_entity_query = gql`mutation CreateEntity($entityType: String!, $name: String!, $location: ID) {
 			createEntity(entityType: $entityType, name: $name, location: $location) {
 				entity {
@@ -153,7 +153,8 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 				variables: {
 					"entityType": entity_type,
 					"name": name,
-					"location": location_id
+					"location": location_id,
+					"isArchetype": is_archetype
 				}
 			})
 			return new_entity.data.createEntity.entity

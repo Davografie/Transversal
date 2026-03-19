@@ -8,6 +8,7 @@ import { provideApolloClient, useMutation, useQuery } from '@vue/apollo-composab
 import gql from 'graphql-tag'
 import type { ApolloClient } from '@apollo/client'
 import type { Character, Location } from "@/interfaces/Types"
+import { useEntity } from '@/composables/Entity'
 
 
 export const placeholder_location: Location = {
@@ -24,6 +25,7 @@ export function useLocation(init?: Location, location_key?: string) {
 	const characters: Ref<Character[]> = ref([])    // the characters active at this location
 	const transversable: Ref<Location[]> = ref([])  // the locations accessible from this location, only available for current location
 	const location_id: Ref<string|undefined> = ref('Entities/' + location_key)
+	const { entity, imagen } = useEntity()
 
 	function set_location_key(key: string) {
 		location_key = key
@@ -484,6 +486,12 @@ export function useLocation(init?: Location, location_key?: string) {
 		}
 	}
 
+	watch(location, (newLocation) => {
+		if(newLocation) {
+			entity.value = newLocation
+		}
+	})
+
 	return {
 		location,
 		characters,
@@ -501,6 +509,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		update_location,
 		import_entity,
 		make_transversable,
-		set_location_visibility
+		set_location_visibility,
+		imagen
 	}
 }

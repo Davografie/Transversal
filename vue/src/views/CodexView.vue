@@ -100,8 +100,11 @@
 				selected_relation.value = null
 			}
 		}
-		else {
+		else if(player.the_entity?.id != relation.toEntity.id) {
 			emit('show_entity', relation.toEntity.id)
+		}
+		else {
+			emit('show_entity', relation.fromEntity.id)
 		}
 	}
 </script>
@@ -147,10 +150,22 @@
 					</h2>
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="(player.the_entity?.relations?.length ?? 0) > 0">
 						<template v-if="!show_players"
-								v-for="(relation, index) in player.the_entity?.relations?.filter(r => !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
+								v-for="(relation, index) in player.the_entity?.relations?.filter(r => player.the_entity?.id != r.toEntity?.id && !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
 							<EntityButton
 								class="entity-card"
-								:entity_id="relation.toEntity?.id"
+								:entity_id="relation.toEntity.id"
+								options_direction="none"
+								is_relationship
+								show_icon
+								override_click
+								:is_active="player.is_gm"
+								@click_entity="click_relation(relation)" />
+						</template>
+						<template v-if="!show_players && player.is_gm"
+								v-for="(relation, index) in player.the_entity?.relations?.filter(r => player.the_entity?.id != r.fromEntity.id && !entities.map(e => e.id).includes(r.fromEntity?.id)) ?? []" :key="relation.id">
+							<EntityButton
+								class="entity-card"
+								:entity_id="relation.fromEntity.id"
 								options_direction="none"
 								is_relationship
 								show_icon
