@@ -22,6 +22,7 @@
 	const show_entity_creation = ref(false)
 	const new_entity_name: Ref<string> = ref('')
 	const new_entityType: Ref<string> = ref(props.entity_type ?? 'npc')
+	const new_is_archetype: Ref<boolean> = ref(false)
 
 	const { create_entity } = useEntityList()
 	const { entity, retrieve_small_entity, clone_entity } = useEntity(undefined, props.archetype_id)
@@ -76,6 +77,10 @@
 						<option value="asset">Asset</option>
 						<option value="faction">Faction</option>
 					</select>
+					<div class="archetype-option">
+						<input type="checkbox" id="is-archetype" v-model="new_is_archetype" v-if="player.is_gm" />
+						<label for="is-archetype" class="option" v-if="player.is_gm && !player.small_buttons">archetype</label>
+					</div>
 				</div>
 				<input class="entity-name option"
 					type="text" :placeholder="'add ' + new_entityType"
@@ -107,31 +112,36 @@
 			padding: 0;
 			justify-content: space-evenly;
 			overflow: hidden;
-			.entity-type-wrapper {
-				flex-grow: 1;
-				display: flex;
-				align-items: end;
-			}
-			.entity-name {
-				width: 100%;
-				text-align: center;
-				font-size: 1.2em;
-				flex-grow: 1;
-			}
-			.apply {
-				flex-grow: 1;
-				width: 100%;
-			}
 		}
 		.options {
 			.inputs {
-				display: flex;
-				flex-direction: column;
 				width: 100%;
 				height: 100%;
+				display: flex;
+				flex-direction: column;
 				justify-content: space-evenly;
+				gap: .4em;
+				padding: .4em;
 				option {
 					flex: 0 0 10px;
+				}
+				.entity-type-wrapper {
+					flex-grow: 1;
+					display: flex;
+					align-items: center;
+					justify-content: space-around;
+					gap: 1em;
+				}
+				.entity-name {
+					width: 100%;
+					min-width: 6em;
+					text-align: center;
+					font-size: 1.2em;
+					flex-grow: 1;
+				}
+				.apply {
+					flex-grow: 1;
+					width: 100%;
 				}
 			}
 		}

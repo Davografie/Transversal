@@ -3,6 +3,8 @@
 
 	import { useElementBounding, useWindowSize } from '@vueuse/core'
 
+	import { marked } from 'marked'
+
 	import { usePlayerStore } from '@/stores/PlayerStore'
 
 	import { useEntity } from '@/composables/Entity'
@@ -294,7 +296,7 @@
 				</div>
 				<div class="button-mnml remove-relation-button"
 						@click.stop="remove_relation"
-						v-if="player.the_entity?.relations?.map(r => r.toEntity.id).includes(entity.id)">
+						v-if="player.the_entity?.relations?.filter(r => r.toEntity.id != player.the_entity?.id).map(r => r.toEntity.id).includes(entity.id)">
 					<span class="icon">💔</span>
 					<span class="label">{{ player.small_buttons ? '' : 'remove'}}</span>
 				</div>
@@ -312,8 +314,7 @@
 				{{ archetype.name }}
 			</span>
 		</div>
-		<div class="description" v-if="entity.description">
-			{{ entity.description }}
+		<div class="description" v-if="entity.description" v-html="marked.parse(entity.description)">
 		</div>
 		<div class="traits">
 			<Suspense>

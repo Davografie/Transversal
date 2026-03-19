@@ -387,7 +387,7 @@
 				left: 50%;
 				top: 0;
 				height: 100%;
-				padding-left: 50px;
+				padding-left: 30px;
 				padding-right: 1em;
 				border-radius: 0 40px 40px 0;
 			}
