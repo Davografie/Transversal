@@ -1087,6 +1087,7 @@ class MutateTraitSetting(Mutation):
 
 				# transferring resources happens per die
 				if trait_setting.get('rating_type') == 'resource' and die_type is not None:
+					
 					# take out one die of the type from the original resource's rating
 					new_rating = trait_setting.get('rating').copy()
 					new_rating.remove(die_type)
@@ -1094,12 +1095,11 @@ class MutateTraitSetting(Mutation):
 
 					# needed query to compare "" statement with null statement
 					query = f"""FOR setting IN TraitSettings
-					FILTER setting._from == '{ entity_id }'
-					FILTER setting._to == '{ trait_setting.get('_to') }'
-					FILTER TRIM(setting.statement) == TRIM('{ trait_setting.get('statement') }')
-					RETURN setting"""
+								FILTER setting._from == '{ entity_id }'
+								FILTER setting._to == '{ trait_setting.get('_to') }'
+								FILTER TRIM(setting.statement) == TRIM('{ trait_setting.get('statement') }')
+								RETURN setting"""
 					pockets = execute_aql(query, ['TraitSettings'])
-					# pockets = db.aql.execute(query)
 					if pockets:
 						to_pocket = [doc for doc in pockets][0]
 						to_pocket['rating'] = to_pocket.get('rating') + [die_type]
@@ -3059,7 +3059,8 @@ class Entity(Interface):
 
 	def resolve_relations(parent, info):
 		query = f"""FOR relation IN Relations
-			FILTER relation._from == '{parent.id}'
+			FILTER relation._from == '{parent.id}' OR relation._to == '{parent.id}'
+			FILTER relation.type == 'relation'
 			FOR e IN Entities
 			FILTER e._id == relation._to
 			FILTER relation.type == 'relation'
@@ -3177,6 +3178,7 @@ class Entity(Interface):
 
 class EntityInput(InputObjectType):
 	name = String()
+	description = String()
 	entity_type = String()
 	location = ID()
 	pp = Int()
@@ -3191,11 +3193,12 @@ class CreateEntity(Mutation):
 		name = String(required=True)
 		entity_type = String(required=True)
 		location = ID()
+		is_archetype = Boolean()
 
 	entity = Field(lambda: Entity)
 
-	def mutate(root, info, name, entity_type, location='Entities/2'):
-		entity = db.collection('Entities').insert({'name': name, 'type': entity_type, 'location': location, 'pp': 1, 'favorite': False})
+	def mutate(root, info, name, entity_type, location='Entities/2', is_archetype=False):
+		entity = db.collection('Entities').insert({'name': name, 'type': entity_type, 'location': location, 'pp': 1, 'favorite': False, 'is_archetype': is_archetype, 'active': True})
 
 		# create traitset settings
 		# query = f"""FOR traitset IN Traitsets
