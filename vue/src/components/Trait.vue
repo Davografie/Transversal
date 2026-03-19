@@ -417,7 +417,7 @@
 	function deplete_challenge(d: DieType) {
 		// (d) => mode == view_modes.Editing ? edit_rating = true : deplete_challenge(d)
 		console.log("depleting challenge: ", d)
-		if(mode.value == view_modes.Small) {
+		if([view_modes.Small, view_modes.Neutral].includes(mode.value)) {
 			play_trait()
 		}
 		if(mode.value == view_modes.Editing) {
@@ -449,7 +449,7 @@
 
 	// EDITING
 	// placeholders for mutating trait
-	const new_ratingType: Ref<string> = ref(trait.value.ratingType ?? 'empty')
+	const new_ratingType: Ref<string|undefined> = ref(trait.value.ratingType)
 	const new_rating: Ref<DieType[]> = ref(trait.value.rating ?? [])
 	const new_scaling: Ref<number> = ref(trait.value.traitSetting?.scaling ?? 0)
 	const new_statement: Ref<string> = ref(trait.value.statement ?? "")
@@ -552,9 +552,9 @@
 	})
 
 	// mutate trait when finished editing
-	function change_trait(temp: boolean = false) {
+	async function change_trait(temp: boolean = false) {
 		if(inherited.value) {
-			overwrite_trait({
+			await overwrite_trait({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
 				'scaling': new_scaling.value,
@@ -566,10 +566,11 @@
 				'inheritedAs': trait.value.traitSetting?.id ?? trait.value.traitSettingId ?? props.trait_setting_id,
 				'hidden': new_hidden.value
 			})
+			emit('refetch')
 		}
 		else if(temp === false) {
 			console.log("changing trait")
-			mutate_trait_setting({
+			await mutate_trait_setting({
 				'newTraitId': new_trait_id.value,
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
@@ -583,7 +584,7 @@
 			})
 		}
 		else if(temp === true) {
-			mutate_trait_setting_temp({
+			await mutate_trait_setting_temp({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
 				'scaling': new_scaling.value,
@@ -597,14 +598,12 @@
 		}
 	}
 
-	function submit_changes(temp: boolean = false) {
-		change_trait(temp)
+	async function submit_changes(temp: boolean = false) {
+		await change_trait(temp)
 		mode.value = view_modes.Neutral
 		edit_rating.value = false
 		show_sfxs.value = false
-		// setTimeout(() => {
-		// 	refetch(); retrieve_trait()
-		// }, 200)
+		emit('refetch')
 	}
 
 	function cancel_edit() {
@@ -733,6 +732,7 @@
 	async function add_subtrait(subtrait: Trait) {
 		if(trait.value.traitSettingId && !trait.value.subTraits?.map((x) => x.id).includes(subtrait.id)) {
 			await assign_subtrait(trait.value.traitSettingId, subtrait.id, props.entity_id)
+			if(inherited.value) emit('refetch')
 		}
 		// if(!inherited.value) {
 		// 	retrieve_trait()
@@ -967,7 +967,7 @@
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
 				{ 'clickable': mode != view_modes.Editing },
 				{ 'inherited': inherited },
-				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm && mode == view_modes.Small },
+				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm && [view_modes.Small, view_modes.Neutral].includes(mode) },
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
@@ -1162,11 +1162,11 @@
 
 
 				<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
-						v-if="trait.ratingType != 'empty'"
+						v-if="new_ratingType ? new_ratingType != 'empty' : trait.ratingType != 'empty'"
 						@click.stop="(mode == view_modes.Editing && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
-					<Rating v-if="trait.rating"
-						:rating="new_rating.length > 0 ? new_rating : trait.rating"
-						:rating-type="trait.ratingType"
+					<Rating v-if="trait.rating || new_rating.length > 0"
+						:rating="new_rating.length > 0 ? new_rating : trait.rating ?? []"
+						:rating-type="new_ratingType ?? trait.ratingType"
 						@click.stop="click_rating"
 						@deplete-resource="deplete_resource"
 						@deplete-challenge="deplete_challenge" />
@@ -1176,10 +1176,10 @@
 			<div class="notes" v-html="marked.parse(trait.notes)"
 				v-if="trait.notes
 				&& mode != view_modes.Editing
-				&& (
-					mode != view_modes.Small ||
-					!trait.statement
-				)
+				// && (
+				// 	mode != view_modes.Small ||
+				// 	!trait.statement
+				// )
 				&& (player.is_gm
 					|| props.entity_id == player.player_character.id
 					|| props.entity_id?.startsWith('Relations/')

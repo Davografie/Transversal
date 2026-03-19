@@ -147,7 +147,12 @@
 		show_info.value = !show_info.value
 	}
 
-
+	watch(() => props.traitset?.traits, (newTraits, oldTraits) => {
+		// first compare newTraits with traits, check by id
+		if(newTraits && JSON.stringify(newTraits?.map(t => t.id).sort()) != JSON.stringify(traits.value.map(t => t.id).sort())) {
+			traits.value = newTraits
+		}
+	})
 
 
 	const { entity, retrieve_small_entity } = useEntity(undefined, props.entity_id)

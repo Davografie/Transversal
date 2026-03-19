@@ -264,6 +264,14 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 	function retrieve_trait_setting(caching: FetchPolicy = 'cache-first') {
 		const query = gql`query TraitSettingByID($traitSettingId: ID) {
 			traits(traitSettingId: $traitSettingId) {
+				possibleSubTraits {
+					id
+					name
+					traitset {
+						id
+						entityTypes
+					}
+				}
 				traitSetting {
 					id
 					ratingType
@@ -295,9 +303,14 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				},
 				fetchPolicy: caching
 			}).then((result) => {
-				if(result.data.traits[0].traitSetting) {
-					trait.value.traitSetting = result.data.traits[0].traitSetting
+				if(result.data.traits[0]) {
+					trait.value = {
+						...trait.value,
+						...result.data.traits[0]
+					}
 				}
+			}).catch((error) => {
+				console.error("Error retrieving trait setting for trait ", trait_id.value, ": ", error)
 			})
 			// const { result } = provideApolloClient(apolloClient)(
 			// 	() => useQuery<{traits: Trait[]}>(
@@ -472,7 +485,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function mutate_trait_setting_temp(input: TraitSettingInput, temp: boolean = false) {
+	async function mutate_trait_setting_temp(input: TraitSettingInput, temp: boolean = false) {
 		if(!trait_setting_id.value) {
 			console.error("mutate_trait_setting called without trait_setting_id")
 		}
@@ -491,11 +504,11 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				traitSettingInput: input,
 				temp: true
 			}
-			mutate(variables)
+			await mutate(variables)
 		}
 	}
 
-	function overwrite_trait(input: TraitSettingInput) {
+	async function overwrite_trait(input: TraitSettingInput) {
 		const overwrite_query = gql`mutation OverwriteTrait($entityId: ID!, $traitId: ID!, $traitSettingInput: TraitSettingInput) {
 			assignTrait(entityId: $entityId, traitId: $traitId, traitSettingInput: $traitSettingInput) {
 				trait {
@@ -510,7 +523,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				traitId: trait_id.value,
 				traitSettingInput: input
 			}
-			mutate(variables)
+			await mutate(variables)
 		}
 	}
 
@@ -532,18 +545,26 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function change_trait_entity(entity_id: string) {
-		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
-				mutation Mutation($traitSettingId: ID, $entityId: ID) {
-					mutateTraitSetting(traitSettingId: $traitSettingId, entityId: $entityId) {
-						trait {
-							id
-						}
+	async function change_trait_entity(entity_id: string) {
+		const change_entity_query = gql`
+			mutation Mutation($traitSettingId: ID, $entityId: ID) {
+				mutateTraitSetting(traitSettingId: $traitSettingId, entityId: $entityId) {
+					trait {
+						id
 					}
-				}`
-			))
-			mutate({ traitSettingId: trait_setting_id.value, entityId: entity_id })
+				}
+			}`
+		if(apolloClient) {
+			await apolloClient.mutate({
+				mutation: change_entity_query,
+				variables: {
+					traitSettingId: trait_setting_id.value,
+					entityId: entity_id
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(
+			// ))
+			// mutate({ traitSettingId: trait_setting_id.value, entityId: entity_id })
 		}
 	}
 

@@ -4,7 +4,7 @@
 
 	import { ref, watch, computed } from 'vue'
 
-	import { useTrait } from '@/composables/Trait'
+	import { useTrait, view_modes } from '@/composables/Trait'
 	import { useDie, die_constants } from '@/composables/Die'
 	import { useDicepool } from '@/composables/Dicepool'
 
@@ -19,6 +19,7 @@
 		trait_setting_id: string,
 		editing_trait?: boolean,
 		edit_mode?: boolean,
+		mode?: view_modes,
 		entity_id?: string,
 		parent_traitset_id?: string,
 		parent_traitsetting_id?: string,
@@ -78,7 +79,7 @@
 	}
 
 	function click_subtrait() {
-		if(props.editing_trait || props.edit_mode) {
+		if(props.editing_trait || props.edit_mode || props.mode == view_modes.Editing) {
 			if(!editing.value) {
 				switch_to_editing()
 			}
