@@ -1373,12 +1373,12 @@ class Trait(ObjectType):
 				return result
 			else:
 				# get all files in the dir and subdirs of app.config['T2I_MODELS_FOLDER']/loras/flux
-				# return them as *subdirs/filename, but without /loras/flux
+				# return them as *subdirs/filename, but without /loras/flux, and without the .safetensors extension
 				files = []
 				for (dirpath, dirnames, filenames) in os.walk(os.path.join(app.config['T2I_MODELS_FOLDER'], 'loras/flux')):
 					for filename in filenames:
 						if filename.endswith('.safetensors'):
-							files.append(os.path.join(dirpath, filename).replace(os.path.join(app.config['T2I_MODELS_FOLDER'], 'loras/flux'), ''))
+							files.append(os.path.join(dirpath, filename).replace(os.path.join(app.config['T2I_MODELS_FOLDER'], 'loras/flux/'), '').replace('.safetensors', ''))
 				return files
 
 	def resolve_notes(parent, info):
@@ -4658,11 +4658,11 @@ def upload_file_location(entity_key, location_key):
 def imagegen(entity_key, force):
 	"""call comfyui API to generate image"""
 	rating_weights = [
-		0.6,
-		0.7,
-		0.8,
+		0.0,
+		0.2,
+		0.5,
 		0.9,
-		1.0,
+		1.2,
 	]
 	genre_loras = {
 		"wuxia": "setting/ChineseWuXia",
@@ -5011,28 +5011,36 @@ def imagegen(entity_key, force):
 		prompt = "".join(prompt.splitlines())
 
 		loras = list(set(loras))
+		loras.reverse()
+		genres = list(set(genres))
 		if len(loras) > 0:
 			lora1 = loras[0]
 			lora1_weight = 0.8
 			if len(loras) > 1:
 				lora2 = loras[1]
 				lora2_weight = 0.4
-		
-		genres = list(set(genres))
-		if len(genres) > 0 and len(loras) < 2:
+			elif len(genres) > 0:
+				if genres[0] in genre_loras.keys():
+					lora2 = genre_loras.get(genres[0])
+					lora2_weight = 0.4
+			else:
+				lora2_weight = 0.0
+		elif len(genres) > 0:
 			if genres[0] in genre_loras.keys():
 				lora1 = genre_loras.get(genres[0])
 				lora1_weight = 0.8
-			if len(genres) > 1 and genres[1] in genre_loras.keys() and len(loras) == 0:
+			if len(genres) > 1 and genres[1] in genre_loras.keys():
 				lora2 = genre_loras.get(genres[1])
 				lora2_weight = 0.4
+			else:
+				lora2_weight = 0.0
 			# elif entity_type in ['character', 'npc']:
 			# 	lora2 = "frame/CharacterPortraitsCaith"
 			# 	lora2_weight = 0.4
 		
 		negative += ", watermark, signature"
 		
-		logger.info(f"generating image\nlora 1: {lora1}\nweight 1: {lora1_weight}\nlora 2: {lora2}\nweight 2: {lora2_weight}\nprompt: {prompt}")
+		logger.info(f"generating image\nentity: {entity_key}\nlocation: {location_key}\nlora 1: {lora1}\nweight 1: {lora1_weight}\nlora 2: {lora2}\nweight 2: {lora2_weight}\nprompt: {prompt}\nnegative: {negative}")
 		generate_image(
 			prompt,
 			negative,

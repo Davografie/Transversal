@@ -358,9 +358,9 @@ def generate_image(
 	else:
 		prompt["46"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
 	
-	print(f"imagen:\nentity_key: { entity_key }\nlora1: { lora1 }:{ lora1_weight }\nlora2: { lora2 }:{ lora2_weight }\nwidth: { width }\nheight: { height }\n\t{ description }\n\t{ negative }")
-
 	queue_prompt(prompt)
+
+	print(f"imagen:\nentity_key: { entity_key }\nlora1: { lora1 }:{ lora1_weight }\nlora2: { lora2 }:{ lora2_weight }\nwidth: { width }\nheight: { height }\n\t{ description }\n\t{ negative }")
 
 
 # generate_image("a cow", "123456")

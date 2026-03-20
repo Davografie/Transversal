@@ -20,7 +20,7 @@ export const entity_icons: Record<string, string> = {
 export function useEntity(init?: Entity, entity_id?: string) {
 	const apolloClient: ApolloClient<any>|undefined = inject('apolloClient')
 	const entity = ref({} as Entity)
-	const API_URL = import.meta.env.VITE_API_URL
+	const API_URL = inject('API_URL')
 
 	const entity_type_icon = computed(() => {
 		if(entity.value && entity.value.entityType == 'character'){
@@ -153,7 +153,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			apolloClient.query({
 				query: query,
 				variables: { entityId: entity_id },
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				entity.value = {
 					...entity.value,
@@ -271,7 +271,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			apolloClient.query({
 				query: query,
 				variables: { entityId: entity_id },
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				entity.value = {
 					...entity.value,
@@ -749,7 +749,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					"type": "archetype"
 				}
 			}).then(() => {
-				retrieve_archetypes('no-cache')
+				retrieve_archetypes('network-only')
 			})
 			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
 			// console.log('setting archetype of ' + entity.value.name + ' to ' + archetype_id)
@@ -776,7 +776,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					"type": "archetype"
 				}
 			}).then(() => {
-				retrieve_archetypes('no-cache')
+				retrieve_archetypes('network-only')
 			})
 			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(query_delete_relation))
 			// console.log('unsetting archetype of ' + entity.value.name)
@@ -794,6 +794,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 */
 	function imagen(force: boolean = false) {
 		const url = API_URL + "imagen/" + entity.value.key + "/" + force
+		console.log("generating image for: " + entity.value.key + " (" + url + ")")
 		interface API_result {
 			success: boolean
 		}
