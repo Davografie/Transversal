@@ -649,6 +649,13 @@
 		return marked.parse(statement)
 	})
 
+	// notes are truncated when mode = small, returns marked
+	const rendered_notes = computed(() => {
+		if (!trait.value.notes) return ''
+		if (mode.value == view_modes.Small && trait.value.notes.length > 55) return marked.parse(trait.value.notes.substring(0, 50) + '...')
+		return marked.parse(trait.value.notes)
+	})
+
 	const inherited = computed(() => {
 		if(props.entity_id?.startsWith('Relations/')) {
 			return trait.value.traitSetting?.fromEntity?.id != player.the_entity?.id
@@ -1173,7 +1180,7 @@
 				</div>
 			</div>
 
-			<div class="notes" v-html="marked.parse(trait.notes)"
+			<div class="notes" v-html="rendered_notes"
 				v-if="trait.notes
 				&& mode != view_modes.Editing
 				// && (
@@ -1283,7 +1290,7 @@
 				title="trait explanation"
 				v-if="trait.explanation &&
 					(
-						preferredColor == 'light' ||
+						(preferredColor == 'light' && !trait.notes) ||
 						[view_modes.Viewing, view_modes.Editing].includes(mode) ||
 						// mode == view_modes.Viewing ||
 						// mode == view_modes.Editing ||
@@ -2308,6 +2315,7 @@
 			border-bottom: 1px solid var(--color-border);
 			flex-grow: 1;
 			background-color: var(--color-background);
+			padding: 1em 0;
 			.descriptor {
 				flex-grow: 1;
 			}
@@ -2319,12 +2327,15 @@
 				font-size: .8em;
 			}
 			.statement {
-				font-family: 'Courier New', Courier, monospace;
-				font-size: 1.4em;
+				/* font-family: 'Courier New', Courier, monospace; */
+				font-family: 'Pacifico', 'Dancing Script', 'Bradley Hand', 'Reenie Script Personal Use', 'Great Vibes', 'Alex Brush', 'Snell Roundhand', 'Satisfy', 'Kaushan Script', 'Homemade Apple', 'Caveat', 'Tangerine', 'Permanent Marker', 'Architects Daughter', 'Shadows Into Light', 'Shadows Into Light Two', 'Dancing Script MT', 'Vivaldi', ' segmdl2', 'Material Icons', 'Material Icons Outlined', 'Material Icons Two Tone', 'Material Icons Round', 'Material Icons Sharp';
+				font-size: 2em;
 				background-color: var(--color-background-soft);
-				color: var(--color-text);
-				text-align: center;
-				padding-right: .5em;
+				color: var(--color-negative-die-10);
+				/* text-align: center; */
+				/* padding-right: .5em; */
+				padding-right: 2%;
+				padding-left: 5%;
 			}
 			.rating {
 				flex-grow: 0;
@@ -2338,6 +2349,16 @@
 			.sfxs,
 			.notes {
 				margin-left: 1.4em;
+			}
+			&.small {
+				.notes, .explanation, .trait-owner, .rating-type {
+					color: var(--color-disabled);
+				}
+				&:hover {
+					.notes, .explanation, .trait-owner, .rating-type {
+						color: var(--color-text);
+					}
+				}
 			}
 			.sfxs {
 				flex-grow: 1;
@@ -2371,6 +2392,9 @@
 				}
 				.edit-buttons {
 					border-top: 1px dashed var(--color-border);
+				}
+				.statement.statement-edit {
+					font-size: 2em;
 				}
 			}
 			&.viewing {
