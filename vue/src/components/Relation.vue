@@ -100,9 +100,12 @@
 
 	function click_icon() {
 		// router.push({ path: '/entity/' + entity.value?.key })
-		emit('hide_codex')
-		emit('hide_relation')
-		emit('show_entity', entity.value?.key)
+		// emit('hide_codex')
+		// emit('hide_relation')
+		// emit('show_entity', entity.value?.key)
+		if(player.is_gm) {
+			player.set_perspective(entity.value.id)
+		}
 	}
 
 	function change_location() {
