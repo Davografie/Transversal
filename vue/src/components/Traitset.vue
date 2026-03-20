@@ -101,11 +101,11 @@
 	const polling_active = ref(props.polling ?? false)
 	
 	function polling() {
-		console.log("polling traitset " + traitset.value.name + " for entity " + props.entity_id)
-		if(polling_active.value) {
+		if(polling_active.value && player.playing) {
+			console.log("polling traitset " + traitset.value.name + " for entity " + props.entity_id)
 			retrieve_traitset()
-			setTimeout(polling, 15000)
 		}
+		setTimeout(polling, 15000)
 		// console.log("traitset polling disabled")
 	}
 
@@ -802,7 +802,7 @@
 
 				<div class="controls">
 				
-					<div class="button-mnml" @click="add_multiple_traits = !add_multiple_traits">
+					<div class="button-mnml add-multiple-toggle" @click="add_multiple_traits = !add_multiple_traits">
 						<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
 						<div class="label">adding {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
 					</div>
@@ -1025,8 +1025,9 @@
 			.controls {
 				display: flex;
 				justify-content: space-between;
+				align-items: start;
 				.trait-search {
-					flex-grow: 1;
+					flex: 1;
 					display: flex;
 					justify-content: center;
 					.trait-search-query {
@@ -1043,6 +1044,9 @@
 						border-radius: 0 10px 10px 0;
 						height: 2em;
 					}
+				}
+				.add-trait-button {
+					
 				}
 			}
 			.trait-search.creatable {
@@ -1200,6 +1204,18 @@
 				overflow-y: auto;
 				scroll-snap-type: y mandatory;
 				scroll-behavior: smooth;
+			}
+			.add_trait {
+				.controls {
+					/* width: 100%; */
+					/* overflow: hidden;
+					.add-multiple-toggle, .trait-search, .add-trait-button {
+						flex-grow: 1;
+					} */
+					.trait-search, .trait-search-query {
+						min-width: 0;
+					}
+				}
 			}
 			&.active {
 				max-height: 90%;
