@@ -122,8 +122,13 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 				const { convert_rating_to_dice } = useRating()
 				let new_traits: Trait[] = []
 				for(let i = 0; i < result.data.traits.length; i++) {
-					const trait = result.data.traits[i]
-					trait.defaultTraitSetting.rating = convert_rating_to_dice(trait.defaultTraitSetting.rating ?? [])
+					const trait = {
+						...result.data.traits[i],
+						defaultTraitSetting: {
+							...result.data.traits[i].defaultTraitSetting,
+							rating: convert_rating_to_dice(result.data.traits[i].defaultTraitSetting.rating ?? [])
+						}
+					}
 					new_traits.push(trait)
 				}
 				traits.value = new_traits
