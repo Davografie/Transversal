@@ -260,24 +260,28 @@
 					truthy="allow duplicates"
 					falsy="disallow duplicates"
 					:default="allows_duplicates"
-					@toggle="allows_duplicates = !allows_duplicates" />
+					@toggle="mutate_traitset({'duplicates': !allows_duplicates})" />
 				<ToggleButton id="hidden-switch"
 					class="toggle-button"
 					truthy="default hide traits"
 					falsy="default show traits"
 					:default="default_settings?.hidden ?? false"
-					@toggle="mutate_default_settings({'hidden': !default_settings?.hidden}); retrieve_default_settings()" />
+					@toggle="mutate_default_settings({'hidden': !default_settings?.hidden})" />
 				<ToggleButton id="restricted-switch"
 					class="toggle-button"
-					truthy="default restrict location"
-					falsy="default allow locations"
+					truthy="restricted by universe"
+					falsy="unrestricted in multiverse"
 					:default="traitset?.locationRestricted ?? false"
-					@toggle="mutate_traitset({'locationRestricted': !traitset.locationRestricted}); retrieve_traitset()" />
+					@toggle="mutate_traitset({'locationRestricted': !traitset.locationRestricted})" />
 				<h4>default limit</h4>
 				<div id="traitset-limit">
-					<input type="button" class="button-mnml" value="⊖" @click="traitset_limit--" />
-					{{ traitset_limit }}
-					<input type="button" class="button-mnml" value="⊕" @click="traitset_limit++" />
+					<div id="traitset-limit-inner">
+						<input type="button" class="button-mnml" value="⊖" @click="traitset_limit--" />
+						<span>
+							{{ traitset_limit }}
+						</span>
+						<input type="button" class="button-mnml" value="⊕" @click="traitset_limit++" />
+					</div>
 				</div>
 				<h4>traitset type</h4>
 				<div id="entity-types">
@@ -435,7 +439,14 @@
 			margin: 0 auto;
 		}
 		#traitset-limit {
-			font-size: 2em;
+			display: flex;
+			justify-content: center;
+			#traitset-limit-inner {
+				display: flex;
+				font-size: 2em;
+				background-color: var(--color-background-mute);
+				border-radius: 1em;
+			}
 			.button-mnml {
 				font-size: 1.2em;
 			}
@@ -445,11 +456,12 @@
 			display: flex;
 			flex-direction: column;
 			align-items: center;
-			font-size: 1.2em;
+			font-size: 1.3em;
 			.entity-type {
 				background-color: var(--color-background-mute);
-				width: 40%;
-				min-width: 300px;
+				/* width: 40%; */
+				/* min-width: 300px; */
+				width: 12em;
 				padding: 0 1em;
 				label {
 					display: inline-block;
