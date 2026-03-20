@@ -71,7 +71,7 @@ export const usePlayerStore = defineStore(
 		const orientation = ref("horizontal")	// horizontal (for landscape, e.g. desktop monitor) or vertical (for portrait, e.g. mobile)
 		const theme = ref("dark")
 		const font_size = ref(16)
-		const input_method = ref<input_methods>(orientation.value == "horizontal" ? input_methods.kbm : input_methods.touch)
+		const input_method = ref<input_methods|undefined>()
 
 		// const {
 		// 	character: player_character,
