@@ -154,7 +154,6 @@
 			locationsDisabled: new_locations_disabled.value,
 			sfxs: new_trait_default_sfxs.value
 		})
-		setTimeout(() => retrieve_default_settings(), 200)
 	}
 
 	watch(default_settings, (new_default_settings) => {

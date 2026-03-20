@@ -293,26 +293,45 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function mutate_default_settings(new_defaults: TraitSettingInput) {
+	async function mutate_default_settings(new_defaults: TraitSettingInput) {
 		const mutate_update_traitset = gql`mutation updateTraitsetDefault($defaultSettings: TraitSettingInput!, $traitsetId: ID!) {
 			updateTraitsetDefault(defaultSettings: $defaultSettings, traitsetId: $traitsetId) {
 				traitset {
 					name
 					defaultTraitSetting {
+						ratingType
 						rating
+						locationsEnabled
+						locationsDisabled
+						sfxs {
+							id
+						}
+						sfxsIds
+						hidden
 					}
 				}
 			}
 		}`
 		
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_update_traitset))
-			let variables: object = {
-				traitsetId: traitset_id,
-				defaultSettings: new_defaults
+			const result = await apolloClient.mutate({
+				mutation: mutate_update_traitset,
+				variables: {
+					defaultSettings: new_defaults,
+					traitsetId: traitset_id
+				}
+			})
+			default_settings.value = {
+				...default_settings.value,
+				...result.data.updateTraitsetDefault.traitset.defaultTraitSetting
 			}
-			console.log("updating traitset with variables: ", variables)
-			mutate(variables)
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_update_traitset))
+			// let variables: object = {
+			// 	traitsetId: traitset_id,
+			// 	defaultSettings: new_defaults
+			// }
+			// console.log("updating traitset with variables: ", variables)
+			// mutate(variables)
 		}
 	}
 

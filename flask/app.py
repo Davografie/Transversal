@@ -2537,18 +2537,28 @@ class UpdateTraitsetDefault(Mutation):
 					default_trait_setting['hidden'] = default_settings.hidden
 					update_doc('TraitSettings', default_trait_setting)
 		# logger.debug("Updating default trait setting for traitset: ", traitset_id, " to: ", default_settings)
-		if len(find_docs('TraitSettings', {'_from': traitset_id, '_to': 'Traits/1'})) == 1:
-			db.collection('TraitSettings').update_match(
-				{'_from': traitset_id, '_to': 'Traits/1'},
-				{
-					'rating_type': default_settings.rating_type,
-					'rating': default_settings.rating,
-					'locations_enabled': default_settings.locations_enabled,
-					'locations_disabled': default_settings.locations_disabled,
-					'sfxs': default_settings.sfxs,
-					'hidden': default_settings.hidden
-				}
-			)
+		if len(default_trait_settings := find_docs('TraitSettings', {'_from': traitset_id, '_to': 'Traits/1'})) == 1:
+			new_doc = {
+				**default_trait_settings[0],
+				'rating_type': default_settings.rating_type,
+				'rating': default_settings.rating,
+				'locations_enabled': default_settings.locations_enabled,
+				'locations_disabled': default_settings.locations_disabled,
+				'sfxs': default_settings.sfxs,
+				'hidden': default_settings.hidden
+			}
+			update_doc('TraitSettings', new_doc, False)
+			# db.collection('TraitSettings').update_match(
+			# 	{'_from': traitset_id, '_to': 'Traits/1'},
+			# 	{
+			# 		'rating_type': default_settings.rating_type,
+			# 		'rating': default_settings.rating,
+			# 		'locations_enabled': default_settings.locations_enabled,
+			# 		'locations_disabled': default_settings.locations_disabled,
+			# 		'sfxs': default_settings.sfxs,
+			# 		'hidden': default_settings.hidden
+			# 	}
+			# )
 		else:
 			db.collection('TraitSettings').insert(
 				{
