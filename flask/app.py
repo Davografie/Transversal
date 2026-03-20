@@ -1358,17 +1358,28 @@ class Trait(ObjectType):
 		if parent.statement_examples:
 			return parent.statement_examples
 		elif parent.id:
-			examples = find_docs('TraitSettings', {'_to': parent.id})
-			seen = set()
-			result = []
-			for doc in examples:
-				statement = doc.get('statement')
-				if statement:
-					lowered = statement.strip().lower()
-					if lowered not in seen:
-						result.append(statement)
-						seen.add(lowered)
-			return result
+			Trait._hydrate_trait(parent, info)
+			if parent.name != 'LoRA':
+				examples = find_docs('TraitSettings', {'_to': parent.id})
+				seen = set()
+				result = []
+				for doc in examples:
+					statement = doc.get('statement')
+					if statement:
+						lowered = statement.strip().lower()
+						if lowered not in seen:
+							result.append(statement)
+							seen.add(lowered)
+				return result
+			else:
+				# get all files in the dir and subdirs of app.config['T2I_MODELS_FOLDER']/loras/flux
+				# return them as *subdirs/filename, but without /loras/flux
+				files = []
+				for (dirpath, dirnames, filenames) in os.walk(os.path.join(app.config['T2I_MODELS_FOLDER'], 'loras/flux')):
+					for filename in filenames:
+						if filename.endswith('.safetensors'):
+							files.append(os.path.join(dirpath, filename).replace(os.path.join(app.config['T2I_MODELS_FOLDER'], 'loras/flux'), ''))
+				return files
 
 	def resolve_notes(parent, info):
 		if parent.notes:
@@ -4680,6 +4691,7 @@ def imagegen(entity_key, force):
 	lora1_weight = 0.0
 	lora2 = "style/Anime art"
 	lora2_weight = 0.4
+	loras = []
 	genres = []
 
 	entity = get_doc_by_id('Entities', 'Entities/' + str(entity_key))
@@ -4772,6 +4784,8 @@ def imagegen(entity_key, force):
 					prompt += ", " if trait_setting.get('statement') and trait_setting.get('notes') else ""
 					prompt += trait_setting.get('notes') if trait_setting.get('notes') else ""
 					prompt += ":1.4)"
+				elif trait.get('name') == 'LoRA':
+					loras.append(trait_setting.get('statement'))
 				elif trait.get('name') == 'negative imagen':
 					# negative += f"{', '.join([trait_setting.get('statement'), trait_setting.get('notes')])}"
 					negative += ", " + trait_setting.get('statement') if trait_setting.get('statement') else ""
@@ -4907,6 +4921,8 @@ def imagegen(entity_key, force):
 							for lt in lts:
 								if lt[0].startswith("genre"):
 									genres.append(lt[1])
+								elif lt[0] == "LoRA":
+									loras.append(lt[1])
 								elif lt[0] == "negative imagen":
 									negative += ", " + lt[1]
 								elif lt[0] == "appearance":
@@ -4975,6 +4991,12 @@ def imagegen(entity_key, force):
 					for t in doc.get('traits'):
 						if t[0] == "appearance":
 							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}{t[2] if t[2] else ''}:1.4), ")
+						elif t[0] == "LoRA":
+							loras.append(t[1])
+						elif t[0] == "genre":
+							genres.append(t[1])
+						elif t[0] == "negative imagen":
+							negative += ", " + t[1]
 						elif t[2]:
 							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}:{ str(rating_weights[abs(t[2]) - 1]) }), ")
 					prompt += ", ".join(traits)
@@ -4988,13 +5010,20 @@ def imagegen(entity_key, force):
 
 		prompt = "".join(prompt.splitlines())
 
+		loras = list(set(loras))
+		if len(loras) > 0:
+			lora1 = loras[0]
+			lora1_weight = 0.8
+			if len(loras) > 1:
+				lora2 = loras[1]
+				lora2_weight = 0.4
 		
 		genres = list(set(genres))
-		if len(genres) > 0:
+		if len(genres) > 0 and len(loras) < 2:
 			if genres[0] in genre_loras.keys():
 				lora1 = genre_loras.get(genres[0])
 				lora1_weight = 0.8
-			if len(genres) > 1 and genres[1] in genre_loras.keys():
+			if len(genres) > 1 and genres[1] in genre_loras.keys() and len(loras) == 0:
 				lora2 = genre_loras.get(genres[1])
 				lora2_weight = 0.4
 			# elif entity_type in ['character', 'npc']:
