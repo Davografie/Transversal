@@ -1329,6 +1329,11 @@
 			}
 		}
 	}
+	.touch.dark {
+		#traitsets {
+			padding-right: 1em;
+		}
+	}
 	.landscape {
 		#entity-wrapper {
 			#character-details {
