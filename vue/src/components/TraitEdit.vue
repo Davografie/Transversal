@@ -372,7 +372,7 @@
 						:trait_id="trait.id"
 						:trait_setting_id="instance.id"
 						:entity_id="instance.fromEntity?.id"
-						@refetch="retrieve_instances('no-cache')"
+						@refetch="retrieve_instances('network-only')"
 					/>
 				</div>
 

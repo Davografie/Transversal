@@ -42,7 +42,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 			apolloClient.query({
 				query: query,
 				variables: args,
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				traits.value = result.data.traits
 			})
@@ -79,12 +79,12 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 			apolloClient.query({
 				query: query_get_entity_traits,
 				variables: args,
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				traits.value = result.data.entities[0].traits
 			})
 			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery(query_get_entity_traits, args, { fetchPolicy: 'no-cache' })
+			// 	() => useQuery(query_get_entity_traits, args, { fetchPolicy: 'network-only' })
 			// )
 			// watch(result, () => {
 			// 	console.log("entity traits result: " + JSON.stringify(result.value.entities[0].traits))
@@ -117,7 +117,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 			apolloClient.query({
 				query: query_get_potential_entity_traits_for_traitset,
 				variables: args,
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				const { convert_rating_to_dice } = useRating()
 				let new_traits: Trait[] = []
@@ -129,7 +129,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 				traits.value = new_traits
 			})
 			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery(query_get_potential_entity_traits_for_traitset, args, { fetchPolicy: 'no-cache' })
+			// 	() => useQuery(query_get_potential_entity_traits_for_traitset, args, { fetchPolicy: 'network-only' })
 			// )
 			// watch(result, () => {
 			// 	const { convert_rating_to_dice } = useRating()

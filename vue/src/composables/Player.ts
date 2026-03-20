@@ -37,7 +37,7 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 			apolloClient.query({
 				query: query,
 				variables: { playerId: _player_id },
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				player.value = result.data.players[0]
 			})

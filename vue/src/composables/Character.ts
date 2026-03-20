@@ -155,7 +155,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 			// 	() => useQuery(
 			// 		relations_query,
 			// 		{ characterKey: character_key },
-			// 		{ fetchPolicy: 'no-cache' }
+			// 		{ fetchPolicy: 'network-only' }
 			// 	)
 			// )
 			// watch(result, () => {

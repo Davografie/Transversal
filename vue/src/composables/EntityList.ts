@@ -36,7 +36,7 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			apolloClient.query({
 				query: get_entities_query,
 				variables,
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				console.log('retrieved entities: ', result.data.entities)
 				entities.value = result.data.entities

@@ -1208,6 +1208,7 @@
 			overflow: auto;
 			flex-direction: column;
 			padding-top: 2em;
+			padding-bottom: 10em;
 		}
 	}
 	.dark {

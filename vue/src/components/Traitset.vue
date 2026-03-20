@@ -492,7 +492,7 @@
 	const refreshing = ref(false)
 	async function refresh() {
 		refreshing.value = true
-		await retrieve_traitset('no-cache').then(() => {
+		await retrieve_traitset('network-only').then(() => {
 			refreshing.value = false
 		})
 	}

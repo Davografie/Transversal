@@ -265,7 +265,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			apolloClient.query({
 				query: get_location_query,
 				variables: { locationId: 'Entities/' + location_key },
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				location.value = {
 					...location.value,

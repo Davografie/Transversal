@@ -23,14 +23,14 @@ export function useSession() {
 		if(apolloClient) {
 			apolloClient.query({
 				query: query,
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				player.session_id = result.data.session.session
 				player.scene_id = result.data.session.scene
 				player.beat_id = result.data.session.beat
 			})
 			// const { result } = provideApolloClient(apolloClient)(
-			// 	() => useQuery<{session: Session}>(query, {}, { fetchPolicy: 'no-cache' })
+			// 	() => useQuery<{session: Session}>(query, {}, { fetchPolicy: 'network-only' })
 			// )
 			// watch(result, (newResult) => {
 			// 	if(newResult?.session) {

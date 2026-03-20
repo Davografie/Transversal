@@ -45,7 +45,7 @@ export function useRelation(init?: Relation, relation_id?: string) {
 			apolloClient.query({
 				query: query_get_character,
 				variables: { relationId: relation_id },
-				fetchPolicy: 'no-cache'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				relation.value = result.data.relations[0]
 			})
@@ -53,7 +53,7 @@ export function useRelation(init?: Relation, relation_id?: string) {
 			// 	() => useQuery<{relations: Relation[]}>(
 			// 		query_get_character,
 			// 		{ relationId: relation_id },
-			// 		{ fetchPolicy: 'no-cache' }
+			// 		{ fetchPolicy: 'network-only' }
 			// 	)
 			// )
 			// watch(result, (newResult) => {
