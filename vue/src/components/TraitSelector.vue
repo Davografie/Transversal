@@ -49,7 +49,7 @@
 	const trait = ref(default_trait as TraitType)
 
 	const alphabetical_traits = computed(() => {
-		return traits.value.sort((a, b) => a.name.localeCompare(b.name))
+		return [...traits.value].sort((a, b) => a.name.localeCompare(b.name))
 	})
 
 	function select_trait(t: TraitType) {
