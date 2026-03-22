@@ -601,6 +601,14 @@ class ActivateEntity(Mutation):
 		# 	for relation in relations[12:]:
 		# 		db.collection('Relations').delete({ '_id': relation.get('_id') })
 
+		# reduce existing relations by multiplying the count with 0.5
+		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
+		for relation in relations:
+			if relation.get('count') is not None:
+				new_count = relation.get('count') * 0.5
+				relation['count'] = new_count
+				update_doc('Relations', relation)
+
 		# check if agency relation exists
 		logger.info(f"Activating entity {entity_id} for player {player_id}")
 		relations = find_docs('Relations', { '_from': player_id, '_to': entity_id, 'type': 'agency' })
@@ -4831,6 +4839,8 @@ def imagegen(entity_key, force):
 					trait = get_doc_by_id('Traits', trait_id)
 					if trait.get('name') == 'genre':
 						genres.append(lts.get('statement'))
+					elif trait.get('name') == 'LoRA':
+						loras.append(lts.get('statement'))
 					elif trait.get('name') == 'positive imagen':
 						positive_imagen.append(lts.get('statement')) if lts.get('statement') else ""
 						positive_imagen.append(lts.get('notes')) if lts.get('notes') else ""
