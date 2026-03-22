@@ -115,7 +115,8 @@
 			const new_relation = await player.create_perspective_relation(player.the_entity?.id, entity.value.id)
 			if(new_relation) {
 				console.log("returned relation: ", new_relation)
-				relation.value = new_relation
+				set_relation_id(new_relation.id)
+				retrieve_relation()
 			}
 			console.log("relation created, now updating relations for " + player.the_entity.id)
 			player.retrieve_perspective_relations('network-only')
