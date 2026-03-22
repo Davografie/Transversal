@@ -523,14 +523,14 @@
 						{ 'header': is_current_location },
 					]"
 					v-if="location"
-					@click="click_title">
+					@click="click_title"
+					@click.right="longpress_location_header"
+					@contextmenu="(e: MouseEvent) => e.preventDefault()">
 				
 				<component :is="'h' + (props.level + 2)" class="location-name"
 						:class="{ 'text-pulsate': title_pulsate }"
 						@animationend="title_pulsate = false"
 						v-touch:hold="longpress_location_header"
-						@click.right="longpress_location_header"
-						@contextmenu="(e: MouseEvent) => e.preventDefault()"
 						v-if="!editing_location">
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
@@ -542,7 +542,7 @@
 					@click.stop />
 				<input type="button" class="button" value="save"
 					v-if="location.name != new_location_name && editing_location"
-					@click="update_name" />
+					@click.stop="update_name" />
 
 				<input type="button" class="button transverse-button corner-button"
 					:value="player.small_buttons ? '⬇' : '⬇\ntransverse'"
