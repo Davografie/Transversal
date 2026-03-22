@@ -111,10 +111,31 @@
 		if(!player.the_entity?.id) return
 
 		if(player.is_gm) {
-			player.create_perspective_relation(player.the_entity?.id, entity.value.id)
+			console.log("creating relation from entity " + player.the_entity.id + " to " + entity.value.id)
+			const new_relation = await player.create_perspective_relation(player.the_entity?.id, entity.value.id)
+			if(new_relation) {
+				console.log("returned relation: ", new_relation)
+				relation.value = new_relation
+			}
+			console.log("relation created, now updating relations for " + player.the_entity.id)
+			player.retrieve_perspective_relations('network-only')
 		}
 		else {
-			player.create_character_relation(player.the_entity?.id, entity.value.id)
+			await player.create_character_relation(player.the_entity?.id, entity.value.id)
+			player.retrieve_character_relations('network-only')
+		}
+	}
+
+	async function remove_relation() {
+		if(player.is_gm && player.the_entity) {
+			console.log("deleting relation from entity " + player.the_entity.id + " to " + entity.value.id)
+			await player.delete_perspective_relation(relation.value.id)
+			console.log("clicked 'delete relation' to entity " + entity.value.id + " now updating relations for " + player.the_entity.id)
+			player.retrieve_perspective_relations('network-only')
+		}
+		else {
+			await delete_relation()
+			player.retrieve_character_relations('network-only')
 		}
 	}
 
@@ -164,17 +185,6 @@
 
 	function switch_perspective(entity_id: string) {
 		player.set_perspective(entity_id)
-	}
-
-	function remove_relation() {
-		if(player.is_gm) {
-			player.delete_perspective_relation(relation.value.id)
-		}
-		else {
-			delete_relation().then(() => {
-				player.retrieve_character_relations('network-only')
-			})
-		}
 	}
 
 	onMounted(() => {
@@ -241,13 +251,12 @@
 				<ButtonMinimal :function="ButtonTypes.RELATION"
 					@click.stop="click_tag"
 					v-if="relation_possible" />
-				<!-- <div class="button-mnml codex-button"
-						:class="{ 'small-button': !player.small_buttons }"
-						@click.stop="click_tag"
-						v-if="relation_possible">
-					<span class="icon">🏷</span>
-					<span class="label">{{ player.small_buttons ? '' : 'add to contacts'}}</span>
-				</div> -->
+				<div class="button-mnml remove-relation-button"
+						@click.stop="remove_relation"
+						v-if="player.the_entity?.relations?.filter(r => r.toEntity.id != player.the_entity?.id).map(r => r.toEntity.id).includes(entity.id)">
+					<span class="icon">💔</span>
+					<span class="label">{{ player.small_buttons ? '' : 'remove'}}</span>
+				</div>
 				<div class="button-mnml transversable-button"
 						:class="{ 'small-button': !player.small_buttons }"
 						@click.stop="make_transversable(player.the_entity?.id)"
@@ -293,12 +302,6 @@
 					<span class="icon" v-else>☆</span>
 					<span class="label" v-if="!entity.favorite">{{ player.small_buttons ? '' : 'favorite'}}</span>
 					<span class="label" v-else>{{ player.small_buttons ? '' : 'unfavorite'}}</span>
-				</div>
-				<div class="button-mnml remove-relation-button"
-						@click.stop="remove_relation"
-						v-if="player.the_entity?.relations?.filter(r => r.toEntity.id != player.the_entity?.id).map(r => r.toEntity.id).includes(entity.id)">
-					<span class="icon">💔</span>
-					<span class="label">{{ player.small_buttons ? '' : 'remove'}}</span>
 				</div>
 			</div>
 		</div>

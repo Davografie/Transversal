@@ -3,7 +3,7 @@ import { provideApolloClient, useMutation } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
 
 import { ref, computed, inject } from 'vue'
-import type { Entity, EntityInput, Location } from '@/interfaces/Types'
+import type { Entity, EntityInput, Location, Relation } from '@/interfaces/Types'
 
 import { useFetch } from '@vueuse/core'
 
@@ -317,6 +317,9 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			entities(entityId: $entityId) {
 				relations {
 					id
+					fromEntity {
+						id
+					}
 					toEntity {
 						id
 						entityType
@@ -327,6 +330,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
+			console.log("retrieving relations! ", entity_id)
 			apolloClient.query({
 				query: relations_query,
 				variables: { entityId: entity_id },
@@ -352,24 +356,6 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			// 		...result.value.entities[0]
 			// 	}
 			// })
-		}
-	}
-
-	async function delete_relation(relation_id: string) {
-		const mutation_delete_relation = gql`mutation DeleteRelation($relationId: ID!) {
-			deleteRelation(relationId: $relationId) {
-				success
-			}
-		}`
-		if(apolloClient && relation_id) {
-			await apolloClient.mutate({
-				mutation: mutation_delete_relation,
-				variables: {
-					relationId: relation_id
-				}
-			}).then(() => {
-				retrieve_relations()
-			})
 		}
 	}
 
@@ -694,7 +680,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * creates a relation from given entity to set entity, with the type "relation"
 	 * @param entity_id the id of the entity to create a relation from
 	 */
-	async function create_relation(from_id: string = entity.value.id, to_id: string = entity.value.id) {
+	async function create_relation(from_id: string = entity.value.id, to_id: string = entity.value.id): Promise<Relation|undefined> {
 		/* create a relation between this character and an entity */
 		const query_create_relation = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
 				createRelation(fromId: $fromId, toId: $toId, type: $type) {
@@ -702,30 +688,42 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					message
 					relation {
 						id
+						fromEntity {
+							id
+						}
+						toEntity {
+							id
+						}
 					}
 				}
 			}`
 		if(apolloClient) {
-			apolloClient.mutate({
+			const result = await apolloClient.mutate({
 				mutation: query_create_relation,
 				variables: {
 					"fromId": from_id,
 					"toId": to_id,
 					"type": "relation"
 				}
-			}).then((result) => {
-				console.log(result.data.createRelation.message)
-				if(from_id == entity.value.id) {
-					retrieve_relations()
+			})
+			console.log(result.data.createRelation.message)
+			return result.data.createRelation.relation
+		}
+	}
+
+	async function delete_relation(relation_id: string) {
+		const mutation_delete_relation = gql`mutation DeleteRelation($relationId: ID!) {
+			deleteRelation(relationId: $relationId) {
+				success
+			}
+		}`
+		if(apolloClient && relation_id) {
+			await apolloClient.mutate({
+				mutation: mutation_delete_relation,
+				variables: {
+					relationId: relation_id
 				}
 			})
-			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{entities: Entity[]}>(query_create_relation))
-			// console.log('creating relation between: ' + entity.value.id + ' and ' + entity_id)
-			// mutate({
-			// 	"fromId": entity_id,
-			// 	"toId": entity.value.id,
-			// 	"type": "relation"
-			// })
 		}
 	}
 
