@@ -816,6 +816,7 @@
 		justify-content: space-between;
 		position: relative;
 		overflow: hidden;
+		min-height: 300px;
 		.location-component-wrapper {
 			width: 100%;
 			.title {
@@ -1054,7 +1055,6 @@
 					flex-direction: column;
 					gap: 1em;
 					.zone {
-						min-height: 300px;
 						/* background-position: center; */
 						display: flex;
 						justify-content: center;
