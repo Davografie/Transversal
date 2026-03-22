@@ -1183,10 +1183,10 @@
 			<div class="notes" v-html="rendered_notes"
 				v-if="trait.notes
 				&& mode != view_modes.Editing
-				// && (
-				// 	mode != view_modes.Small ||
-				// 	!trait.statement
-				// )
+				&& (
+					mode != view_modes.Small ||
+					!trait.statement
+				)
 				&& (player.is_gm
 					|| props.entity_id == player.player_character.id
 					|| props.entity_id?.startsWith('Relations/')
@@ -1290,7 +1290,7 @@
 				title="trait explanation"
 				v-if="trait.explanation &&
 					(
-						(preferredColor == 'light' && !trait.notes) ||
+						// (preferredColor == 'light' && !trait.notes) ||
 						[view_modes.Viewing, view_modes.Editing].includes(mode) ||
 						// mode == view_modes.Viewing ||
 						// mode == view_modes.Editing ||
@@ -2350,15 +2350,22 @@
 			.notes {
 				margin-left: 1.4em;
 			}
+			.notes {
+				font-family: 'Pacifico', 'Dancing Script', 'Bradley Hand', 'Reenie Script Personal Use', 'Great Vibes', 'Alex Brush', 'Snell Roundhand', 'Satisfy', 'Kaushan Script', 'Homemade Apple', 'Caveat', 'Tangerine', 'Permanent Marker', 'Architects Daughter', 'Shadows Into Light', 'Shadows Into Light Two', 'Dancing Script MT', 'Vivaldi', ' segmdl2', 'Material Icons', 'Material Icons Outlined', 'Material Icons Two Tone', 'Material Icons Round', 'Material Icons Sharp';
+				background-color: var(--color-background-soft);
+				color: var(--color-negative-die-12);
+				font-size: 1.4em;
+				letter-spacing: .04em;
+			}
 			&.small {
-				.notes, .explanation, .trait-owner, .rating-type {
+				/* .notes, .explanation, .trait-owner, .rating-type {
 					color: var(--color-disabled);
 				}
 				&:hover {
 					.notes, .explanation, .trait-owner, .rating-type {
 						color: var(--color-text);
 					}
-				}
+				} */
 			}
 			.sfxs {
 				flex-grow: 1;
