@@ -291,6 +291,7 @@
 		border: 1px solid var(--color-border);
 		.neutral {
 			display: flex;
+			height: 100%;
 			align-items: center;
 			text-align: right;
 			padding: 0 1em;
