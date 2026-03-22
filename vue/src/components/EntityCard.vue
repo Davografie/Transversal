@@ -393,7 +393,15 @@ div.active-npc {
 	.archetypes {
 		display: flex;
 		justify-content: space-evenly;
-		color: var(--color-gm-light);
+		color: var(--color-gm);
+		gap: .4em;
+		flex-wrap: wrap;
+		padding: .4em;
+		.archetype {
+			border: 1px solid var(--color-gm);
+			padding: .2em .4em;
+			flex-grow: 1;
+		}
 	}
 	.description {
 		font-style: italic;
