@@ -2360,6 +2360,13 @@
 				font-size: 1.4em;
 				letter-spacing: .04em;
 			}
+			&.hidden {
+				.descriptor {
+					background-color: var(--color-gm-light);
+					color: var(--color-gm-light-text);
+					padding-left: 1em;
+				}
+			}
 			&.small {
 				/* .notes, .explanation, .trait-owner, .rating-type {
 					color: var(--color-disabled);

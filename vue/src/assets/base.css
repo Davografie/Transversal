@@ -52,7 +52,9 @@
 
 	--color-gm: purple;
 	--color-gm-mute: rgba(128, 0, 128, 0.5);
+	--color-gm-text: white;
 	--color-gm-light: rgba(230, 190, 255, 0.7);
+	--color-gm-light-text: rgba(128, 0, 128, 0.5);
 
 	--color-positive-die-4: orange;
 	--color-positive-die-4-text: black;
