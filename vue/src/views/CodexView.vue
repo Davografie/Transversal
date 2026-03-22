@@ -47,8 +47,12 @@
 	function toggle_players() {
 		if(!show_players.value) {
 			retrieve_characters(false)
+			show_players.value = true
 		}
-		show_players.value = !show_players.value
+		else {
+			retrieve_characters(true)
+			show_players.value = false
+		}
 	}
 
 	onMounted(() => {
@@ -138,7 +142,8 @@
 					<h2 v-if="player.is_gm && entities.length > 0">
 						{{player.orientation == 'vertical' ? 'characters' :  'PCs'}}
 					</h2>
-					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0 && show_players">
+					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0">
+						<!-- active characters -->
 						<template v-for="(entity, index) in entities.filter(e => show_players ? e.favorite : true)" :key="entity.id">
 							<EntityButton
 								class="entity-card"
@@ -151,6 +156,7 @@
 						contacts
 					</h2>
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="(player.the_entity?.relations?.length ?? 0) > 0">
+						<!-- outgoing relations -->
 						<template v-if="!show_players"
 								v-for="(relation, index) in player.the_entity?.relations?.filter(r => player.the_entity?.id != r.toEntity?.id && !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
 							<EntityButton
@@ -163,6 +169,7 @@
 								:is_active="player.is_gm"
 								@click_entity="click_relation(relation)" />
 						</template>
+						<!-- incoming relations -->
 						<template v-if="!show_players && player.is_gm"
 								v-for="(relation, index) in player.the_entity?.relations?.filter(r => player.the_entity?.id != r.fromEntity.id && !entities.map(e => e.id).includes(r.fromEntity?.id)) ?? []" :key="relation.id">
 							<EntityButton
@@ -174,6 +181,7 @@
 								override_click
 								@click_entity="click_relation(relation)" />
 						</template>
+						<!-- favorite non-characters -->
 						<template v-if="show_players" v-for="(character, index) in entities.filter(e => e.favorite && e.entityType != 'character')" :key="character.id">
 							<EntityButton
 								class="entity-card"
