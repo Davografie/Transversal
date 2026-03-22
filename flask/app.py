@@ -4921,7 +4921,7 @@ def imagegen(entity_key, force):
 
 				if len(doc['hierarchy']) > 1:
 					multiplier = 0.6
-					location_strength = 1.6
+					location_strength = 1.2
 					for l in doc['hierarchy'][1:]:
 						location_strength = location_strength * multiplier
 						if location_strength >= multiplier:
@@ -4946,7 +4946,7 @@ def imagegen(entity_key, force):
 							for lt in lts:
 								if lt[0].startswith("genre"):
 									genres.append(lt[1])
-					location_strength = 1.6
+					location_strength = 1.2
 					strengths = []
 					for l in doc['hierarchy'][1:]:
 						location_strength = location_strength * multiplier
