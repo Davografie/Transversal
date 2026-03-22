@@ -652,7 +652,7 @@
 	// notes are truncated when mode = small, returns marked
 	const rendered_notes = computed(() => {
 		if (!trait.value.notes) return ''
-		if (mode.value == view_modes.Small && trait.value.notes.length > 55) return marked.parse(trait.value.notes.substring(0, 50) + '...')
+		// if (mode.value == view_modes.Small && trait.value.notes.length > 55) return marked.parse(trait.value.notes.substring(0, 50) + '...')
 		return marked.parse(trait.value.notes)
 	})
 
