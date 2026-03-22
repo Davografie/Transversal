@@ -1105,6 +1105,9 @@
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
 						<span class="name">
 							<span class="trait-inherited" v-if="inherited && player.is_gm">· </span>
+							<span class="trait-name-label trait-to" v-if="trait.traitSetting?.toEntity?.name">
+								{{ trait.traitSetting?.toEntity?.name + ' ' }}
+							</span>
 							<span class="trait-name-label">
 								{{ trait.name }}
 							</span>
@@ -1113,10 +1116,6 @@
 									)
 									&& trait.traitSetting?.fromEntity?.name">
 								{{ ' from ' + trait.traitSetting?.fromEntity?.name }}
-							</span>
-							<span class="label trait-to" v-if="trait.traitSetting?.toEntity?.name
-								&& [view_modes.Viewing, view_modes.Editing].includes(mode)">
-								{{ ' to ' + trait.traitSetting?.toEntity?.name }}
 							</span>
 							<span class="label trait-owner-self" v-if="[view_modes.Viewing, view_modes.Editing].includes(mode)
 									&& trait.traitSetting?.fromEntity?.id == player.the_entity?.id">
