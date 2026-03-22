@@ -384,6 +384,9 @@ div.active-npc {
 				font-size: 1.2em;
 				display: flex;
 				flex-direction: column;
+				&.favorite-button {
+					color: var(--color-gm);
+				}
 				&:hover {
 					flex-grow: 1.4;
 				}
