@@ -306,10 +306,10 @@
 		)
 	})
 
-	function add_to_codex() {
-		if(the_entity.value) {
-			add_location_relationship(the_entity.value.id)
-			player.is_gm ? player.retrieve_perspective_relations() : player.retrieve_character_relations()
+	async function add_to_codex() {
+		if(player.the_entity) {
+			await add_location_relationship(player.the_entity.id)
+			player.is_gm ? player.retrieve_perspective_relations('network-only') : player.retrieve_character_relations('network-only')
 		}
 	}
 
@@ -359,15 +359,6 @@
 		}
 	}
 
-	const the_entity = computed(() => {
-		if(!player.is_gm && player.player_character) {
-			return player.player_character
-		}
-		else if(player.is_gm && player.perspective) {
-			return player.perspective
-		}
-	})
-
 	const image_link = ref(
 		'/assets/uploads/' + location.value.image?.path + '/' +
 		(player.data_saving ? 'small' : 'large') +
@@ -396,8 +387,8 @@
 	})
 
 	function establish_route() {
-		if(the_entity.value) {
-			make_transversable(the_entity.value.id)
+		if(player.the_entity) {
+			make_transversable(player.the_entity.id)
 			setTimeout(() => player.retrieve_perspective_relations(), 200)
 		}
 	}
@@ -549,7 +540,7 @@
 					v-if="!is_current_location
 						&& player.is_gm
 						&& player.perspective
-						&& the_entity?.id != location.id
+						&& player.the_entity?.id != location.id
 						&& editing_location"
 					@click.stop="transverse(location)" />
 
@@ -561,19 +552,19 @@
 				<input type="button" class="button codex-button corner-button"
 					:value="player.small_buttons ? '🏷' : '🏷\nadd to contacts'"
 					@click.stop="add_to_codex"
-					v-if="the_entity
-						&& the_entity.id != location.id
-						&& !the_entity.relations?.map(e => e.toEntity.id).some(id => id == location.id)
+					v-if="player.the_entity
+						&& player.the_entity.id != location.id
+						&& !player.the_entity.relations?.map(e => e.toEntity.id).some(id => id == location.id)
 						&& editing_location
 					" />
 
 				<input type="button" class="button transversable-button corner-button"
 					:value="player.small_buttons ? '⤠' : '⤠\nmake transversable'"
 					@click.stop="establish_route"
-					v-if="the_entity
-						&& the_entity.entityType == 'location'
+					v-if="player.the_entity
+						&& player.the_entity.entityType == 'location'
 						&& player.the_entity?.entityType == 'location'
-						&& the_entity.id != location.id
+						&& player.the_entity.id != location.id
 						&& editing_location
 					" />
 

@@ -421,7 +421,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		}
 	}
 
-	function add_location_relationship(entity_id: string) {
+	async function add_location_relationship(entity_id: string) {
 		/* create a relation between this character and an entity */
 		const query_create_relation = gql`mutation CreateRelation($fromId: ID!, $toId: ID!, $type: String) {
 				createRelation(fromId: $fromId, toId: $toId, type: $type) {
@@ -429,13 +429,21 @@ export function useLocation(init?: Location, location_key?: string) {
 				}
 			}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{characters: Character[]}>(query_create_relation))
-			console.log('creating relation between: ' + location.value.id + ' and ' + entity_id)
-			mutate({
-				"fromId": entity_id,
-				"toId": location.value.id,
-				"type": "relation"
+			await apolloClient.mutate({
+				mutation: query_create_relation,
+				variables: {
+					"fromId": entity_id,
+					"toId": location.value.id,
+					"type": "relation"
+				}
 			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation<{characters: Character[]}>(query_create_relation))
+			// console.log('creating relation between: ' + location.value.id + ' and ' + entity_id)
+			// mutate({
+			// 	"fromId": entity_id,
+			// 	"toId": location.value.id,
+			// 	"type": "relation"
+			// })
 		}
 	}
 
