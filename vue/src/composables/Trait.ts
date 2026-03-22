@@ -91,6 +91,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					}
 					toEntity {
 						id
+						name
 					}
 				}
 				requiredTraits {
@@ -289,6 +290,10 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					}
 					hidden
 					fromEntity {
+						id
+						name
+					}
+					toEntity {
 						id
 						name
 					}

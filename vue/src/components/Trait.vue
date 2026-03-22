@@ -1109,12 +1109,16 @@
 								{{ trait.name }}
 							</span>
 							<span class="label trait-owner" v-if="(mode == view_modes.Editing
-										|| player.is_gm
+										|| (player.is_gm && mode == view_modes.Viewing)
 									)
 									&& trait.traitSetting?.fromEntity?.name">
 								{{ ' from ' + trait.traitSetting?.fromEntity?.name }}
 							</span>
-							<span class="label trait-owner-self" v-if="mode == view_modes.Editing
+							<span class="label trait-to" v-if="trait.traitSetting?.toEntity?.name
+								&& [view_modes.Viewing, view_modes.Editing].includes(mode)">
+								{{ ' to ' + trait.traitSetting?.toEntity?.name }}
+							</span>
+							<span class="label trait-owner-self" v-if="[view_modes.Viewing, view_modes.Editing].includes(mode)
 									&& trait.traitSetting?.fromEntity?.id == player.the_entity?.id">
 								{{ ' (self)' }}
 							</span>
@@ -1336,7 +1340,7 @@
 			</div>
 
 			<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0">
-				<div class="section-icon">⪽</div>
+				<!-- <div class="section-icon">⪽</div> -->
 				<div class="sub-traits-list positive">
 					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) > 0)" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
