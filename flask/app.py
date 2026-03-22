@@ -601,11 +601,11 @@ class ActivateEntity(Mutation):
 		# 	for relation in relations[12:]:
 		# 		db.collection('Relations').delete({ '_id': relation.get('_id') })
 
-		# reduce existing relations by multiplying the count with 0.5
+		# reduce existing relations
 		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
 		for relation in relations:
 			if relation.get('count') is not None:
-				new_count = relation.get('count') * 0.5
+				new_count = relation.get('count') * 0.8
 				relation['count'] = new_count
 				update_doc('Relations', relation)
 
