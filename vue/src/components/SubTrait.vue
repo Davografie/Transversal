@@ -231,7 +231,7 @@
 			]"
 			@click.stop="click_subtrait"
 			@contextmenu="(e) => e.preventDefault()">
-		<div class="neutral" :class="{ 'editing': editing }">
+		<div :class="editing ? 'editing' : 'neutral'">
 			<span v-if="trait.traitSetting?.fromEntity?.id">🔗</span>
 			<div class="trait-name-and-statement" :class="[
 					{ 'with-statement': (trait.statement ?? '') != ''},
