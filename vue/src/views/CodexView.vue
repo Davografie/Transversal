@@ -45,7 +45,9 @@
 	const show_players = ref(false)
 
 	function toggle_players() {
-		retrieve_characters(false)
+		if(!show_players.value) {
+			retrieve_characters(false)
+		}
 		show_players.value = !show_players.value
 	}
 
@@ -136,7 +138,7 @@
 					<h2 v-if="player.is_gm && entities.length > 0">
 						{{player.orientation == 'vertical' ? 'characters' :  'PCs'}}
 					</h2>
-					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0">
+					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0 && show_players">
 						<template v-for="(entity, index) in entities.filter(e => show_players ? e.favorite : true)" :key="entity.id">
 							<EntityButton
 								class="entity-card"
