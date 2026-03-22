@@ -79,4 +79,9 @@
 			}
 		}
 	}
+	.light .minimal-button {
+		&.active {
+			background-color: var(--color-highlight-mute);
+		}
+	}
 </style>

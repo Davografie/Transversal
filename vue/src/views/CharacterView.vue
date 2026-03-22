@@ -1089,27 +1089,31 @@
 					font-size: 1.2em;
 				}
 			}
-			#character-quick-switch {
-				padding: 1em;
-				display: flex;
-				justify-content: space-around;
-				width: 100%;
-				overflow-x: auto;
-				.entity-card {
-					width: 50px;
-					height: 100px;
-				}
-			}
-			#archetype-instances {
-				display: flex;
-				max-width: 100%;
-				overflow-x: auto;
-			}
-			#character-known-to {
-				.entity-cards {
+			.character-menu {
+				background-color: var(--color-highlight-mute);
+				color: var(--color-highlight-text);
+				&#character-quick-switch {
+					padding: 1em;
 					display: flex;
 					justify-content: space-around;
-					flex-wrap: wrap;
+					width: 100%;
+					overflow-x: auto;
+					.entity-card {
+						width: 50px;
+						height: 100px;
+					}
+				}
+				&#archetype-instances {
+					display: flex;
+					max-width: 100%;
+					overflow-x: auto;
+				}
+				&#character-known-to {
+					.entity-cards {
+						display: flex;
+						justify-content: space-around;
+						flex-wrap: wrap;
+					}
 				}
 			}
 			#character-buttons-toggle {
