@@ -334,10 +334,11 @@
 
 
 	watch(() => entity.value.id, () => {
-		active_traitset_id.value = entity.value.traitsets && entity.value.traitsets.length > 0 ?
-			entity.value.traitsets[0].id :
-			''
+		if(entity.value.traitsets && entity.value.traitsets.length > 0) {
+			active_traitset_id.value = entity.value.traitsets[0].id
+		}
 		show_controls.value = false
+		entityOverviewType.value = 'NONE'
 	})
 
 	// traits
