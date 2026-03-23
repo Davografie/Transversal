@@ -606,16 +606,8 @@
 							v-if="player.is_gm" />
 					</div>
 				</div>
-				<div class="center">				
-					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
-						<EntityCard
-							class="active-npc"
-							:entity_id="overwrite_active ?? active_npc"
-							@hide_entity="overwrite_active = 'empty'"
-							@show_entity="(entity_key) => emit('show_entity', entity_key)"
-							@instantiated_entity="set_presence_watcher" />
-					</div>
-					<div class="archetypes" v-else>
+				<div class="center">
+					<div class="archetypes">
 						<EntityButton
 							class="entity-card"
 							v-for="archetype in location.entities?.filter(e => e.isArchetype)"
@@ -626,6 +618,14 @@
 							@show_entity="(entity_key: string) => emit('show_entity', entity_key)"
 							override_click @click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
 								overwrite_active = archetype.id : overwrite_active = 'empty'" />
+					</div>
+					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
+						<EntityCard
+							class="active-npc"
+							:entity_id="overwrite_active ?? active_npc"
+							@hide_entity="overwrite_active = 'empty'"
+							@show_entity="(entity_key) => emit('show_entity', entity_key)"
+							@instantiated_entity="set_presence_watcher" />
 					</div>
 					<div class="location-image-wrapper" v-if="show_location_image">
 						<img class="location-image" :src="image_link" @click="show_location_image = false" />
