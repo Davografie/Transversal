@@ -230,7 +230,7 @@
 <template>
 	<div class="active-npc">
 		<div class="card">
-			<div class="image">
+			<div class="image" @click.stop="player.image_entity = entity">
 				<img :src="player.data_saving ? image_link_small : image_link_large" ref="image" />
 			</div>
 			<div class="close-button" @click="emit('hide_entity')">

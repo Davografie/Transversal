@@ -1,6 +1,7 @@
 <script setup lang="ts">
 	import Mobile from '@/views/Mobile.vue'
 	import Landscape from '@/views/Landscape.vue'
+	import ImageOverlay from '@/views/ImageOverlay.vue'
 	import { ref, computed, watch, onMounted, onUpdated, toRefs } from 'vue'
 	import { useRouter, useRoute, RouterLink } from 'vue-router'
 	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef } from '@vueuse/core'
@@ -209,6 +210,7 @@
 			]"
 			:style="preferredColor == 'dark' ? { 'background-image': 'url(' + location_image_link + ')'} : ''"
 			ref="app_wrapper_component">
+		<ImageOverlay />
 		<Landscape v-if="player.orientation == 'horizontal'" />
 		<Mobile v-else />
 	</div>

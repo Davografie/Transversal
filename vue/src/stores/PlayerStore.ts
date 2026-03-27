@@ -9,7 +9,7 @@ import { usePlayer } from '@/composables/Player'
 import { useCharacter } from '@/composables/Character'
 import { useEntity } from '@/composables/Entity'
 
-import type { Location, Player } from '@/interfaces/Types'
+import type { Entity, Location, Player } from '@/interfaces/Types'
 
 export enum input_methods {
 	// Keyboard = 'keyboard',
@@ -72,6 +72,8 @@ export const usePlayerStore = defineStore(
 		const theme = ref("dark")
 		const font_size = ref(16)
 		const input_method = ref<input_methods|undefined>()
+
+		const image_entity = ref<Entity|undefined>(undefined)
 
 		// const {
 		// 	character: player_character,
@@ -262,6 +264,7 @@ export const usePlayerStore = defineStore(
 			is_player,
 			small_buttons,
 			data_saving,
+			image_entity,
 			traitset_defaults,
 			player_character,
 			player_character_key,
