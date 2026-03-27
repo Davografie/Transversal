@@ -7,7 +7,7 @@ Since the `arangodb` Docker image is based on a minimal Linux distribution (Alpi
 ### **1. Access the ArangoDB Container Shell**
 Use `sh` (not `bash`):
 ```bash
-docker exec -it your_arangodb_container_name sh
+docker exec -it tv_adb sh
 ```
 
 ---
@@ -18,9 +18,9 @@ Run this inside the container:
 arangodump \
   --output-directory /tmp/arangodb_dump \
   --server.endpoint tcp://127.0.0.1:8529 \
+  --overwrite true \
   --server.username root \
-  --server.password your_root_password \
-  --overwrite true
+  --server.password your_root_password
 ```
 Replace `your_root_password` with your actual root password (or use a user with backup privileges).  
 This saves the dump to `/tmp/arangodb_dump` in the container.
@@ -30,7 +30,7 @@ This saves the dump to `/tmp/arangodb_dump` in the container.
 ### **3. Copy the Dump to Your Host Machine**
 From your host terminal (not inside the container):
 ```bash
-docker cp your_arangodb_container_name:/tmp/arangodb_dump ./arangodb_dump
+docker cp tv_adb:/tmp/arangodb_dump ./arangodb_dump
 ```
 This copies the dump to `./arangodb_dump` on your host.
 
