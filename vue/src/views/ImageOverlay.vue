@@ -7,7 +7,7 @@ const playerStore = usePlayerStore();
 <template>
 	<div id="image-overlay" v-if="playerStore.image_entity?.image" @click="playerStore.image_entity = undefined">
 		<span id="image-name" class="header">{{ playerStore.image_entity.name }}</span>
-		<img id="image-img" :src="'/assets/uploads/' + playerStore.image_entity.image.path + 'large' + playerStore.image_entity.image.ext" />
+		<img id="image-img" :src="'/assets/uploads/' + playerStore.image_entity.image.path + 'original' + playerStore.image_entity.image.ext" />
 	</div>
 </template>
 
@@ -21,7 +21,8 @@ const playerStore = usePlayerStore();
 	background-size: contain;
 	background-repeat: no-repeat;
 	background-position: center;
-	z-index: 3;
+	z-index: 11; /* above all */
+	cursor: pointer;
 	#image-name {
 		position: absolute;
 		bottom: 0;
