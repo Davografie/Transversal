@@ -78,6 +78,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				}
 				traitSettingId
 				traitSetting {
+					rating
+					ratingType
+					permanence
 					scaling
 					locationsEnabled
 					locationsDisabled
@@ -278,6 +281,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					ratingType
 					rating
 					scaling
+					permanence
 					statement
 					notes
 					sfxs {

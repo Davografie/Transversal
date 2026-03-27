@@ -892,6 +892,7 @@ class TraitSetting(ObjectType):
 	sfxs_ids = List(String)
 	known_to = List(lambda: Character) # characters who have learned about this trait
 	hidden = Boolean()
+	permanence = Boolean() # wether resource depletion resets every session
 	priority = Int()
 
 	@classmethod
@@ -906,7 +907,8 @@ class TraitSetting(ObjectType):
 			parent.locations_enabled = traitsetting.get('locations_enabled')
 			parent.locations_disabled = traitsetting.get('locations_disabled')
 			parent.sfxs_ids = traitsetting.get('sfxs')
-			parent.hidden = traitsetting.get('hidden')
+			parent.hidden = traitsetting.get('hidden') if traitsetting.get('hidden') is not None else False
+			parent.permanence = traitsetting.get('permanence') if traitsetting.get('permanence') is not None else True
 
 	def resolve_trait(parent, info):
 		if parent.trait:
@@ -1062,6 +1064,14 @@ class TraitSetting(ObjectType):
 		else:
 			return False
 
+	def resolve_permanence(parent, info):
+		if parent.id and parent.permanence is None:
+			TraitSetting._hydrate_traitsetting(parent, info)
+		if parent.permanence is not None:
+			return parent.permanence
+		else:
+			return True
+
 	def resolve_priority(parent, info):
 		if parent.priority:
 			return parent.priority
@@ -1081,6 +1091,7 @@ class TraitSettingInput(InputObjectType):
 	sfxs = List(String, required=False)
 	known_to = List(String, required=False)
 	hidden = Boolean(required=False)
+	permanence = Boolean(required=False)
 	teach_to = String(required=False)
 	inherited_as = ID(required=False)
 
@@ -1385,7 +1396,7 @@ class Trait(ObjectType):
 		elif parent.id:
 			Trait._hydrate_trait(parent, info)
 
-			if parent.name == 'LoRA':
+			if parent.name.startswith('LoRA'):
 				# get all files in the dir and subdirs of app.config['T2I_MODELS_FOLDER']/loras/flux
 				# return them as *subdirs/filename, but without /loras/flux, and without the .safetensors extension
 				files = []

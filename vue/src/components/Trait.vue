@@ -34,6 +34,7 @@
 		Entity as EntityType
 	} from '@/interfaces/Types'
 	import TraitSelector from './TraitSelector.vue'
+import ToggleButton from './UI/ToggleButton.vue'
 
 	const props = defineProps<{
 		trait?: Trait,
@@ -383,7 +384,12 @@
 			else {
 				new_rating.value = trait.value.rating.filter((d) => d.id != dc.id)
 			}
-			mutate_trait_setting_temp({ 'rating': new_rating.value.map((r) => r.number_rating) })
+			if(trait.value.traitSetting?.permanence) {
+				mutate_trait_setting({ 'rating': new_rating.value.map((r) => r.number_rating) })
+			}
+			else {
+				mutate_trait_setting_temp({ 'rating': new_rating.value.map((r) => r.number_rating) })
+			}
 			// const { die } = useDie({rating: dc})
 			dc.traitId = trait.value.id
 			if(props.traitset_id) dc.traitsetId = props.traitset_id
@@ -452,6 +458,7 @@
 	const new_ratingType: Ref<string|undefined> = ref(trait.value.ratingType)
 	const new_rating: Ref<DieType[]> = ref(trait.value.rating ?? [])
 	const new_scaling: Ref<number> = ref(trait.value.traitSetting?.scaling ?? 0)
+	const new_permanence: Ref<boolean> = ref(trait.value.traitSetting?.permanence ?? true)
 	const new_statement: Ref<string> = ref(trait.value.statement ?? "")
 	const new_hidden: Ref<boolean> = ref(trait.value.traitSetting?.hidden ?? false)
 	const new_notes: Ref<string> = ref(trait.value.notes ?? "")
@@ -506,6 +513,7 @@
 		new_ratingType.value = trait.value?.ratingType ?? 'empty'
 		new_rating.value = trait.value?.rating ?? []
 		new_scaling.value = trait.value?.traitSetting?.scaling ?? 0
+		new_permanence.value = trait.value?.traitSetting?.permanence ?? true
 		new_statement.value = trait.value?.statement ?? ""
 		new_notes.value = trait.value?.notes ?? ""
 		new_sfxs.value = trait.value?.sfxs ?? []
@@ -575,6 +583,7 @@
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
 				'scaling': new_scaling.value,
+				'permanence': new_permanence.value,
 				'statement': new_statement.value,
 				'notes': new_notes.value,
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
@@ -588,6 +597,7 @@
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
 				'scaling': new_scaling.value,
+				'permanence': new_permanence.value,
 				'statement': new_statement.value,
 				'notes': new_notes.value,
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
@@ -1222,6 +1232,10 @@
 						:rating="new_rating"
 						@change-rating="(rating_type: string, rating: DieType[]) => change_rating(rating_type, rating)"
 						@cancel="edit_rating = false" />
+					<ToggleButton truthy="changes are permanent" falsy="changes reset per session"
+						:default="new_permanence"
+						v-if="new_ratingType == 'resource'"
+						@toggle="new_permanence = !new_permanence" />
 				</div>
 
 				<div class="edit-scaling edit-attribute" v-if="edit_scaling">
@@ -2367,11 +2381,11 @@
 				margin-left: 1.4em;
 			}
 			.notes {
-				font-family: 'Pacifico', 'Dancing Script', 'Bradley Hand', 'Reenie Script Personal Use', 'Great Vibes', 'Alex Brush', 'Snell Roundhand', 'Satisfy', 'Kaushan Script', 'Homemade Apple', 'Caveat', 'Tangerine', 'Permanent Marker', 'Architects Daughter', 'Shadows Into Light', 'Shadows Into Light Two', 'Dancing Script MT', 'Vivaldi', ' segmdl2', 'Material Icons', 'Material Icons Outlined', 'Material Icons Two Tone', 'Material Icons Round', 'Material Icons Sharp';
+				/* font-family: 'Pacifico', 'Dancing Script', 'Bradley Hand', 'Reenie Script Personal Use', 'Great Vibes', 'Alex Brush', 'Snell Roundhand', 'Satisfy', 'Kaushan Script', 'Homemade Apple', 'Caveat', 'Tangerine', 'Permanent Marker', 'Architects Daughter', 'Shadows Into Light', 'Shadows Into Light Two', 'Dancing Script MT', 'Vivaldi', ' segmdl2', 'Material Icons', 'Material Icons Outlined', 'Material Icons Two Tone', 'Material Icons Round', 'Material Icons Sharp'; */
 				background-color: var(--color-background-soft);
-				color: var(--color-negative-die-12);
-				font-size: 1.4em;
-				letter-spacing: .04em;
+				/* color: var(--color-negative-die-12); */
+				/* font-size: 1.4em; */
+				/* letter-spacing: .04em; */
 			}
 			&.hidden {
 				.descriptor {

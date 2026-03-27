@@ -73,6 +73,7 @@ export interface TraitSetting {
     ratingType?: string
     rating?: Die[]
     scaling?: number
+    permanence?: boolean
     locationsEnabled?: string[]
     locationsDisabled?: string[]
     sfxs?: SFX[]
@@ -92,6 +93,7 @@ export interface TraitSettingInput {
     ratingType?: string
     rating?: number[]
     scaling?: number
+    permanence?: boolean
     locationsEnabled?: string[]
     locationsDisabled?: string[]
     sfxs?: string[]
