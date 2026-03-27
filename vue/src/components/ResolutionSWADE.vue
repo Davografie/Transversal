@@ -4,6 +4,15 @@ import { useDicepool } from '@/composables/Dicepool';
 import Die from '@/components/Die.vue';
 const dicepoolStore = useDicepoolStore();
 const dicepool = useDicepool(false);
+
+const swade_result = {
+	hitch: 'aw shit, a 1!',
+	fail: 'no bueno, you fail',
+	success: 'marginal success',
+	average: 'average success',
+	good: 'good success',
+	excellent: 'excellent success'
+}
 </script>
 
 <template>
@@ -43,7 +52,7 @@ const dicepool = useDicepool(false);
 				</div>
 			</div>
 			<div class="swade-result swade-raise" v-else-if="dicepoolStore.dice[0].result < 9">
-				<h1>great success!</h1>
+				<h1>success!</h1>
 				<div class="details">
 					<span class="detail">
 						result: <Die :die="dicepoolStore.dice[0]" in_pool />
@@ -54,7 +63,7 @@ const dicepool = useDicepool(false);
 				</div>
 			</div>
 			<div class="swade-result swade-raise" v-else-if="dicepoolStore.dice[0].result < 12">
-				<h1>excellent!!</h1>
+				<h1>Excellent!!</h1>
 				<div class="details">
 					<span class="detail">
 						result: <Die :die="dicepoolStore.dice[0]" in_pool />
@@ -65,7 +74,7 @@ const dicepool = useDicepool(false);
 				</div>
 			</div>
 			<div class="swade-result swade-raise" v-else-if="dicepoolStore.dice[0].result < 20">
-				<h1>Fucking A!!</h1>
+				<h1>Fucking A!!!</h1>
 				<div class="details">
 					<span class="detail">
 						result: <Die :die="dicepoolStore.dice[0]" in_pool />
