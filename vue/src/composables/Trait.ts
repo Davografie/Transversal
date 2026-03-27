@@ -622,7 +622,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				variables: {
 					traitId: trait_id.value
 				},
-				fetchPolicy: 'cache-first'
+				fetchPolicy: 'network-only'
 			})
 			return data.traits[0].statementExamples
 			// let result = <string[]>[]

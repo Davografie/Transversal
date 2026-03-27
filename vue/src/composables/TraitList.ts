@@ -3,7 +3,7 @@
 */
 import { ref, inject, watch } from "vue"
 import type { Ref } from "vue"
-import type { ApolloClient } from '@apollo/client/core'
+import type { ApolloClient, FetchPolicy } from '@apollo/client/core'
 import { useQuery, provideApolloClient } from "@vue/apollo-composable"
 import gql from 'graphql-tag'
 
@@ -93,7 +93,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function retrieve_potential_traits() {
+	function retrieve_potential_traits(caching: FetchPolicy = 'cache-first') {
 		if(apolloClient) {
 			const query_get_potential_entity_traits_for_traitset = gql`
 			query PotentialTraits($traitsetId: ID, $potentialOnly: Boolean, $entityId: ID) {
@@ -117,7 +117,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 			apolloClient.query({
 				query: query_get_potential_entity_traits_for_traitset,
 				variables: args,
-				fetchPolicy: 'network-only'
+				fetchPolicy: caching
 			}).then((result) => {
 				const { convert_rating_to_dice } = useRating()
 				let new_traits: Trait[] = []
@@ -126,7 +126,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 						...result.data.traits[i],
 						defaultTraitSetting: {
 							...result.data.traits[i].defaultTraitSetting,
-							rating: convert_rating_to_dice(result.data.traits[i].defaultTraitSetting.rating ?? [])
+							rating: convert_rating_to_dice(result.data.traits[i].defaultTraitSetting?.rating ?? [])
 						}
 					}
 					new_traits.push(trait)

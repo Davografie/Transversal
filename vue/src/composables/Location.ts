@@ -6,7 +6,7 @@ import { ref, inject, watch } from 'vue'
 import type { Ref } from 'vue'
 import { provideApolloClient, useMutation, useQuery } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
-import type { ApolloClient } from '@apollo/client'
+import type { ApolloClient, FetchPolicy } from '@apollo/client'
 import type { Character, Location } from "@/interfaces/Types"
 import { useEntity } from '@/composables/Entity'
 
@@ -37,7 +37,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		retrieve_small_location()
 	}
 
-	function retrieve_location() {
+	function retrieve_location(caching: FetchPolicy = 'cache-first') {
 		// console.log('retrieving location: ' + location_key)
 		if(location_key && location_key != 'placeholder') {
 			const get_location_query = gql`query FullLocation($locationId: ID) {
@@ -111,7 +111,7 @@ export function useLocation(init?: Location, location_key?: string) {
 				apolloClient.query({
 					query: get_location_query,
 					variables: { locationId: location_id.value ?? 'Entities/' + location_key },
-					fetchPolicy: 'cache-first'
+					fetchPolicy: caching
 				}).then((result) => {
 					location.value = {
 						...location.value,
@@ -379,7 +379,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		}`
 		if(apolloClient) {
-			apolloClient.mutate({
+			await apolloClient.mutate({
 				mutation: create_zone_query,
 				variables: {
 					"locationInput": {
@@ -387,15 +387,17 @@ export function useLocation(init?: Location, location_key?: string) {
 						location: location.value.id
 					}
 				}
-			}).then((result) => {
-				location.value = {
-					...location.value,
-					zones: [
-						...(location.value.zones ?? []),
-						result.data.createLocation.location
-					]
-				}
 			})
+			// .then((result) => {
+			// 	location.value = {
+			// 		...location.value,
+			// 		zones: [
+			// 			...(location.value.zones ?? []),
+			// 			result.data.createLocation.location
+			// 		]
+			// 	}
+			// })
+			retrieve_location('network-only')
 		}
 	}
 
