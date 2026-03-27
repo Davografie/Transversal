@@ -25,6 +25,7 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 		const query = gql`query Player($playerId: ID!) {
 			players(playerId: $playerId) {
 				id
+				key
 				name
 				isGm
 				entities {
