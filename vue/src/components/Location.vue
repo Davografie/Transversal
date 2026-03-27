@@ -516,12 +516,12 @@
 					v-if="location"
 					@click="click_title"
 					@click.right="longpress_location_header"
+					v-touch:hold="longpress_location_header"
 					@contextmenu="(e: MouseEvent) => e.preventDefault()">
 				
 				<component :is="'h' + (props.level + 2)" class="location-name"
 						:class="{ 'text-pulsate': title_pulsate }"
 						@animationend="title_pulsate = false"
-						v-touch:hold="longpress_location_header"
 						v-if="!editing_location">
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
@@ -551,7 +551,7 @@
 				
 				<input type="button" class="button codex-button corner-button"
 					:value="player.small_buttons ? '🏷' : '🏷\nadd to contacts'"
-					@click.stop="add_to_codex"
+					@click.stop="add_to_codex(); editing_location = false"
 					v-if="player.the_entity
 						&& player.the_entity.id != location.id
 						&& !player.the_entity.relations?.map(e => e.toEntity.id).some(id => id == location.id)
@@ -574,11 +574,11 @@
 					v-if="player.is_gm && editing_location" />
 				
 				<input type="button" class="copy-id button corner-button" title="copy location id"
-					@click.stop="copy"
+					@click.stop="copy(); editing_location = false"
 					:value="player.small_buttons ? '#' : '#\ncopy id'"
 					v-if="player.is_gm && editing_location" />
 				
-				<input type="button" class="imagen-button button corner-button" @click.stop="imagen(true)"
+				<input type="button" class="imagen-button button corner-button" @click.stop="imagen(true); editing_location = false"
 					:value="player.small_buttons ? '📷' : '📷\nimage'"
 					v-if="player.is_gm && editing_location" />
 
@@ -1115,6 +1115,7 @@
 			}
 			/* border: 1px solid var(--color-background); */
 			width: 100%;
+			padding-bottom: 2em;
 			>.location-component-wrapper {
 				>.title {
 					padding: 1em 3em 0 3em;

@@ -849,7 +849,12 @@
 								{{ trait.defaultTraitSetting?.rating ? trait.defaultTraitSetting?.rating.map((r) => r.active)[0] : '' }}
 							</span>
 						</div>
-						<TraitEdit :trait_id="trait.id" :trait_name="trait.name" :expanded="true" v-if="player.is_gm && editing_potential_traits.includes(trait.id)" />
+						<TraitEdit
+							:trait_id="trait.id"
+							:trait_name="trait.name"
+							:expanded="true"
+							@refetch_traits="retrieve_potential_traits('network-only')"
+							v-if="player.is_gm && editing_potential_traits.includes(trait.id)" />
 					</template>
 				</div>
 

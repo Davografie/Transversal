@@ -150,8 +150,8 @@
 		retrieve_traitsets()
 		show_change_traitset.value = !show_change_traitset.value
 	}
-	function change_traitset(traitset_id: string) {
-		mutate_trait({ traitsetId: traitset_id })
+	async function change_traitset(traitset_id: string) {
+		await mutate_trait({ traitsetId: traitset_id })
 		emit('refetch_traits')
 	}
 
