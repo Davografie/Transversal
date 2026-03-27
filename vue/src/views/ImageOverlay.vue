@@ -32,7 +32,7 @@ const playerStore = usePlayerStore();
 		width: 100vw;
 		height: 100vh;
 		text-align: center;
-		font-size: 18vw;
+		font-size: 32vw;
 		color: var(--color-text);
 		display: flex;
 		flex-direction: column;
@@ -40,6 +40,8 @@ const playerStore = usePlayerStore();
 		align-items: center;
 		line-height: .7em;
 		/* line-height: 50vh; */
+		/* overflow-x: auto;
+		overflow-y: hidden; */
 	}
 	#image-img {
 		position: absolute;
@@ -69,7 +71,7 @@ const playerStore = usePlayerStore();
 	#image-overlay {
 		#image-name {
 			/* transform: translateX(-50%) translateY(-2em); */
-			padding-bottom: 1em;
+			padding-bottom: .4em;
 		}
 		#image-img {
 			transform: translateX(-50%) translateY(-20em);
