@@ -7,6 +7,7 @@ import datetime
 import random
 import json
 import hashlib
+from collections import Counter
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -280,10 +281,10 @@ def execute_aql(query, collections=[]):
 		return result
 	else:
 		# query has changed, execute query and store result in Redis
-		logger.debug(f"Query has changed, executing query and storing result in Redis\n\tQuery: {query}")
+		# logger.debug(f"Query has changed, executing query and storing result in Redis\n\tQuery: {query}")
 		cursor = db.aql.execute(query)
 		result = [doc for doc in cursor]
-		logger.debug(f"Query result: {result}")
+		# logger.debug(f"Query result: {result}")
 		try:
 			if len(result) > 0:
 				r.rpush(query_key, *[json.dumps(doc).encode('utf-8') for doc in result])
@@ -318,7 +319,7 @@ def find_docs(collection_name: str, query: dict):
 		return result
 	else:
 		# collection has changed, execute query and store result in Redis
-		logger.debug(f"Key has changed to {redis_key}, executing query and storing result in Redis")
+		# logger.debug(f"Key has changed to {redis_key}, executing query and storing result in Redis")
 		cursor = db.collection(collection_name).find(query)
 		result = [doc for doc in cursor]
 		# logger.debug(f"Query result: {result}")
@@ -329,7 +330,7 @@ def find_docs(collection_name: str, query: dict):
 				r.rpush(redis_key, *[json.dumps(doc).encode('utf-8') for doc in result])
 				return result
 			else:
-				logger.debug(f"No documents found for query: {query}, storing empty result in Redis")
+				# logger.debug(f"No documents found for query: {query}, storing empty result in Redis")
 				r.rpush(redis_key, json.dumps({}).encode('utf-8'))
 				return []
 		except Exception as e:
@@ -506,6 +507,7 @@ def retrieve_hierarchy(location_id):
 class Player(ObjectType):
 	uuid = ID()
 	id = ID()
+	key = ID()
 	name = String()
 	is_gm = Boolean()
 	character = Field(lambda: Character)
@@ -515,7 +517,13 @@ class Player(ObjectType):
 	def _hydrate_player(cls, parent, info):
 		if parent.id is not None:
 			player = get_doc_by_id('Players', parent.id)
+			parent.key = player.get('_key')
 			parent.name = player.get('name')
+
+	def resolve_key(parent, info):
+		if parent.key is None:
+			Player._hydrate_player(parent, info)
+		return parent.key
 
 	def resolve_name(parent, info):
 		if parent.name is None:
@@ -602,12 +610,21 @@ class ActivateEntity(Mutation):
 		# 		db.collection('Relations').delete({ '_id': relation.get('_id') })
 
 		# reduce existing relations
+		player = get_doc_by_id('Players', player_id)
 		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
 		for relation in relations:
 			if relation.get('count') is not None:
-				new_count = relation.get('count') * 0.8
+				multiplier = 0.96 ** len(relations)
+				new_count = relation.get('count') * multiplier
 				relation['count'] = new_count
-				update_doc('Relations', relation)
+				if new_count < 0.1 and player.get('is_gm') is True:
+					# GM's keep switching between perspectives, so it rises out of the pan
+					# 	this keeps the simmer down
+					entity = get_doc_by_id('Entities', relation.get('_to'))
+					logger.debug(f"deleting player's {player_id} relation to {entity.get('name')}, count {new_count}<0.1")
+					db.collection('Relations').delete({ '_id': relation.get('_id') })
+				else:
+					update_doc('Relations', relation)
 
 		# check if agency relation exists
 		logger.info(f"Activating entity {entity_id} for player {player_id}")
@@ -1367,19 +1384,8 @@ class Trait(ObjectType):
 			return parent.statement_examples
 		elif parent.id:
 			Trait._hydrate_trait(parent, info)
-			if parent.name != 'LoRA':
-				examples = find_docs('TraitSettings', {'_to': parent.id})
-				seen = set()
-				result = []
-				for doc in examples:
-					statement = doc.get('statement')
-					if statement:
-						lowered = statement.strip().lower()
-						if lowered not in seen:
-							result.append(statement)
-							seen.add(lowered)
-				return result
-			else:
+
+			if parent.name == 'LoRA':
 				# get all files in the dir and subdirs of app.config['T2I_MODELS_FOLDER']/loras/flux
 				# return them as *subdirs/filename, but without /loras/flux, and without the .safetensors extension
 				files = []
@@ -1388,6 +1394,39 @@ class Trait(ObjectType):
 						if filename.endswith('.safetensors'):
 							files.append(os.path.join(dirpath, filename).replace(os.path.join(app.config['T2I_MODELS_FOLDER'], 'loras/flux/'), '').replace('.safetensors', ''))
 				return files
+			
+			else:
+				examples = find_docs('TraitSettings', {'_to': parent.id})
+				statements = [doc.get('statement') for doc in examples]
+				logger.debug(f"statements: {statements}")
+				# filtering empty
+				statements = [statement for statement in statements if statement and statement.strip() != '']
+				# randomize
+				random.shuffle(statements)
+				# sorting by count
+				statements = [statement for statement, count in Counter(statements).most_common()]
+				logger.debug(f"sorted statements: {statements}")
+				# reverse
+				# statements = statements[::-1]
+				# unique
+				seen = set()
+				result = []
+				for statement in statements:
+					lowered = statement.strip().lower()
+					if lowered not in seen:
+						result.append(statement)
+						seen.add(lowered)
+				return result
+				# seen = set()
+				# result = []
+				# for doc in examples:
+				# 	statement = doc.get('statement')
+				# 	if statement:
+				# 		lowered = statement.strip().lower()
+				# 		if lowered not in seen:
+				# 			result.append(statement)
+				# 			seen.add(lowered)
+				return result
 
 	def resolve_notes(parent, info):
 		if parent.notes:
@@ -2775,11 +2814,11 @@ class Entity(Interface):
 	def resolve_image(parent, info):
 		if not parent.key:
 			Entity._hydrate_entity(parent, info)
-		logger.debug(f"Resolving image: {parent.key}")
+		# logger.debug(f"Resolving image: {parent.key}")
 		
 		location_key = None
 		if not parent.location:
-			logger.debug(f"not parent.location and parent.entity_type = {parent.entity_type}")
+			# logger.debug(f"not parent.location and parent.entity_type = {parent.entity_type}")
 			if parent.entity_type != 'location':
 				location_id = get_doc_by_id('Entities', parent.id).get('location')
 				location = get_doc_by_id('Entities', location_id)
@@ -2795,7 +2834,7 @@ class Entity(Interface):
 					location_key = location_hierarchy[0].get('_key')
 			else: # if location
 				parents = [rel.get('_to') for rel in find_docs('Relations', { '_from': parent.id, 'type': 'super' })]
-				logger.debug(f"not parent.location and parent.entity_type = {parent.entity_type} and parents: {parents}")
+				# logger.debug(f"not parent.location and parent.entity_type = {parent.entity_type} and parents: {parents}")
 				if len(parents) > 0:
 					location_id = parents[0]
 					location = get_doc_by_id('Entities', location_id)
@@ -2806,7 +2845,7 @@ class Entity(Interface):
 					else:
 						location_key = location_hierarchy[0].get('_key')
 		if parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}"):
-			logger.debug(f"Resolving image 2: {parent.key}/{location_key}")
+			# logger.debug(f"Resolving image 2: {parent.key}/{location_key}")
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}")[0]
 			ext = os.path.splitext(old_file)[1]
 			save_image(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{str(location_key)}/{old_file}", parent.key, location_key)
@@ -2816,25 +2855,22 @@ class Entity(Interface):
 			# return f"{str(parent.key)}/{str(location_key)}/original{ext}"
 			return Portrait(path=f"{str(parent.key)}/{str(location_key)}/", size="original", ext=ext)
 		elif parent.entity_type != 'location' and location_key is not None and os.path.isdir(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/{str(location_key)}"):
-			logger.debug(f"Resolving image 3: {parent.key}/{location_key}")
+			# logger.debug(f"Resolving image 3: {parent.key}/{location_key}")
 			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
 				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/{str(location_key)}/original{ext}"):
 					# return f"{str(parent.key)}/{str(location_key)}/original{ext}"
 					return Portrait(path=f"{str(parent.key)}/{str(location_key)}/", size="original", ext=ext)
 		elif os.path.isdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}"):
-			logger.debug(f"Resolving image 4: {parent.key}")
+			# logger.debug(f"Resolving image 4: {parent.key}")
 			old_file = os.listdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}")[0]
-			logger.debug("old_file: ")
-			logger.debug(old_file)
 			ext = os.path.splitext(old_file)[1]
-			# os.rename(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{old_file}", f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/original.jpg")
 			save_image(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{old_file}", parent.key)
 			os.remove(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}/{old_file}")
 			os.rmdir(f"{app.config['IMAGEN_FOLDER']}/{str(parent.key)}")
-			# return f"{str(parent.key)}/original{ext}"
+			logger.info(f"Found image in {old_file}, saved to {app.config['UPLOAD_FOLDER']}/{str(parent.key)}/original{ext}")
 			return Portrait(path=f"{str(parent.key)}/", size="original", ext=ext)
 		else:
-			logger.debug(f"Resolving image 5: {parent.key}")
+			# logger.debug(f"Resolving image 5: {parent.key}")
 			for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
 				if os.path.isfile(f"{app.config['UPLOAD_FOLDER']}/{str(parent.key)}/original{ext}"):
 					# return f"{str(parent.key)}/original{ext}"
@@ -4676,9 +4712,9 @@ def upload_file_location(entity_key, location_key):
 def imagegen(entity_key, force):
 	"""call comfyui API to generate image"""
 	rating_weights = [
-		0.0,
 		0.2,
-		0.5,
+		0.4,
+		0.6,
 		0.9,
 		1.2,
 	]
@@ -4711,6 +4747,7 @@ def imagegen(entity_key, force):
 	lora2_weight = 0.4
 	loras = []
 	genres = []
+	steps = 32
 
 	entity = get_doc_by_id('Entities', 'Entities/' + str(entity_key))
 
@@ -4736,6 +4773,11 @@ def imagegen(entity_key, force):
 		description = entity.get('description')
 		negative = "cgi, 3d, bad quality, watermark, signature, text"
 
+		if entity_type == "character":
+			steps = 48
+		elif entity_type == "faction":
+			steps = 24
+
 		if entity_type in ["character", "npc"]:
 			# prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
 			# negative += ", full body, legs, cropped head"
@@ -4752,7 +4794,7 @@ def imagegen(entity_key, force):
 			width = 1024
 			height = 1024
 		elif entity_type == "location":
-			prompt = f"(location background image, a humanless atmospheric image focusing on { name }:1.2), "
+			prompt = f"(location background image, a humanless atmospheric image focusing on { name }, seen from above:1.2), "
 			negative += ", person"
 		else:
 			prompt = ""
@@ -4808,7 +4850,7 @@ def imagegen(entity_key, force):
 					# negative += f"{', '.join([trait_setting.get('statement'), trait_setting.get('notes')])}"
 					negative += ", " + trait_setting.get('statement') if trait_setting.get('statement') else ""
 					negative += ", " + trait_setting.get('notes') if trait_setting.get('notes') else ""
-				elif trait_setting.get('rating_type') != 'challenge':
+				elif trait_setting.get('rating_type') not in ['resource', 'challenge']:
 					# prompt += f"({', '.join([trait.get('name'),trait_setting.get('statement'),trait_setting.get('notes')])}:{ str(rating_weights[abs(t[3]) - 1]) })"
 					prompt += ", ("
 					# prompt += traitset.get('prompt_prefix') if traitset.get('prompt_prefix') else traitset.get('name') + " "
@@ -4819,8 +4861,12 @@ def imagegen(entity_key, force):
 					prompt += ", (" if trait_setting.get('notes') else ""
 					prompt += trait_setting.get('notes') + ":0.4)" if trait_setting.get('notes') else ""
 					# prompt += ":"
-					prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
-					prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
+					if trait_setting.get('rating') and trait_setting.get('rating_type') == 'static':
+						prompt += ":" + str(rating_weights[abs(trait_setting.get('rating')[0]) - 1])
+					elif trait_setting.get('rating') and trait_setting.get('rating_type') == 'empty':
+						prompt += ":0.4"
+					# prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
+					# prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
 					prompt += ")"
 				# prompt += ", "
 
@@ -4839,8 +4885,8 @@ def imagegen(entity_key, force):
 					trait = get_doc_by_id('Traits', trait_id)
 					if trait.get('name') == 'genre':
 						genres.append(lts.get('statement'))
-					elif trait.get('name') == 'LoRA':
-						loras.append(lts.get('statement'))
+					# elif trait.get('name') == 'LoRA':
+					# 	loras.append(lts.get('statement'))
 					elif trait.get('name') == 'positive imagen':
 						positive_imagen.append(lts.get('statement')) if lts.get('statement') else ""
 						positive_imagen.append(lts.get('notes')) if lts.get('notes') else ""
@@ -4916,7 +4962,9 @@ def imagegen(entity_key, force):
 					prompt = f"({ doc['description'] }), "
 
 				if len(doc.get('zones')) > 1:
-					prompt += f"the different zones in { name } are ((" + ":0.4) and (".join([zone[0] + ", " + zone[1] for zone in doc['zones'][1:]]) + "):0.8), "
+					prompt += f"the different zones in { name } are (("
+					prompt += ":0.4) and (".join([zone[0] + ", " + zone[1] for zone in doc['zones'][1:]])
+					prompt += "):0.8), "
 
 				if len(doc['traits']) > 0:
 					prompt += " with the following traits: "
@@ -4930,41 +4978,82 @@ def imagegen(entity_key, force):
 					prompt += ", ".join(traits)
 
 				if len(doc['hierarchy']) > 1:
+					hierarchy = doc['hierarchy'][1:-1]
+					logger.debug(f"hierarchy: { [h[0] for h in hierarchy] }")
 					multiplier = 0.6
-					location_strength = 1.2
-					for l in doc['hierarchy'][1:]:
-						location_strength = location_strength * multiplier
-						if location_strength >= multiplier:
-							location_name = l[0]
-							location_description = l[1]
-							lts = l[2]
-							for lt in lts:
-								if lt[0].startswith("genre"):
-									genres.append(lt[1])
-								elif lt[0] == "LoRA":
-									loras.append(lt[1])
-								elif lt[0] == "negative imagen":
-									negative += ", " + lt[1]
-								elif lt[0] == "appearance":
-									location_name += ", " + lt[1] if lt[1] else "" # name
-									location_name += ", " + lt[2] if lt[2] else "" # statement
-									location_name += ", " + lt[3] if lt[3] else "" # notes
-							prompt += " (" + location_name
-							# prompt += ", " + location_description
+
+					def recursive_location_prompt(_hierarchy, strength=1.0):
+						"""
+						Recursively build a nested prompt for the location hierarchy.
+						"""
+						sub_prompt = ""
+						if len(_hierarchy) > 1:
+							# logger.debug(f"hierarchy: { _hierarchy[0] }")
+							sub_prompt += f" in ({_hierarchy[0][0]}"
+							# sub_prompt += f" {_hierarchy[0][2]}" if _hierarchy[0][2] else ""
+							if len(hierarchy_traits := _hierarchy[0][2]) > 0:
+								# logger.debug(f"hierarchy_traits: { hierarchy_traits }")
+								appearance_trait = [t for t in hierarchy_traits if t[0] == 'appearance']
+								if len(appearance_trait) > 0:
+									sub_prompt += f", {appearance_trait[0][2] if appearance_trait[0][2] else ''}"
+							sub_prompt += recursive_location_prompt(_hierarchy[1:], strength*multiplier)
+							sub_prompt += f":{str(strength*multiplier)})"
+							return sub_prompt
+							# return f"({hierarchy[0][0]}, {hierarchy[0][1]} {recursive_location_prompt(hierarchy[1:], strength*multiplier)}:{str(strength*multiplier)})"
 						else:
-							lts = l[2]
-							for lt in lts:
-								if lt[0].startswith("genre"):
-									genres.append(lt[1])
-					location_strength = 1.2
-					strengths = []
-					for l in doc['hierarchy'][1:]:
-						location_strength = location_strength * multiplier
-						if location_strength >= multiplier:
-							strengths.append(location_strength)
-					strengths.reverse()
-					for i in range(len(strengths)):
-						prompt += ":" + str(strengths[i]) + "), "
+							return f" in ({_hierarchy[0][0]}:{str(strength*multiplier)})"
+					
+					prompt += f", located{recursive_location_prompt(hierarchy, 1.0)}"
+
+					# location_strength = 1.2
+					# for l in hierarchy:
+					# 	location_strength = location_strength * multiplier
+					# 	logger.debug(f"location_strength: { location_strength }")
+					# 	# if location_strength >= multiplier:
+					# 	location_name = l[0]
+					# 	logger.debug(f"location: { l }")
+					# 	location_description = l[1]
+					# 	lts = l[2]
+					# 	for lt in lts:
+					# 		# if lt[0].startswith("genre"):
+					# 		# 	genres.append(lt[1])
+					# 		# elif lt[0].startswith("LoRA"):
+					# 		# 	loras.append(lt[1])
+					# 		# elif lt[0] == "negative imagen":
+					# 		# 	negative += ", " + lt[1] if lt[1] else ""
+					# 		# 	negative += ", " + lt[2] if lt[2] else ""
+					# 		if lt[0] == "appearance":
+					# 			location_name += ", " + lt[0] if lt[0] else "" # name
+					# 			location_name += ", " + lt[1] if lt[1] else "" # statement
+					# 			location_name += ", " + lt[2] if lt[2] else "" # notes
+					# 	prompt += " (" + location_name
+					# 	# prompt += ", " + location_description
+					# location_strength = 1.2
+					# strengths = []
+					# for l in hierarchy:
+					# 	location_strength = location_strength * multiplier
+					# 	if location_strength >= multiplier:
+					# 		strengths.append(location_strength)
+					# strengths.reverse()
+					# for i in range(len(strengths)):
+					# 	prompt += ":" + str(strengths[i]) + "), "
+					
+					# enrich prompt with system traits
+					for l in hierarchy:
+						# logger.debug(f"l: { l }")
+						lts = l[2]
+						for lt in lts:
+							# logger.debug(f"lt: { lt }")
+							if lt[0].startswith("genre"):
+								genres.append(lt[1])
+							elif lt[0].startswith("LoRA"):
+								loras.append(lt[1])
+							elif lt[0] == "positive imagen":
+								prompt += ", " + lt[1] if lt[1] else ""
+								prompt += ", " + lt[2] if lt[2] else ""
+							elif lt[0] == "negative imagen":
+								negative += ", " + lt[1] if lt[1] else ""
+								negative += ", " + lt[2] if lt[2] else ""
 
 		# faction
 		elif entity_type == "faction":
@@ -5009,16 +5098,21 @@ def imagegen(entity_key, force):
 				if len(doc.get('traits')) > 0:
 					prompt += "with the following traits: "
 					for t in doc.get('traits'):
-						if t[0] == "appearance":
-							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}{t[2] if t[2] else ''}:1.4), ")
-						elif t[0] == "LoRA":
-							loras.append(t[1])
-						elif t[0] == "genre":
-							genres.append(t[1])
-						elif t[0] == "negative imagen":
-							negative += ", " + t[1]
-						elif t[2]:
-							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}:{ str(rating_weights[abs(t[2]) - 1]) }), ")
+						name = t[0]
+						statement = t[1]
+						notes = t[2]
+						rating = t[3]
+						if name == "appearance":
+							traits.append(f"({name}{' is ' + statement if statement else ''}{notes if notes else ''}:1.4), ")
+						elif name == "LoRA":
+							loras.append(statement)
+						elif name == "genre":
+							genres.append(statement)
+						elif name == "negative imagen":
+							negative += ", " + statement if statement else ""
+							negative += ", " + notes if notes else ""
+						else:
+							traits.append(f"({name}{' is ' + statement if statement else ''}{notes if notes else ''}:{ str(rating_weights[abs(rating) - 1]) })")
 					prompt += ", ".join(traits)
 
 				if len(doc.get('genres')) > 0:
@@ -5060,7 +5154,7 @@ def imagegen(entity_key, force):
 		
 		negative += ", watermark, signature"
 		
-		logger.info(f"generating image\nentity: {entity_key}\nlocation: {location_key}\nlora 1: {lora1}\nweight 1: {lora1_weight}\nlora 2: {lora2}\nweight 2: {lora2_weight}\nprompt: {prompt}\nnegative: {negative}")
+		logger.info(f"generating image\nentity: {entity_key}\nlocation: {location_key}\nsteps: {steps}\nwidth: {width}\nheight: {height}\nlora 1: {lora1}\nweight 1: {lora1_weight}\nlora 2: {lora2}\nweight 2: {lora2_weight}\nprompt: {prompt}\nnegative: {negative}")
 		generate_image(
 			prompt,
 			negative,
@@ -5071,7 +5165,8 @@ def imagegen(entity_key, force):
 			lora2 = lora2,
 			lora2_weight = lora2_weight,
 			width = width,
-			height = height
+			height = height,
+			steps = steps
 		)
 		entity['imagening'] = True
 		entity['imagened'] = False
