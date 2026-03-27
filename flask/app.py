@@ -2194,19 +2194,30 @@ class Traitset(ObjectType):
 		elif 'relation' in parent.entity_types:
 			query = f"""FOR relation IN Relations
 				FILTER relation._from == '{ info.context.get('entity_id') }'
+				OR relation._to == '{ info.context.get('entity_id') }'
 			FOR traitsettings IN TraitSettings
 				FILTER traitsettings._from == relation._id
 			FOR trait IN Traits
 				FILTER traitsettings._to == trait._id
 				FILTER trait.traitset == '{ parent.id }'
 			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
-			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
-			cursor = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
-			# cursor = db.aql.execute(query)
+			RETURN {{ trait: trait, setting: traitsettings }}"""
+			traits = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
+			# remove the traits from others to this entity, if setting.hidden == true and not in setting.known_to
+			for trait in traits:
+				if trait['setting'].get('hidden'):
+					if trait['setting'].get('known_to') is None:
+						traits.remove(trait)
+					elif info.context.get('entity_id') not in trait['setting'].get('known_to'):
+						traits.remove(trait)
 			return [Trait(
-				id=doc['id'],
-				trait_setting_id=doc['setting']
-			) for doc in cursor]
+				id=trait.get('trait').get('_id'),
+				trait_setting_id=trait.get('setting').get('_id')
+			) for trait in traits]
+			# return [Trait(
+			# 	id=doc['id'],
+			# 	trait_setting_id=doc['setting']
+			# ) for doc in cursor]
 
 		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Entities/'):
 			# logger.debug(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")

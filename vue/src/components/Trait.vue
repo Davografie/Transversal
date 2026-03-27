@@ -138,14 +138,23 @@
 	// PLAYING
 	function click_trait() {
 		// flip through view modes
-		if (mode.value == view_modes.Neutral) {
-			mode.value = view_modes.Viewing
-		}
-		else if (mode.value == view_modes.Viewing) {
+		// if (mode.value == view_modes.Neutral) {
+		// 	mode.value = view_modes.Viewing
+		// }
+		// else 
+		if (mode.value == view_modes.Viewing) {
 			mode.value = view_modes.Small
 		}
-		else if (mode.value == view_modes.Small) {
+		// else if (mode.value == view_modes.Small) {
+		else {
 			mode.value = view_modes.Viewing
+			if(
+				player.is_gm
+				|| trait.value.traitSetting?.fromEntity?.id == player.the_entity?.id
+				|| props.entity_id?.startsWith('Relations/')
+			) {
+				can_edit.value = true
+			}
 			emit('show_trait', trait.value)
 		}
 	}
@@ -460,6 +469,8 @@
 	const new_locationsDisabled: Ref<string[]> = ref(trait.value.traitSetting?.locationsDisabled ?? [])
 	const new_trait_id: Ref<string|undefined> = ref()
 
+	const can_edit = ref<boolean>(false)
+
 	function switch_to_editing() {
 		reset_temporary_attributes()
 		if(props.location_key) set_location_key(props.location_key)
@@ -484,13 +495,12 @@
 		add_subtraits.value = false
 		show_sfxs.value = false
 		mode.value = view_modes.Editing
-		if(
-			player.is_gm
-			|| props.entity_id == player.player_character.id
-			|| props.entity_id?.startsWith('Relations/')
-		) {
-			can_edit.value = true
-		}
+		// if(
+		// 	trait.value.traitSetting?.fromEntity?.id != props.entity_id
+		// ) {
+		// 	// this is for relationship traits that come from other entities
+		// 	can_edit.value = false
+		// }
 	}
 
 	const editing_trait_id = ref(false)
@@ -499,8 +509,6 @@
 		console.log("changing trait to: ", _trait)
 		new_trait_id.value = _trait.id
 	}
-
-	const can_edit = ref<boolean>(false)
 
 	function reset_temporary_attributes() {
 		new_ratingType.value = trait.value?.ratingType ?? 'empty'
@@ -1106,8 +1114,12 @@
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
 						<span class="name">
 							<span class="trait-inherited" v-if="inherited && player.is_gm">· </span>
-							<span class="trait-name-label trait-to" v-if="trait.traitSetting?.toEntity?.name">
+							<span class="trait-name-label trait-to" v-if="trait.traitSetting?.toEntity?.name && trait.traitSetting.toEntity.id != entity?.id">
 								{{ trait.traitSetting?.toEntity?.name + ' ' }}
+							</span>
+							<span class="trait-name-label trait-from"
+									v-if="trait.traitSetting?.fromEntity?.name && trait.traitSetting.fromEntity.id != entity?.id && trait.traitSetting?.toEntity?.id == entity?.id">
+								{{ trait.traitSetting?.fromEntity?.name }}'s
 							</span>
 							<span class="trait-name-label">
 								{{ trait.name }}
@@ -1399,7 +1411,7 @@
 				
 				<div type="button" class="button-mnml edit-button"
 						@click.stop="switch_to_editing"
-						v-if="mode == view_modes.Viewing">
+						v-if="mode == view_modes.Viewing && can_edit">
 					<div class="icon">✎</div>
 					<div class="label" v-if="!player.small_buttons">edit trait</div>
 					<!-- {{ player.small_buttons ? '✎' : '✎ edit trait' }} -->
