@@ -4973,6 +4973,10 @@ def imagegen(entity_key, force):
 							traits.append(f"({(t[1] if t[1] else '') + (', ' if t[1] and t[3] else '') + (t[3] if t[3] else '')}:1.4)")
 						elif t[0] == "negative imagen":
 							negative += ", " + t[1]
+						elif t[0].startswith("LoRA"):
+							loras.append(t[1])
+						elif t[0] == "genre":
+							genres.append(t[1])
 						else:
 							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}{' ' + t[3] if t[3] else ''}{':' + str(rating_weights[abs(t[2]) - 1]) if t[2] and t[4] != 'empty' else ''})")
 					prompt += ", ".join(traits)
@@ -5124,9 +5128,17 @@ def imagegen(entity_key, force):
 
 		prompt = "".join(prompt.splitlines())
 
-		loras = list(set(loras))
-		loras.reverse()
-		genres = list(set(genres))
+		# remove duplicates from loras while retaining order
+		logger.debug(f"loras 1: { loras }")
+		seen = set()
+		loras = [x for x in loras if not (x in seen or seen.add(x))]
+		logger.debug(f"loras 2: { loras }")
+		# loras.reverse()
+		# logger.debug(f"loras 3: { loras }")
+		# same for genres
+		seen = set()
+		genres = [x for x in genres if not (x in seen or seen.add(x))]
+		genres.reverse()
 		if len(loras) > 0:
 			lora1 = loras[0]
 			lora1_weight = 0.8
