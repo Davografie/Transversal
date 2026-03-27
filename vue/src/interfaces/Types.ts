@@ -31,6 +31,7 @@ export interface Dicepool {
 export interface Player {
     uuid?: string
     id?: string
+    key?: string
     name: string
     activeCharacter?: Entity
     entities?: Entity[]
