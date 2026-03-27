@@ -340,9 +340,11 @@ def generate_image(
 		lora2="setting/ChineseWuXia",
 		lora2_weight=0.0,
 		width=1024,
-		height=1024
+		height=1024,
+		steps=48
 	):
 	prompt = json.loads(prompt_text)
+	prompt["4"]["inputs"]["steps"] = steps
 	prompt["16"]["inputs"]["width"] = width
 	prompt["16"]["inputs"]["height"] = height
 	prompt["54"]["inputs"]["text"] = description
