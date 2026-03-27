@@ -3,7 +3,8 @@ import { provideApolloClient, useMutation } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
 
 import { ref, computed, inject } from 'vue'
-import type { Entity, EntityInput, Location, Relation } from '@/interfaces/Types'
+import { useRating } from '@/composables/Rating'
+import type { Entity, EntityInput, Location, Relation, Trait, Traitset } from '@/interfaces/Types'
 
 import { useFetch } from '@vueuse/core'
 
@@ -241,6 +242,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 						traitSettingId
 						name
 						rating
+						ratingType
 						inheritable
 						subTraits {
 							traitSettingId
@@ -273,9 +275,32 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				variables: { entityId: entity_id },
 				fetchPolicy: 'network-only'
 			}).then((result) => {
+				let traitsets: Traitset[] = []
+				result.data.entities[0].traitsets.forEach((ts: Traitset) => {
+					let traits: Trait[] = []
+					ts.traits?.forEach((t: Trait) => {
+						const rating = useRating().convert_rating_to_dice(
+							t.rating,
+							t.ratingType,
+							t.id,
+							t.traitSettingId,
+							ts.id,
+							entity_id
+						)
+						traits.push({
+							...t,
+							"rating": rating
+						})
+					})
+					traitsets.push({
+						...ts,
+						"traits": traits
+					})
+				})
 				entity.value = {
 					...entity.value,
-					...result.data.entities[0]
+					...result.data.entities[0],
+					"traitsets": traitsets
 				}
 			}).catch((error) => {
 				console.error("error retrieving entity: ", entity_id, "error: ", error)
