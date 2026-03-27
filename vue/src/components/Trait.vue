@@ -633,7 +633,8 @@
 	const show_statement_examples = ref(false)
 	async function display_statement_examples() {
 		let temp = await retrieve_statement_examples()
-		statement_examples.value = _.clone(temp).sort(() => 0.5 - Math.random())
+		statement_examples.value = temp
+		// statement_examples.value = _.clone(temp).sort(() => 0.5 - Math.random())
 		show_statement_examples.value = true
 	}
 
@@ -1147,10 +1148,12 @@
 								{{ new_statement ? new_statement.split(/\s+/).length + '/7' : '' }}
 							</span>
 							<div class="statement-examples">
-								<input type="button" class="button-mnml statement-example"
-									:value="example"
-									v-for="example in statement_examples.filter((x) => x.toLowerCase().includes(new_statement.toLocaleLowerCase())).slice(0, 3)"
-									@click.stop="new_statement = example">
+								<div class="statement-examples-list">
+									<input type="button" class="button-mnml statement-example"
+										:value="example"
+										v-for="example in statement_examples.filter((x) => x.toLowerCase().includes(new_statement.toLocaleLowerCase())).slice(0, 12)"
+										@click.stop="new_statement = example">
+								</div>
 								<input type="button" class="button"
 									:value="player.small_buttons ? '💡' : '💡' + (new_statement ? ' auto-complete' : ' examples')"
 									v-if="!new_statement || statement_examples.filter((x) => x.toLowerCase().includes(new_statement.toLocaleLowerCase())).length > 0"
@@ -1388,7 +1391,7 @@
 						mode == view_modes.Editing">
 				<div type="button" class="button-mnml play-button"
 						@click.stop="play_trait"
-						v-if="mode == view_modes.Viewing">
+						v-if="mode == view_modes.Viewing && trait.ratingType != 'empty' && (trait.rating?.length ?? 0) > 0">
 					<div class="icon">▶</div>
 					<div class="label" v-if="!player.small_buttons">play trait</div>
 					<!-- {{ player.small_buttons ? '▶' : '▶ play trait' }} -->
@@ -1749,15 +1752,25 @@
 					}
 				}
 				.statement-examples {
-					display: flex;
+					/* display: flex;
 					flex-direction: column;
 					align-items: flex-start;
 					max-width: fit-content;
-					width: 80%;
-					.statement-example {
-						padding: .4em 0;
-						border: 1px solid var(--color-border);
-						text-align: left;
+					width: 80%; */
+					.statement-examples-list {
+						display: flex;
+						flex-wrap: wrap;
+						gap: .4em;
+						.statement-example {
+							padding: .4em 1em;
+							border: 1px solid var(--color-border);
+							flex-grow: 1;
+							&:hover {
+								background-color: var(--color-highlight);
+								color: var(--color-highlight-text);
+								flex-grow: 2;
+							}
+						}
 					}
 				}
 			}
