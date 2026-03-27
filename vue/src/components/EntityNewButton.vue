@@ -131,6 +131,10 @@
 					align-items: center;
 					justify-content: space-around;
 					gap: 1em;
+					.archetype-option {
+						display: flex;
+						gap: .4em;
+					}
 				}
 				.entity-name {
 					width: 100%;

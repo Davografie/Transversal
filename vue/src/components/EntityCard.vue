@@ -396,7 +396,6 @@ div.active-npc {
 	.archetypes {
 		display: flex;
 		justify-content: space-evenly;
-		color: var(--color-gm);
 		gap: .4em;
 		flex-wrap: wrap;
 		padding: .4em;
@@ -422,12 +421,18 @@ div.active-npc {
 		img {
 			border-radius: 30px 30px 0 0;
 		}
+		.archetype{
+			color: var(--color-gm-light);
+		}
 	}
 }
 .light {
 	div.active-npc {
 		background-color: var(--color-background);
 		border: 4px double var(--color-border);
+		.archetype {
+			color: var(--color-gm);
+		}
 	}
 }
 </style>
