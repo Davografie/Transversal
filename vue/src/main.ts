@@ -65,6 +65,7 @@ const app = createApp({
 
 app.provide('apolloClient', apolloClient)
 app.provide('API_URL', 'http://' + ip_address + ':5000/')
+app.provide('API_WS', 'ws://' + ip_address + ':8000/')
 app.provide('DIE_RATINGS', ['d4', 'd6', 'd8', 'd10', 'd12'])
 app.provide('MEDIA_FOLDER', '/assets/uploads/')
 const pinia = createPinia()
@@ -81,7 +82,6 @@ app.use<Vue3TouchEventsOptions>(Vue3TouchEvents, {
 })
 
 import VueSortable from 'vue3-sortablejs'
-import process from 'process'
 
 app.use(VueSortable)
 

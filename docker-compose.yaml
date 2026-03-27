@@ -64,6 +64,18 @@ services:
       - 5000
     entrypoint: python
     command: app.py
+  fastapi:
+    build: ./fastapi
+    image: tv_fastapi
+    container_name: tv_fastapi
+    volumes:
+      - "./fastapi:/app/:ro"
+    networks:
+      - network_tv
+    ports:
+      - 8000:8000
+    expose:
+      - 8000
   vue:
     build: ./vue
     image: tv_vue

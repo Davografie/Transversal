@@ -151,61 +151,72 @@ export function useDicepool(_polling: boolean = false) {
 		}
 	}
 
+	function roll_swade() {
+		if(playerStore.the_entity?.entityType == 'character' && dicepool.dice.length == 1) {
+			// add wild die
+			const { die, tag, change_type } = useDie(_.clone(dicepool.dice[0]), undefined, 2)
+			tag()
+			change_type(2)
+			add_die(die.value)
+		}
+		dicepool.dice.forEach(d => {
+			const { roll: rollSwade } = useDie(d, undefined)
+			rollSwade(false)
+			// raises (result/raises):
+			// < 5: 0
+			// 5-8: 1
+			// 9-12: 2
+			// d.raises = d.result < 5 ? 0 : d.result < 9 ? 1 : 2
+			d.raises = Math.ceil(((d.result ?? 3) - 3) / 3)
+			d.isResultDie = true
+			d.isResolved = true
+		})
+		dicepool.dice.sort((d1: Die, d2: Die) => d2.result - d1.result)
+		dicepool.phase = dicepool.phases.SWADE_RESULT
+	}
+
+	function roll_cortex() {
+		// set intermediate phase while rolling
+		dicepool.phase = dicepool.phases.ROLLING
+
+		dicepool.dice.forEach(d => {
+			const { die, roll } = useDie(d, undefined, undefined)
+			roll()
+			d.result = die.value.result
+		})
+
+		// if multiple resource dice, disable all except for highest result
+		if(dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch).length > 1) {
+			dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch)
+				.map(d => d.traitsettingId)
+				.forEach((tsId) => {
+					dicepool.dice.filter(d => d.traitsettingId == tsId)
+						.sort((d1: Die, d2: Die) => d2.result - d1.result)
+						.slice(1)
+						.forEach(d => d.disabled = true)
+				})
+			// dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch)
+			// 	.sort((d1: Die, d2: Die) => d2.result - d1.result)
+			// 	.slice(1)
+			// 	.forEach(d => d.disabled = true)
+		}
+		// non-disabled resource dice should be inResult
+		dicepool.dice.filter(d => d.ratingType == 'resource' && !d.disabled && !d.isHitch).forEach(d => d.isResultDie = true)
+
+		// set next phase after rolling finished
+		dicepool.phase = dicepool.phases.RESULT
+	}
+
 	/**
 	 * Rolls all dice in the dicepool
 	 */
 	function roll() {
-		// swade roll
 		if(dicepool.dice.length <= 2) {
-			if(playerStore.the_entity?.entityType == 'character' && dicepool.dice.length == 1) {
-				// add wild die
-				const { die, tag, change_type } = useDie(_.clone(dicepool.dice[0]), undefined, 2)
-				tag()
-				change_type(2)
-				add_die(die.value)
-			}
-			dicepool.dice.forEach(d => {
-				const { roll: rollSwade } = useDie(d, undefined)
-				rollSwade(false)
-				d.raises = Math.ceil(((d.result ?? 3) - 3) / 3)
-				d.isResultDie = true
-				d.isResolved = true
-			})
-			dicepool.dice.sort((d1: Die, d2: Die) => d2.result - d1.result)
-			dicepool.phase = dicepool.phases.SWADE_RESULT
+			roll_swade()
 		}
 
-		// cortex roll
 		else if(dicepool.dice.length > 1) {
-			// set intermediate phase while rolling
-			dicepool.phase = dicepool.phases.ROLLING
-
-			dicepool.dice.forEach(d => {
-				const { die, roll } = useDie(d, undefined, undefined)
-				roll()
-				d.result = die.value.result
-			})
-
-			// if multiple resource dice, disable all except for highest result
-			if(dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch).length > 1) {
-				dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch)
-					.map(d => d.traitsettingId)
-					.forEach((tsId) => {
-						dicepool.dice.filter(d => d.traitsettingId == tsId)
-							.sort((d1: Die, d2: Die) => d2.result - d1.result)
-							.slice(1)
-							.forEach(d => d.disabled = true)
-					})
-				// dicepool.dice.filter(d => d.ratingType == 'resource' && !d.isHitch)
-				// 	.sort((d1: Die, d2: Die) => d2.result - d1.result)
-				// 	.slice(1)
-				// 	.forEach(d => d.disabled = true)
-			}
-			// non-disabled resource dice should be inResult
-			dicepool.dice.filter(d => d.ratingType == 'resource' && !d.disabled && !d.isHitch).forEach(d => d.isResultDie = true)
-
-			// set next phase after rolling finished
-			dicepool.phase = dicepool.phases.RESULT
+			roll_cortex()
 		}
 	}
 
