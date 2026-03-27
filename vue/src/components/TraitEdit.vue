@@ -306,8 +306,8 @@
 
 	const deleting = ref(false)
 
-	function confirm_delete_trait() {
-		delete_trait()
+	async function confirm_delete_trait() {
+		await delete_trait()
 		emit('refetch_traits')
 	}
 

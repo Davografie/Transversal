@@ -93,7 +93,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function retrieve_potential_traits(caching: FetchPolicy = 'cache-first') {
+	async function retrieve_potential_traits(caching: FetchPolicy = 'cache-first') {
 		if(apolloClient) {
 			const query_get_potential_entity_traits_for_traitset = gql`
 			query PotentialTraits($traitsetId: ID, $potentialOnly: Boolean, $entityId: ID) {
@@ -114,7 +114,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 				"entityId": entity_id
 			}
 
-			apolloClient.query({
+			await apolloClient.query({
 				query: query_get_potential_entity_traits_for_traitset,
 				variables: args,
 				fetchPolicy: caching

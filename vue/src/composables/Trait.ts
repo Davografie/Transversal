@@ -912,19 +912,29 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function delete_trait() {
+	async function delete_trait() {
 		if(apolloClient && trait_id.value) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
-				mutation DeleteTrait($traitId: ID!) {
+			await apolloClient.mutate({
+				mutation: gql`mutation DeleteTrait($traitId: ID!) {
 					deleteTrait(traitId: $traitId) {
 						success
 					}
-				}`
-			))
-			let variables: object = {
-				traitId: trait_id.value
-			}
-			mutate(variables)
+				}`,
+				variables: {
+					traitId: trait_id.value
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
+			// 	mutation DeleteTrait($traitId: ID!) {
+			// 		deleteTrait(traitId: $traitId) {
+			// 			success
+			// 		}
+			// 	}`
+			// ))
+			// let variables: object = {
+			// 	traitId: trait_id.value
+			// }
+			// mutate(variables)
 		}
 	}
 

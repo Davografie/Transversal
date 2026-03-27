@@ -146,7 +146,7 @@
 			mode.value = view_modes.Small
 		}
 		// else if (mode.value == view_modes.Small) {
-		else {
+		else if (mode.value != view_modes.Editing) {
 			mode.value = view_modes.Viewing
 			if(
 				player.is_gm
@@ -1155,7 +1155,8 @@
 								v-model="new_statement"
 								placeholder="statement"
 								@input="!show_statement_examples ? display_statement_examples() : undefined"
-								@contextmenu="(e) => e.stopPropagation()" />
+								@contextmenu="(e) => e.stopPropagation()"
+								@click.stop />
 							<span class="statement-length" :class="{ 'exceeded': new_statement && new_statement.split(/\s+/).length > 7}">
 								{{ new_statement ? new_statement.split(/\s+/).length + '/7' : '' }}
 							</span>

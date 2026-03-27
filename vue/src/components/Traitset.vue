@@ -230,11 +230,12 @@
 
 	const show_unavailable_traits = ref(false)
 
-	function add_trait() {
+	async function add_trait() {
 		console.log('adding trait: ' + trait_search.value)
-		create_trait(trait_search.value)
+		await create_trait(trait_search.value)
+		retrieve_potential_traits('network-only')
 		// trait_search.value = ""
-		setTimeout(() => retrieve_potential_traits(), 200)
+		// setTimeout(() => retrieve_potential_traits(), 200)
 	}
 
 	const dice_in_dicepool = computed(() => {
@@ -411,7 +412,7 @@
 		return traits.value.filter(t => (
 			traitset.value.duplicates ?
 				true :
-				!traitset.value.traits.map(x => x.id).includes(t.id)
+				!traitset.value.traits?.map(x => x.id).includes(t.id)
 			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
 	})
 	const search_potential_traits_visible = ref(false)
