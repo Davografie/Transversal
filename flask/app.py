@@ -3913,6 +3913,7 @@ class Relation(ObjectType):
 	to_entity = Field(lambda: Entity)
 	traitsets = List(lambda: Traitset)
 	favorite = Boolean()
+	entanglement = Int()
 
 	def resolve_from_entity(parent, info):
 		entity_id = get_doc_by_id('Relations', parent.id).get('_from')
@@ -3967,6 +3968,22 @@ class Relation(ObjectType):
 
 	def resolve_favorite(parent, info):
 		return get_doc_by_id('Relations', parent.id).get('favorite')
+
+	def resolve_entanglement(parent, info):
+		"""
+		Returns a measure of entanglement, calculated by summing all trait ratings
+		"""
+		logger.debug(f"Trait.resolve_entanglement:\ttrait: '{ parent.id }'")
+		traits = find_docs('TraitSettings', {'_from': parent.id})
+		# ratings are lists like [-1, 2, 3], so they need to be put absolute first
+		result = 0
+		for t in traits:
+			logger.debug(f"Trait.resolve_entanglement:\ttrait: { t }")
+			for r in t.get('rating') or [0]:
+				logger.debug(f"Trait.resolve_entanglement:\trating: { r }")
+				result += abs(r)
+		return result
+			
 
 class CreateRelation(Mutation):
 	class Arguments:

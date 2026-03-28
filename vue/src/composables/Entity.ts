@@ -221,6 +221,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 						id
 						entityType
 					}
+					entanglement
 				}
 				knownTo {
 					id

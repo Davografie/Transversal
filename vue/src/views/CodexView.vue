@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, watch, onMounted } from 'vue'
+	import { ref, computed, watch, onMounted } from 'vue'
 	import { templateRef, useScroll } from '@vueuse/core'
 
 	import { usePlayerStore } from '@/stores/PlayerStore'
@@ -113,6 +113,20 @@
 			emit('show_entity', relation.fromEntity.id)
 		}
 	}
+
+	const outgoing_relations = computed(() => {
+		return player.the_entity?.relations?.filter(r => {
+			return player.the_entity?.id != r.toEntity?.id && !entities.value.map(e => e.id).includes(r.toEntity?.id)
+		}).sort((r1, r2) => {
+			return r2.entanglement - r1.entanglement
+		})
+	})
+	const incoming_relations = computed(() => {
+		return player.the_entity?.relations?.filter(r => player.the_entity?.id != r.fromEntity?.id && !entities.value.map(e => e.id).includes(r.fromEntity?.id))
+	})
+	const favorite_non_characters = computed(() => {
+		return entities.value.filter(e => e.favorite && e.entityType != 'character')
+	})
 </script>
 
 <template>
@@ -160,7 +174,7 @@
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="(player.the_entity?.relations?.length ?? 0) > 0">
 						<!-- outgoing relations -->
 						<template v-if="!show_players"
-								v-for="(relation, index) in player.the_entity?.relations?.filter(r => player.the_entity?.id != r.toEntity?.id && !entities.map(e => e.id).includes(r.toEntity?.id)) ?? []" :key="relation.id">
+								v-for="(relation, index) in outgoing_relations" :key="relation.id">
 							<EntityButton
 								class="entity-card"
 								:entity_id="relation.toEntity.id"
@@ -173,7 +187,7 @@
 						</template>
 						<!-- incoming relations -->
 						<template v-if="!show_players && player.is_gm"
-								v-for="(relation, index) in player.the_entity?.relations?.filter(r => player.the_entity?.id != r.fromEntity.id && !entities.map(e => e.id).includes(r.fromEntity?.id)) ?? []" :key="relation.id">
+								v-for="(relation, index) in incoming_relations" :key="relation.id">
 							<EntityButton
 								class="entity-card"
 								:entity_id="relation.fromEntity.id"
@@ -184,7 +198,7 @@
 								@click_entity="click_relation(relation)" />
 						</template>
 						<!-- favorite non-characters -->
-						<template v-if="show_players" v-for="(character, index) in entities.filter(e => e.favorite && e.entityType != 'character')" :key="character.id">
+						<template v-if="show_players" v-for="(character, index) in favorite_non_characters" :key="character.id">
 							<EntityButton
 								class="entity-card"
 								:entity_id="character.id"

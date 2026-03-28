@@ -68,6 +68,19 @@
 		set_location_key,
 		make_transversable
 	} = useLocation(undefined, entity.value.key)
+	
+	import useClipboard from 'vue-clipboard3'
+	const { toClipboard } = useClipboard()
+	const copied = ref(false)
+	const copy_id = async () => {
+		try {
+			await toClipboard(relation.value.id)
+			copied.value = true
+			setTimeout(() => copied.value = false, 1000)
+		} catch (e) {
+			console.error(e)
+		}
+	}
 
 
 	// check to see if the entity of this card can be added as a relation
@@ -237,6 +250,13 @@
 				<span class="button-mnml icon">✖</span>
 			</div>
 			<div class="buttons">
+				<div class="button-mnml copy-relation-id-button"
+						@click.stop="copy_id"
+						v-if="player.is_gm && relation?.id">
+					<span class="icon">📋</span>
+					<span class="label" v-if="!copied">{{ player.small_buttons ? '' : 'copy relation id'}}</span>
+					<span class="label" v-else>{{ player.small_buttons ? '' : 'copied!'}}</span>
+				</div>
 				<div class="button-mnml entity-type-icon"
 						@click.stop="switch_perspective(entity.id)"
 						v-if="player.is_gm && player.the_entity?.id != entity.id">

@@ -184,6 +184,7 @@ export interface Relation {
     toEntity: Entity
     traitsets?: Traitset[]
     favorite?: boolean
+    entanglement?: number
 }
 
 export interface Image {
