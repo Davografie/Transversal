@@ -1021,6 +1021,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				{ 'clickable': mode != view_modes.Editing },
 				{ 'inherited': (trait.traitSetting?.inherited || inherited) ?? false },
 				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm && [view_modes.Small, view_modes.Neutral].includes(mode) },
+				{ 'with-image': trait.traitSetting?.fromEntity && trait.traitSetting?.toEntity && !props.entity_id?.startsWith('Relations/') }
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
@@ -1959,13 +1960,15 @@ import ToggleButton from './UI/ToggleButton.vue'
 				}
 			}
 			.explanation {
-				box-shadow: inset 0 0 10px var(--color-border);
-				padding: 1em;
+				/* box-shadow: inset 0 0 10px var(--color-border); */
+				padding: .4em .8em;
 				width: 80%;
-				text-align: center;
-				background-color: var(--color-border);
+				/* text-align: center; */
+				/* background-color: var(--color-background-soft); */
+				border-left: 5px solid var(--color-background-mute);
+				background-image: linear-gradient(to right, var(--color-border) 0%, transparent 50%);
 				color: var(--color-disabled);
-				margin: .4em 10%;
+				margin: .4em 2em;
 				font-style: italic;
 			}
 			.notes {
@@ -2239,6 +2242,16 @@ import ToggleButton from './UI/ToggleButton.vue'
 				.trait-inner {
 					box-shadow: inset 0 0 20px var(--color-disabled);
 					/* padding: 10px; */
+				}
+			}
+			&.with-image{
+				.trait-text {
+					padding-left: 20px;
+					font-size: .8em;
+				}
+				.sfxs {
+					/* padding-left: 50px; */
+					background-color: var(--color-background-mute);
 				}
 			}
 		}
