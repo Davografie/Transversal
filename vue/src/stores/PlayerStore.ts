@@ -252,6 +252,11 @@ export const usePlayerStore = defineStore(
 				set_perspective(perspective_id.value)
 				// retrieve_perspective()
 			}
+			if(player_character_id.value) {
+				console.log("retrieving character " + player_character_id.value)
+				set_character_id(player_character_id.value)
+				retrieve_character()
+			}
 		})
 
 		return {
