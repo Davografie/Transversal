@@ -21,7 +21,7 @@
 	import SubTrait from '@/components/SubTrait.vue'
 	import EntityButton from './EntityButton.vue'
 
-	import { usePlayerStore } from '@/stores/PlayerStore'
+	import { input_methods, usePlayerStore } from '@/stores/PlayerStore'
 	
 	import { useTrait, view_modes } from '@/composables/Trait'
 	import { die_constants, useDie } from '@/composables/Die'
@@ -988,6 +988,18 @@ import ToggleButton from './UI/ToggleButton.vue'
 			return trait.value.explanation
 		}
 	})
+
+	function toggle_hover() {
+		if(player.input_method != input_methods.kbm) {
+			return
+		}
+		if(mode.value == view_modes.Small) {
+			mode.value = view_modes.Neutral
+		}
+		else if (mode.value == view_modes.Neutral) {
+			mode.value = view_modes.Small
+		}
+	}
 </script>
 
 <template>
@@ -1012,6 +1024,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
+			@mouseenter="toggle_hover"
+			@mouseleave="toggle_hover"
 			@click.right="longtap_trait"
 			@click="click_trait"
 			@contextmenu="(e) => e.preventDefault()">
