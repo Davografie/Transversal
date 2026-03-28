@@ -252,7 +252,6 @@
 	// const show_controls = computed(() => {
 	// 	return traitset_arrived.top || traitset_scrollY.value < 100
 	// })
-	const show_controls = ref(false)
 	const banner_width = computed(() => (props.windowWidth ?? entity_width.value) - portraitWidth.value)
 
 	const min_banner_height = 100
@@ -356,6 +355,15 @@
 		}
 	})
 
+
+	// CONTROLS
+	const show_controls = ref(false)
+	function toggle_controls() {
+		show_controls.value = !show_controls.value
+		if(!show_controls.value) {
+			entityOverviewType.value = 'NONE'
+		}
+	}
 
 	// character options
 	function pick_character() {
@@ -851,7 +859,7 @@
 					override_click
 					@click_entity="click_instance(instance.id)" />
 			</div>
-			<div id="character-buttons-toggle" @click="show_controls = !show_controls">
+			<div id="character-buttons-toggle" @click="toggle_controls">
 				<span>{{ show_controls ? '🔼' : '🔽' }}</span>
 				<span>{{ show_controls ? 'hide' : 'show' }} character controls</span>
 				<span>{{ show_controls ? '🔼' : '🔽' }}</span>
