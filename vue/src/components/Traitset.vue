@@ -531,6 +531,7 @@
 	}
 
 	function scroll_to_trait(trait: TraitType) {
+		console.log("scrolling to trait: " + trait.id)
 		active_trait_id.value = trait.id
 		nextTick(() => scroll_to_element('ts-' + trait.traitSettingId + '-' + entity.value.key))
 	}

@@ -270,7 +270,10 @@
 	})
 
 	function reset_scroll() {
-		traitset_scrollY.value = 0
+		console.log("resetting scroll")
+		if(player.theme == 'dark') {
+			traitset_scrollY.value = 0
+		}
 	}
 
 	function scroll_to_element(element_id: string) {
@@ -1226,25 +1229,16 @@
 	}
 	.dark {
 		#entity-wrapper {
-			/* scroll-snap-type: y mandatory; */
 			scroll-padding: 2em;
 			display: flex;
 			flex-direction: column;
 			height: 100vh;
-			/* backdrop-filter: blur(5px); */
 			position: relative;
 			#character-details {
 				background-color: var(--color-background-mute);
-				/* margin: 0 1em; */
-				/* border-radius: 50px 30px 30px 50px; */
 				max-height: 240px;
-				/* height: v-bind(portraitHeight + 'px'); */
 				scroll-snap-align: start;
-				/* position: fixed; */
-				/* top: 0; */
-				/* z-index: 2; */
 				height: v-bind(banner_height + 'px');
-				/* transition: height 1s ease-in-out; */
 				box-shadow: 0 0 10px var(--color-background);
 				#character-portrait img {
 					/* border-radius: 30px 0 0 30px; */
@@ -1268,14 +1262,9 @@
 				}
 			}
 			#character {
-				/* overflow-y: auto; */
-				/* height: calc(100vh - v-bind(detail_height) + 'px' - 4em); */
-				/* margin-top: v-bind(portraitHeight + 'px'); */
 				scroll-snap-type: y mandatory;
 				height: 0;
 				z-index: 5;
-				/* height: 100px; */
-				/* flex-grow: 1; */
 				#character-buttons {
 					scroll-snap-align: start;
 					overflow-x: auto;
