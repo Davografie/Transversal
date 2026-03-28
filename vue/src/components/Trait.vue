@@ -437,7 +437,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 		if([view_modes.Small, view_modes.Neutral].includes(mode.value)) {
 			play_trait()
 		}
-		if(mode.value == view_modes.Editing) {
+		else if(mode.value == view_modes.Editing) {
 			edit_rating.value = true
 		}
 		else {
@@ -2245,8 +2245,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 				}
 			}
 			&.with-image{
-				.trait-text {
-					padding-left: 20px;
+				.trait-text .name {
+					/* padding-left: 20px; */
 					font-size: .8em;
 				}
 				.sfxs {
