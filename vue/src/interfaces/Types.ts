@@ -83,6 +83,7 @@ export interface TraitSetting {
     fromEntity?: Entity
     toEntity?: Entity
     priority?: number
+    inherited?: boolean
 }
 
 export interface TraitSettingInput {

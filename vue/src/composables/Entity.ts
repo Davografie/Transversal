@@ -261,6 +261,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 							notes
 							hidden
 							priority
+							inherited
 						}
 					}
 				}

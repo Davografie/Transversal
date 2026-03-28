@@ -893,6 +893,7 @@ class TraitSetting(ObjectType):
 	known_to = List(lambda: Character) # characters who have learned about this trait
 	hidden = Boolean()
 	priority = Int()
+	inherited = Boolean()
 
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
@@ -1067,6 +1068,15 @@ class TraitSetting(ObjectType):
 			return parent.priority
 		else:
 			return 0
+
+	def resolve_inherited(parent, info):
+		setting = get_doc_by_id('TraitSettings', parent.id)
+		if setting.get('_from').startswith('Relations/'):
+			return False
+		elif info.context.get('entity_id') and setting.get('_from') != info.context.get('entity_id'):
+			return True
+		else:
+			return False
 
 class TraitSettingInput(InputObjectType):
 	new_trait_id = ID(required=False)
@@ -2171,11 +2181,11 @@ class Traitset(ObjectType):
 	def resolve_traits(parent, info):
 		if not parent.hydrated:
 			Traitset._hydrate(parent, info)
-		if parent.traits:
-			return parent.traits
+		# if parent.traits:
+		# 	return parent.traits
 
 		# traits per relation
-		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Relations/'):
+		if info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Relations/'):
 			query = f"""FOR traitsettings IN TraitSettings
 				FILTER traitsettings._from == '{ info.context.get('entity_id') }'
 			FOR trait IN Traits
@@ -2204,12 +2214,12 @@ class Traitset(ObjectType):
 			RETURN {{ trait: trait, setting: traitsettings }}"""
 			traits = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
 			# remove the traits from others to this entity, if setting.hidden == true and not in setting.known_to
-			for trait in traits:
-				if trait['setting'].get('hidden'):
-					if trait['setting'].get('known_to') is None:
-						traits.remove(trait)
-					elif info.context.get('entity_id') not in trait['setting'].get('known_to'):
-						traits.remove(trait)
+			# for trait in traits:
+			# 	if trait['setting'].get('hidden'):
+			# 		if trait['setting'].get('known_to') is None:
+			# 			traits.remove(trait)
+			# 		elif info.context.get('entity_id') not in trait['setting'].get('known_to'):
+			# 			traits.remove(trait)
 			return [Trait(
 				id=trait.get('trait').get('_id'),
 				trait_setting_id=trait.get('setting').get('_id')

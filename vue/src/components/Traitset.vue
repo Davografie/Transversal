@@ -429,16 +429,24 @@
 				return traitset.value.traits.filter((t) => highlighted_traits.value.includes(t.traitSettingId ?? ''))
 			}
 
-			const filtered_traits = traitset.value.traits.filter((trait) => {
+			// included trait filters
+			let filtered_traits = traitset.value.traits.filter((trait) => {
 				return (
 					player.is_gm
 					|| props.relationship
-					|| (player.is_player && entity.value.entityType == 'character')
-					|| (player.is_player && trait.traitSetting && !trait.traitSetting.hidden)
+					// || (player.is_player && entity.value.entityType == 'character')
+					|| (player.is_player && !trait.traitSetting?.hidden)
 					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
 					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting.fromEntity?.id == entity.value.id)
+					|| trait.traitSetting?.inherited
 					|| props.tutorial
 				)
+				// && !(
+				// 	trait.traitSetting?.hidden
+				// 	&& trait.traitSetting.fromEntity?.id != entity.value.id
+				// 	&& !trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id)
+				// 	&& !trait.traitSetting.inherited
+				// )
 			})
 
 			// console.log("filtered traits: " + JSON.stringify(filtered_traits))

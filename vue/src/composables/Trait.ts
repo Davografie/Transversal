@@ -93,6 +93,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						id
 						name
 					}
+					inherited
 				}
 				requiredTraits {
 					id
@@ -297,6 +298,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						id
 						name
 					}
+					inherited
 				}
 			}
 		}`

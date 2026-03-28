@@ -152,6 +152,8 @@
 				player.is_gm
 				|| trait.value.traitSetting?.fromEntity?.id == player.the_entity?.id
 				|| props.entity_id?.startsWith('Relations/')
+				|| trait.value.traitSetting?.inherited
+				|| inherited.value
 			) {
 				can_edit.value = true
 			}
@@ -544,6 +546,15 @@
 			// 	|| props.entity_id.startsWith('Relations/')
 			// )
 		) {
+			if(
+				player.is_gm
+				|| trait.value.traitSetting?.fromEntity?.id == player.the_entity?.id
+				|| props.entity_id?.startsWith('Relations/')
+				|| trait.value.traitSetting?.inherited
+				|| inherited.value
+			) {
+				can_edit.value = true
+			}
 			switch_to_editing()
 		}
 		setTimeout(() => held.value = false, 500)
@@ -561,7 +572,7 @@
 
 	// mutate trait when finished editing
 	async function change_trait(temp: boolean = false) {
-		if(inherited.value) {
+		if(trait.value.traitSetting?.inherited || inherited.value) {
 			await overwrite_trait({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
@@ -748,7 +759,7 @@
 	async function add_subtrait(subtrait: Trait) {
 		if(trait.value.traitSettingId && !trait.value.subTraits?.map((x) => x.id).includes(subtrait.id)) {
 			await assign_subtrait(trait.value.traitSettingId, subtrait.id, props.entity_id)
-			if(inherited.value) emit('refetch')
+			if(trait.value.traitSetting?.inherited || inherited.value) emit('refetch')
 		}
 		// if(!inherited.value) {
 		// 	retrieve_trait()
@@ -982,7 +993,7 @@
 				// dim all traits that don't have highlight when highlight is set
 				props.highlight_root_id && !props.highlighted && !trait.requiredTraits?.map((t) => t.id).includes(props.highlight_root_id ?? '') ? 'dim' : '',
 				{ 'clickable': mode != view_modes.Editing },
-				{ 'inherited': inherited },
+				{ 'inherited': (trait.traitSetting?.inherited || inherited) ?? false },
 				{ 'hidden': (trait.traitSetting?.hidden ?? false) && player.is_gm && [view_modes.Small, view_modes.Neutral].includes(mode) },
 			]"
 			v-if="trait && passes_filter"
@@ -1079,7 +1090,7 @@
 						:class="transfer_resource_mode ? 'active' : 'inactive'"
 						:title="'drop ' + trait.name"
 						@click.stop="steal"
-						v-if="props.entity_id == player.the_entity?.id && !inherited && props.traitset_types?.includes('location')">
+						v-if="props.entity_id == player.the_entity?.id && !trait.traitSetting?.inherited && !inherited && props.traitset_types?.includes('location')">
 					<div class="icon">🫳</div>
 					<div class="label" v-if="!player.small_buttons">drop {{ trait.name }}</div>
 				</div>
@@ -1107,15 +1118,20 @@
 				
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
 						trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',]">
-				<div class="trait-image" v-if="trait.traitSetting?.toEntity && !props.entity_id?.startsWith('Relations/')">
-					<EntityButton :entity_id="trait.traitSetting.toEntity.id" :show_icon="false" :show_name="false" class="trait-to-entity" is_active />
+				<div class="trait-image" v-if="trait.traitSetting?.fromEntity && trait.traitSetting?.toEntity && !props.entity_id?.startsWith('Relations/')">
+					<EntityButton :entity_id="trait.traitSetting.fromEntity.id"
+						v-if="trait.traitSetting.fromEntity.id != props.entity_id"
+						:show_icon="false" :show_name="false" class="trait-from-entity" is_active />
+					<EntityButton :entity_id="trait.traitSetting.toEntity.id"
+						v-if="trait.traitSetting.toEntity.id != props.entity_id"
+						:show_icon="false" :show_name="false" class="trait-to-entity" is_active />
 				</div>
 				<div class="trait-text">
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
 						<span class="name">
-							<span class="trait-inherited" v-if="inherited && player.is_gm">· </span>
-							<span class="trait-name-label trait-to" v-if="trait.traitSetting?.toEntity?.name && trait.traitSetting.toEntity.id != entity?.id">
-								{{ trait.traitSetting?.toEntity?.name + ' ' }}
+							<span class="trait-inherited" v-if="(trait.traitSetting?.inherited || inherited) && player.is_gm">· </span>
+							<span class="trait-name-label trait-from" v-if="trait.traitSetting?.toEntity?.name && trait.traitSetting.toEntity.id != entity?.id">
+								{{ trait.traitSetting?.fromEntity?.name }}'s
 							</span>
 							<span class="trait-name-label trait-from"
 									v-if="trait.traitSetting?.fromEntity?.name && trait.traitSetting.fromEntity.id != entity?.id && trait.traitSetting?.toEntity?.id == entity?.id">
@@ -1133,6 +1149,13 @@
 							<span class="label trait-owner-self" v-if="[view_modes.Viewing, view_modes.Editing].includes(mode)
 									&& trait.traitSetting?.fromEntity?.id == player.the_entity?.id">
 								{{ ' (self)' }}
+							</span>
+							<span class="trait-name-label trait-to" v-if="trait.traitSetting?.toEntity?.name && trait.traitSetting.toEntity.id != entity?.id">
+								for {{ trait.traitSetting?.toEntity?.name + ' ' }}
+							</span>
+							<span class="trait-for-self"
+									v-if="trait.traitSetting?.fromEntity?.name && trait.traitSetting.fromEntity.id != entity?.id && trait.traitSetting?.toEntity?.id == entity?.id">
+								for {{ trait.traitSetting?.toEntity?.name }}
 							</span>
 						</span>
 						<span class="rating-type label" v-if="preferredColor == 'light' || mode == view_modes.Viewing">
@@ -1422,7 +1445,7 @@
 						@click.stop="submit_changes(false)"
 						v-if="can_edit && mode == view_modes.Editing">
 					<div class="icon">🖪</div>
-					<div class="label" v-if="!player.small_buttons">perma-{{ (inherited ? 'overwrite' : 'save') }}</div>
+					<div class="label" v-if="!player.small_buttons">perma-{{ (trait.traitSetting?.inherited || inherited ? 'overwrite' : 'save') }}</div>
 					<!-- {{ player.small_buttons ? '🖪' : '🖪' + (inherited ? 'overwrite' : 'save') + ' trait' }} -->
 				</div>
 				
@@ -1430,7 +1453,7 @@
 						@click.stop="submit_changes(true)"
 						v-if="can_edit && mode == view_modes.Editing">
 					<div class="icon">🖫</div>
-					<div class="label" v-if="!player.small_buttons">session {{ (inherited ? 'overwrite' : 'save') }}</div>
+					<div class="label" v-if="!player.small_buttons">session {{ (trait.traitSetting?.inherited || inherited ? 'overwrite' : 'save') }}</div>
 					<!-- {{ player.small_buttons ? '🖫' : '🖫' + (inherited ? 'overwrite' : 'save') + ' trait\n(this session only)' }} -->
 				</div>
 
@@ -1444,7 +1467,7 @@
 				<ButtonMinimal :function="ButtonTypes.TRASH" label="perma-delete"
 					class="remove-button"
 					@click.stop="deletion = true"
-					v-if="can_edit && !inherited && mode == view_modes.Editing && !deletion" />
+					v-if="can_edit && !trait.traitSetting?.inherited && !inherited && mode == view_modes.Editing && !deletion" />
 				<div id="delete-confirmation" v-if="deletion">
 					<ButtonMinimal :function="ButtonTypes.TRASH" label="confirm" />
 					<!-- <div class="button-mnml confirm" id="confirm-delete"
@@ -1483,7 +1506,7 @@
 		}
 		.descriptor {
 			display: flex;
-			.trait-to-entity {
+			.trait-from-entity, .trait-to-entity {
 				width: 5em;
 			}
 			.trait-text .trait-name {
@@ -1893,7 +1916,7 @@
 					transform: translateX(-.8em) translateY(-.6em);
 					position: relative;
 					width: 70px;
-					.trait-to-entity {
+					.trait-from-entity, .trait-to-entity {
 						position: absolute;
 						height: 120px;
 					}
