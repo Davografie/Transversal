@@ -1938,7 +1938,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 			text-shadow: none;
 			.descriptor {
 				/* padding: 0 1em; */
-				overflow: hidden;
+				/* overflow: hidden; */
 				.rating {
 					margin-left: .2em;
 				}
