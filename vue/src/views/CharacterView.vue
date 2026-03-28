@@ -281,7 +281,16 @@
 		const element = document.getElementById(element_id)
 		if(element) {
 			console.log("element found, scrolling to it")
-			element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+			if(player.input_method == input_methods.touch) {
+				element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+			}
+			else {
+				traitset_wrapper.value.scrollTo({
+					top: element.offsetTop - traitset_wrapper.value.offsetTop - 100,
+					behavior: 'smooth'
+				})
+
+			}
 		}
 		show_reference.value = false
 	}
