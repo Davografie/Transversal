@@ -1142,6 +1142,10 @@ import ToggleButton from './UI/ToggleButton.vue'
 					<div class="icon">🗺</div>
 					<div class="label" v-if="!player.small_buttons">{{ restrict_location ? 'cancel' : 'restrict by location' }}</div>
 				</div> -->
+				<div class="button-mnml refresh-button" @click.stop="retrieve_trait('network-only')">
+					<div class="icon">🔄</div>
+					<div class="label" v-if="!player.small_buttons">refresh</div>
+				</div>
 			</div>
 				
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
