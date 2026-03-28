@@ -122,7 +122,7 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			apolloClient.query({
 				query: query,
 				variables: args,
-				fetchPolicy: 'cache-first'
+				fetchPolicy: 'network-only'
 			}).then((result) => {
 				entities.value = result.data.characters
 			})
