@@ -12,7 +12,7 @@
 	const DieComponent = defineAsyncComponent(() => import('@/components/Die.vue'))
 	
 	import { useDicepool } from '@/composables/Dicepool'
-	import { useDicepoolWS } from '@/composables/DicepoolWS'
+	// import { useDicepoolWS } from '@/composables/DicepoolWS'
 	import { die_shapes } from '@/composables/Die'
 
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
@@ -32,13 +32,13 @@
 
 	const player = usePlayerStore()
 	const dicepoolStore = useDicepoolStore()
-	const websocket = useDicepoolWS()
+	// const websocket = useDicepoolWS()
 
-	console.log("connecting websocket")
-	onMounted(() => {
-		console.log("mounted dicepool")
-		websocket.connect()
-	})
+	// console.log("connecting websocket")
+	// onMounted(() => {
+	// 	console.log("mounted dicepool")
+	// 	websocket.connect()
+	// })
 
 	const dicepool = useDicepool(true)
 
@@ -251,17 +251,6 @@
 							player.small_buttons ? '🔘' : '🔘 simple view'"
 						@click.stop="verbose_dice = !verbose_dice" /> -->
 					<SessionControl v-if="player.is_gm" />
-
-
-
-
-
-					<input type="button" @click="websocket.engage" value="engage" />
-
-
-
-
-
 
 					<div id="dicepools" :style="{ 'background-image': dicepool.dicepool_size.value > 0 ? `url('/img/` + ruleset_logo + `.png')` : '' }">
 
