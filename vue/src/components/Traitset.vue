@@ -1414,7 +1414,7 @@
 				background-color: var(--color-border);
 				display: flex;
 				flex-direction: column;
-				.trait, .add-trait {
+				.add-trait {
 					width: 100%;
 					background-color: var(--color-background);
 					color: var(--color-text);

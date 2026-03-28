@@ -901,20 +901,34 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function unassign_subtrait(subtrait_setting_id: string) {
-		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
-				mutation UnassignSubTrait($traitSettingId: ID, $subtraitSettingId: ID!) {
-					unassignSubTrait(traitSettingId: $traitSettingId, subtraitSettingId: $subtraitSettingId) {
-						success
-					}
-				}`
-			))
-			let variables: object = {
-				traitSettingId: (trait.value.traitSettingId ?? trait_setting_id.value ?? undefined),
-				subtraitSettingId: subtrait_setting_id
+	async function unassign_subtrait(subtrait_setting_id: string) {
+		const query = gql`mutation UnassignSubTrait($traitSettingId: ID, $subtraitSettingId: ID!) {
+			unassignSubTrait(traitSettingId: $traitSettingId, subtraitSettingId: $subtraitSettingId) {
+				success
 			}
-			mutate(variables)
+		}`
+		
+		if(apolloClient) {
+			console.log("unassigning sub-trait: " + subtrait_setting_id + " from trait setting: " + (trait.value.traitSettingId ?? trait_setting_id.value ?? undefined))
+			await apolloClient.mutate({
+				mutation: query,
+				variables: {
+					traitSettingId: (trait.value.traitSettingId ?? trait_setting_id.value ?? undefined),
+					subtraitSettingId: subtrait_setting_id
+				}
+			})
+			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(gql`
+			// 	mutation UnassignSubTrait($traitSettingId: ID, $subtraitSettingId: ID!) {
+			// 		unassignSubTrait(traitSettingId: $traitSettingId, subtraitSettingId: $subtraitSettingId) {
+			// 			success
+			// 		}
+			// 	}`
+			// ))
+			// let variables: object = {
+			// 	traitSettingId: (trait.value.traitSettingId ?? trait_setting_id.value ?? undefined),
+			// 	subtraitSettingId: subtrait_setting_id
+			// }
+			// mutate(variables)
 		}
 	}
 

@@ -778,11 +778,15 @@ import ToggleButton from './UI/ToggleButton.vue'
 		// 	refetch()
 		// }
 	}
-	function remove_subtrait(subtrait: Trait) {
+	async function remove_subtrait(subtrait: Trait) {
 		if(subtrait.traitSettingId) {
-			unassign_subtrait(subtrait.traitSettingId)
+			console.log('removing sub-trait: ', subtrait.traitSettingId)
+			await unassign_subtrait(subtrait.traitSettingId)
+			console.log('removed sub-trait: ', subtrait.traitSettingId)
 		}
-		retrieve_trait()
+		console.log('removed subtrait, refetching trait')
+		retrieve_trait('network-only')
+		console.log('refetched trait')
 	}
 
 	// used for the location restriction widget
@@ -2411,14 +2415,13 @@ import ToggleButton from './UI/ToggleButton.vue'
 					background-color: var(--color-background);
 				}
 			}
-			.explanation,
-			.sfxs,
-			.notes {
-				margin-left: 1.4em;
+			.explanation, .sfxs, .notes {
+				margin: .4em 1.4em;
 			}
 			.notes {
 				/* font-family: 'Pacifico', 'Dancing Script', 'Bradley Hand', 'Reenie Script Personal Use', 'Great Vibes', 'Alex Brush', 'Snell Roundhand', 'Satisfy', 'Kaushan Script', 'Homemade Apple', 'Caveat', 'Tangerine', 'Permanent Marker', 'Architects Daughter', 'Shadows Into Light', 'Shadows Into Light Two', 'Dancing Script MT', 'Vivaldi', ' segmdl2', 'Material Icons', 'Material Icons Outlined', 'Material Icons Two Tone', 'Material Icons Round', 'Material Icons Sharp'; */
 				background-color: var(--color-background-soft);
+				padding: .4em;
 				/* color: var(--color-negative-die-12); */
 				/* font-size: 1.4em; */
 				/* letter-spacing: .04em; */

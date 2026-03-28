@@ -215,7 +215,7 @@
 	}
 
 	function remove_subtrait() {
-		console.log('removing sub-trait: ', props.trait_setting_id)
+		// console.log('removing sub-trait: ', props.trait_setting_id)
 		// unassign_subtrait(props.trait_setting_id)
 		emit('remove_subtrait')
 	}
