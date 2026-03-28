@@ -67,6 +67,7 @@
 		create_zone,
 		update_location,
 		make_transversable,
+		retrieve_transversables,
 		set_location_visibility,
 		import_entity,
 		imagen
@@ -386,10 +387,12 @@
 		}
 	})
 
-	function establish_route() {
+	async function establish_route() {
 		if(player.the_entity) {
-			make_transversable(player.the_entity.id)
-			setTimeout(() => player.retrieve_perspective_relations(), 200)
+			await make_transversable(player.the_entity.id)
+			// retrieve_transversables('network-only')
+			player.retrieve_perspective_relations('network-only')
+			// setTimeout(() => player.retrieve_perspective_relations(), 200)
 		}
 	}
 
@@ -566,6 +569,7 @@
 						&& player.the_entity?.entityType == 'location'
 						&& player.the_entity.id != location.id
 						&& editing_location
+						&& !player.the_entity.relations?.map(r => r.toEntity.id).some(id => id == location.id)
 					" />
 
 				<input type="button" class="button hide-button corner-button" :class="location.hidden ? 'visible' : 'hidden'"

@@ -156,7 +156,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		}
 	}
 
-	function retrieve_transversables() {
+	function retrieve_transversables(caching: FetchPolicy = 'cache-first') {
 		const get_location_query = gql`query LocationTransversables($locationId: ID) {
 			locations(locationId: $locationId) {
 				transversables {
@@ -170,7 +170,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			apolloClient.query({
 				query: get_location_query,
 				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				location.value = {
 					...location.value,
@@ -457,6 +457,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		}`
 
 		if(apolloClient) {
+			console.log('creating transversable relation between: ' + location.value.id + ' and ' + from_entity_id)
 			await apolloClient.mutate({
 				mutation: query,
 				variables: {

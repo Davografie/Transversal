@@ -183,6 +183,7 @@ export interface Relation {
     fromEntity: Entity
     toEntity: Entity
     traitsets?: Traitset[]
+    type?: string
     favorite?: boolean
     entanglement?: number
 }

@@ -3155,18 +3155,26 @@ class Entity(Interface):
 		return result
 
 	def resolve_relations(parent, info):
-		query = f"""FOR relation IN Relations
-			FILTER relation._from == '{parent.id}' OR relation._to == '{parent.id}'
-			FILTER relation.type == 'relation'
-			FOR e IN Entities
-			FILTER e._id == relation._to
-			FILTER relation.type == 'relation'
-			SORT relation.favorite DESC, POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
+		if not parent.entity_type:
+			Entity._hydrate_entity(parent, info)
+		if parent.entity_type != 'location':
+			query = f"""FOR relation IN Relations
+				FILTER relation._from == '{parent.id}' OR relation._to == '{parent.id}'
+				FILTER relation.type == 'relation'
+				FOR e IN Entities
+				FILTER e._id == relation._to
+				FILTER relation.type == 'relation'
+				SORT relation.favorite DESC, POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
 
-			RETURN relation"""
+				RETURN relation"""
+		else:
+			query = f"""FOR relation IN Relations
+				FILTER relation._from == '{parent.id}' OR relation._to == '{parent.id}'
+				FILTER relation.type != 'agency'
+				RETURN relation"""
 		# logger.debug("query: ", query)
 		# cursor = db.aql.execute(query)
-		cursor = execute_aql(query, ['Relations'])
+		cursor = execute_aql(query, ['Relations', 'Entities'])
 		# relations = find_docs('Relations', {'_from': parent.id})
 		return [Relation(id=doc['_id']) for doc in cursor]
 
@@ -3912,6 +3920,7 @@ class Relation(ObjectType):
 	from_entity = Field(lambda: Entity)
 	to_entity = Field(lambda: Entity)
 	traitsets = List(lambda: Traitset)
+	relation_type = String()
 	favorite = Boolean()
 	entanglement = Int()
 
@@ -3966,6 +3975,9 @@ class Relation(ObjectType):
 			result.append(Traitset(id=traitset_id, traits=traits))
 		return result
 
+	def resolve_relation_type(parent, info):
+		return get_doc_by_id('Relations', parent.id).get('type')
+
 	def resolve_favorite(parent, info):
 		return get_doc_by_id('Relations', parent.id).get('favorite')
 
@@ -3984,7 +3996,6 @@ class Relation(ObjectType):
 				result += abs(r)
 		return result
 			
-
 class CreateRelation(Mutation):
 	class Arguments:
 		from_id = ID(required=True)
@@ -4005,7 +4016,7 @@ class CreateRelation(Mutation):
 			return CreateRelation(success=True, message="Successfully created relation", relation=Relation(id=r.get('_id')))
 		else:
 			errorMessage = f"relation already exists, from: { from_id }, to: { to_id }"
-			return CreateRelation(success=False, message=errorMessage, relation=existing_relation[0])
+			return CreateRelation(success=False, message=errorMessage, relation=Relation(id=existing_relation[0].get('_id')))
 
 class UpdateRelation(Mutation):
 	class Arguments:
