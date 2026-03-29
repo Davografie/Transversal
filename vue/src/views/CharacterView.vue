@@ -827,6 +827,13 @@
 					</div>
 				</div>
 
+				<div id="refresh-entity" class="button-mnml"
+					title="refresh entity"
+					@click="player.retrieve_perspective()">
+					<div class="icon">🔄</div>
+					<div class="label" v-if="!player.small_buttons">refresh</div>
+				</div>
+
 				<ButtonMinimal
 					:function="ButtonTypes.SETTINGS"
 					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
