@@ -137,8 +137,8 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 	 * @returns the created entity
 	 */
 	async function create_entity(name: string, entity_type: string, location_id?: string, is_archetype?: boolean) {
-		const create_entity_query = gql`mutation CreateEntity($entityType: String!, $name: String!, $location: ID) {
-			createEntity(entityType: $entityType, name: $name, location: $location) {
+		const create_entity_query = gql`mutation CreateEntity($entityType: String!, $name: String!, $location: ID, $isArchetype: Boolean) {
+			createEntity(entityType: $entityType, name: $name, location: $location, isArchetype: $isArchetype) {
 				entity {
 					id
 					key
@@ -148,6 +148,7 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 			}
 		}`
 		if(apolloClient) {
+			console.log('creating entity: ', name, entity_type, location_id, is_archetype)
 			const new_entity = await apolloClient.mutate({
 				mutation: create_entity_query,
 				variables: {

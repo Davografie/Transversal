@@ -30,7 +30,7 @@
 
 	async function add_entity() {
 		if(!props.archetype_id) {
-			const new_entity = await create_entity(new_entity_name.value, new_entityType.value, props.location_id)
+			const new_entity = await create_entity(new_entity_name.value, new_entityType.value, props.location_id, new_is_archetype.value)
 			player.is_gm ? player.set_perspective(new_entity.id) : player.set_character_id(new_entity.id)
 			emit('created_entity', new_entity)
 		}
