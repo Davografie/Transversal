@@ -4837,6 +4837,8 @@ def imagegen(entity_key, force):
 			steps = 48
 		elif entity_type == "faction":
 			steps = 24
+		if entity.get('is_archetype'):
+			steps -= 8
 
 		if entity_type in ["character", "npc"]:
 			# prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
