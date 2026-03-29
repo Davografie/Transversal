@@ -221,7 +221,7 @@
 			trait_search.value = ""
 		}
 		else {
-			retrieve_potential_traits()
+			retrieve_potential_traits('network-only')
 			retrieve_all_traits()
 			retrieve_parents()
 			adding_trait.value = true
