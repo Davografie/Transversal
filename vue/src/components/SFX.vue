@@ -215,7 +215,7 @@
     }
     .desc-enter-active,
     .desc-leave-active {
-        transition: max-height 1s ease-out;
+        transition: max-height .4s ease-out;
         max-height: 100px;
     }
     .desc-enter-from,

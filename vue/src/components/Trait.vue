@@ -2014,7 +2014,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				overflow: hidden;
 			}
 			.notes-enter-active, .notes-leave-active {
-				transition: max-height 1s ease-out;
+				transition: max-height .4s ease-out;
 			}
 			.notes-enter-from, .notes-leave-to {
 				max-height: 0;
