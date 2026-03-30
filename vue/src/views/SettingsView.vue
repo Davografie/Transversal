@@ -35,6 +35,10 @@
 
 	const { players, retrieve_players, create_player, remove_player } = usePlayerList()
 	retrieve_players()
+	const sorted_players = computed(() => {
+		const _players = [...players.value]
+		return _players.sort((a, b) => a.name.localeCompare(b.name))
+	})
 
 	function switch_to_player(player: PlayerType) {
 		playerStore.switch_player(player)
@@ -215,7 +219,7 @@
 						<label id="player-name-updated" for="player_name" v-if="playerStore.player_name == player_name">✅</label>
 					</div>
 					<div id="player-list">
-						<template v-for="_player in players" :key="_player.id">
+						<template v-for="_player in sorted_players" :key="_player.id">
 							<div class="player button" :class="[
 										{ 'faded': _player.name.toLowerCase().indexOf(player_name.toLowerCase()) < 0 },
 										{ 'selected': _player.name == playerStore.player.name }
@@ -342,8 +346,8 @@
 			/* width: fit-content; */
 			height: 100vh;
 			text-align: center;
-			width: calc(100vw - 140px);
-			overflow-x: auto;
+			/* width: calc(100vw - 140px); */
+			/* overflow-x: auto; */
 			nav, .page {
 				height: 100%;
 				scroll-snap-align: start;
@@ -355,7 +359,7 @@
 				align-items: center;
 				gap: 2em;
 				height: 100vh;
-				max-width: calc(100vw - 140px);
+				/* max-width: calc(100vw - 140px); */
 				padding-bottom: 8em;
 				overflow: hidden auto;
 				.setting {
@@ -388,6 +392,7 @@
 							width: 100%;
 							display: flex;
 							justify-content: space-evenly;
+							flex-wrap: wrap;
 							.player {
 								display: flex;
 								align-items: center;
@@ -466,15 +471,13 @@
 	overflow-y: hidden;
 	height: 100vh;
 	position: relative;
-	.page {
-		flex: 0 0 100vw;
-		.setting-page {
-			width: 100vw;
-		}
+	/* flex: 0 0 100vw; */
+	.setting-page {
+		width: 100vw;
 	}
 }
 .landscape #settings-wrapper {
-	.page {
+	#settings-container {
 		/* flex: 0 0 33vw; */
 		/* padding-top: 4em; */
 		width: calc(100vw - 140px);
