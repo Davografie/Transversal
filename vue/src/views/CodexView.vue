@@ -20,7 +20,7 @@
 
 	const player = usePlayerStore()
 
-	const { entities, retrieve_characters } = useEntityList(undefined, 'character')
+	const { entities, retrieve_entities, retrieve_characters } = useEntityList(undefined, undefined)
 
 	// html elements
 	const panel = ref()
@@ -42,11 +42,19 @@
 		if(polling_active.value && player.playing) setTimeout(poll, 15000)
 	}
 
+	watch(() => player.playing, (newPlaying) => {
+		if(newPlaying) {
+			polling_active.value = true
+			poll()
+		}
+	})
+
 	const show_players = ref(false)
 
 	function toggle_players() {
 		if(!show_players.value) {
-			retrieve_characters(false)
+			// retrieve_characters(false)
+			retrieve_entities('network-only', undefined, true)
 			show_players.value = true
 		}
 		else {
@@ -124,6 +132,11 @@
 	const incoming_relations = computed(() => {
 		return player.the_entity?.relations?.filter(r => player.the_entity?.id != r.fromEntity?.id && !entities.value.map(e => e.id).includes(r.fromEntity?.id))
 	})
+	const favorite_characters = computed(() => {
+		const characters = entities.value.filter(e => e.favorite && e.entityType == 'character')
+		if(show_players.value) return characters
+		return characters.filter(c => c.active)
+	})
 	const favorite_non_characters = computed(() => {
 		return entities.value.filter(e => e.favorite && e.entityType != 'character')
 	})
@@ -160,7 +173,7 @@
 					</h2>
 					<div class="relations-container" :class="player.orientation == 'vertical' ? 'vertical' : 'horizontal'" v-if="entities.length > 0">
 						<!-- active characters -->
-						<template v-for="(entity, index) in entities.filter(e => show_players ? e.favorite : true)" :key="entity.id">
+						<template v-for="(entity, index) in favorite_characters" :key="entity.id">
 							<EntityButton
 								class="entity-card"
 								:entity_id="entity.id"

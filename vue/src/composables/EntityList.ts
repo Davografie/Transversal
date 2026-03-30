@@ -6,7 +6,7 @@ import { ref, inject } from 'vue'
 import type { Ref } from 'vue'
 import type { Entity } from '@/interfaces/Types'
 import { useMutation, provideApolloClient } from "@vue/apollo-composable"
-import type { ApolloClient } from '@apollo/client/core'
+import type { ApolloClient, FetchPolicy } from '@apollo/client/core'
 import gql from 'graphql-tag'
 
 export function useEntityList(init?: Entity[], entity_type?: string) {
@@ -14,9 +14,13 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 	const entities: Ref<Entity[]> = ref(init ?? [])
 	const entityType = ref<string|null>(entity_type ?? null)
 
-	function retrieve_entities() {
-		const get_entities_query = gql`query EntityList($entityType: String) {
-			entities(entityType: $entityType) {
+	async function retrieve_entities(
+		caching: FetchPolicy = 'cache-first',
+		entity_type?: string,
+		is_favorite: boolean = false
+	) {
+		const get_entities_query = gql`query EntityList($entityType: String, $isFavorite: Boolean) {
+			entities(entityType: $entityType, isFavorite: $isFavorite) {
 				key
 				id
 				name
@@ -30,13 +34,16 @@ export function useEntityList(init?: Entity[], entity_type?: string) {
 				isArchetype
 			}
 		}`
-		const variables = { "entityType": entityType.value }
+		const variables = {
+			"entityType": entity_type ?? entityType.value,
+			"isFavorite": is_favorite
+		}
 		if(apolloClient) {
 			console.log('retrieving entities: ', variables)
-			apolloClient.query({
+			await apolloClient.query({
 				query: get_entities_query,
 				variables,
-				fetchPolicy: 'network-only'
+				fetchPolicy: caching
 			}).then((result) => {
 				console.log('retrieved entities: ', result.data.entities)
 				entities.value = result.data.entities

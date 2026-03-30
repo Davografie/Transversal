@@ -318,7 +318,7 @@
 				</div>
 				<div class="button-mnml favorite-button"
 						@click.stop="toggle_favorite"
-						v-if="player.is_gm && entity.entityType == 'character'">
+						v-if="player.is_gm">
 					<span class="icon" v-if="entity.favorite">★</span>
 					<span class="icon" v-else>☆</span>
 					<span class="label" v-if="!entity.favorite">{{ player.small_buttons ? '' : 'favorite'}}</span>

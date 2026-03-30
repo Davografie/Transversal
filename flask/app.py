@@ -4178,11 +4178,13 @@ class Query(ObjectType):
 				 entity_type=String(required=False),
 				 search=String(required=False),
 				 is_archetype=Boolean(required=False),
-				 location_id=ID(required=False))
-	def resolve_entities(parent, info, key=None, entity_id=None, entity_type=None, search=None, is_archetype=None, location_id=None):
+				 location_id=ID(required=False),
+				 is_favorite=Boolean(required=False))
+	def resolve_entities(parent, info, key=None, entity_id=None, entity_type=None, search=None, is_archetype=None, location_id=None, is_favorite=None):
 		# logger.debug("entity resolver, for key: ", key)
 		if location_id is not None:
 			hierarchy = retrieve_hierarchy(location_id)
+		# retrieve all entities
 		if not key and not entity_id and not entity_type:
 			query = "FOR e IN Entities "
 			if search:
@@ -4191,6 +4193,8 @@ class Query(ObjectType):
 				query += "FILTER e.is_archetype == true "
 			if location_id is not None:
 				query += f"""FILTER e.location IN ['{ "', '".join([loc.get('_id') for loc in hierarchy]) }'] """
+			if is_favorite:
+				query += "FILTER e.favorite == true "
 			query += """SORT POSITION(['character', 'npc', 'asset', 'faction', 'location'], e.type, true) ASC, e.name ASC
 			RETURN e"""
 			# cursor = db.aql.execute(query)
@@ -4209,6 +4213,7 @@ class Query(ObjectType):
 				elif entity['type'] == 'location':
 					result.append(Location(id = entity['_id']))
 			return result
+		# retrieve all entities of a specific type
 		elif not key and not entity_id and entity_type is not None:
 			query = "FOR e IN Entities "
 			if search:
@@ -4217,6 +4222,8 @@ class Query(ObjectType):
 				query += "FILTER e.is_archetype == true "
 			if location_id is not None:
 				query += f"""FILTER e.location IN ['{ "', '".join([loc.get('_id') for loc in hierarchy]) }'] """
+			if is_favorite:
+				query += "FILTER e.favorite == true "
 			query += f"""FILTER e.type == '{ entity_type }'
 			SORT e.name ASC
 			RETURN e"""
@@ -4235,6 +4242,7 @@ class Query(ObjectType):
 				return [NPC(id = doc['_id']) for doc in entities]
 			else:
 				raise Exception("unknown entity type: ", entity_type)
+		# retrieve a specific entity
 		elif key is not None or entity_id is not None:
 			if key is not None:
 				entity = get_doc_by_id('Entities', 'Entities/' + str(key))
