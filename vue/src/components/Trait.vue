@@ -164,7 +164,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 
 	function click_rating() {
 		if(mode.value == view_modes.Editing) {
-			edit_rating.value = true
+			console.log("edit_rating", edit_rating.value)
+			edit_rating.value = !edit_rating.value
 		}
 		else {
 			play_trait()
@@ -379,6 +380,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 		console.log("end click_subtrait")
 	}
 
+	const transfer_resource_mode = ref(false)
+
 	function deplete_resource(dc: DieType) {
 		console.log("depleting resource")
 		if(
@@ -438,9 +441,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 			play_trait()
 		}
 		else if(mode.value == view_modes.Editing) {
-			edit_rating.value = true
+			edit_rating.value = !edit_rating.value
 		}
 		else {
+			if(trait.value.rating && new_rating.value.length != trait.value.rating.length) {
+				new_rating.value = trait.value.rating
+			}
 			const index = new_rating.value.findIndex((r) => r.id == d.id)
 			if(index >= 0) {
 				const { die, change_type } = useDie(d)
@@ -892,8 +898,6 @@ import ToggleButton from './UI/ToggleButton.vue'
 		}
 	}
 
-	const transfer_resource_mode = ref(false)
-
 	function copy() {
 		copy_trait({
 			'ratingType': new_ratingType.value,
@@ -1111,6 +1115,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				</div> -->
 				<ButtonMinimal :function="ButtonTypes.SCALING"
 					:class="{'active': edit_scaling}"
+					v-if="can_edit"
 					@click="edit_scaling = !edit_scaling" />
 				<div class="button-mnml subtrait-icon"
 						:class="add_subtraits ? 'active' : 'inactive'"
@@ -1500,7 +1505,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				
 				<div type="button" class="button-mnml edit-button"
 						@click.stop="switch_to_editing"
-						v-if="mode == view_modes.Viewing && can_edit">
+						v-if="mode == view_modes.Viewing">
 					<div class="icon">✎</div>
 					<div class="label" v-if="!player.small_buttons">edit trait</div>
 					<!-- {{ player.small_buttons ? '✎' : '✎ edit trait' }} -->
