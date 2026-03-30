@@ -260,6 +260,9 @@
 					.transversable-location {
 						flex-grow: 1;
 						border: 1px solid var(--color-border);
+						display: flex;
+						justify-content: center;
+						align-items: center;
 					}
 					&.gm {
 						flex-direction: row;

@@ -525,7 +525,7 @@
 				<component :is="'h' + (props.level + 2)" class="location-name"
 						:class="{ 'text-pulsate': title_pulsate }"
 						@animationend="title_pulsate = false"
-						v-if="!editing_location">
+						v-if="!editing_location || player.is_player">
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
 
@@ -755,6 +755,7 @@
 							:key="traitset.id"
 							:traitset_id="traitset.id"
 							:entity_id="location.id"
+							:entity="location"
 							:location_key="props.loc"
 							:limit="traitset.limit"
 							:expanded="!editing_traits"
@@ -1087,10 +1088,12 @@
 			margin: .2em;
 			.location-component-wrapper {
 				height: 100%;
+				min-height: inherit;
 				.title {
 					position: relative;
 					width: 100%;
 					height: 100%;
+					min-height: inherit;
 					white-space: preline;
 					/* line-height: 4em; */
 					/* padding: 4em 3em; */
