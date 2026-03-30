@@ -39,6 +39,7 @@ const playerStore = usePlayerStore();
 		justify-content: end;
 		align-items: center;
 		line-height: .7em;
+		letter-spacing: -.12em;
 		/* line-height: 50vh; */
 		/* overflow-x: auto;
 		overflow-y: hidden; */
