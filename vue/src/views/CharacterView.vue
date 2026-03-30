@@ -919,6 +919,7 @@
 					:relationship="false"
 					@next="next_traitset(set)"
 					@set_traitset="set_traitset"
+					@reset_scroll="scroll_to_traitset(set)"
 					@unset_traitset="active_traitset_id = ''" />
 			</Suspense>
 			<div class="bottom-scroll-space"></div>

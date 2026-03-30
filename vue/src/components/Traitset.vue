@@ -48,7 +48,7 @@
 		traitset?: Traitset
 	}>()
 
-	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset'])
+	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset', 'reset_scroll'])
 
 	const player = usePlayerStore()
 	const { traitset_dice } = useDicepool(false)
@@ -122,8 +122,6 @@
 
 	const expanded_sfx: Ref<SFXType> = ref({} as SFXType)
 
-	const adding_trait: Ref<boolean> = ref(false)
-	const trait_search: Ref<string> = ref("")
 
 	const held = ref(false)
 
@@ -214,6 +212,9 @@
 		}
 	}
 
+	const adding_trait: Ref<boolean> = ref(false)
+	const trait_search: Ref<string> = ref("")
+	
 	function toggle_add_trait() {
 		retrieve_default_settings()
 		if(adding_trait.value) {
@@ -222,6 +223,7 @@
 		}
 		else {
 			retrieve_potential_traits('network-only')
+			emit('reset_scroll')
 			retrieve_all_traits()
 			retrieve_parents()
 			adding_trait.value = true
