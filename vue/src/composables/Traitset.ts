@@ -73,7 +73,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			console.warn("no traitset id provided")
 		}
 		else {
-			// console.log("retrieving traitset: " + traitset_id + (entity_id ? " for entity: " + entity_id : ""))
+			console.log("retrieving traitset: " + traitset_id + (entity_id ? " for entity: " + entity_id : ""))
 			const query_get_traitset = gql`query TraitsetByID($traitsetId: ID, $sorting: String) {
 				traitsets(traitsetId: $traitsetId, sorting: $sorting) {
 					id
@@ -132,6 +132,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 				}
 			}`
 			let query = query_get_traitset
+			if(!sorting.value) {
+				sorting.value = SORTING[0]
+			}
 			let args: { traitsetId: string, entityId?: string, sorting?: string } = { traitsetId: traitset_id ?? traitset.value.id, sorting: sorting.value.id }
 			// console.log("retrieving traitset: " + traitset_id + ", entity_id: " + entity_id + ", sorting: " + Sorting.NAME.toString())
 			if(entity_id) {
@@ -145,9 +148,11 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					variables: args,
 					fetchPolicy: caching ?? 'cache-first'
 				}).then((result) => {
-					// console.log("retrieved traitset: ")
-					// console.log(result)
+					console.log("retrieved traitset: ")
+					console.log(result)
 					traitset.value = result.data.traitsets[0]
+				}).catch((error) => {
+					console.error(error)
 				})
 				// const { result } = provideApolloClient(apolloClient)(
 				// 	() => useQuery<{traitsets: Traitset[]}>(

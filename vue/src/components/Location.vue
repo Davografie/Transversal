@@ -179,7 +179,7 @@
 				!location.value.entities?.map(e => e.id).includes(player.the_entity?.following.id ?? '')
 			) {
 				// changed player location
-				player.is_player ? player.retrieve_character() : player.retrieve_perspective()
+				player.is_player ? player.retrieve_character('network-only') : player.retrieve_perspective('network-only')
 				console.log("changed player location during polling to " + player.the_entity?.location?.key)
 				router.push({ path: '/location/' + player.the_entity?.location?.key })
 			}

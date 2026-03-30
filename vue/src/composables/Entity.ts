@@ -171,7 +171,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * 
 	 * Carefull! This is a big query
 	 */
-	async function retrieve_full_entity() {
+	async function retrieve_full_entity(caching: FetchPolicy = 'cache-first') {
 		const query = gql`query FullEntity($entityId: ID) {
 			entities(entityId: $entityId) {
 				key
@@ -276,7 +276,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			apolloClient.query({
 				query: query,
 				variables: { entityId: entity_id },
-				fetchPolicy: 'network-only'
+				fetchPolicy: caching
 			}).then((result) => {
 				let traitsets: Traitset[] = []
 				result.data.entities[0].traitsets.forEach((ts: Traitset) => {

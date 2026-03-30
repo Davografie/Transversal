@@ -228,6 +228,22 @@
 		}
 	}
 
+	watch(() => player.location_update_counter, () => {
+		if(props.location) {
+			retrieve_traitset('network-only')
+		}
+	})
+
+	watch(() => player.the_entity?.traitsets, (newTraitsets, oldTraitsets) => {
+		if(newTraitsets && player.the_entity?.id == props.entity_id) {
+			const new_traits = newTraitsets.filter(ts => ts.id == traitset.value.id)[0].traits
+			if(new_traits && JSON.stringify(new_traits?.map(t => t.id).sort()) != JSON.stringify(traitset.value.traits?.map(t => t.id).sort())) {
+				console.log("updating traitset: " + traitset.value.id)
+				retrieve_traitset('network-only')
+			}
+		}
+	})
+
 	const show_unavailable_traits = ref(false)
 
 	async function add_trait() {

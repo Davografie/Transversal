@@ -200,7 +200,7 @@
 	const img_link_small = computed(() => {
 		if(entity.value.image) {
 			return '/assets/uploads/' + entity.value.image.path
-				+ '/small' + entity.value.image?.ext
+				+ 'small' + entity.value.image?.ext
 		}
 		else {
 			return '/assets/uploads/' + entity.value.entityType + '/small.png'
@@ -210,7 +210,7 @@
 	const img_link_large = computed(() => {
 		if(entity.value.image) {
 			return '/assets/uploads/' + entity.value.image.path
-				+ '/large' + entity.value.image?.ext
+				+ 'large' + entity.value.image?.ext
 		}
 		else {
 			return '/assets/uploads/' + entity.value.entityType + '/large.png'
@@ -369,6 +369,7 @@
 
 
 	// CONTROLS
+
 	const show_controls = ref(false)
 	function toggle_controls() {
 		show_controls.value = !show_controls.value
@@ -464,6 +465,10 @@
 		if(nextIndex < 0) { nextIndex = order.length - 1 }
 		player.traitset_defaults = order[nextIndex]
 	}
+
+	const refresh_counter = ref(0)
+
+	// CONTROLS END
 
 	onMounted(() => {
 		if(route.name == 'Landing') {
@@ -574,6 +579,12 @@
 		if(!entity.value.traitsets) { return [] }
 		return entity.value.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)
 	})
+
+	const traitset_update_counter = ref(0)
+	watch(() => player.the_entity?.traitsets, (newTraitsets, oldTraitsets) => {
+		traitset_update_counter.value++
+	})
+
 </script>
 
 <template>
@@ -828,8 +839,8 @@
 				</div>
 
 				<div id="refresh-entity" class="button-mnml"
-					title="refresh entity"
-					@click="player.retrieve_perspective()">
+					title="refresh entity" :key="refresh_counter"
+					@click="player.retrieve_perspective('network-only'); refresh_counter++">
 					<div class="icon">🔄</div>
 					<div class="label" v-if="!player.small_buttons">refresh</div>
 				</div>
@@ -889,7 +900,7 @@
 			<Suspense>
 				<Traitset
 					v-for="set in filtered_traitsets"
-					:key="set.id + entity.key"
+					:key="set.id + entity.key + traitset_update_counter"
 					:traitset="set"
 					:traitset_id="set.id"
 					:entity_id="entity.id"

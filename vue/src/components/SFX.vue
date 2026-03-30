@@ -96,9 +96,11 @@
                 ✨ {{ sfx?.name }}
                 <!-- <span class="tutorial" v-if="!player.small_buttons && show_description">← close ↓ activate</span> -->
             </div>
-            <div class="sfx-description" v-if="show_description && sfx?.description && !is_editing"
-                v-html="rendered_description" @click.stop="activate" title="play">
-            </div>
+            <Transition name="desc">
+                <div class="sfx-description" v-if="show_description && sfx?.description && !is_editing"
+                    v-html="rendered_description" @click.stop="activate" title="play">
+                </div>
+            </Transition>
         </div>
         <div class="editing" v-else>
             ✨ <input class="edit-name" type="text" placeholder="name" v-model="new_name" />
@@ -210,6 +212,15 @@
     .sfx.adding.collapsed {
         border-radius: 20px;
         padding: .2em 1em;
+    }
+    .desc-enter-active,
+    .desc-leave-active {
+        transition: max-height 1s ease-out;
+        max-height: 100px;
+    }
+    .desc-enter-from,
+    .desc-leave-to {
+        max-height: 0;
     }
 }
 </style>

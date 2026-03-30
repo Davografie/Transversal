@@ -852,17 +852,43 @@ import ToggleButton from './UI/ToggleButton.vue'
 		}
 	})
 
+	import { useTraitset } from '@/composables/Traitset'
+
+	const { traitset, set_traitset_id, set_entity, retrieve_traitset } = useTraitset(undefined, trait.value.traitsetId, player.the_entity?.id)
+
 	async function steal() {
-		if(trait.value.ratingType == 'resource' && new Set(trait.value.rating?.map(d => d.number_rating)).size > 1) {
-			transfer_resource_mode.value = !transfer_resource_mode.value
-		}
-		else if(player.the_entity && props.entity_id != player.the_entity?.id) {
+		// if(trait.value.ratingType == 'resource' && new Set(trait.value.rating?.map(d => d.number_rating)).size > 1) {
+		// 	transfer_resource_mode.value = !transfer_resource_mode.value
+		// }
+		// take trait
+		// else
+		if(player.the_entity && props.entity_id != player.the_entity?.id) {
 			await change_trait_entity(player.the_entity.id)
 			emit('refetch')
+			if(player.is_gm && player.perspective) {
+				player.retrieve_perspective('network-only')
+			}
+			// if(player.is_gm && trait.value.traitsetId) {
+			// 	set_traitset_id(trait.value.traitsetId)
+			// 	set_entity(player.the_entity.id)
+			// 	await retrieve_traitset('network-only')
+			// 	setTimeout(() => {
+			// 		console.log('traitset', JSON.stringify(traitset.value))
+			// 		player.perspective = {
+			// 			...player.perspective,
+			// 			'traitsets': {
+			// 				...player.perspective?.traitsets,
+			// 				...[traitset.value]
+			// 			}
+			// 		}
+			// 	}, 200)
+			// }
 		}
+		// drop trait
 		else if(player.the_entity && player.the_entity?.location && props.entity_id == player.the_entity?.id) {
 			await change_trait_entity(player.the_entity.location?.id)
 			emit('refetch')
+			player.location_update_counter++
 		}
 	}
 
@@ -1255,17 +1281,19 @@ import ToggleButton from './UI/ToggleButton.vue'
 				</div>
 			</div>
 
-			<div class="notes" v-html="rendered_notes"
-				v-if="trait.notes
-				&& mode != view_modes.Editing
-				&& (
-					mode != view_modes.Small ||
-					!trait.statement
-				)
-				&& (player.is_gm
-					|| props.entity_id == player.player_character.id
-					|| props.entity_id?.startsWith('Relations/')
-				)" />
+			<Transition name="notes">
+				<div class="notes" v-html="rendered_notes"
+					v-if="trait.notes
+					&& mode != view_modes.Editing
+					&& (
+						mode != view_modes.Small ||
+						!trait.statement
+					)
+					&& (player.is_gm
+						|| props.entity_id == player.player_character.id
+						|| props.entity_id?.startsWith('Relations/')
+					)" />
+			</Transition>
 			
 			<div class="edit-trait" v-if="mode == view_modes.Editing">
 				<div class="edit-trait-id" v-if="mode == view_modes.Editing && editing_trait_id">
@@ -1978,6 +2006,16 @@ import ToggleButton from './UI/ToggleButton.vue'
 				color: var(--color-disabled);
 				/* box-shadow: inset 0 0 10px var(--color-border); */
 				background-image: linear-gradient(to bottom, var(--color-border) -100%, transparent 30%);
+				overflow: hidden;
+			}
+			.notes-enter-active, .notes-leave-active {
+				transition: max-height 1s ease-out;
+			}
+			.notes-enter-from, .notes-leave-to {
+				max-height: 0;
+			}
+			.notes-enter-to, .notes-leave-from {
+				max-height: 200px;
 			}
 			.statement {
 				font-style: italic;

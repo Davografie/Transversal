@@ -75,6 +75,9 @@ export const usePlayerStore = defineStore(
 
 		const image_entity = ref<Entity|undefined>(undefined)
 
+
+		const location_update_counter = ref<number>(0)
+
 		// const {
 		// 	character: player_character,
 		// 	retrieve_character,
@@ -307,7 +310,8 @@ export const usePlayerStore = defineStore(
 			theme,
 			font_size,
 			input_method,
-			tickets_remaining
+			tickets_remaining,
+			location_update_counter
 		}
 	},
 	{
