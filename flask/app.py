@@ -895,6 +895,7 @@ class TraitSetting(ObjectType):
 	permanence = Boolean() # wether resource depletion resets every session
 	priority = Int()
 	inherited = Boolean()
+	inherited_as = Field(lambda: TraitSetting)
 
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
@@ -1088,6 +1089,14 @@ class TraitSetting(ObjectType):
 		else:
 			return False
 
+	def resolve_inherited_as(parent, info):
+		if parent.inherited_as:
+			return parent.inherited_as
+		if parent.id:
+			return TraitSetting(id=get_doc_by_id('TraitSettings', parent.id).get('inherited_as'))
+		else:
+			return None
+
 class TraitSettingInput(InputObjectType):
 	new_trait_id = ID(required=False)
 	rating_type = String(required=False)
@@ -1123,6 +1132,7 @@ class MutateTraitSetting(Mutation):
 		die_type: for transferring resources
 		"""
 		# try:
+		logger.debug(f"\nMutateTraitSetting:\ntrait_setting_id: {trait_setting_id}\ntrait_setting_input: {trait_setting_input}\nentity_id: {entity_id}\ndie_type: {die_type}")
 		trait_setting = get_doc_by_id('TraitSettings', trait_setting_id)
 		if trait_setting is None and entity_id is not None:
 			trait_setting = db.collection('TraitSettings').insert({**trait_setting_input, '_from': entity_id})
@@ -1130,6 +1140,7 @@ class MutateTraitSetting(Mutation):
 
 			# transfering a trait
 			if entity_id is not None and trait_setting.get('_from') != entity_id:
+				logger.debug(f"transfering trait from { trait_setting.get('_from') } to { entity_id }, rating type: { trait_setting.get('rating_type') }")
 
 				# transferring resources happens per die
 				if trait_setting.get('rating_type') == 'resource' and die_type is not None:
@@ -1161,10 +1172,32 @@ class MutateTraitSetting(Mutation):
 						}
 						# logger.debug(f"MutateTraitSetting:\tnew pocket: { new_doc }")
 						db.collection('TraitSettings').insert(new_doc)
+				
+				# except if die_type is not provided
+				elif trait_setting.get('rating_type') == 'resource':
+					logger.info(f"copying resource trait settings from { trait_setting.get('_from') } to { entity_id }")
+					if len(find_docs('TraitSettings', {'_from': entity_id, '_to': trait_setting.get('_to')})) == 0:
+						new_doc = {
+							'_from': entity_id,
+							'_to': trait_setting.get('_to'),
+							**{ key: value for key, value in trait_setting.items() if not key.startswith('_') }
+						}
+						db.collection('TraitSettings').insert(new_doc)
 
 				# if it's not a resource, but instead an asset, the entire asset is transferred at once
 				elif get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset') == 'Traitsets/3':
 					trait_setting = { **trait_setting, '_from': entity_id }
+
+				# regardless of traitset, if its shared by both entities, it can be transferred
+				from_entity_type = get_doc_by_id('Entities', trait_setting.get('_from')).get('type')
+				to_entity_type = get_doc_by_id('Entities', entity_id).get('type')
+				traitset_id = get_doc_by_id('Traits', trait_setting.get('_to')).get('traitset')
+				traitset = get_doc_by_id('Traitsets', traitset_id)
+				logger.debug(f"from_entity_type: { from_entity_type }\tto_entity_type: { to_entity_type }\ttraitset: { traitset }")
+				if from_entity_type in traitset.get('entity_types') and to_entity_type in traitset.get('entity_types'):
+					logger.info("transferring trait between entities that share the same traitset")
+					trait_setting = { **trait_setting, '_from': entity_id }
+				
 
 			# then update the actual setting
 			# new_trait_id exception
@@ -2195,6 +2228,8 @@ class Traitset(ObjectType):
 		# if parent.traits:
 		# 	return parent.traits
 
+		overwritten_traits = []
+
 		# traits per relation
 		if info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Relations/'):
 			query = f"""FOR traitsettings IN TraitSettings
@@ -2204,15 +2239,24 @@ class Traitset(ObjectType):
 				FILTER trait.traitset == '{ parent.id }'
 			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
 			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
-			cursor = execute_aql(query, ['TraitSettings', 'Traits'])
-			# cursor = db.aql.execute(query)
-			return [Trait(
-				id=doc['id'],
-				trait_setting_id=doc['setting']
-			) for doc in cursor]
-		
+			traits = execute_aql(query, ['TraitSettings', 'Traits'])
+			result = []
+			for trait in traits:
+				logger.debug(f"Traitset.resolve_traits:\ttrait: { trait }")
+				if trait.get('setting') is not None and (ts_doc := get_doc_by_id('TraitSettings', trait.get('setting'))).get('inherited_as'):
+					overwritten_traits.append(ts_doc.get('inherited_as'))
+			for trait in traits:
+				if trait.get('setting') is not None and (ts_doc := get_doc_by_id('TraitSettings', trait.get('setting'))).get('_id') not in overwritten_traits:
+					result.append(Trait(
+						id=trait.get('id'),
+						trait_setting_id=ts_doc.get('_id')
+					))
+			logger.error(f"Traitset.resolve_traits:\tresult: { result }")
+			return result
+
 		# traits for relationships
 		elif 'relation' in parent.entity_types:
+			logger.error(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")
 			query = f"""FOR relation IN Relations
 				FILTER relation._from == '{ info.context.get('entity_id') }'
 				OR relation._to == '{ info.context.get('entity_id') }'
@@ -2224,22 +2268,22 @@ class Traitset(ObjectType):
 			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
 			RETURN {{ trait: trait, setting: traitsettings }}"""
 			traits = execute_aql(query, ['Relations', 'TraitSettings', 'Traits'])
-			# remove the traits from others to this entity, if setting.hidden == true and not in setting.known_to
-			# for trait in traits:
-			# 	if trait['setting'].get('hidden'):
-			# 		if trait['setting'].get('known_to') is None:
-			# 			traits.remove(trait)
-			# 		elif info.context.get('entity_id') not in trait['setting'].get('known_to'):
-			# 			traits.remove(trait)
-			return [Trait(
-				id=trait.get('trait').get('_id'),
-				trait_setting_id=trait.get('setting').get('_id')
-			) for trait in traits]
-			# return [Trait(
-			# 	id=doc['id'],
-			# 	trait_setting_id=doc['setting']
-			# ) for doc in cursor]
+			logger.debug(f"Traitset.resolve_traits:\ttraits: { traits }")
+			result = []
+			for trait in traits:
+				logger.debug(f"Traitset.resolve_traits:\ttrait: { trait }")
+				if trait.get('setting') is not None and trait.get('setting').get('inherited_as'):
+					overwritten_traits.append(trait.get('setting').get('inherited_as'))
+			for trait in traits:
+				if trait.get('setting') is not None and trait.get('setting').get('_id') not in overwritten_traits:
+					result.append(Trait(
+						id=trait.get('trait').get('_id'),
+						trait_setting_id=trait.get('setting').get('_id')
+					))
+			logger.error(f"Traitset.resolve_traits:\tresult: { result }")
+			return result
 
+		# traits for entity
 		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Entities/'):
 			# logger.debug(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")
 			entity = get_doc_by_id('Entities', info.context.get('entity_id'))
@@ -2279,9 +2323,8 @@ class Traitset(ObjectType):
 					)
 					FOR trait IN UNIQUE(APPEND(direct_traits, inherited_traits))
 					RETURN trait"""
-				cursor = execute_aql(query, ['Entities', 'TraitSettings', 'Traits'])
-				# cursor = db.aql.execute(query)
-				return [Trait(id=trait['_to'], trait_setting_id=trait['_id']) for trait in cursor]
+				traits = execute_aql(query, ['Entities', 'TraitSettings', 'Traits'])
+				return [Trait(id=trait['_to'], trait_setting_id=trait['_id']) for trait in traits]
 
 
 
@@ -2361,6 +2404,20 @@ class Traitset(ObjectType):
 				]
 				inherited_trait_settings = filter_trait_settings_by_location(inherited_trait_settings, location_id)
 
+				overwritten_traits = []
+
+				all_trait_settings = direct_trait_settings + inherited_trait_settings
+
+				for ts in all_trait_settings:
+					if ts.get('inherited_as'):
+						overwritten_traits.append(ts.get('inherited_as'))
+
+				filtered_trait_settings = [
+					ts
+					for ts in all_trait_settings
+					if ts.get('_id') not in overwritten_traits
+				]
+
 				result = [
 					Trait(
 						id=ts.get('_to'),
@@ -2370,19 +2427,21 @@ class Traitset(ObjectType):
 							priority=0 if ts == direct_trait_settings else ts.get('max') - ts.get('entity_depth')
 						)
 					)
-					for ts in direct_trait_settings + inherited_trait_settings
+					for ts in filtered_trait_settings
 				]
 				return result
 
-				# return [Trait(
-				# 		id=trait_setting.get('_to'),
-				# 		trait_setting_id=trait_setting.get('_id'),
-				# 		trait_setting=TraitSetting(
-				# 			id=trait_setting.get('_id'),
-				# 			priority=trait_setting.get('entity_depth'),
-				# 		)
-				# 	) for trait_setting in inherited_trait_settings]
-
+				# result = []
+				# for trait in direct_trait_settings + inherited_trait_settings:
+				# 	if trait.get('inherited_as'):
+				# 		overwritten_traits.append(trait.get('setting').get('inherited_as'))
+				# for trait in direct_trait_settings + inherited_trait_settings:
+				# 	if trait.get('_id') not in overwritten_traits:
+				# 		result.append(Trait(
+				# 			id=trait.get('_to'),
+				# 			trait_setting_id=trait.get('_id')
+				# 		))
+				# return result
 
 			# neither entity nor relation
 			else:
@@ -4423,11 +4482,17 @@ class Query(ObjectType):
 			# logger.debug(result)
 			return [result]
 
-	relations = List(Relation, relation_id=ID(required=False))
-	def resolve_relations(parent, info, relation_id=None):
-		info.context['entity_id'] = relation_id
+	relations = List(Relation, relation_id=ID(required=False), from_entity=ID(required=False))
+	def resolve_relations(parent, info, relation_id=None, from_entity=None):
 		if relation_id is not None:
+			info.context['entity_id'] = relation_id
 			return [Relation(id=relation_id)]
+		elif from_entity is not None:
+			info.context['entity_id'] = from_entity
+			return [
+				Relation(id=doc['_id'])
+				for doc in find_docs('Relations', {'_from': from_entity})
+			]
 		else:
 			cursor = db.collection('Relations').all()
 			return [
