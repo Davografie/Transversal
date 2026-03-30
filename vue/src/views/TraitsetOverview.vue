@@ -97,7 +97,7 @@
 							@click="emit('show_traitset', traitset.key)"
 							:class="[
 								{ 'subtraitset': traitset.entityTypes?.includes('subtrait') },
-								{ 'emphasized': traitsets.filter(
+								{ 'emphasized': false && entity_types.length > 0 && traitsets.filter(
 								ts => entity_types.every(
 									et => ts.entityTypes?.includes(et)))
 								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase())).includes(traitset) },
