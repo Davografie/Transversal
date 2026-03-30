@@ -150,6 +150,7 @@ export interface TraitInput {
 }
 
 export interface Traitset {
+    key?: string
     id: string
     name?: string
     explainer?: string
