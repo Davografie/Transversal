@@ -452,4 +452,13 @@
 		}
 	}
 }
+.light {
+	.trait {
+		.sub-trait {
+			.statement {
+				font-size: 1.4em;
+			}
+		}
+	}
+}
 </style>
