@@ -17,7 +17,7 @@
 
 <template>
 	<div class="trait-label" :class="trait.ratingType != 'empty' ? die_constants.find(dc => dc.number_rating == Math.max(...(trait.rating?.map(die => Math.abs(die.number_rating)) ?? [0])))?.rating : ''">
-		{{ trait.statement || trait.name }}
+		{{ trait.statement?.substring(0, 12) || trait.name }}
 		<span v-for="d of dice_in_pool" :key="d.id">
 			{{ d.number_rating > 0 ?
 				die_constants.find(dc => d.number_rating == dc.number_rating)?.active
