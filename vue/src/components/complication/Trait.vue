@@ -4,9 +4,9 @@
 	import { useTrait } from '@/composables/Trait'
 
 	const props = defineProps<{
-		entity_id: string,
 		traitsetting_id: string,
 		dice: DieType[]
+		entity_id?: string,
 	}>()
 
 	const emit = defineEmits([

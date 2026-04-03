@@ -4,8 +4,8 @@
 	import type { Die as DieType } from '@/interfaces/Types'
 	
 	const props = defineProps<{
-		entity_id: string,
 		dice: DieType[]
+		entity_id?: string,
 	}>()
 
 	const emits = defineEmits([
@@ -14,19 +14,19 @@
 	])
 
 	const { entity, retrieve_small_entity } = useEntity(undefined, props.entity_id)
-	retrieve_small_entity()
+	if(props.entity_id) retrieve_small_entity()
 </script>
 
 <template>
 	<div class="suggested-entity">
-		<div class="entity-name header">
+		<div class="entity-name header" v-if="props.entity_id">
 			{{ entity.name }}
 		</div>
 		<div class="traits">
 			<template v-for="traitsetting_id in new Set(props.dice.map((d) => d.traitsettingId)).values()" :key="traitsetting_id">
 				<Trait
 					:entity_id="props.entity_id"
-					:traitsetting_id="traitsetting_id"
+					:traitsetting_id="traitsetting_id ?? 'custom'"
 					:dice="props.dice.filter((d) => d.traitsettingId == traitsetting_id)"
 					@click_die="(die) => emits('click_die', die)"
 					@click.stop="emits('click_complication', traitsetting_id)" />
