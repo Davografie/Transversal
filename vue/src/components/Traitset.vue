@@ -265,6 +265,13 @@
 			.filter((d) => d.entityId == props.entity_id))]
 	})
 
+	const scaling_effect: Ref<number> = computed(() => {
+		// take a die from traitset_dice for each unique traitsetting id and add the die.scaling attributes together
+		return [...new Set(traitset_dice(traitset.value.id)
+			.filter((d) => d.entityId == props.entity_id)
+			.map((d) => d.traitsettingId))].reduce((acc, d) => acc + traitset_dice(traitset.value.id).filter((d2) => d2.traitsettingId == d).reduce((acc2, d2) => acc2 + d2.scaling, 0), 0)
+	})
+
 	watch(() => player.perspective.location, (newLocation, oldLocation) => {
 		if(player.is_gm && player.perspective_id == props.entity_id && newLocation != oldLocation) {
 			// console.log("switching perspective")
@@ -618,6 +625,9 @@
 
 			</div>
 			<div class="limiter">
+				<span class="scaling" v-if="scaling_effect != 0">
+					{{ scaling_effect < 0 ? '-' : '+' }}{{ scaling_effect }}
+				</span>
 				<span v-if="limiter - traits_in_dicepool.length > 0" v-for="i in limiter - traits_in_dicepool.length" :key="i">
 					{{ die_shapes.default_inactive }}
 				</span>

@@ -148,6 +148,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					id
 					traitSettingId
 					rating
+					traitSetting {
+						scaling
+					}
 				}
 			}
 		}`
@@ -184,7 +187,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						newTrait.id,
 						newTrait.traitSettingId,
 						newTrait.traitsetId,
-						entity_id.value
+						entity_id.value,
+						newTrait.traitSetting.scaling
 					)
 					newTrait = { ...newTrait, rating: new_rating }
 				}
@@ -199,7 +203,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 								new_subTrait.id,
 								new_subTrait.traitSettingId,
 								new_subTrait.traitsetId,
-								entity_id.value
+								entity_id.value,
+								new_subTrait.traitSetting.scaling
 							)
 							new_subTrait = { ...new_subTrait, rating: new_rating }
 						}
@@ -708,6 +713,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					id
 					ratingType
 					rating
+					scaling
 					locationsEnabled
 					locationsDisabled
 					sfxs {
@@ -736,7 +742,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						trait_id.value,
 						result.data.traits[0].defaultTraitSetting.id,
 						undefined,
-						undefined
+						undefined,
+						result.data.traits[0].defaultTraitSetting.scaling
 					)
 				}
 				default_settings.value = {

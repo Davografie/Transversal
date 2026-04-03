@@ -4,6 +4,7 @@ export interface Die {
     number_rating: number
     ratingType?: string
     sides?: number
+    scaling?: number
     pool?: boolean
     result?: number
     raises?: number
