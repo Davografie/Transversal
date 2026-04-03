@@ -88,7 +88,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function retrieve_entity() {
+	async function retrieve_entity() {
 		console.log("retrieving entity: ", entity_id)
 		const query = gql`query FullEntity($entityId: ID) {
 			entities(entityId: $entityId) {
@@ -151,7 +151,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/') && entity_id != 'Entities/undefined') {
-			apolloClient.query({
+			await apolloClient.query({
 				query: query,
 				variables: { entityId: entity_id },
 				fetchPolicy: 'network-only'
@@ -470,20 +470,22 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function retrieve_instances() {
+	async function retrieve_instances() {
 		/* if current entity is an archetype, retrieve all entities with that archetype */
 		const instances_query = gql`query EntityInstances($entityId: ID) {
 			entities(entityId: $entityId) {
 				instances {
+					key
 					id
 					entityType
 					name
+					isArchetype
 				}
 			}
 		}`
 
 		if(apolloClient && entity_id && entity_id.startsWith('Entities/')) {
-			apolloClient.query({
+			await apolloClient.query({
 				query: instances_query,
 				variables: { entityId: entity_id },
 				fetchPolicy: 'cache-first'

@@ -78,6 +78,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				}
 				traitSettingId
 				traitSetting {
+					statement
+					notes
 					rating
 					ratingType
 					permanence
@@ -97,6 +99,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						name
 					}
 					inherited
+					inheritable
 				}
 				requiredTraits {
 					id

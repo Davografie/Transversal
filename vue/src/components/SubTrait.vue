@@ -242,7 +242,7 @@
 				</div>
 				<div class="statement">
 					<span v-if="!editing && trait.statement">{{ trait.statement }}</span>
-					<span v-if="!editing && trait.notes" v-html="marked(trait.notes)"></span>
+					<span v-if="!editing && trait.notes && [view_modes.Viewing, view_modes.Editing].includes(props.mode)" v-html="marked(trait.notes)"></span>
 					<input type="text" v-if="editing" v-model="new_statement" placeholder="statement" />
 					<textarea v-if="editing" v-model="new_notes" placeholder="notes" />
 				</div>

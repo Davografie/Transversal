@@ -474,15 +474,18 @@
 			}
 
 			// get unique traits, by name and if it's not inheritable also statement
+			// traitset.duplicates means that duplicate traits are allowed
 			const unique_traits: string[] = Array.from(new Set(filtered_traits.map((t) =>
-				t.name + ((!traitset.value.duplicates || t.inheritable == true) ? '' : (t.traitSetting?.statement ?? ''))
+				t.name + ((traitset.value.duplicates == false || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? ''))
 			)))
+
+			if(traitset.value.name == "challenges") console.log("unique traits: " + JSON.stringify(unique_traits))
 
 			// for each unique trait, get the highest priority trait
 			unique_traits.forEach((ut) => {
 				const ut_traits = filtered_traits.filter((t) => {
-						return t.name + ((!traitset.value.duplicates || t.inheritable == true) ? '' : (t.traitSetting?.statement ?? '')) == ut
-					})
+					return t.name + ((!traitset.value.duplicates || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? '')) == ut
+				})
 				if(ut_traits.length == 0) {
 					// console.log("traitset duplicates: " + traitset.value.duplicates + ", no traits found for '" + ut + "'")
 					return
@@ -694,17 +697,17 @@
 
 		<div class="traits" v-if="show_traits || extended" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
-			<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0">
+			<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0 && show_traits">
 				<!-- <div class="sfx-sparkles">✨</div> -->
 				<template v-for="sfx in traitset.sfxs" :key="sfx.id">
 					<SFX :sfx_id="sfx.id"
+						:expanded="expanded_sfx == sfx"
 						@expand="expanded_sfx = sfx"
-						@collapse="expanded_sfx = {} as SFXType"
-						v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" />
+						@collapse="expanded_sfx = {} as SFXType" />
 				</template>
 			</div>
 
-			<div class="entity-traits" v-if="extended && !adding_trait">
+			<div class="entity-traits" v-if="show_traits && !adding_trait">
 				<template class="highlighted-traits" v-for="trait in traits_to_display"
 						:key="trait.traitSettingId"
 						v-if="highlighted_traits.length > 0">
@@ -1232,7 +1235,6 @@
 		.traitset {
 			.entity-traits {
 				flex-direction: column;
-				align-items: center;
 				overflow-x: hidden;
 				overflow-y: auto;
 				scroll-snap-type: y mandatory;
@@ -1272,6 +1274,11 @@
 					justify-content: end;
 				}
 			}
+		}
+	}
+	.touch.dark {
+		.traitset .entity-traits {
+			align-items: center;
 		}
 	}
 	.dark {

@@ -127,6 +127,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 							hidden
 							priority
 							inherited
+							inheritable
 						}
 					}
 				}

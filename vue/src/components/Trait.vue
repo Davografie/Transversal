@@ -193,7 +193,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				&& mode.value != view_modes.Editing
 				&& !player.editing
 				// resources have a special function
-				&& !['resource', 'empty'].includes(trait.value.ratingType ?? '')
+				&& !['challenge', 'resource', 'empty'].includes(trait.value.ratingType ?? '')
 				// only add dice when in the right phase
 				&& inAddingPhase.value
 			) {
@@ -234,8 +234,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 						}
 					}
 					// check if trait has any negative subtraits, they should be added as complications
-					if(trait.value.subTraits && trait.value.subTraits.filter((st: Trait) => st.ratingType == 'static').length > 0) {
-						for(const subtrait of trait.value.subTraits.filter((st: Trait) => st.ratingType == 'static')) {
+					if(trait.value.subTraits && trait.value.subTraits.filter((st: Trait) => ['static', 'challenge'].includes(st.ratingType ?? '')).length > 0) {
+						for(const subtrait of trait.value.subTraits.filter((st: Trait) => ['static', 'challenge'].includes(st.ratingType ?? ''))) {
 							if(subtrait.rating && subtrait.rating.some((d) => d.number_rating < 0) && !check_trait(subtrait.traitSettingId ?? '')) {
 								for(const die of subtrait.rating) {
 									die.traitId = subtrait.id
@@ -325,7 +325,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 			console.log("subtrait not in dicepool, adding")
 
 			// add the subtrait
-			if(subtrait.ratingType == 'static') {
+			if(subtrait.ratingType == 'static' || subtrait.ratingType == 'challenge') {
 				for(const die_type of subtrait.rating ?? []) {
 					const { die } = useDie(die_type)
 					die.value.traitId = trait.value.id
@@ -483,6 +483,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 	const new_locationsEnabled: Ref<string[]> = ref(trait.value.traitSetting?.locationsEnabled ?? [])
 	const new_locationsDisabled: Ref<string[]> = ref(trait.value.traitSetting?.locationsDisabled ?? [])
 	const new_trait_id: Ref<string|undefined> = ref()
+	const new_inheritable: Ref<boolean> = ref(trait.value.traitSetting?.inheritable ?? false)
 
 	const can_edit = ref<boolean>(false)
 
@@ -536,6 +537,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 		new_hidden.value = trait.value?.traitSetting?.hidden ?? false
 		new_locationsEnabled.value = trait.value?.traitSetting?.locationsEnabled ?? []
 		new_locationsDisabled.value = trait.value?.traitSetting?.locationsDisabled ?? []
+		new_inheritable.value = trait.value?.traitSetting?.inheritable ?? false
 	}
 
 	watch(() => props.edit_mode, () => {
@@ -597,7 +599,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 				'locationsEnabled': new_locationsEnabled.value,
 				'locationsDisabled': new_locationsDisabled.value,
 				'inheritedAs': trait.value.traitSetting?.id ?? trait.value.traitSettingId ?? props.trait_setting_id,
-				'hidden': new_hidden.value
+				'hidden': new_hidden.value,
+				'inheritable': new_inheritable.value
 			})
 			emit('refetch')
 		}
@@ -614,7 +617,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
 				'locationsEnabled': new_locationsEnabled.value,
 				'locationsDisabled': new_locationsDisabled.value,
-				'hidden': new_hidden.value
+				'hidden': new_hidden.value,
+				'inheritable': new_inheritable.value
 			})
 		}
 		else if(temp === true) {
@@ -628,7 +632,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
 				'locationsEnabled': new_locationsEnabled.value,
 				'locationsDisabled': new_locationsDisabled.value,
-				'hidden': new_hidden.value
+				'hidden': new_hidden.value,
+				'inheritable': new_inheritable.value
 			})
 		}
 	}
@@ -659,6 +664,11 @@ import ToggleButton from './UI/ToggleButton.vue'
 
 	function refetch() {
 		setTimeout(() => emit('refetch'), 200)
+	}
+
+	async function refresh() {
+		await retrieve_trait('network-only')
+		reset_temporary_attributes()
 	}
 
 	const editing_statement = ref(trait.value.statement || trait.value.notes ? true : false)
@@ -1019,14 +1029,20 @@ import ToggleButton from './UI/ToggleButton.vue'
 		}
 	})
 
-	function toggle_hover() {
+	function hover_enter() {
 		if(player.input_method != input_methods.kbm) {
 			return
 		}
 		if(mode.value == view_modes.Small) {
 			mode.value = view_modes.Neutral
 		}
-		else if (mode.value == view_modes.Neutral) {
+	}
+
+	function hover_leave() {
+		if(player.input_method != input_methods.kbm) {
+			return
+		}
+		if(mode.value == view_modes.Neutral) {
 			mode.value = view_modes.Small
 		}
 	}
@@ -1055,8 +1071,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
-			@mouseenter="toggle_hover"
-			@mouseleave="toggle_hover"
+			@mouseenter="hover_enter"
+			@mouseleave="hover_leave"
 			@click.right="longtap_trait"
 			@click="click_trait"
 			@contextmenu="(e) => e.preventDefault()">
@@ -1174,7 +1190,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 					<div class="icon">🗺</div>
 					<div class="label" v-if="!player.small_buttons">{{ restrict_location ? 'cancel' : 'restrict by location' }}</div>
 				</div> -->
-				<div class="button-mnml refresh-button" @click.stop="retrieve_trait('network-only')">
+				<div class="button-mnml refresh-button" @click.stop="refresh">
 					<div class="icon">🔄</div>
 					<div class="label" v-if="!player.small_buttons">refresh</div>
 				</div>
@@ -1380,17 +1396,20 @@ import ToggleButton from './UI/ToggleButton.vue'
 					</div>
 				</div>
 
-				<div class="location-restrictions edit-attribute">
-					<div class="location-restriction-container" v-if="restrict_location">
+				<div class="location-restrictions edit-attribute" v-if="restrict_location">
+					<ToggleButton truthy="zones inherit" falsy="trait only for this entity"
+						:default="new_inheritable ?? false" @toggle="new_inheritable = !new_inheritable"
+						v-if="props.entity?.entityType == 'location' && player.is_gm" />
+					<div class="location-restriction-container">
 						<a class="location-restriction"
-								v-for="(location, index) in location.parents?.slice().reverse()"
-								:key="location.key"
-								@click.stop="toggle_location_restriction(location.id)"
+								v-for="(_location, index) in location.parents?.slice().reverse()"
+								:key="_location.key"
+								@click.stop="toggle_location_restriction(_location.id)"
 								:class="{
-									'enabled': isLocationEnabled(location.id, index),
-									'explicitly-enabled': trait.traitSetting?.locationsEnabled?.includes(location.id),
-									'disabled': isLocationDisabled(location.id, index),
-									'explicitly-disabled': trait.traitSetting?.locationsDisabled?.includes(location.id)
+									'enabled': isLocationEnabled(_location.id, index),
+									'explicitly-enabled': trait.traitSetting?.locationsEnabled?.includes(_location.id),
+									'disabled': isLocationDisabled(_location.id, index),
+									'explicitly-disabled': trait.traitSetting?.locationsDisabled?.includes(_location.id)
 								}">
 							{{ location.name }}
 						</a>
@@ -1576,8 +1595,10 @@ import ToggleButton from './UI/ToggleButton.vue'
 		}
 		.descriptor {
 			display: flex;
-			.trait-from-entity, .trait-to-entity {
-				width: 5em;
+			.trait-image {
+				.trait-from-entity, .trait-to-entity {
+					width: 5em;
+				}
 			}
 			.trait-text .trait-name {
 				display: flex;
@@ -1973,6 +1994,20 @@ import ToggleButton from './UI/ToggleButton.vue'
 			.descriptor {
 				/* padding: 0 1em; */
 				/* overflow: hidden; */
+				.trait-image {
+					position: relative;
+					overflow: visible hidden;
+					width: 5em;
+					position: relative;
+					width: 90px;
+					padding-right: 2em;
+					.trait-from-entity, .trait-to-entity {
+						position: absolute;
+						height: 120px;
+						transform: translateX(-.8em) translateY(-.6em);
+						/* width: 5em; */
+					}
+				}
 				.rating {
 					margin-left: .2em;
 				}
@@ -1981,15 +2016,6 @@ import ToggleButton from './UI/ToggleButton.vue'
 				}
 				.statement {
 					padding-left: .6em;
-				}
-				.trait-image {
-					transform: translateX(-.8em) translateY(-.6em);
-					position: relative;
-					width: 70px;
-					.trait-from-entity, .trait-to-entity {
-						position: absolute;
-						height: 120px;
-					}
 				}
 			}
 			.explanation {
@@ -2294,7 +2320,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				}
 				.sfxs {
 					/* padding-left: 50px; */
-					background-color: var(--color-background-mute);
+					/* background-color: var(--color-background-mute); */
 				}
 			}
 		}

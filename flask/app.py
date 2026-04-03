@@ -610,14 +610,15 @@ class ActivateEntity(Mutation):
 		# 		db.collection('Relations').delete({ '_id': relation.get('_id') })
 
 		# reduce existing relations
-		player = get_doc_by_id('Players', player_id)
+		# player = get_doc_by_id('Players', player_id)
 		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
 		for relation in relations:
 			if relation.get('count') is not None:
-				multiplier = 0.96 ** len(relations)
+				# multiplier = 0.96 ** len(relations)
+				multiplier = 0.96
 				new_count = relation.get('count') * multiplier
 				relation['count'] = new_count
-				if new_count < 0.1 and player.get('is_gm') is True:
+				if new_count < 0.1:# and player.get('is_gm') is True:
 					# GM's keep switching between perspectives, so it rises out of the pan
 					# 	this keeps the simmer down
 					entity = get_doc_by_id('Entities', relation.get('_to'))
@@ -625,6 +626,10 @@ class ActivateEntity(Mutation):
 					db.collection('Relations').delete({ '_id': relation.get('_id') })
 				else:
 					update_doc('Relations', relation)
+			else:
+				# if count is not set, set it to 1
+				relation['count'] = 1
+				update_doc('Relations', relation)
 
 		# check if agency relation exists
 		logger.info(f"Activating entity {entity_id} for player {player_id}")
@@ -896,6 +901,7 @@ class TraitSetting(ObjectType):
 	priority = Int()
 	inherited = Boolean()
 	inherited_as = Field(lambda: TraitSetting)
+	inheritable = Boolean()
 
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
@@ -1097,6 +1103,14 @@ class TraitSetting(ObjectType):
 		else:
 			return None
 
+	def resolve_inheritable(parent, info):
+		if parent.inheritable:
+			return parent.inheritable
+		if parent.id:
+			return get_doc_by_id('TraitSettings', parent.id).get('inheritable')
+		else:
+			return False
+
 class TraitSettingInput(InputObjectType):
 	new_trait_id = ID(required=False)
 	rating_type = String(required=False)
@@ -1113,6 +1127,7 @@ class TraitSettingInput(InputObjectType):
 	permanence = Boolean(required=False)
 	teach_to = String(required=False)
 	inherited_as = ID(required=False)
+	inheritable = Boolean(required=False)
 
 class MutateTraitSetting(Mutation):
 	class Arguments:
@@ -1864,6 +1879,11 @@ class AssignTrait(Mutation):
 				'locations_disabled': { locations_disabled },
 			}
 
+		# if trait is inheritable, trait setting should be inheritable
+		# eventually instead of having trait inheritable, default trait setting should have this option
+		if get_doc_by_id('Traits', trait_id).get('inheritable'):
+			traitsetting['inheritable'] = True
+
 		# use the defaults found to assign the trait
 		new_traitsetting = db.collection('TraitSettings').insert({
 			'_from': entity_id,
@@ -2105,12 +2125,19 @@ class DeleteTrait(Mutation):
 	def mutate(root, info, trait_id=None):
 		# deletes the trait document and all traitsetting edges associated with it
 		try:
-			# delete all assigned traits
 			settings = find_docs('TraitSettings', {'_to': trait_id})
+			
+			# delete all subtraits
+			for setting in settings:
+				subtraits = find_docs('TraitSettings', {'_from': setting.get('_id')})
+				for subtrait in subtraits:
+					db.collection('TraitSettings').delete(subtrait.get('_id'))
+
+			# delete all assigned traits
 			for setting in settings:
 				db.collection('TraitSettings').delete(setting.get('_id'))
 
-			# delete all subtraits and default settings
+			# delete default settings
 			settings = find_docs('TraitSettings', {'_from': trait_id})
 			for setting in settings:
 				db.collection('TraitSettings').delete(setting.get('_id'))
@@ -2317,7 +2344,7 @@ class Traitset(ObjectType):
 						FOR entity IN hierarchies
 							FOR trait, traitsetting IN OUTBOUND entity TraitSettings
 							FILTER trait.traitset == '{ parent.id }'
-							FILTER trait.inheritable == true
+							FILTER traitsetting.inheritable == true
 							COLLECT traitId = traitsetting._to INTO traitsettings
 							RETURN traitsettings[0].traitsetting
 					)
@@ -4941,6 +4968,7 @@ def imagegen(entity_key, force):
 			archetype_trait_settings = []
 
 			archetype_ids = [archetype.get('_to') for archetype in find_docs('Relations', {'_from': entity.get('_id'), 'type': 'archetype'})]
+			archetypes = []
 			visited_archetypes = set()
 			while archetype_ids:
 				current_id = archetype_ids.pop(0)
@@ -4948,6 +4976,7 @@ def imagegen(entity_key, force):
 					continue
 				visited_archetypes.add(current_id)
 				archetype = get_doc_by_id('Entities', current_id)
+				archetypes.append(archetype)
 				archetype_trait_settings += [doc for doc in find_docs('TraitSettings', {'_from': archetype.get('_id')})]
 				archetype_ids.extend([archetype.get('_to') for archetype in find_docs('Relations', {'_from': archetype.get('_id'), 'type': 'archetype'})])
 
@@ -4970,6 +4999,7 @@ def imagegen(entity_key, force):
 			prompt += "("
 			prompt += f"portrait of {entity.get('name')}" if entity.get('name') else ""
 			prompt += f", {entity.get('description')}" if entity.get('description') else ""
+			prompt += ", " + ", ".join([archetype.get('name') for archetype in archetypes])
 			for traitset, trait, trait_setting in traits:
 				if traitset.get('name') == 'tutorial':
 					continue
@@ -4979,7 +5009,7 @@ def imagegen(entity_key, force):
 					prompt += ", " if trait_setting.get('statement') and trait_setting.get('notes') else ""
 					prompt += trait_setting.get('notes') if trait_setting.get('notes') else ""
 					prompt += ":1.4)"
-				elif trait.get('name') == 'LoRA':
+				elif trait.get('name').startswith('LoRA'):
 					loras.append(trait_setting.get('statement'))
 				elif trait.get('name') == 'negative imagen':
 					# negative += f"{', '.join([trait_setting.get('statement'), trait_setting.get('notes')])}"
@@ -4998,7 +5028,7 @@ def imagegen(entity_key, force):
 					# prompt += ":"
 					if trait_setting.get('rating') and trait_setting.get('rating_type') == 'static':
 						prompt += ":" + str(rating_weights[abs(trait_setting.get('rating')[0]) - 1])
-					elif trait_setting.get('rating') and trait_setting.get('rating_type') == 'empty':
+					elif trait_setting.get('rating') == [] or trait_setting.get('rating_type') == 'empty':
 						prompt += ":0.4"
 					# prompt += ":" if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
 					# prompt += str(rating_weights[abs(trait_setting.get('rating')[0]) - 1]) if trait_setting.get('rating') and trait_setting.get('rating_type') != "empty" else ""
@@ -5264,10 +5294,10 @@ def imagegen(entity_key, force):
 		prompt = "".join(prompt.splitlines())
 
 		# remove duplicates from loras while retaining order
-		logger.debug(f"loras 1: { loras }")
+		# logger.debug(f"loras 1: { loras }")
 		seen = set()
 		loras = [x for x in loras if not (x in seen or seen.add(x))]
-		logger.debug(f"loras 2: { loras }")
+		# logger.debug(f"loras 2: { loras }")
 		# loras.reverse()
 		# logger.debug(f"loras 3: { loras }")
 		# same for genres

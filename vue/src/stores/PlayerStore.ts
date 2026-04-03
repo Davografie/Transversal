@@ -54,7 +54,7 @@ export const usePlayerStore = defineStore(
 		const is_active_player: Ref<boolean> = ref(false)
 		const small_buttons: Ref<boolean> = ref(false)
 		const data_saving: Ref<boolean> = ref(false)
-		const traitset_defaults: Ref<string> = ref("ACTIVE") // COLLAPSED, ACTIVE, EXPANDED
+		const traitset_defaults: Ref<string> = ref("EXPANDED") // COLLAPSED, ACTIVE, EXPANDED
 		const tickets_remaining: Ref<number> = ref(20)
 
 		//	GM variables

@@ -36,6 +36,7 @@
 		retrieve_entity,
 		retrieve_archetypes,
 		retrieve_followers,
+		retrieve_instances,
 		create_relation,
 		entity_type_icon,
 		clone_entity,
@@ -43,8 +44,12 @@
 		toggle_favorite
 	} = useEntity(undefined, props.entity_id)
 
-	retrieve_entity()
-	retrieve_archetypes()
+	retrieve_entity().then(() => {
+		retrieve_archetypes()
+		if(entity.value.isArchetype) {
+			retrieve_instances()
+		}
+	})
 
 	const relation_exists = computed(() => {
 		return player.the_entity?.relations?.map(r => r.toEntity.id).includes(props.entity_id)
@@ -218,7 +223,12 @@
 	watch(() => props.entity_id, (newEntity, oldEntity) => {
 		if(newEntity != oldEntity && newEntity != entity.value.id) {
 			set_entity_id(newEntity)
-			retrieve_entity()
+			retrieve_entity().then(() => {
+				retrieve_archetypes()
+				if(entity.value.isArchetype) {
+					retrieve_instances()
+				}
+			})
 			if(player.the_entity?.relations?.map(r => r.toEntity.id).includes(newEntity)) {
 				set_relation_id(player.the_entity?.relations?.find(r => r.toEntity.id == newEntity)?.id || '')
 				retrieve_relation()
@@ -263,12 +273,12 @@
 					<span class="icon">{{ entity_type_icon }}</span>
 					<span class="label">{{ player.small_buttons ? '' : 'take control'}}</span>
 				</div>
-				<div class="button-mnml entity-type-icon"
+				<!-- <div class="button-mnml entity-type-icon"
 						@click.stop="emit('show_entity', entity.key)"
 						v-if="player.is_gm && player.the_entity?.id != entity.id && player.orientation == 'vertical'">
 					<span class="icon">👁</span>
 					<span class="label">{{ player.small_buttons ? '' : 'open entity'}}</span>
-				</div>
+				</div> -->
 				<ButtonMinimal :function="ButtonTypes.RELATION"
 					@click.stop="click_tag"
 					v-if="relation_possible" />
@@ -305,7 +315,7 @@
 					<span class="label">{{ player.small_buttons ? '' : 'unfollow'}}</span>
 				</div>
 				<ButtonMinimal :function="ButtonTypes.ADD_ARCHETYPE"
-					v-if="!player.the_entity?.archetypes?.map(arch => arch.id).includes(entity.id) && entity.isArchetype"
+					v-if="![player.the_entity, ...player.the_entity?.archetypes].map(arch => arch.id).includes(entity.id) && entity.isArchetype"
 					@click.stop="player.set_perspective_archetype(entity.id)" />
 				<ButtonMinimal :function="ButtonTypes.REMOVE_ARCHETYPE"
 					v-if="player.the_entity?.archetypes?.map(arch => arch.id).includes(entity.id) && entity.isArchetype"
@@ -332,10 +342,25 @@
 		<span class="location" v-if="entity.location?.name" @click="emit('show_entity', entity.location.key)">
 			🗺 {{ entity.location.name }}
 		</span>
-		<div class="archetypes" v-if="player.is_gm">
-			<span class="archetype" v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id"
+		<!-- <h4 v-if="(entity.archetypes?.length || 0) > 0 && player.is_gm">archetypes</h4> -->
+		<div class="entity-links archetypes" v-if="player.is_gm">
+			<span class="entity-link archetype" v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id"
 				@click="emit('show_entity', archetype.key)">
 				{{ archetype.name }}
+			</span>
+		</div>
+		<!-- <h4 v-if="(entity.instances?.filter(i => i.isArchetype).length || 0) > 0 && player.is_gm">sub-archetypes</h4> -->
+		<div class="entity-links sub-archetypes" v-if="player.is_gm">
+			<span class="entity-link sub-archetype" v-for="instance in entity.instances?.filter(i => i.isArchetype)" :key="instance.id"
+				@click="emit('show_entity', instance.key)">
+				{{ instance.name }}
+			</span>
+		</div>
+		<!-- <h4 v-if="(entity.instances?.filter(i => !i.isArchetype).length || 0) > 0 && player.is_gm">instances</h4> -->
+		<div class="entity-links instances" v-if="player.is_gm">
+			<span class="entity-link instance" v-for="instance in entity.instances?.filter(i => !i.isArchetype)" :key="instance.id"
+				@click="emit('show_entity', instance.key)">
+				{{ instance.name }}
 			</span>
 		</div>
 		<div class="description" v-if="entity.description" v-html="marked.parse(entity.description)">
@@ -413,13 +438,13 @@ div.active-npc {
 			}
 		}
 	}
-	.archetypes {
+	.entity-links {
 		display: flex;
 		justify-content: space-evenly;
 		gap: .4em;
 		flex-wrap: wrap;
 		padding: .4em;
-		.archetype {
+		.entity-link {
 			border: 1px solid var(--color-gm);
 			padding: .2em .4em;
 			flex-grow: 1;
@@ -441,8 +466,18 @@ div.active-npc {
 		img {
 			border-radius: 30px 30px 0 0;
 		}
-		.archetype{
-			color: var(--color-gm-light);
+		.entity-links {
+			.entity-link {
+				&.archetype {
+					background-color: var(--color-background-mute);
+				}
+				&.sub-archetype {
+					background-color: var(--color-gm-mute);
+				}
+				&.instance {
+					background-color: var(--color-gm-light);
+				}
+			}
 		}
 	}
 }

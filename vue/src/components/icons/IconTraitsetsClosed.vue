@@ -13,10 +13,10 @@
 
 <style scoped>
 	.cls-1 {
-		fill: var(--color-background);
-	}
-
-	.cls-2 {
 		fill: var(--color-text);
+	}
+	
+	.cls-2 {
+		fill: var(--color-background);
 	}
 </style>

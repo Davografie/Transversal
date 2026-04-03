@@ -885,6 +885,7 @@
 
 			<div id="archetype-instances" class="character-menu" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
 				<EntityButton v-for="instance in entity.instances" :key="instance.key"
+					class="entity-button"
 					:entity_id="instance.id"
 					override_click
 					@click_entity="click_instance(instance.id)" />
@@ -1146,7 +1147,7 @@
 				&#archetype-instances {
 					display: flex;
 					max-width: 100%;
-					overflow-x: auto;
+					/* overflow-x: auto; */
 				}
 				&#character-known-to {
 					.entity-cards {
@@ -1221,8 +1222,15 @@
 
 <style>
 	.touch {
-		#character-buttons {
-			overflow: scroll hidden;
+		#character {
+			#character-buttons {
+				overflow: scroll hidden;
+			}
+			.character-menu {
+				&#archetype-instances {
+					overflow-x: auto;
+				}
+			}
 		}
 		#traitsets {
 			align-items: start;
@@ -1244,8 +1252,21 @@
 		}
 	}
 	.kbm {
-		#character-buttons {
-			flex-wrap: wrap;
+		#character {
+			#character-buttons {
+				flex-wrap: wrap;
+			}
+			#archetype-instances {
+				flex-wrap: wrap;
+				overflow-y: auto;
+				max-height: 120px;
+				scroll-snap-type: y mandatory;
+				justify-content: center;
+				gap: .4em;
+				.entity-button {
+					scroll-snap-align: center;
+				}
+			}
 		}
 		#traitsets {
 			flex-grow: 1;

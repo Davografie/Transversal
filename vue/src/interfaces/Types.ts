@@ -85,6 +85,7 @@ export interface TraitSetting {
     toEntity?: Entity
     priority?: number
     inherited?: boolean
+    inheritable?: boolean
 }
 
 export interface TraitSettingInput {
@@ -103,6 +104,7 @@ export interface TraitSettingInput {
     teachTo?: string
     resource?: boolean
     inheritedAs?: string
+    inheritable?: boolean
 }
 
 export interface Trait {

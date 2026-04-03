@@ -9,6 +9,7 @@
 	import DiePicker from '@/components/DiePicker.vue'
 	import PoolPlayer from '@/components/PoolPlayer.vue'
 	import SuggestedComplication from '@/components/SuggestedComplication.vue'
+	import SuggestedEntity from '@/components/complication/Entity.vue'
 	const DieComponent = defineAsyncComponent(() => import('@/components/Die.vue'))
 	
 	import { useDicepool } from '@/composables/Dicepool'
@@ -148,6 +149,10 @@
 		dicepool.add_dice(rating)
 	}
 
+	/**
+	 * adds complications of the given trait setting to the dicepool
+	 * @param complication a trait setting id
+	 */
 	function click_complication(complication?: string) {
 		dicepoolStore.suggested_complications
 			.filter(d => d.traitsettingId == complication)
@@ -358,14 +363,21 @@
 										@cancel="editing_die = undefined; editing = false" show_effects :custom="false" />
 								</div>
 								<div id="suggested-complications" v-if="dicepool.inAddingPhase.value">
-									<template v-for="complication in new Set(dicepoolStore.suggested_complications.map(d => d.traitsettingId)).values()"
+									<template v-for="entity_id in new Set(dicepoolStore.suggested_complications.map(d => d.entityId)).values()"
+											:key="entity_id">
+										<SuggestedEntity :entity_id="entity_id"
+											:dice="dicepoolStore.suggested_complications.filter(d => d.entityId == entity_id && !dicepoolStore.dice.includes(d))"
+											@click_die="click_complication_die"
+											@click_complication="click_complication" />
+									</template>
+									<!-- <template v-for="complication in new Set(dicepoolStore.suggested_complications.map(d => d.traitsettingId)).values()"
 											:key="complication">
 										<SuggestedComplication
 											:complication="dicepoolStore.suggested_complications.filter(d => d.traitsettingId == complication)"
 											@click_complication="click_complication(complication)"
 											@click_die="click_complication_die"
 											v-if="dicepoolStore.suggested_complications.filter(d => d.traitsettingId == complication).length > 0" />
-									</template>
+									</template> -->
 								</div>
 							</div>
 
