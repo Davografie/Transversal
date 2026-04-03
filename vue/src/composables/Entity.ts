@@ -236,6 +236,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					explainer
 					entityTypes
 					duplicates
+					limit
 					sfxs {
 						id
 					}
