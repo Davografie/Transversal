@@ -180,7 +180,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 				defaultTraitSetting {
 					ratingType
 					rating
-					scaling
+					poolScaling
+					resultScaling
+					effectScaling
 					locationsEnabled
 					locationsDisabled
 					sfxs {
@@ -210,7 +212,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					undefined,
 					traitset_id,
 					undefined,
-					result.data.traitsets[0].defaultTraitSetting.scaling
+					result.data.traitsets[0].defaultTraitSetting.poolScaling,
+					result.data.traitsets[0].defaultTraitSetting.resultScaling,
+					result.data.traitsets[0].defaultTraitSetting.effectScaling
 				)
 				// console.log(default_rating)
 				default_settings.value = {

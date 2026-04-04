@@ -265,7 +265,9 @@ export function useEntity(init?: Entity, entity_id?: string) {
 							hidden
 							priority
 							inherited
-							scaling
+							poolScaling
+							resultScaling
+							effectScaling
 						}
 					}
 				}
@@ -291,7 +293,9 @@ export function useEntity(init?: Entity, entity_id?: string) {
 							t.traitSettingId,
 							ts.id,
 							entity_id,
-							t.traitSetting?.scaling
+							t.traitSetting?.poolScaling,
+							t.traitSetting?.resultScaling,
+							t.traitSetting?.effectScaling
 						)
 						traits.push({
 							...t,

@@ -69,6 +69,9 @@
 	const new_notes = ref<string>(trait.value.notes ?? '')
 	const new_rating_type = ref<string>(trait.value.ratingType ?? 'empty')
 	const new_rating = ref<DieType[]>(_.clone(trait.value.rating) ?? [])
+	const new_pool_scaling = ref<number>(trait.value.traitSetting?.poolScaling ?? 0)
+	const new_result_scaling = ref<number>(trait.value.traitSetting?.resultScaling ?? 0)
+	const new_effect_scaling = ref<number>(trait.value.traitSetting?.effectScaling ?? 0)
 
 	function switch_to_editing() {
 		new_statement.value = trait.value.statement ?? ''
@@ -190,13 +193,25 @@
 		}
 	}
 
-	function change_rating(rating_type: string, rating: DieType[]) {
+	function change_rating(
+		rating_type: string, 
+		rating: DieType[], 
+		pool_scaling: number, 
+		result_scaling: number, 
+		effect_scaling: number
+	) {
 		new_rating_type.value = rating_type
 		new_rating.value = rating
+		new_pool_scaling.value = pool_scaling
+		new_result_scaling.value = result_scaling
+		new_effect_scaling.value = effect_scaling
 		editing_rating.value = false
 		mutate_trait_setting({
 			'ratingType': new_rating_type.value,
-			'rating': new_rating.value.map(die => die.number_rating)
+			'rating': new_rating.value.map(die => die.number_rating),
+			'poolScaling': new_pool_scaling.value,
+			'resultScaling': new_result_scaling.value,
+			'effectScaling': new_effect_scaling.value
 		})
 		retrieve_trait()
 	}
@@ -253,6 +268,9 @@
 					:rating-type="editing ? new_rating_type : trait.ratingType"
 					:resource="trait.ratingType == 'resource'"
 					:challenge="trait.ratingType == 'challenge'"
+					:pool_scaling="trait.traitSetting?.poolScaling ?? 0"
+					:result_scaling="trait.traitSetting?.resultScaling ?? 0"
+					:effect_scaling="trait.traitSetting?.effectScaling ?? 0"
 					@deplete-challenge="deplete_challenge"
 					@deplete-resource="deplete_resource"
 					@click="editing ? editing_rating = true : undefined"
@@ -264,7 +282,10 @@
 				v-if="trait.ratingType && trait.rating"
 				:rating_type="new_rating_type"
 				:rating="new_rating"
-				@change-rating="(rt: string, r: DieType[]) => change_rating(rt, r)"
+				:pool_scaling="new_pool_scaling"
+				:result_scaling="new_result_scaling"
+				:effect_scaling="new_effect_scaling"
+				@change-rating="change_rating"
 				@cancel="editing_rating = false" />
 		</div>
 		<div class="buttons" v-if="editing">

@@ -14,7 +14,9 @@ export function useRating() {
 		trait_setting_id: string = '',
 		traitset_id: string = '',
 		entity_id: string = '',
-		scaling: number = 0
+		pool_scaling: number = 0,
+		result_scaling: number = 0,
+		effect_scaling: number = 0
 	) {
 		let new_rating = <DieType[]>[]
 		for(let i = 0; i < rating.length; i++) {
@@ -25,7 +27,9 @@ export function useRating() {
 			die.value.traitsettingId = trait_setting_id
 			die.value.traitsetId = traitset_id
 			die.value.entityId = entity_id
-			die.value.scaling = scaling
+			die.value.poolScaling = pool_scaling
+			die.value.resultScaling = result_scaling
+			die.value.effectScaling = effect_scaling
 			new_rating.push(_.cloneDeep(die.value))
 		}
 		return new_rating

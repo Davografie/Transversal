@@ -8,7 +8,9 @@
 	const props = defineProps<{
 		rating: DieType[]
 		ratingType?: string
-		scaling?: number
+		pool_scaling?: number
+		result_scaling?: number
+		effect_scaling?: number
 	}>()
 
 	const emit = defineEmits([
@@ -31,8 +33,16 @@
 <template>
 	<div class="rating-wrapper" :class="props.ratingType" v-if="props.ratingType != 'empty'">
 		
-		<div class="scaling" v-if="props.scaling && props.scaling != 0">
-			{{ props.scaling < 0 ? '-' : '+' }}{{ props.scaling }}
+		<div class="pool-scaling scaling" v-if="props.pool_scaling && props.pool_scaling != 0">
+			{{ props.pool_scaling < 0 ? '-' : '+' }}{{ props.pool_scaling }}
+		</div>
+
+		<div class="result-scaling scaling" v-if="props.result_scaling && props.result_scaling != 0">
+			{{ props.result_scaling < 0 ? '-' : '+' }}{{ props.result_scaling }}
+		</div>
+
+		<div class="effect-scaling scaling" v-if="props.effect_scaling && props.effect_scaling != 0">
+			{{ props.effect_scaling < 0 ? '-' : '+' }}{{ props.effect_scaling }}
 		</div>
 
 		<div class="dice">
@@ -91,11 +101,16 @@
 		.scaling {
 			font-size: 1.6em;
 			transform: translateY(-.1em);
-			color: var(--color-result-light);
 			letter-spacing: -.15em;
 			/* font-family: "Bevan", serif; */
 			font-weight: bold;
 			font-style: normal;
+			&.result-scaling {
+				color: var(--color-result-light);
+			}
+			&.effect-scaling {
+				color: var(--color-effect);
+			}
 		}
 	}
 </style>

@@ -83,7 +83,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					rating
 					ratingType
 					permanence
-					scaling
+					poolScaling
+					resultScaling
+					effectScaling
 					locationsEnabled
 					locationsDisabled
 					knownTo {
@@ -118,7 +120,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					rating
 					ratingType
 					traitSetting {
-						scaling
+						poolScaling
+						resultScaling
+						effectScaling
 					}
 				}
 				possibleSubTraits {
@@ -144,6 +148,11 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				ratingType
 				rating
 				statement
+				traitSetting {
+					poolScaling
+					resultScaling
+					effectScaling
+				}
 				sfxs {
 					id
 				}
@@ -152,7 +161,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					traitSettingId
 					rating
 					traitSetting {
-						scaling
+						poolScaling
+						resultScaling
+						effectScaling
 					}
 				}
 			}
@@ -292,7 +303,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					id
 					ratingType
 					rating
-					scaling
+					poolScaling
+					resultScaling
+					effectScaling
 					permanence
 					statement
 					notes
@@ -716,7 +729,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					id
 					ratingType
 					rating
-					scaling
+					poolScaling
+					resultScaling
+					effectScaling
 					locationsEnabled
 					locationsDisabled
 					sfxs {
@@ -746,7 +761,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						result.data.traits[0].defaultTraitSetting.id,
 						undefined,
 						undefined,
-						result.data.traits[0].defaultTraitSetting.scaling
+						result.data.traits[0].defaultTraitSetting.poolScaling,
+						result.data.traits[0].defaultTraitSetting.resultScaling,
+						result.data.traits[0].defaultTraitSetting.effectScaling
 					)
 				}
 				default_settings.value = {

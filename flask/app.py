@@ -890,7 +890,9 @@ class TraitSetting(ObjectType):
 	notes = String()
 	rating_type = String()
 	rating = List(String)
-	scaling = Int()
+	pool_scaling = Int()
+	result_scaling = Int()
+	effect_scaling = Int()
 	locations_enabled = List(String)
 	locations_disabled = List(String)
 	sfxs = List(lambda: SFX)
@@ -911,7 +913,9 @@ class TraitSetting(ObjectType):
 			parent.notes = traitsetting.get('notes')
 			parent.rating_type = traitsetting.get('rating_type')
 			parent.rating = traitsetting.get('rating')
-			parent.scaling = traitsetting.get('scaling')
+			parent.pool_scaling = traitsetting.get('pool_scaling')
+			parent.result_scaling = traitsetting.get('result_scaling')
+			parent.effect_scaling = traitsetting.get('effect_scaling')
 			parent.locations_enabled = traitsetting.get('locations_enabled')
 			parent.locations_disabled = traitsetting.get('locations_disabled')
 			parent.sfxs_ids = traitsetting.get('sfxs')
@@ -1019,10 +1023,20 @@ class TraitSetting(ObjectType):
 		else:
 			return None
 
-	def resolve_scaling(parent, info):
-		if parent.scaling is None:
+	def resolve_pool_scaling(parent, info):
+		if parent.pool_scaling is None:
 			TraitSetting._hydrate_traitsetting(parent, info)
-		return parent.scaling
+		return parent.pool_scaling
+
+	def resolve_result_scaling(parent, info):
+		if parent.result_scaling is None:
+			TraitSetting._hydrate_traitsetting(parent, info)
+		return parent.result_scaling
+
+	def resolve_effect_scaling(parent, info):
+		if parent.effect_scaling is None:
+			TraitSetting._hydrate_traitsetting(parent, info)
+		return parent.effect_scaling
 
 	def resolve_locations_enabled(parent, info):
 		# logger.debug(f"\nresolve_locations_enabled:\tparent:\n{parent}")
@@ -1115,7 +1129,9 @@ class TraitSettingInput(InputObjectType):
 	new_trait_id = ID(required=False)
 	rating_type = String(required=False)
 	rating = List(Int, required=False)
-	scaling = Int(required=False)
+	pool_scaling = Int(required=False)
+	result_scaling = Int(required=False)
+	effect_scaling = Int(required=False)
 	resource = Boolean(required=False)
 	statement = String(required=False)
 	notes = String(required=False)

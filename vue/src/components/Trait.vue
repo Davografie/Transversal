@@ -250,8 +250,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 						}
 					}
 					// if the trait has scaling, edit the dicepool limit
-					if(trait.value.traitSetting?.scaling) {
-						change_result_limit(trait.value.traitSetting.scaling, trait.value.traitSettingId ?? trait.value.traitSetting.id)
+					if(trait.value.traitSetting?.poolScaling) {
+						change_result_limit(trait.value.traitSetting.poolScaling, trait.value.traitSettingId ?? trait.value.traitSetting.id)
 					}
 					if(traitset_limit_reached.value) {
 						emit('next_traitset')
@@ -266,8 +266,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 							remove_complication_by_traitsetting(subtrait.traitSettingId ?? '')
 						}
 					}
-					if(trait.value.traitSetting?.scaling) {
-						change_result_limit(-1 * trait.value.traitSetting.scaling, trait.value.traitSettingId ?? trait.value.traitSetting.id)
+					if(trait.value.traitSetting?.resultScaling) {
+						change_result_limit(-1 * trait.value.traitSetting.resultScaling, trait.value.traitSettingId ?? trait.value.traitSetting.id)
 					}
 				}
 			}
@@ -357,10 +357,10 @@ import ToggleButton from './UI/ToggleButton.vue'
 				// resource subtrait with all rating die types the same
 				deplete_resource(subtrait.rating[0])
 			}
-			if(trait.value.traitSetting?.scaling) {
+			if(trait.value.traitSetting?.resultScaling) {
 				console.log("changing result limit (scaling)")
 				change_result_limit(
-					trait.value.traitSetting.scaling,
+					trait.value.traitSetting.resultScaling,
 					trait.value.traitSettingId ?? trait.value.traitSetting.id
 				)
 			}
@@ -483,7 +483,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 	// placeholders for mutating trait
 	const new_ratingType: Ref<string|undefined> = ref(trait.value.ratingType)
 	const new_rating: Ref<DieType[]> = ref(trait.value.rating ?? [])
-	const new_scaling: Ref<number> = ref(trait.value.traitSetting?.scaling ?? 0)
+	const new_pool_scaling: Ref<number|undefined> = ref(trait.value.traitSetting?.poolScaling)
+	const new_result_scaling: Ref<number|undefined> = ref(trait.value.traitSetting?.resultScaling)
+	const new_effect_scaling: Ref<number|undefined> = ref(trait.value.traitSetting?.effectScaling)
 	const new_permanence: Ref<boolean> = ref(trait.value.traitSetting?.permanence ?? true)
 	const new_statement: Ref<string> = ref(trait.value.statement ?? "")
 	const new_hidden: Ref<boolean> = ref(trait.value.traitSetting?.hidden ?? false)
@@ -538,7 +540,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 	function reset_temporary_attributes() {
 		new_ratingType.value = trait.value?.ratingType ?? 'empty'
 		new_rating.value = trait.value?.rating ?? []
-		new_scaling.value = trait.value?.traitSetting?.scaling ?? 0
+		new_pool_scaling.value = trait.value?.traitSetting?.poolScaling ?? 0
+		new_result_scaling.value = trait.value?.traitSetting?.resultScaling ?? 0
+		new_effect_scaling.value = trait.value?.traitSetting?.effectScaling ?? 0
 		new_permanence.value = trait.value?.traitSetting?.permanence ?? true
 		new_statement.value = trait.value?.statement ?? ""
 		new_notes.value = trait.value?.notes ?? ""
@@ -601,7 +605,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 			await overwrite_trait({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
-				'scaling': new_scaling.value,
+				'poolScaling': new_pool_scaling.value,
+				'resultScaling': new_result_scaling.value,
+				'effectScaling': new_effect_scaling.value,
 				'statement': new_statement.value,
 				'notes': new_notes.value,
 				'sfxs': new_sfxs.value.map((sfx) => sfx.id),
@@ -619,7 +625,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 				'newTraitId': new_trait_id.value,
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
-				'scaling': new_scaling.value,
+				'poolScaling': new_pool_scaling.value,
+				'resultScaling': new_result_scaling.value,
+				'effectScaling': new_effect_scaling.value,
 				'permanence': new_permanence.value,
 				'statement': new_statement.value,
 				'notes': new_notes.value,
@@ -634,7 +642,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 			await mutate_trait_setting_temp({
 				'ratingType': new_ratingType.value,
 				'rating': new_rating.value.map((r) => r.number_rating),
-				'scaling': new_scaling.value,
+				'poolScaling': new_pool_scaling.value,
+				'resultScaling': new_result_scaling.value,
+				'effectScaling': new_effect_scaling.value,
 				'permanence': new_permanence.value,
 				'statement': new_statement.value,
 				'notes': new_notes.value,
@@ -777,9 +787,18 @@ import ToggleButton from './UI/ToggleButton.vue'
 		}, 200)
 	}
 
-	function change_rating(rating_type: string, rating: DieType[]) {
+	function change_rating(
+		rating_type: string,
+		rating: DieType[],
+		pool_scaling: number,
+		result_scaling: number,
+		effect_scaling: number
+	) {
 		new_ratingType.value = rating_type
 		new_rating.value = rating
+		new_pool_scaling.value = pool_scaling
+		new_result_scaling.value = result_scaling
+		new_effect_scaling.value = effect_scaling
 		// change_trait()
 	}
 
@@ -931,7 +950,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 		copy_trait({
 			'ratingType': new_ratingType.value,
 			'rating': new_rating.value.map((r) => r.number_rating),
-			'scaling': new_scaling.value,
+			'poolScaling': new_pool_scaling.value,
+			'resultScaling': new_result_scaling.value,
+			'effectScaling': new_effect_scaling.value,
 			'statement': new_statement.value,
 			'notes': new_notes.value,
 			'sfxs': new_sfxs.value.map((sfx) => sfx.id),
@@ -1315,7 +1336,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 					<Rating v-if="trait.rating || new_rating.length > 0"
 						:rating="new_rating.length > 0 ? new_rating : trait.rating ?? []"
 						:rating-type="new_ratingType ?? trait.ratingType"
-						:scaling="trait.traitSetting?.scaling"
+						:pool_scaling="new_pool_scaling ?? trait.traitSetting?.poolScaling ?? 0"
+						:result_scaling="new_result_scaling ?? trait.traitSetting?.resultScaling ?? 0"
+						:effect_scaling="new_effect_scaling ?? trait.traitSetting?.effectScaling ?? 0"
 						@click.stop="click_rating"
 						@deplete-resource="deplete_resource"
 						@deplete-challenge="deplete_challenge"
@@ -1357,9 +1380,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 				<div class="edit-rating edit-attribute" v-if="edit_rating">
 					<RatingEdit
 						v-if="trait.ratingType && trait.rating"
-						:rating_type="new_ratingType"
+						:rating_type="new_ratingType ?? trait.ratingType"
 						:rating="new_rating"
-						@change-rating="(rating_type: string, rating: DieType[]) => change_rating(rating_type, rating)"
+						:pool_scaling="new_pool_scaling ?? 0"
+						:result_scaling="new_result_scaling ?? 0"
+						:effect_scaling="new_effect_scaling ?? 0"
+						@change-rating="change_rating"
 						@cancel="edit_rating = false" />
 					<ToggleButton truthy="changes are permanent" falsy="changes reset per session"
 						:default="new_permanence"
@@ -1367,11 +1393,11 @@ import ToggleButton from './UI/ToggleButton.vue'
 						@toggle="new_permanence = !new_permanence" />
 				</div>
 
-				<div class="edit-scaling edit-attribute" v-if="edit_scaling">
+				<!-- <div class="edit-scaling edit-attribute" v-if="edit_scaling">
 					<input type="button" class="button" value="-" @click="new_scaling = (new_scaling - 1) < 0 ? 0 : new_scaling - 1" />
 					<span>{{ new_scaling }}</span>
 					<input type="button" class="button" value="+" @click="new_scaling = new_scaling + 1" />
-				</div>
+				</div> -->
 
 				<div class="add-sub-traits edit-attribute"
 						v-if="trait.possibleSubTraits

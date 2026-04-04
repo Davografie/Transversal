@@ -4,7 +4,9 @@ export interface Die {
     number_rating: number
     ratingType?: string
     sides?: number
-    scaling?: number
+    poolScaling?: number
+    resultScaling?: number
+    effectScaling?: number
     pool?: boolean
     result?: number
     raises?: number
@@ -73,7 +75,9 @@ export interface TraitSetting {
     notes?: string
     ratingType?: string
     rating?: Die[]
-    scaling?: number
+    poolScaling?: number
+    resultScaling?: number
+    effectScaling?: number
     permanence?: boolean
     locationsEnabled?: string[]
     locationsDisabled?: string[]
@@ -95,7 +99,9 @@ export interface TraitSettingInput {
     notes?: string
     ratingType?: string
     rating?: number[]
-    scaling?: number
+    poolScaling?: number
+    resultScaling?: number
+    effectScaling?: number
     permanence?: boolean
     locationsEnabled?: string[]
     locationsDisabled?: string[]
