@@ -1272,8 +1272,10 @@
 			flex-grow: 1;
 			overflow: auto;
 			flex-direction: column;
-			padding-top: 2em;
-			padding-bottom: 10em;
+			padding-top: 2.4em;
+			.bottom-scroll-space {
+				min-height: 100px;
+			}
 		}
 	}
 	.dark {
