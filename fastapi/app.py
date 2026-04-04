@@ -65,8 +65,18 @@ class ConnectionManager:
 			while True:
 				data = await websocket.receive_json()
 				logger.debug(f"Received data: {data}")
+				await self.broadcast(data, player_id)
 		except WebSocketDisconnect:
 			self.active_connections.pop(player_id, None)
+	
+	async def broadcast(self, message: Dict[str, str], from_player_id: str):
+		"""
+		Send message to all other active connections
+		"""
+		for player_id, connection in self.active_connections.items():
+			if player_id != from_player_id:
+				await connection.send_json(message)
+			
 
 # example endpoint url: ws://localhost:8000/ws/123
 @app.websocket("/ws/{player_id}")

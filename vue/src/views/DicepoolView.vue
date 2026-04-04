@@ -13,7 +13,7 @@
 	const DieComponent = defineAsyncComponent(() => import('@/components/Die.vue'))
 	
 	import { useDicepool } from '@/composables/Dicepool'
-	// import { useDicepoolWS } from '@/composables/DicepoolWS'
+	import { useDicepoolWS } from '@/composables/DicepoolWS'
 	import { die_shapes } from '@/composables/Die'
 
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
@@ -33,15 +33,19 @@
 
 	const player = usePlayerStore()
 	const dicepoolStore = useDicepoolStore()
-	// const websocket = useDicepoolWS()
-
-	// console.log("connecting websocket")
-	// onMounted(() => {
-	// 	console.log("mounted dicepool")
-	// 	websocket.connect()
-	// })
 
 	const dicepool = useDicepool(true)
+	const websocket = useDicepoolWS()
+
+	console.log("connecting websocket")
+	onMounted(() => {
+		console.log("mounted dicepool")
+		websocket.connect()
+	})
+	watch(() => dicepoolStore.dice, (newDice) => {
+		console.log("new dice: ", newDice)
+		websocket.send_dicepool(newDice)
+	}, { deep: true })
 
 	const held = ref(false)
 

@@ -1,13 +1,15 @@
-import { inject, onUnmounted } from 'vue'
+import { inject, onUnmounted, watch } from 'vue'
 import { useWebSocket } from '@vueuse/core'
 import { usePlayerStore } from '@/stores/PlayerStore'
-import { phases } from '@/stores/DicepoolStore'
 import type { Die } from '@/interfaces/Types'
 
 export function useDicepoolWS() {
 	const API_WS = inject('API_WS')
+
 	const playerStore = usePlayerStore()
+	
 	const player_key = playerStore.player_id.substring(playerStore.player_id.indexOf("/") + 1)
+	
 	const { open, close, data, send, status } = useWebSocket(API_WS + "ws/" + (playerStore.player.key ?? player_key))
 	
 	function connect() {
@@ -31,16 +33,16 @@ export function useDicepoolWS() {
 		send(JSON.stringify({ type: "engage", data: { player: playerStore.player, complications: complications } }))
 	}
 
-	/**
-	 * sends message adding dice to your dicepool
-	 */
-	function add_dice(dice: Die[]) {}
+	function send_dicepool(dice: Die[]) {
+		console.log("sending dicepool: ", dice)
+		send(JSON.stringify({ type: "dicepool", data: dice }))
+	}
 
-	function set_result_limit(n: number) {}
-
-	function set_effect_limit(n: number) {}
-
-	function set_phase(_phase: phases) {}
+	watch(data, (newData) => {
+		if(newData) {
+			console.log("new dicepool: ", newData)
+		}
+	})
 
 	onUnmounted(() => {
 		close()
@@ -51,9 +53,6 @@ export function useDicepoolWS() {
 		status,
 		hello_world,
 		engage,
-		add_dice,
-		set_result_limit,
-		set_effect_limit,
-		set_phase
+		send_dicepool
 	}
 }
