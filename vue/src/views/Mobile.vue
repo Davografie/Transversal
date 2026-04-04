@@ -4,6 +4,7 @@
 
 	import { usePlayerStore } from '@/stores/PlayerStore';
 	import { useDicepoolStore } from '@/stores/DicepoolStore';
+	import { useDicepool } from '@/composables/Dicepool';
 
 	import CurrentLocationView from '@/views/CurrentLocationView.vue';
 	import CharacterView from '@/views/CharacterView.vue';
@@ -18,6 +19,7 @@
 	const router = useRouter()
 	const player = usePlayerStore()
 	const dicepool_store = useDicepoolStore()
+	const dicepool = useDicepool()
 
 	const mobile_component = ref<HTMLDivElement>()
 	const view = ref('location')
@@ -191,11 +193,13 @@
 						<div id="dicepool-footer-widget-geometry" v-else>
 							<span v-for="(d, i) of dicepool_store.dice" :key="d.id"
 									class="geometry-point"
-									:class="dicepool_store.dice.length == 5 ? 'pentagram-' + i
+									:class="[dicepool_store.dice.length == 5 ? 'pentagram-' + i
 										: dicepool_store.dice.length == 4 ? 'square-' + i
 										: dicepool_store.dice.length == 3 ? 'triangle-' + i
 										: dicepool_store.dice.length == 2 ? 'pair-' + i
-										: 'single'">
+										: 'single',
+										i >= dicepool_store.dice.length - dicepool.effect_limit.value ? 'effect' : 
+										i >= dicepool_store.dice.length - dicepool.effect_limit.value - dicepool.result_limit.value ? 'result' : '']">
 								{{ die_constants.find(dc => dc.rating == d.rating)?.active }}
 							</span>
 						</div>
@@ -222,7 +226,7 @@
 				</div>
 			</nav>
 			<div id="dicepool-container" v-if="dicepool_expanded">
-				<DicepoolView id="dicepool" ref="dicepool"
+				<DicepoolView id="dicepool" ref="dicepool_ref"
 					:expanded="dicepool_expanded"
 					@expand="dicepool_expanded = true"
 					@collapse="dicepool_expanded = false" />
@@ -381,6 +385,12 @@
 						.pair-0 { top: 50%; left: 10% }
 						.pair-1 { top: 50%; left: 90% }
 						.single { top: 50%; left: 50% }
+						.result {
+							color: var(--color-result);
+						}
+						.effect {
+							color: var(--color-effect);
+						}
 					}
 				}
 			}

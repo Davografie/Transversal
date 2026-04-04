@@ -225,7 +225,9 @@
 						@click.stop="dicepool.change_dicepool_limit(-1)"
 						v-if="dicepoolStore.dicepool_limit && dicepoolStore.dicepool_limit > 0" />
 					<div id="dicepool-size">
-						<span v-for="d of dicepoolStore.dice">
+						<span v-for="(d, i) of dicepoolStore.dice"
+								:class="i >= dicepoolStore.dice.length - dicepool.effect_limit.value ? 'effect' : 
+										i >= dicepoolStore.dice.length - dicepool.effect_limit.value - dicepool.result_limit.value ? 'result' : ''">
 							{{ die_shapes[d.rating + '_active'] }}
 						</span>
 						<span v-for="i in dicepool.dicepool_limit.value - dicepool.dicepool_size.value"
@@ -439,6 +441,12 @@
 							display: block;
 							flex-grow: 1;
 							text-align: center;
+							&.result {
+								color: var(--color-result);
+							}
+							&.effect {
+								color: var(--color-effect);
+							}
 						}
 					}
 					.button-mnml {
@@ -647,16 +655,24 @@
 		}
 	}
 	.dark {
-		#dicepool .title {
-			text-shadow: none;
-		}
-		#dicepool.collapsed.empty .title {
-			background-color: var(--color-background-mute);
-			backdrop-filter: blur(5px);
-		}
-		#dicepool.expanded .title {
-			background-color: var(--color-highlight);
-			color: var(--color-highlight-text);
+		#dicepool {
+			.title {
+				text-shadow: none;
+			}
+			.info-half.result {
+				background-color: var(--color-result-mute);
+			}
+			.info-half.effect {
+				background-color: var(--color-effect-mute);
+			}
+			&.collapsed.empty .title {
+				background-color: var(--color-background-mute);
+				backdrop-filter: blur(5px);
+			}
+			&.expanded .title {
+				background-color: var(--color-highlight);
+				color: var(--color-highlight-text);
+			}
 		}
 	}
 	.light {

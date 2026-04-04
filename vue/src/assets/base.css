@@ -87,12 +87,21 @@
 	--color-negative-die-12: darkgreen;
 	--color-negative-die-12-text: white;
 	--color-negative-die-12-text-outline: black;
+
 	--color-hitch: darkred;
 	--color-hitch-mute: lightcoral;
 	--color-hitch-text: white;
+
 	--color-disabled: lightgrey;
 	--color-disabled-text: darkgrey;
 	--color-disabled-text-outline: #333;
+
+	--color-result: purple;
+	--color-result-mute: rgba(128, 0, 128, 0.5);
+	--color-result-light: #e6beff;
+	--color-effect: #ff8000;
+	--color-effect-mute: rgba(255, 165, 0, 0.5);
+	--color-effect-light: orange;
 
 	--dice-font-positive: "Courier New", "Lucida Console", "Menlo", monospace;
 	--dice-font-negative: "Avenir", "Fira Code", "Inconsolata", "Roboto Mono", monospace;
