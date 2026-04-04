@@ -117,6 +117,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					traitSettingId
 					rating
 					ratingType
+					traitSetting {
+						scaling
+					}
 				}
 				possibleSubTraits {
 					id

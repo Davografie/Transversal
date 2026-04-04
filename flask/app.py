@@ -3877,11 +3877,14 @@ class Location(ObjectType):
 			raise Exception(error)
 
 	def resolve_parents(parent, info):
-		query = f"""FOR v, e, p IN 0..100 OUTBOUND "{ parent.id }" Relations
-			FILTER p.edges[*].type ALL == 'super'
-			RETURN v._id"""
-		cursor = execute_aql(query, ['Relations', 'Entities'])
-		return [Location(id=doc) for doc in cursor]
+		hierarchy = retrieve_hierarchy(parent.id)
+
+		return [Location(id=doc['_id']) for doc in hierarchy]
+		# query = f"""FOR v, e, p IN 0..100 OUTBOUND "{ parent.id }" Relations
+		# 	FILTER p.edges[*].type ALL == 'super'
+		# 	RETURN v._id"""
+		# cursor = execute_aql(query, ['Relations', 'Entities'])
+		# return [Location(id=doc) for doc in cursor]
 
 	def resolve_flavortext(parent, info):
 		return get_doc_by_id('Entities', parent.id).get('description')

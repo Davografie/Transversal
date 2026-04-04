@@ -193,7 +193,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				&& mode.value != view_modes.Editing
 				&& !player.editing
 				// resources have a special function
-				&& !['challenge', 'resource', 'empty'].includes(trait.value.ratingType ?? '')
+				&& !['resource', 'empty'].includes(trait.value.ratingType ?? '')
 				// only add dice when in the right phase
 				&& inAddingPhase.value
 			) {
@@ -308,8 +308,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 	function click_subtrait(subtrait: Trait, cascade?: boolean) {
 		/* add subtrait to dicepool */
 		console.log("click_subtrait", traitset_limit_reached.value)
-		if (!traitset_limit_reached.value // dicepool limit is not reached
-			|| (player.editing && mode.value != view_modes.Editing)
+		if (
+			!traitset_limit_reached.value // dicepool limit is not reached
+			&& trait.value.traitSetting?.ratingType != 'challenge' // challenge subtraits are sub-goals, so no trigger
 		) {
 			console.log("clicking subtrait, cascading to parent trait")
 			play_trait()
@@ -461,6 +462,14 @@ import ToggleButton from './UI/ToggleButton.vue'
 			}
 			mutate_trait_setting({ 'rating': new_rating.value.map((r) => r.number_rating ) })
 		}
+	}
+
+	async function increase_challenge(d: DieType) {
+		console.log("increasing challenge: ", d)
+		const { die, change_type } = useDie(d)
+		if(die.value.number_rating < 0) change_type(die.value.number_rating - 1)
+		else change_type(die.value.number_rating + 1)
+		await mutate_trait_setting({ 'rating': new_rating.value.map((r) => r.number_rating ) })
 	}
 
 	const traitset_limit_reached = computed(() => {
@@ -805,6 +814,23 @@ import ToggleButton from './UI/ToggleButton.vue'
 		console.log('refetched trait')
 	}
 
+	// LOCATION
+	const restrict_location = ref(trait.value.traitSetting?.locationsDisabled ? true : false)
+	function toggle_location_editing() {
+		if(!restrict_location.value) {
+			retrieve_parents('network-only')
+			restrict_location.value = true
+		}
+		else {
+			restrict_location.value = false
+		}
+	}
+	// watch(restrict_location, (newVal) => {
+	// 	if(!location.value.parents) {
+	// 		retrieve_parents()
+	// 	}
+	// })
+
 	// used for the location restriction widget
 	function toggle_location_restriction(location_id: string) {
 		if(location.value.parents) {
@@ -860,13 +886,6 @@ import ToggleButton from './UI/ToggleButton.vue'
 	// the location restriction index is to help navigate on mobile,
 	// or when the user is in a deep level of the location hierarchy
 	const location_restriction_index = ref(0)
-
-	const restrict_location = ref(trait.value.traitSetting?.locationsDisabled ? true : false)
-	watch(restrict_location, (newVal) => {
-		if(!location.value.parents) {
-			retrieve_parents()
-		}
-	})
 
 	import { useTraitset } from '@/composables/Traitset'
 
@@ -1241,11 +1260,11 @@ import ToggleButton from './UI/ToggleButton.vue'
 						<span class="rating-type label" v-if="preferredColor == 'light' || mode == view_modes.Viewing">
 							{{ trait.ratingType ?? 'empty' }}
 						</span>
-						<span class="scaling label" v-if="trait.traitSetting?.scaling">
+						<!-- <span class="scaling label" v-if="trait.traitSetting?.scaling">
 							{{ trait.traitSetting?.scaling > 0 ? '+' :
 								trait.traitSetting?.scaling < 0 ? '-' : '' }}
 							{{ trait.traitSetting?.scaling ?? '' }}
-						</span>
+						</span> -->
 					</div>
 					<div class="statement" v-if="trait.statement && mode != view_modes.Editing"
 						v-html="rendered_statement" />
@@ -1296,9 +1315,11 @@ import ToggleButton from './UI/ToggleButton.vue'
 					<Rating v-if="trait.rating || new_rating.length > 0"
 						:rating="new_rating.length > 0 ? new_rating : trait.rating ?? []"
 						:rating-type="new_ratingType ?? trait.ratingType"
+						:scaling="trait.traitSetting?.scaling"
 						@click.stop="click_rating"
 						@deplete-resource="deplete_resource"
-						@deplete-challenge="deplete_challenge" />
+						@deplete-challenge="deplete_challenge"
+						@increase-challenge="increase_challenge" />
 				</div>
 			</div>
 
@@ -1411,7 +1432,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 									'disabled': isLocationDisabled(_location.id, index),
 									'explicitly-disabled': trait.traitSetting?.locationsDisabled?.includes(_location.id)
 								}">
-							{{ location.name }}
+							{{ _location.name }}
 						</a>
 					</div>
 				</div>
@@ -1623,8 +1644,10 @@ import ToggleButton from './UI/ToggleButton.vue'
 		}
 		.scaling {
 			font-size: 2em !important;
-			transform: translateY(+.4em);
-			white-space: nowrap;
+			transform: translateY(.4em);
+			color: var(--color-result-light);
+			letter-spacing: -.15em;
+			font-family: "Bevan", serif;
 		}
 		.statement {
 			padding-left: .5em;

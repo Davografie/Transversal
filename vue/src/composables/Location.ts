@@ -124,7 +124,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		}
 	}
 
-	function retrieve_parents() {
+	async function retrieve_parents(caching: FetchPolicy = 'cache-first') {
 		const get_location_query = gql`query LocationParents($locationId: ID) {
 			locations(locationId: $locationId) {
 				parent {
@@ -140,10 +140,10 @@ export function useLocation(init?: Location, location_key?: string) {
 			}
 		  }`
 		if(apolloClient && location_key && location_key != 'placeholder') {
-			apolloClient.query({
+			await apolloClient.query({
 				query: get_location_query,
 				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				location.value = {
 					...location.value,
