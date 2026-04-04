@@ -220,6 +220,7 @@
 		if(adding_trait.value) {
 			adding_trait.value = false
 			trait_search.value = ""
+			add_multiple_traits.value = false
 		}
 		else {
 			retrieve_potential_traits('network-only')
