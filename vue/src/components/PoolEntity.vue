@@ -32,16 +32,18 @@
 
 <template>
 	<div class="pool-entity-wrapper pool-wrapper">
-		<div v-if="props.dice.some((d) => d.traitsetId != 'Traitsets/1')">
+		<div class="pool-entity" v-if="props.dice.some((d) => d.traitsetId != 'Traitsets/1')">
 			<RouterLink class="entity_name" :to="'/entity/' + entity.key">
 				{{ entity.name }}
 			</RouterLink>
-			<span v-for="i in props.result_limit" :key="i">
-				{{ die_shapes.default_inactive }}
-			</span>
-			<span v-for="i in props.effect_limit" :key="i">
-				{{ die_shapes.default_active }}
-			</span>
+			<div class="limiters">
+				<span class="result-limit" v-for="i in props.result_limit" :key="i">
+					{{ die_shapes.default_active }}
+				</span>
+				<span class="effect-limit" v-for="i in props.effect_limit" :key="i">
+					{{ die_shapes.default_active }}
+				</span>
+			</div>
 		</div>
 		<div class="entity_name complication-entity" v-else>
 			{{ entity.name }}
@@ -64,6 +66,17 @@
 		/* width: 100%; */
 		/* flex-grow: 1; */
 		text-align: left;
+		.pool-entity {
+			display: flex;
+			justify-content: space-between;
+			.limiters {
+				display: flex;
+				gap: .4em;
+				.effect-limit {
+					color: var(--color-effect);
+				}
+			}
+		}
 		.divider {
 			border-bottom: 1px solid var(--color-highlight);
 		}
@@ -81,4 +94,21 @@
 			border-bottom: 1px solid var(--color-highlight-mute);
 		}
 	}
+</style>
+
+<style>
+.dark {
+	.pool-entity-wrapper.pool-wrapper {
+		.result-limit {
+			color: var(--color-result-light);
+		}
+	}
+}
+.light {
+	.pool-entity-wrapper.pool-wrapper {
+		.result-limit {
+			color: var(--color-result);
+		}
+	}
+}
 </style>
