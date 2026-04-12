@@ -163,7 +163,7 @@
 	const add_multiple_traits = ref(false)
 
 	async function assign_trait_to_entity(trait: TraitType) {
-		let new_trait: TraitType|null = null
+		let new_trait: TraitType|null|undefined = null
 		if(
 			props.entity_id
 			&& props.entity_id != 'placeholder'
@@ -173,29 +173,19 @@
 			if(!props.relationship) {
 				if(location.value.parents && location.value.parents?.length > 2 && trait.locationRestricted) {
 					// assign trait restricted to location
-					await assign_trait(trait.id, location.value.parents?.slice(-2, -1)[0].id, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
-						(response) => {
-							new_trait = response
-						}
-					)
+					new_trait = await assign_trait(trait.id, location.value.parents?.slice(-2, -1)[0].id, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
 				}
 				else {
 					// assign trait to entity
-					await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
-						(response) => {
-							new_trait = response
-						}
-					)
+					new_trait = await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
 				}
 			}
 			else {
 				// assign trait to relationship
-				await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
-					(response) => {
-						new_trait = response
-					}
-				)
+				new_trait = await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
 			}
+			await retrieve_traitset('network-only')
+			show_traits.value = true
 		}
 		else {
 			console.error("Can't assign trait to entity: " + props.entity_id)
@@ -364,10 +354,6 @@
 				|| (player.is_player && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
 		})
 	})
-
-	// console.log(traitset.value.name + " got traits to show: " + got_traits_to_show.value)
-	const show_traits: Ref<boolean> = ref(got_traits_to_show.value ? props.expanded : false)
-
 	watch(() => props.expanded, (newExpanded) => {
 		if(got_traits_to_show.value) {
 			show_traits.value = newExpanded
@@ -381,6 +367,10 @@
 			trait_search.value = ""
 		}
 	})
+
+	// console.log(traitset.value.name + " got traits to show: " + got_traits_to_show.value)
+	const show_traits: Ref<boolean> = ref(got_traits_to_show.value ? props.expanded : false)
+
 
 	function toggle_traits() {
 		if(!held.value) {
@@ -407,6 +397,101 @@
 			polling_active.value = true
 		}
 	})
+	
+	/**
+	 * Determines whether the traitset should be extended to allow adding traits
+	 */
+	const extended = computed(() => {
+		return (
+			(got_traits_to_show.value && props.expanded)
+			|| (player.is_gm && (props.extensible || show_info || edit_mode || traitset.value.traits?.length == 0))
+			|| (player.is_player && player.player_character.id == props.entity_id)
+			|| (props.relationship && props.extensible)
+			|| (props.location && props.extensible)
+		)
+	})
+
+	const traits_to_display = computed(() => {
+		if(traitset.value.traits) {
+			let result = <TraitType[]>[]
+
+			// experimental, show only traits that are highlighted
+			if(highlighted_traits.value.length > 0) {
+				return traitset.value.traits.filter((t) => highlighted_traits.value.includes(t.traitSettingId ?? ''))
+			}
+
+			// included trait filters
+			let filtered_traits = traitset.value.traits.filter((trait) => {
+				return (
+					player.is_gm
+					|| props.relationship
+					// || (player.is_player && entity.value.entityType == 'character')
+					|| (player.is_player && !trait.traitSetting?.hidden)
+					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
+					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting.fromEntity?.id == entity.value.id)
+					|| trait.traitSetting?.inherited
+					|| props.tutorial
+				)
+				// && !(
+				// 	trait.traitSetting?.hidden
+				// 	&& trait.traitSetting.fromEntity?.id != entity.value.id
+				// 	&& !trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id)
+				// 	&& !trait.traitSetting.inherited
+				// )
+			})
+
+			// console.log("filtered traits: " + JSON.stringify(filtered_traits))
+
+			if(filtered_traits.length == 0) {
+				return []
+			}
+
+			// get unique traits, by name and if it's not inheritable also statement
+			// traitset.duplicates means that duplicate traits are allowed
+			// old version: t.name + ((traitset.value.duplicates == false || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? ''))
+			const unique_traits: string[] = Array.from(new Set(filtered_traits.map((t) =>
+				t.name + (traitset.value.duplicates == false ? '' : (t.traitSetting?.statement ?? ''))
+			)))
+
+			if(traitset.value.name == "challenges") console.log("unique traits: " + JSON.stringify(unique_traits))
+
+			// for each unique trait, get the highest priority trait
+			unique_traits.forEach((ut) => {
+				const ut_traits = filtered_traits.filter((t) => {
+					return t.name + (traitset.value.duplicates == false ? '' : (t.traitSetting?.statement ?? '')) == ut
+				})
+				if(ut_traits.length == 0) {
+					// console.log("traitset duplicates: " + traitset.value.duplicates + ", no traits found for '" + ut + "'")
+					return
+				}
+				const highest_priority_trait = ut_traits.reduce((a, b) => (a?.traitSetting?.priority ?? -1) > (b?.traitSetting?.priority ?? -1) ? a : b)
+				if(highest_priority_trait) {
+					result.push(highest_priority_trait)
+				}
+			})
+
+			result.push(...filtered_traits.filter(t => {
+				!result.map(x => x.traitSettingId).includes(t.traitSettingId)
+				&& t.traitSetting?.fromEntity?.id == props.entity_id
+			}))
+
+			// if a text filter is set, filter the traits on: name, statement, notes
+			if(filter.value && result.length > 0) {
+				result = result.filter((t) => {
+					return (
+						t.name.toLowerCase().includes(filter.value.toLowerCase())
+						|| (t.traitSetting?.statement ?? '').toLowerCase().includes(filter.value.toLowerCase())
+						|| (t.traitSetting?.notes ?? '').toLowerCase().includes(filter.value.toLowerCase())
+					)
+				})
+			}
+
+			return result
+		}
+		else {
+			return []
+		}
+	})
 
 	// the user changes location, so reflect that in the traits
 	watch(() => player.the_entity?.location, (newLocation, oldLocation) => {
@@ -418,6 +503,7 @@
 	function next_sort() {
 		const index = SORTING.findIndex((s) => JSON.stringify(s) === JSON.stringify(sorting.value))
 		sorting.value = SORTING[SORTING.length > index + 1 ? index + 1 : 0]
+		update_traitset_settings({ sorting: sorting.value.id })
 		retrieve_traitset()
 	}
 
@@ -469,86 +555,6 @@
 	const filter = ref('')
 	const filtering = ref(false)
 
-	const traits_to_display = computed(() => {
-		if(traitset.value.traits) {
-			let result = <TraitType[]>[]
-
-			// experimental, show only traits that are highlighted
-			if(highlighted_traits.value.length > 0) {
-				return traitset.value.traits.filter((t) => highlighted_traits.value.includes(t.traitSettingId ?? ''))
-			}
-
-			// included trait filters
-			let filtered_traits = traitset.value.traits.filter((trait) => {
-				return (
-					player.is_gm
-					|| props.relationship
-					// || (player.is_player && entity.value.entityType == 'character')
-					|| (player.is_player && !trait.traitSetting?.hidden)
-					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
-					|| (player.is_player && trait.traitSetting?.hidden && trait.traitSetting.fromEntity?.id == entity.value.id)
-					|| trait.traitSetting?.inherited
-					|| props.tutorial
-				)
-				// && !(
-				// 	trait.traitSetting?.hidden
-				// 	&& trait.traitSetting.fromEntity?.id != entity.value.id
-				// 	&& !trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id)
-				// 	&& !trait.traitSetting.inherited
-				// )
-			})
-
-			// console.log("filtered traits: " + JSON.stringify(filtered_traits))
-
-			if(filtered_traits.length == 0) {
-				return []
-			}
-
-			// get unique traits, by name and if it's not inheritable also statement
-			// traitset.duplicates means that duplicate traits are allowed
-			const unique_traits: string[] = Array.from(new Set(filtered_traits.map((t) =>
-				t.name + ((traitset.value.duplicates == false || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? ''))
-			)))
-
-			if(traitset.value.name == "challenges") console.log("unique traits: " + JSON.stringify(unique_traits))
-
-			// for each unique trait, get the highest priority trait
-			unique_traits.forEach((ut) => {
-				const ut_traits = filtered_traits.filter((t) => {
-					return t.name + ((!traitset.value.duplicates || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? '')) == ut
-				})
-				if(ut_traits.length == 0) {
-					// console.log("traitset duplicates: " + traitset.value.duplicates + ", no traits found for '" + ut + "'")
-					return
-				}
-				const highest_priority_trait = ut_traits.reduce((a, b) => (a?.traitSetting?.priority ?? -1) > (b?.traitSetting?.priority ?? -1) ? a : b)
-				if(highest_priority_trait) {
-					result.push(highest_priority_trait)
-				}
-			})
-
-			result.push(...filtered_traits.filter(t => {
-				!result.map(x => x.traitSettingId).includes(t.traitSettingId)
-				&& t.traitSetting?.fromEntity?.id == props.entity_id
-			}))
-
-			// if a text filter is set, filter the traits on: name, statement, notes
-			if(filter.value && result.length > 0) {
-				result = result.filter((t) => {
-					return (
-						t.name.toLowerCase().includes(filter.value.toLowerCase())
-						|| (t.traitSetting?.statement ?? '').toLowerCase().includes(filter.value.toLowerCase())
-						|| (t.traitSetting?.notes ?? '').toLowerCase().includes(filter.value.toLowerCase())
-					)
-				})
-			}
-
-			return result
-		}
-		else {
-			return []
-		}
-	})
 
 	const refreshing = ref(false)
 	async function refresh() {
@@ -557,19 +563,6 @@
 			refreshing.value = false
 		})
 	}
-
-	/**
-	 * Determines whether the traitset should be extended to allow adding traits
-	 */
-	const extended = computed(() => {
-		return (
-			got_traits_to_show.value
-			|| ((props.extensible || show_info || edit_mode || traitset.value.traits?.length == 0) && player.is_gm)
-			|| (player.is_player && player.player_character.id == props.entity_id)
-			|| (props.relationship && props.extensible)
-			|| (props.location && props.extensible)
-		)
-	})
 
 	const active_trait_id = ref("")
 
@@ -735,7 +728,7 @@
 		</div>
 
 
-		<div class="traits" v-if="show_traits || extended" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
+		<div class="traits" v-if="show_traits == true || extended == true" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
 			<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0 && show_traits">
 				<!-- <div class="sfx-sparkles">✨</div> -->
@@ -747,7 +740,7 @@
 				</template>
 			</div>
 
-			<div class="entity-traits" v-if="show_traits && !adding_trait">
+			<div class="entity-traits" v-if="(show_traits || extended) && !adding_trait">
 				<template class="highlighted-traits" v-for="trait in traits_to_display"
 						:key="trait.traitSettingId"
 						v-if="highlighted_traits.length > 0">
@@ -794,7 +787,7 @@
 							traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
 						"></div> -->
 				</template>
-				<template class="not-highlighted-traits" v-if="highlighted_traits.length == 0" v-for="trait in traits_to_display"
+				<template class="not-highlighted-traits" v-if="show_traits && highlighted_traits.length == 0" v-for="trait in traits_to_display"
 						:key="trait.traitSettingId">
 					<Trait
 						:id="'ts-' + trait.traitSettingId + '-' + entity.key"
@@ -845,13 +838,13 @@
 				</template>
 				<div class="add-trait" v-if="
 							(
-								player.is_gm
+								(player.is_gm && show_traits)
 								|| (
 									player.is_player
 									&& player.player_character.id == props.entity_id
 								)
 								|| (props.relationship && props.extensible)
-								|| (props.location && props.extensible && !props.hide_title)
+								|| (props.location && props.extensible && !props.hide_title && show_traits)
 								|| adding_trait
 							) && (
 								traits_in_dicepool.length < limiter

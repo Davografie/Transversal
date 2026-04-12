@@ -6,6 +6,7 @@
 
 	import { useEntityList } from '@/composables/EntityList'
 	import { useEntity } from '@/composables/Entity'
+	import type { Entity as EntityType } from '@/interfaces/Types'
 
 	const props = defineProps<{
 		location_id: string,
@@ -43,10 +44,11 @@
 			// })
 			const new_entity = await clone_entity(new_entity_name.value)
 			console.log('cloned entity: ', new_entity)
-			if(player.is_player && new_entity.id != props.archetype_id) {
-				player.player_character_key = new_entity.key
+			if(player.is_player && new_entity && new_entity.id != props.archetype_id) {
+				player.set_character_id(new_entity.id)
 				player.retrieve_character()
 				router.push({ path: '/entity/' + new_entity.key })
+				// emit('created_entity', new_entity)
 			}
 			else {
 				emit('created_entity', new_entity)

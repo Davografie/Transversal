@@ -313,13 +313,13 @@ def find_docs(collection_name: str, query: dict):
 	redis_key = f"find:{collection_name}:{revision}:{query_hash}"
 	if r.exists(redis_key):
 		# collection has not changed, retrieve result from Redis
-		# logger.debug("Collection has not changed, retrieving result from Redis")
+		logger.debug("Collection has not changed, retrieving result from Redis")
 		result = [json.loads(doc) for doc in r.lrange(redis_key, 0, -1)]
 		result = list(filter(lambda x: x != {}, result))
 		return result
 	else:
 		# collection has changed, execute query and store result in Redis
-		# logger.debug(f"Key has changed to {redis_key}, executing query and storing result in Redis")
+		logger.debug(f"Key has changed to {redis_key}, executing query and storing result in Redis")
 		cursor = db.collection(collection_name).find(query)
 		result = [doc for doc in cursor]
 		# logger.debug(f"Query result: {result}")
@@ -609,6 +609,9 @@ class ActivateEntity(Mutation):
 		# 	for relation in relations[12:]:
 		# 		db.collection('Relations').delete({ '_id': relation.get('_id') })
 
+		logger.debug(f"Activating entity {entity_id} for player {player_id}")
+		# db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency' })
+
 		# reduce existing relations
 		# player = get_doc_by_id('Players', player_id)
 		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
@@ -621,6 +624,7 @@ class ActivateEntity(Mutation):
 				if new_count < 0.1:# and player.get('is_gm') is True:
 					# GM's keep switching between perspectives, so it rises out of the pan
 					# 	this keeps the simmer down
+					logger.debug(f"deleting player's {player_id} relation to {relation.get('_to')}, count {new_count}<0.1")
 					entity = get_doc_by_id('Entities', relation.get('_to'))
 					logger.debug(f"deleting player's {player_id} relation to {entity.get('name')}, count {new_count}<0.1")
 					db.collection('Relations').delete({ '_id': relation.get('_id') })
@@ -632,9 +636,8 @@ class ActivateEntity(Mutation):
 				update_doc('Relations', relation)
 
 		# check if agency relation exists
-		logger.info(f"Activating entity {entity_id} for player {player_id}")
 		relations = find_docs('Relations', { '_from': player_id, '_to': entity_id, 'type': 'agency' })
-		logger.debug(f"relations: {relations}")
+		logger.debug(f"checking relations: {relations}")
 		if len(relations) == 0:
 			logger.debug("creating agency relation, rev: " + db.collection('Relations').revision())
 			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency', 'count': 1 })
@@ -647,6 +650,7 @@ class ActivateEntity(Mutation):
 			relation['count'] = new_count
 			update_doc('Relations', relation)
 		
+		logger.info(f"Activating entity {entity_id} for player {player_id}")
 		# activate entity for player
 		global session_characters
 		# first, check if the player ID is registered in session_characters
@@ -780,11 +784,20 @@ class SFX(ObjectType):
 	description = String()
 	traits = List(lambda: Trait)
 
+	def _hydrate_sfx(cls, parent, info):
+		doc = get_doc_by_id('SFXs', parent.id)
+		parent.name = doc.get('name')
+		parent.description = doc.get('description')
+
 	def resolve_name(parent, info):
-		return get_doc_by_id('SFXs', parent.id)['name']
+		if not parent.name:
+			SFX._hydrate_sfx(parent, info)
+		return parent.name
 
 	def resolve_description(parent, info):
-		return get_doc_by_id('SFXs', parent.id)['description']
+		if not parent.description:
+			SFX._hydrate_sfx(parent, info)
+		return parent.description
 
 	def resolve_traits(parent, info):
 		query = f"""FOR trait IN Traits
@@ -804,15 +817,20 @@ class CreateSFX(Mutation):
 	class Arguments:
 		name = String(required=True)
 		description = String(required=True)
+		trait_id = ID(required=False)
 
 	sfx = Field(lambda: SFX)
 
-	def mutate(self, info, name, description):
+	def mutate(self, info, name, description, trait_id=None):
 		sfx = db.collection('SFXs').insert({
 			'name': name,
 			'description': description
 		})
-		return CreateSFX(sfx=SFX(id=sfx.get('id'), name=name, description=description))
+		if trait_id is not None:
+			doc = get_doc_by_id('Traits', trait_id)
+			doc['possible_sfxs'].append(sfx.id)
+			update_doc('Traits', doc)
+		return CreateSFX(sfx=SFX(id=sfx.get('_id'), name=name, description=description))
 
 class MutateSFX(Mutation):
 	class Arguments:
@@ -1738,27 +1756,31 @@ class UpdateTraitDefault(Mutation):
 	trait = Field(lambda: Trait)
 
 	def mutate(root, info, trait_id, default_settings):
-		if len(traits := find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})) > 1:
-			db.collection('TraitSettings').delete_many([trait.get('_id') for trait in traits])
-		if traits == 1:
-			update_doc('TraitSettings', traits[0])
-			# db.collection('TraitSettings').update_match(
-			# 	{ '_from': trait_id, '_to': 'Traits/1' },
-			# 	default_settings
-			# )
+		logger.debug(f"trait_id: { trait_id }, default_settings: { default_settings }")
+
+		old_default_settings = find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})
+
+
+		if len(old_default_settings) == 1:
+			new_defaults = {
+				**old_default_settings[0],
+				**default_settings
+			}
+			logger.debug(f"updating new_defaults: { new_defaults }")
+			update_doc('TraitSettings', new_defaults)
 		else:
-			db.collection('TraitSettings').insert(
-				{
-					'_from': trait_id,
-					'_to': 'Traits/1',
-					**default_settings
-				}
-			)
-		# if default_settings.get('locations_disabled') is not None:
-		# 	db.collection('TraitSettings').update_match(
-		# 		{ '_to': trait_id },
-		# 		{ 'locations_disabled': default_settings.get('locations_disabled') }
-		# 	)
+			if len(old_default_settings) > 1:
+				logger.debug(f"deleting traits: { [trait.get('_id') for trait in old_default_settings] }")
+				db.collection('TraitSettings').delete_many([trait.get('_id') for trait in old_default_settings])
+
+			new_defaults = {
+				'_from': trait_id,
+				'_to': 'Traits/1',
+				**default_settings
+			}
+			logger.debug(f"inserting new_defaults: { new_defaults }")
+			db.collection('TraitSettings').insert(new_defaults)
+
 		return UpdateTraitDefault(trait=Trait(id=trait_id))
 
 class MutateTrait(Mutation):
@@ -2283,6 +2305,17 @@ class Traitset(ObjectType):
 			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
 			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
 			traits = execute_aql(query, ['TraitSettings', 'Traits'])
+			# get reverse traits
+			relation = get_doc_by_id('Relations', info.context.get('entity_id'))
+			reverse_query = f"""FOR traitsettings IN TraitSettings
+				FILTER traitsettings._from == '{ relation.get('_to') }'
+			FOR trait IN Traits
+				FILTER traitsettings._to == trait._id
+				FILTER trait.traitset == '{ parent.id }'
+			SORT TO_NUMBER(SUBSTRING(MAX(traitsettings.rating), 1)) DESC, trait.name
+			RETURN {{ id: trait._id, setting: traitsettings._id }}"""
+			reverse_traits = execute_aql(reverse_query, ['TraitSettings', 'Traits'])
+			traits.extend(reverse_traits)
 			result = []
 			for trait in traits:
 				logger.debug(f"Traitset.resolve_traits:\ttrait: { trait }")
@@ -2330,43 +2363,55 @@ class Traitset(ObjectType):
 		elif info.context.get('entity_id') is not None and info.context.get('entity_id').startswith('Entities/'):
 			# logger.debug(f"Traitset.resolve_traits:\tentity_id: { info.context.get('entity_id') }")
 			entity = get_doc_by_id('Entities', info.context.get('entity_id'))
+			if info.context.get('sorting') is not None:
+				sorting_setting = info.context.get('sorting')
+			else:
+				traitset_settings = find_docs('TraitsetSettings', {'_from': info.context.get('entity_id'), '_to': parent.id})
+				if len(traitset_settings) > 0:
+					sorting_setting = traitset_settings[0].get('sorting')
+				else:
+					sorting_setting = None
 
 			# traits for location are inherited, so special query
 			if entity is not None and entity.get('type') == 'location':
-				if info.context.get('sorting') is not None and info.context.get('sorting') == 'NAME':
+
+				if sorting_setting == 'NAME':
 					sorting = "SORT t.name, setting.statement, MAX(setting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], setting.rating_type, true) ASC"
 				else:
 					sorting = "SORT MAX(setting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], setting.rating_type, true) ASC, t.name, setting.statement"
+				
 				# logger.debug(f"Traitset.resolve_traits:\treturning location traits")
 				query = f"""FOR location IN Entities
-					FILTER location._id == '{ info.context.get('entity_id') }'
-					FILTER location.type == 'location'
-					LET direct_traits = (
-						FOR setting IN TraitSettings
-							FILTER location._id == setting._from
-						FOR t IN Traits
-							FILTER setting._to == t._id
-							FILTER t.traitset == '{ parent.id }'
-						{ sorting }
-						RETURN setting
-					)
-					LET parent_locations = (
-						FOR v, e, p IN 0..20 OUTBOUND location._id Relations
-						FILTER p.edges[*].type ALL == 'super'
-						RETURN v._id
-					)
-					LET hierarchies = APPEND([location._id], parent_locations)
-					LET inherited_traits = (
-						FOR entity IN hierarchies
-							FOR trait, traitsetting IN OUTBOUND entity TraitSettings
-							FILTER trait.traitset == '{ parent.id }'
-							FILTER traitsetting.inheritable == true
-							COLLECT traitId = traitsetting._to INTO traitsettings
-							RETURN traitsettings[0].traitsetting
-					)
-					FOR trait IN UNIQUE(APPEND(direct_traits, inherited_traits))
-					RETURN trait"""
+							FILTER location._id == '{ info.context.get('entity_id') }'
+							FILTER location.type == 'location'
+							LET direct_traits = (
+								FOR setting IN TraitSettings
+									FILTER location._id == setting._from
+								FOR t IN Traits
+									FILTER setting._to == t._id
+									FILTER t.traitset == '{ parent.id }'
+								{ sorting }
+								RETURN setting
+							)
+							LET parent_locations = (
+								FOR v, e, p IN 0..20 OUTBOUND location._id Relations
+								FILTER p.edges[*].type ALL == 'super'
+								RETURN v._id
+							)
+							LET hierarchies = APPEND([location._id], parent_locations)
+							LET inherited_traits = (
+								FOR entity IN hierarchies
+									FOR trait, traitsetting IN OUTBOUND entity TraitSettings
+									FILTER trait.traitset == '{ parent.id }'
+									FILTER traitsetting.inheritable == true
+									COLLECT traitId = traitsetting._to INTO traitsettings
+									RETURN traitsettings[*].traitsetting
+							)
+							FOR trait IN UNIQUE(APPEND(direct_traits, FLATTEN(inherited_traits)))
+							RETURN trait"""
 				traits = execute_aql(query, ['Entities', 'TraitSettings', 'Traits'])
+				overwritten_traits = [trait.get('inherited_as') for trait in traits if trait.get('inherited_as') is not None]
+				traits = [trait for trait in traits if trait.get('_id') not in overwritten_traits]
 				return [Trait(id=trait['_to'], trait_setting_id=trait['_id']) for trait in traits]
 
 
@@ -2379,7 +2424,7 @@ class Traitset(ObjectType):
 				location_id = location.get('_id')
 
 				# direct traits
-				if info.context.get('sorting') is not None and info.context.get('sorting') == 'NAME':
+				if sorting_setting == 'NAME':
 					sorting = "SORT trait.name, setting.statement, MAX(setting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], setting.rating_type, true) ASC"
 				else:
 					sorting = "SORT MAX(setting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], setting.rating_type, true) ASC, trait.name"
@@ -2404,7 +2449,7 @@ class Traitset(ObjectType):
 				location_hierarchy = retrieve_hierarchy(location_id)
 
 				# inherited traits
-				if info.context.get('sorting') is not None and info.context.get('sorting') == 'NAME':
+				if sorting_setting == 'NAME':
 					sorting = "SORT t.name, traitsettings[0].traitsetting.statement, MAX(traitsettings[0].traitsetting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], traitsettings[0].traitsetting.rating_type, true) ASC"
 				else:
 					sorting = "SORT MAX(traitsettings[0].traitsetting.rating) DESC, POSITION(['empty', 'challenge', 'static', 'resource'], traitsettings[0].traitsetting.rating_type, true) ASC, t.name"
@@ -2709,7 +2754,7 @@ class UpdateTraitsetDefault(Mutation):
 		if default_settings.sfxs is None:
 			default_settings.sfxs = []
 		if default_settings.hidden is None:
-			default_settings.hidden = False
+			default_settings.hidden = True
 		else:
 			traitset_traits = find_docs('Traits', {'traitset': traitset_id})
 			for trait in traitset_traits:
@@ -2808,6 +2853,7 @@ class TraitsetSetting(ObjectType):
 class TraitsetSettingInput(InputObjectType):
 	limit = Int()
 	sfxs = List(ID)
+	sorting = String() # NAME or RATING
 
 class UpdateTraitsetSetting(Mutation):
 	class Arguments:
@@ -2872,6 +2918,7 @@ class Entity(Interface):
 	id = ID(required=True)
 	key = ID()
 	name = String()
+	subtitle = String()
 	description = String()
 	pp = Int()
 	image = Field(lambda: Portrait)
@@ -2892,6 +2939,7 @@ class Entity(Interface):
 	active = Boolean()
 	hidden = Boolean()
 	known_to = List(lambda: Entity)
+	players = List(lambda: Player)
 
 	@classmethod
 	def _resolve_type(cls, instance, info):
@@ -2916,6 +2964,7 @@ class Entity(Interface):
 		entity = get_doc_by_id('Entities', parent.id)
 		parent.key = entity.get('_key')
 		parent.name = entity.get('name')
+		parent.subtitle = entity.get('subtitle')
 		parent.description = entity.get('description')
 		parent.pp = entity.get('pp')
 		parent.entity_type = entity.get('type')
@@ -2933,6 +2982,10 @@ class Entity(Interface):
 	def resolve_name(parent, info):
 		Entity._hydrate_entity(parent, info)
 		return parent.name
+
+	def resolve_subtitle(parent, info):
+		Entity._hydrate_entity(parent, info)
+		return parent.subtitle
 
 	def resolve_description(parent, info):
 		Entity._hydrate_entity(parent, info)
@@ -3383,8 +3436,14 @@ class Entity(Interface):
 			update_doc('Entities', {'_id': parent.id, 'known_to': known_to})
 		return result
 
+	def resolve_players(parent, info):
+		# find agency relations to find players
+		return [Player(id=relation.get('_from')) for relation in find_docs('Relations', {'_to': parent.id, 'type': 'agency'})]
+
+
 class EntityInput(InputObjectType):
 	name = String()
+	subtitle = String()
 	description = String()
 	entity_type = String()
 	location = ID()
@@ -3972,6 +4031,7 @@ class LocationInput(InputObjectType):
 	id = ID()
 	location = ID()
 	name = String()
+	subtitle = String()
 	description = String()
 
 class CreateLocation(Mutation):
@@ -4891,10 +4951,10 @@ def upload_file_location(entity_key, location_key):
 def imagegen(entity_key, force):
 	"""call comfyui API to generate image"""
 	rating_weights = [
-		0.2,
 		0.4,
 		0.6,
-		0.9,
+		0.8,
+		1.0,
 		1.2,
 	]
 	genre_loras = {

@@ -548,6 +548,11 @@
 					display: block;
 				}
 			}
+			.entity-type {
+				left: 50%;
+				top: 85px;
+				transform: translateX(-50%);
+			}
 			.codex-button.small-button {
 				width: 80%;
 				text-align: center;

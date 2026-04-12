@@ -44,6 +44,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 
 	function set_entity_id(new_entity_id: string) {
 		entity_id = new_entity_id
+		console.log("setting entity id: ", entity_id)
 		// retrieve_small_entity()
 	}
 
@@ -145,6 +146,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				traitsets {
 					id
 					name
+					entityTypes
 				}
 				favorite
 			}
@@ -177,6 +179,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 				key
 				id
 				name
+				subtitle
 				description
 				pp
 				hidden
@@ -394,7 +397,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function retrieve_followers() {
+	async function retrieve_followers(caching: FetchPolicy = 'cache-first') {
 
 		const followers_query = gql`query EntityFollowers($entityId: ID) {
 			entities(entityId: $entityId) {
@@ -410,7 +413,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			apolloClient.query({
 				query: followers_query,
 				variables: { entityId: entity_id },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				entity.value = {
 					...entity.value,
@@ -518,7 +521,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	function update_entity(input: EntityInput) {
+	async function update_entity(input: EntityInput) {
 		/* post character changes to the server */
 		const query_update_entity = gql`mutation UpdateEntity($entityId: ID!, $entityInput: EntityInput) {
 			updateEntity(entityId: $entityId, entityInput: $entityInput) {
@@ -544,12 +547,15 @@ export function useEntity(init?: Entity, entity_id?: string) {
 							ext
 						}
 					}
+					following {
+						id
+					}
 				}
 			}
 		}`
 		if(apolloClient) {
 			console.log("updating entity ", (entity_id ?? entity.value.id), " input: ", input)
-			apolloClient.mutate({
+			await apolloClient.mutate({
 				mutation: query_update_entity,
 				variables: {
 					"entityId": entity_id ?? entity.value.id,
@@ -619,7 +625,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 		}
 	}
 
-	async function clone_entity(name?: string, location_id?: string) {
+	async function clone_entity(name?: string, location_id?: string): Promise<Entity|undefined> {
 		/* post character changes to the server */
 		console.log('cloning entity (A): ' + entity.value.name)
 		const query_clone_entity = gql`mutation CloneEntity($entityId: ID!${ name ? ', $name: String' : '' }${ location_id ? ', $locationId: ID' : '' }) {
@@ -632,20 +638,22 @@ export function useEntity(init?: Entity, entity_id?: string) {
 			}
 		}`
 		if(apolloClient) {
-			let cloned_entity = {}
-			await apolloClient.mutate({
+			// let cloned_entity = {}
+			const result = await apolloClient.mutate({
 				mutation: query_clone_entity,
 				variables: {
 					"entityId": entity_id ?? entity.value.id,
 					"name": name,
 					"locationId": location_id
 				}
-			}).then((result) => {
-				console.log('cloned entity (B): ' + JSON.stringify(result.data.instantiateArchetype.entity))
-				// return result.data.instantiateArchetype.entity
-				cloned_entity = result.data.instantiateArchetype.entity
 			})
-			return cloned_entity
+			return result.data.instantiateArchetype.entity
+			// }).then((result) => {
+			// 	console.log('cloned entity (B): ' + JSON.stringify(result.data.instantiateArchetype.entity))
+			// 	// return result.data.instantiateArchetype.entity
+			// 	cloned_entity = result.data.instantiateArchetype.entity
+			// })
+			// return cloned_entity
 		}
 	}
 
@@ -689,8 +697,8 @@ export function useEntity(init?: Entity, entity_id?: string) {
 	 * sets the location of this entity in the database
 	 * @param location the location to set the entity to
 	 */
-	function set_location(location: Location) {
-		update_entity({ location: location.id })
+	async function set_location(location: Location) {
+		await update_entity({ location: location.id })
 	}
 
 	async function set_entity_location(entity_id: string, location_id: string) {

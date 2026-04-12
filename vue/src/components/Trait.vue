@@ -746,14 +746,15 @@ import ToggleButton from './UI/ToggleButton.vue'
 	const new_sfx_name = ref<string>('')
 	const new_sfx_description = ref<string>('')
 
-	function toggle_sfxs() {
+	async function toggle_sfxs() {
 		// retrieve_possible_sfxs()
 		show_sfxs.value = !show_sfxs.value
+		if(show_add_sfx.value) await retrieve_sfx_list('network-only')
 	}
 
-	function toggle_add_sfx() {
+	async function toggle_add_sfx() {
 		show_add_sfx.value = !show_add_sfx.value
-		if(show_add_sfx.value) retrieve_sfx_list()
+		if(show_add_sfx.value) await retrieve_sfx_list('network-only')
 	}
 
 	function add_sfx(sfx: SFXType) {
@@ -768,23 +769,31 @@ import ToggleButton from './UI/ToggleButton.vue'
 		expanded_sfx.value = {} as SFXType
     }
 
-	function create_new_sfx() {
-		create_sfx(new_sfx_name.value, new_sfx_description.value)
-		setTimeout(() => {
-			retrieve_sfx_list()
-			watch(sfx_list, (newSfxList) => {
-				console.log("new sfx list: ", newSfxList)
-				const new_sfx = newSfxList.find(sfx => sfx.name == new_sfx_name.value)
-				if(!new_sfx) return
-				mutate_trait({
-					possibleSfxs: [...(trait.value.possibleSfxs?.map((sfx) => sfx.id) ?? []), new_sfx.id]
-				})
-				new_sfx_name.value = ''
-				new_sfx_description.value = ''
-				show_add_sfx.value = false
-				setTimeout(() => retrieve_possible_sfxs(), 200)
-			}, { once: true })
-		}, 200)
+	async function create_new_sfx() {
+		const new_sfx = await create_sfx(new_sfx_name.value, new_sfx_description.value)
+		// const new_sfx = sfx_list.value.find(sfx => sfx.name == new_sfx_name.value && sfx.description == new_sfx_description.value)
+		if(!new_sfx) {
+			console.error('could not find new sfx')
+			return
+		}
+		mutate_trait({
+			possibleSfxs: [...(trait.value.possibleSfxs?.map((sfx) => sfx.id) ?? []), new_sfx.id]
+		})
+		// mutate_trait_setting({
+		// 	sfxs: [...(trait.value.sfxs?.map((sfx) => sfx.id) ?? []), new_sfx.id]
+		// })
+		new_sfxs.value = [...new_sfxs.value, new_sfx]
+		new_sfx_name.value = ''
+		new_sfx_description.value = ''
+		show_add_sfx.value = false
+		await retrieve_possible_sfxs('network-only')
+		// setTimeout(() => {
+		// 	retrieve_sfx_list()
+		// 	watch(sfx_list, (newSfxList) => {
+		// 		console.log("new sfx list: ", newSfxList)
+		// 		setTimeout(() => retrieve_possible_sfxs(), 200)
+		// 	}, { once: true })
+		// }, 200)
 	}
 
 	function change_rating(
@@ -1185,7 +1194,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				<div class="button-mnml sfx-button"
 						:class="show_sfxs ? 'active' : 'inactive'"
 						@click="toggle_sfxs"
-						v-if="(trait.possibleSfxs?.length ?? 0) > 0 && can_edit">
+						v-if="can_edit">
 					<div class="icon">✨</div>
 					<div class="label" v-if="!player.small_buttons">{{ show_sfxs ? 'cancel' : 'add sfx' }}</div>
 				</div>
@@ -2027,18 +2036,16 @@ import ToggleButton from './UI/ToggleButton.vue'
 			/* flex-grow: 1; */
 			scroll-snap-align: center;
 			width: 85%;
+			max-height: 90vh;
 			.trait-inner {
 				border-radius: 10px;
-				/* max-height: 50vh; */
 				height: 100%;
 				overflow-y: auto;
 				display: flex;
 				flex-direction: column;
 				justify-content: space-between;
 			}
-			/* margin: .6em .4em; */
 			border-radius: 10px;
-			/* flex-grow: 0.6; */
 			text-shadow: none;
 			.descriptor {
 				/* padding: 0 1em; */
@@ -2084,9 +2091,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				font-size: .8em;
 				padding: 0.4em 4em;
 				color: var(--color-disabled);
-				/* box-shadow: inset 0 0 10px var(--color-border); */
 				background-image: linear-gradient(to bottom, var(--color-border) -100%, transparent 30%);
-				overflow: hidden;
 			}
 			.notes-enter-active, .notes-leave-active {
 				transition: max-height .4s ease-out;

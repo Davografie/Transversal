@@ -25,16 +25,22 @@
 	})
 
 	const order_changed = ref(false)
-	const changed_index = ref(0)
+	const changed_index = ref(-1)
 	function order_change(event: any) {
 		const { oldIndex, newIndex } = event
 		order_changed.value = true
 		let ts = traitset_order.value.splice(oldIndex, 1)[0]
 		traitset_order.value.splice(newIndex, 0, ts)
 		changed_index.value = newIndex
+		// counter.value++
 	}
 	function save_order() {
 		change_traitset_order(traitset_order.value)
+		order_changed.value = false
+	}
+	function reset_order() {
+		traitset_order.value = traitsets.value.map((ts) => ts.id)
+		changed_index.value = -1
 		order_changed.value = false
 	}
 
@@ -44,11 +50,20 @@
 		new_traitset.value = ''
 		// entity_types.value = []
 	}
+
+	function refresh() {
+		retrieve_traitsets('network-only')
+		reset_order()
+		counter.value++
+	}
+
+	const counter = ref(0)
 </script>
 
 <template>
 	<div id="traitsets-wrapper">
 		<h1>Traitsets</h1>
+		<div class="button" id="refresh-button" @click="refresh">⟳</div>
 		<div id="create-traitset" v-if="player.is_gm">
 			<input type="text" placeholder="new traitset" v-model="new_traitset" />
 			<div id="entity-types">
@@ -94,6 +109,7 @@
 								ts => entity_types.every(
 									et => ts.entityTypes?.includes(et)))
 								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase()))"
+							:key="traitset.id + counter"
 							@click="emit('show_traitset', traitset.key)"
 							:class="[
 								{ 'subtraitset': traitset.entityTypes?.includes('subtrait') },
@@ -105,18 +121,6 @@
 							]">
 						<span>{{ traitset.name }}</span>
 					</li>
-					<!-- <li v-for="traitset in traitsets"
-							@click="emit('show_traitset', traitset.key)"
-							:class="[
-								{ 'subtraitset': traitset.entityTypes?.includes('subtrait') },
-								{ 'emphasized': traitsets.filter(
-								ts => entity_types.every(
-									et => ts.entityTypes?.includes(et)))
-								.filter(ts => ts.name?.toLowerCase().includes(new_traitset.toLowerCase())).includes(traitset) },
-								{ 'changed': changed_index == traitset_order.indexOf(traitset.id) }
-							]">
-						<span>{{ traitset.name }}</span>
-					</li> -->
 				</ol>
 			</div>
 			<div id="save-button-wrapper">
@@ -129,6 +133,9 @@
 
 <style scope>
 #traitsets-wrapper {
+	#refresh-button {
+		float: right;
+	}
 	#traitset-list {
 		position: relative;
 		/* background-color: var(--color-background-soft); */

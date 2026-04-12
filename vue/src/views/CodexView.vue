@@ -178,6 +178,7 @@
 								class="entity-card"
 								:entity_id="entity.id"
 								override_click
+								is_active
 								@click_entity="click_character(entity)" />
 						</template>
 					</div>
@@ -208,6 +209,7 @@
 								is_relationship
 								show_icon
 								override_click
+								:is_active="false"
 								@click_entity="click_relation(relation)" />
 						</template>
 						<!-- favorite non-characters -->

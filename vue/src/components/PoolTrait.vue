@@ -6,6 +6,7 @@
 	import { useSFX } from '@/composables/SFX'
 	import { useDicepool } from '@/composables/Dicepool'
 	import type { Die as DieType } from '@/interfaces/Types'
+	import DiePicker from '@/components/DiePicker.vue'
 	
 	const props = defineProps<{
 		traitsetting_id: string
@@ -39,7 +40,9 @@
 
 	function longpress_die(die: DieType) {
 		held.value = true
-		emit('longpress_die', die)
+		// emit('longpress_die', die)
+		edit_die.value = die
+		editing_dice.value = true
 		setTimeout(() => {
 			held.value = false
 		}, 500)
@@ -49,6 +52,16 @@
 		if(dicepool.inEffectPhase.value && props.dice.some((d) => !d.isResultDie)) return 'available'
 		if(dicepool.inEffectPhase.value && props.dice.every((d) => d.isResultDie)) return 'unavailable'
 	})
+	
+	const editing_dice = ref(false)
+	const edit_die = ref<DieType>()
+
+	async function change_die(rating: DieType[]) {
+		if(edit_die.value) await dicepool.remove_die(edit_die.value)
+		dicepool.add_dice(rating)
+		editing_dice.value = false
+		edit_die.value = undefined
+	}
 </script>
 
 <template>
@@ -78,6 +91,11 @@
 					@click.stop="click_die(die)" />
 			</div>
 		</div>
+		<DiePicker
+			v-if="editing_dice"
+			show_effects
+			:die="edit_die"
+			@change-die="(rating) => change_die(rating)" />
 		<div class="subtraits" v-if="trait.subTraits && trait.subTraits?.length > 0">
 			<template v-for="subtrait in trait.subTraits" :key="subtrait.id">
 				<PoolTrait v-if="props.dice.filter((d) => d.subTraitsettingId == subtrait.traitSettingId).length > 0"

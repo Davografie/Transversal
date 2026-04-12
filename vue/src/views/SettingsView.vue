@@ -51,9 +51,11 @@
 		return players.value.filter(p => p.name.toLowerCase().includes(player_name.value.toLowerCase()))
 	})
 
-	function new_player() {
-		create_player(player_name.value)
-		setTimeout(() => retrieve_players(), 500)
+	async function new_player() {
+		const created_player = await create_player(player_name.value)
+		await retrieve_players('network-only')
+		switch_to_player(created_player)
+		// setTimeout(() => retrieve_players(), 500)
 	}
 
 	function delete_player(player_id: string) {
@@ -339,6 +341,7 @@
 					font-size: 1.2em;
 					cursor: pointer;
 					padding: 0.5em;
+					text-align: right;
 				}
 			}
 		}
@@ -497,7 +500,7 @@
 	}
 	nav {
 		background-image: linear-gradient(
-			to left,
+			to right,
 			var(--color-background-mute) 0,
 			var(--color-background-mute) 90%,
 			var(--color-background)
@@ -505,11 +508,29 @@
 		.links {
 			.link {
 				background-image: linear-gradient(
-					to left,
+					to right,
 					var(--color-highlight) 0,
 					var(--color-highlight) 90%,
-					var(--color-background-mute)
+					var(--color-background-mute) 110%
 				);
+				&.header {
+					background-image: none;
+					background-color: var(--color-highlight);
+					text-align: center;
+					/* transform: translateX(1em); */
+					position: relative;
+					&::after {
+						content: "";
+						width: 1em;
+						height: 100%;
+						position: absolute;
+						right: -.3em;
+						top: 0;
+						/* top: 50%; */
+						background-color: var(--color-highlight);
+						border-radius: 0 10px 10px 0;
+					}
+				}
 			}
 		}
 	}

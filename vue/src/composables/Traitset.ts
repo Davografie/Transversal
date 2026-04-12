@@ -432,8 +432,8 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			}
 		}`
 		if(apolloClient) {
-			let trait = null
-			await apolloClient.mutate({
+			// let trait = null
+			const result = await apolloClient.mutate({
 				mutation: mutate_assign_trait,
 				variables: {
 					traitId: trait_id,
@@ -441,12 +441,14 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					locationId: location_id,
 					traitSettingInput: trait_setting_input
 				}
-			}).then((response) => {
-				retrieve_traitset('network-only')
-				trait = response?.data?.assignTrait?.trait
 			})
-			console.log("assigned trait: ", trait)
-			return trait
+			// .then((response) => {
+			// 	retrieve_traitset('network-only')
+			// 	trait = response?.data?.assignTrait?.trait
+			// })
+			// await retrieve_traitset('network-only')
+			// console.log("assigned trait: ", trait)
+			return result.data.assignTrait.trait
 		}
 	}
 
@@ -472,7 +474,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function delete_traitset() {
+	async function delete_traitset() {
 		const mutate_delete_traitset = gql`mutation DeleteTraitset($traitsetId: ID!) {
 			deleteTraitset(traitsetId: $traitsetId) {
 				message
@@ -481,12 +483,12 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}`
 		
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_delete_traitset))
-			let variables: object = {
-				traitsetId: traitset_id
-			}
-			console.log("deleting traitset with variables: ", variables)
-			mutate(variables)
+			await apolloClient.mutate({
+				mutation: mutate_delete_traitset,
+				variables: {
+					traitsetId: traitset.value.id
+				}
+			})
 		}
 	}
 

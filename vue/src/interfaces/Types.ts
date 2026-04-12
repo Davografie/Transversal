@@ -209,6 +209,7 @@ export interface Entity {
     id: string
     key: string
     name: string
+    subtitle?: string
     active?: boolean
     description?: string
     pp?: number

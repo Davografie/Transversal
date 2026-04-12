@@ -63,6 +63,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				sfxs {
 					id
 				}
+				possibleSfxs {
+					id
+				}
 				inheritable
 			}
 		}`
@@ -112,6 +115,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				statement
 				notes
 				sfxs {
+					id
+				}
+				possibleSfxs {
 					id
 				}
 				subTraits {
@@ -288,7 +294,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 
 	const { convert_rating_to_dice } = useRating()
 
-	function retrieve_trait_setting(caching: FetchPolicy = 'cache-first') {
+	async function retrieve_trait_setting(caching: FetchPolicy = 'cache-first') {
 		const query = gql`query TraitSettingByID($traitSettingId: ID) {
 			traits(traitSettingId: $traitSettingId) {
 				possibleSubTraits {
@@ -331,7 +337,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			}
 		}`
 		if(apolloClient && trait_setting_id.value && trait_setting_id.value != "placeholder") {
-			apolloClient.query({
+			await apolloClient.query({
 				query: query,
 				variables: {
 					traitSettingId: trait_setting_id.value
@@ -510,7 +516,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 				}
 			})
 			await retrieve_trait('network-only')
-			retrieve_trait_setting('network-only')
+			await retrieve_trait_setting('network-only')
 			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_setting_trait))
 			// let variables: object = {
 			// 	traitSettingId: trait_setting_id.value,
@@ -688,7 +694,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function retrieve_possible_sfxs() {
+	async function retrieve_possible_sfxs(caching: FetchPolicy = 'cache-first') {
 		const query_get_sfxs = gql`query PossibleSFXs($traitId: ID) {
 			traits(traitId: $traitId) {
 				possibleSfxs {
@@ -699,12 +705,12 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 			}
 		}`
 		if(apolloClient && trait_id.value) {
-			apolloClient.query({
+			await apolloClient.query({
 				query: query_get_sfxs,
 				variables: {
 					traitId: trait_id.value
 				},
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				trait.value = { ...trait.value, possibleSfxs: result.data.traits[0].possibleSfxs }
 			})
@@ -722,7 +728,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function retrieve_default_settings(caching: FetchPolicy = 'cache-first') {
+	async function retrieve_default_settings(caching: FetchPolicy = 'cache-first') {
 		const query_get_default_trait = gql`query TraitDefaults($traitId: ID) {
 			traits(traitId: $traitId) {
 				defaultTraitSetting {
@@ -824,7 +830,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}
 	}
 
-	function mutate_default_settings(new_defaults: TraitSettingInput) {
+	async function mutate_default_settings(new_defaults: TraitSettingInput) {
 		const mutate_update_trait = gql`mutation Mutation($defaultSettings: TraitSettingInput!, $traitId: ID!) {
 			updateTraitDefault(defaultSettings: $defaultSettings, traitId: $traitId) {
 				trait {
@@ -844,7 +850,8 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		}`
 		
 		if(apolloClient) {
-			apolloClient.mutate({
+			console.log("updating default settings for trait: " + trait_id.value + ": ", JSON.stringify(new_defaults))
+			await apolloClient.mutate({
 				mutation: mutate_update_trait,
 				variables: {
 					defaultSettings: new_defaults,
@@ -855,6 +862,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					...default_settings.value,
 					...result.data.updateTraitDefault.trait.defaultTraitSetting
 				}
+				console.log("updated default settings for trait: " + trait_id.value + ": ", JSON.stringify(default_settings.value))
 			})
 			// const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_update_trait))
 			// let variables: object = {

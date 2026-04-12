@@ -4,7 +4,7 @@
 	import ImageOverlay from '@/views/ImageOverlay.vue'
 	import { ref, computed, watch, onMounted, onUpdated, toRefs } from 'vue'
 	import { useRouter, useRoute, RouterLink } from 'vue-router'
-	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef } from '@vueuse/core'
+	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef, useFullscreen } from '@vueuse/core'
 
 	import { usePlayerStore, input_methods } from '@/stores/PlayerStore'
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
@@ -124,6 +124,7 @@
 
 	const app_wrapper_component = templateRef<HTMLElement>('app_wrapper_component')
 	const scrolling_to_top = ref(false)
+	const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(app_wrapper_component)
 
 	function scroll_top() {
 		console.log('scrolling to top')
@@ -192,10 +193,10 @@
 		}
 	})
 
-	const dicepool_pulsate = ref(false)
-	watch(() => dicepool_store.dice.length, () => {
-		dicepool_pulsate.value = true
-	})
+	// const dicepool_pulsate = ref(false)
+	// watch(() => dicepool_store.dice.length, () => {
+	// 	dicepool_pulsate.value = true
+	// })
 </script>
 
 <template>
@@ -210,6 +211,9 @@
 			]"
 			:style="preferredColor == 'dark' ? { 'background-image': 'url(' + location_image_link + ')'} : ''"
 			ref="app_wrapper_component">
+		<div id="toggle-fullscreen" @click="toggleFullscreen" class="button-mnml">
+			<span class="icon">🪟</span>
+		</div>
 		<ImageOverlay />
 		<Landscape v-if="player.orientation == 'horizontal'" />
 		<Mobile v-else />
@@ -224,6 +228,12 @@
 		overflow-y: scroll; */
 		position: relative;
 		scroll-behavior: smooth;
+		#toggle-fullscreen {
+			position: fixed;
+			top: 0;
+			right: 0;
+			z-index: 5;
+		}
 		#edit-button, #floating-buttons {
 			position: fixed;
 		}

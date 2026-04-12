@@ -34,7 +34,7 @@
 
 <template>
 	<div id="sfx-overview-wrapper">
-		<input type="button" class="button" value="refresh" @click="retrieve_sfx_list" />
+		<input type="button" class="button" value="refresh" @click="retrieve_sfx_list('network-only')" />
 		<div id="new-sfx">
 			<div>
 				<input type="text" placeholder="name" v-model="new_sfx_name" />

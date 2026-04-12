@@ -3,7 +3,7 @@
 */
 import { ref, inject, watch } from 'vue'
 import type { Ref } from 'vue'
-import type { ApolloClient } from '@apollo/client/core'
+import type { ApolloClient, FetchPolicy } from '@apollo/client/core'
 import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
 import gql from 'graphql-tag'
 import type { Traitset } from '@/interfaces/Types'
@@ -21,7 +21,7 @@ export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_ty
 	const traitsets: Ref<Traitset[]> = ref(init ? init : [placeholder_traitset])
 	const apolloClient = inject<ApolloClient<Cache>>('apolloClient')
 
-	function retrieve_traitsets() {
+	async function retrieve_traitsets(caching: FetchPolicy = 'cache-first') {
 		const query_get_entity_traitsets = gql`query Traitsets($entityId: ID) {
 			traitsets(entityId: $entityId) {
 				key
@@ -54,10 +54,10 @@ export function useTraitsetList(init?: Traitset[], entity_id?: string, entity_ty
 		// const parameters = entity_id ? { traitsetId: entity_id } : {}
 		// const apolloClient = inject<ApolloClient<Cache>>('apolloClient')
 		if(apolloClient) {
-			apolloClient.query({
+			await apolloClient.query({
 				query: query,
 				variables: parameters,
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				if(result.data.traitsets) {
 					traitsets.value = result.data.traitsets

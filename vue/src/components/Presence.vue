@@ -81,6 +81,8 @@
 					:entity_id="entity.id"
 					is_active
 					override_click
+					show_icon
+					show_archetypes
 					@click_entity="$emit('click_entity', entity.id)" />
 			</template>
 		</div>

@@ -28,7 +28,12 @@
 
 	const { relation, set_relation_id, retrieve_relation, update_relation, delete_relation } = useRelation(undefined, props.relation_id)
 
-	const { entity, set_entity_id, retrieve_small_entity } = useEntity(undefined, undefined)
+	const {
+		entity,
+		set_entity_id,
+		set_location,
+		retrieve_small_entity
+	} = useEntity(undefined, undefined)
 
 	if(props.relation_id) {
 		retrieve_relation()
@@ -118,6 +123,12 @@
 		emit('hide_codex')
 	}
 
+	function import_entity() {
+		if(player.the_entity?.location) {
+			set_location(player.the_entity?.location)
+		}
+	}
+
 	const show_traitsets = ref(true)
 
 	watch(props, () => {
@@ -169,6 +180,11 @@
 				:value="player.small_buttons ? '⬆' : '⬆\nfollow'"
 				v-if="player.is_gm && entity.entityType == 'character' && player.the_entity?.id == 'Entities/1' && player.the_entity?.following?.id != entity.id"
 				@click.stop="change_location" />
+			
+			<input type="button" class="button-mnml import"
+				:value="player.small_buttons ? '⬇' : '⬇\nimport'"
+				v-if="player.is_gm"
+				@click.stop="import_entity" />
 
 			<input type="button" class="button-mnml favorite"
 				:value="player.small_buttons ? '⭐' : '⭐\n' + (relation.favorite ? 'unfavorite' : 'favorite')"

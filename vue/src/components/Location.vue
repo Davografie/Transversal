@@ -105,26 +105,29 @@
 	}
 
 	const new_location_name = ref(location.value.name)
+	const new_location_subtitle = ref(location.value.subtitle)
 	const location_name_edit_ref = ref<HTMLInputElement>()
 
 	function longpress_location_header() {
 		held.value = true
 		new_location_name.value = location.value.name
+		new_location_subtitle.value = location.value.subtitle
 		new_flavortext.value = location.value.flavortext
 		editing_location.value = !editing_location.value
 		title_pulsate.value = true
-		nextTick(() => {
-			if(location_name_edit_ref.value) {
-				location_name_edit_ref.value.focus()
-			}
-		})
+		// nextTick(() => {
+		// 	if(location_name_edit_ref.value) {
+		// 		location_name_edit_ref.value.focus()
+		// 	}
+		// })
 		setTimeout(() => {
 			held.value = false
 		}, 500)
 	}
 
-	function update_name() {
-		update_location({ name: new_location_name.value })
+	async function update_name() {
+		await update_location({ name: new_location_name.value, subtitle: new_location_subtitle.value })
+		retrieve_small_location('network-only')
 		editing_location.value = false
 	}
 
@@ -337,8 +340,10 @@
 		}
 	})
 
-	function update_flavortext() {
-		update_location({ description: new_flavortext.value })
+	async function update_flavortext() {
+		await update_location({ description: new_flavortext.value })
+		retrieve_small_location('network-only')
+		editing_description.value = false
 	}
 
 
@@ -528,14 +533,21 @@
 						v-if="!editing_location || player.is_player">
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
-
 				<input type="text" class="header location-name"
 					ref="location_name_edit_ref"
 					v-model="new_location_name"
 					v-show="editing_location && player.is_gm"
 					@click.stop />
+
+				<div class="location-subtitle" v-if="!editing_location">{{ location.subtitle }}</div>
+				<input type="text" class="subtitle location-subtitle"
+					v-model="new_location_subtitle"
+					v-show="editing_location && player.is_gm"
+					@click.stop />
+
+
 				<input type="button" class="button" value="save"
-					v-if="location.name != new_location_name && editing_location"
+					v-if="(location.name != new_location_name || location.subtitle != new_location_subtitle) && editing_location"
 					@click.stop="update_name" />
 
 				<input type="button" class="button transverse-button corner-button"
@@ -550,7 +562,7 @@
 				<input type="button" class="button link-button corner-button"
 					:value="player.small_buttons ? '🗺' : '🗺\ntake perspective'"
 					@click.stop="switch_perspective(location.id)"
-					v-if="player.is_gm && route.params.id != location.key && editing_location" />
+					v-if="player.is_gm && route.params.id != location.key && editing_location && location.id != player.the_entity?.id" />
 				
 				<input type="button" class="button codex-button corner-button"
 					:value="player.small_buttons ? '🏷' : '🏷\nadd to contacts'"
@@ -599,6 +611,7 @@
 							:ref="el => entity_button_refs_left.push(el)"
 							:entity_id="entity.id"
 							options_direction="right"
+							:is_active="player.is_gm ? entity.entityType != 'character' || entity.active : entity.active"
 							:show_name="false"
 							override_click
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
@@ -619,6 +632,7 @@
 							:entity_id="archetype.id"
 							:show_name="false"
 							show_archetypes
+							is_active
 							@show_entity="(entity_key: string) => emit('show_entity', entity_key)"
 							override_click @click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
 								overwrite_active = archetype.id : overwrite_active = 'empty'" />
@@ -645,6 +659,7 @@
 							:ref="el => entity_button_refs_right.push(el)"
 							:entity_id="entity.id"
 							options_direction="left"
+							:is_active="player.is_gm ? entity.entityType != 'character' || entity.active : entity.active"
 							:show_name="false"
 							override_click
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
@@ -822,6 +837,11 @@
 				.location-name {
 					font-size: 2em;
 					background-color: transparent;
+				}
+				.location-subtitle {
+					font-size: 1.2em;
+					background-color: transparent;
+					text-align: center;
 				}
 				.location-name-edit {
 					text-align: center;
@@ -1226,7 +1246,7 @@
 				.flavortext, .corner-button {
 					color: var(--color-text);
 				}
-				.title .location-name, .header, .corner-button {
+				.title .location-name, .location-subtitle, .header, .corner-button {
 					text-shadow: var(--color-background) 0px 0px 2px,
 						var(--color-background) 0px 0px 4px,
 						var(--color-background) 0px 0px 8px,

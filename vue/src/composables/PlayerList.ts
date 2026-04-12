@@ -1,5 +1,5 @@
 import { ref, inject, watch } from 'vue'
-import type { ApolloClient } from '@apollo/client'
+import type { ApolloClient, FetchPolicy } from '@apollo/client'
 import gql from 'graphql-tag'
 import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
 import type { Player } from '@/interfaces/Types'
@@ -8,7 +8,7 @@ export function usePlayerList() {
 	const apolloClient = inject<ApolloClient<Cache>>('apolloClient')
 	const players = ref<Player[]>([])
 
-	function retrieve_players() {
+	async function retrieve_players(caching: FetchPolicy = 'cache-first') {
 		const query = gql`query Players {
 			players {
 				id
@@ -16,9 +16,9 @@ export function usePlayerList() {
 			}
 		}`
 		if(apolloClient) {
-			apolloClient.query({
+			await apolloClient.query({
 				query: query,
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				players.value = result.data.players
 			})
@@ -36,21 +36,23 @@ export function usePlayerList() {
 		}
 	}
 
-	function create_player(player_name: string) {
+	async function create_player(player_name: string) {
 		const mutation = gql`mutation CreatePlayer($name: String!) {
 			createPlayer(name: $name) {
 				player {
 					id
+					name
 				}
 			}
 		}`
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(
-				() => useMutation(mutation)
-			)
-			mutate({
-				name: player_name
+			const result = await apolloClient.mutate({
+				mutation: mutation,
+				variables: {
+					name: player_name
+				}
 			})
+			return result.data.createPlayer.player
 		}
 	}
 

@@ -108,33 +108,33 @@
 		// toggle_details()
 	}
 
-	function refresh() {
+	async function refresh() {
 		refreshing.value = true
 		let trait_completed = false
 		let default_completed = false
-		retrieve_trait()
-		retrieve_instances()
-		watch(trait, (newTrait) => {
+		await retrieve_trait('network-only')
+		await retrieve_instances('network-only')
+		// watch(trait, (newTrait) => {
 			default_name.value = trait.value.name
-			if (newTrait.explanation) explanation.value = newTrait.explanation
-			if (newTrait.rating) default_rating.value = newTrait.rating
-			if (newTrait.ratingType) default_rating_type.value = newTrait.ratingType
-			if (newTrait.requiredTraits) requirements.value = newTrait.requiredTraits.map(x => x.id)
-			if (newTrait.inheritable) new_inheritable.value = newTrait.inheritable
+			if (trait.value.explanation) explanation.value = trait.value.explanation
+			if (trait.value.rating) default_rating.value = trait.value.rating
+			if (trait.value.ratingType) default_rating_type.value = trait.value.ratingType
+			if (trait.value.requiredTraits) requirements.value = trait.value.requiredTraits.map(x => x.id)
+			if (trait.value.inheritable) new_inheritable.value = trait.value.inheritable
 			trait_completed = true
 			if(trait_completed && default_completed) refreshing.value = false
-		})
-		retrieve_default_settings('network-only')
-		watch(default_settings, (newDefaults) => {
-			console.log("default settings: ", newDefaults)
-			if(newDefaults) {
-				default_rating_type.value = newDefaults.ratingType ?? rating_types[0]
-				default_rating.value = newDefaults.rating ?? []
-				new_default_sfxs.value = newDefaults.sfxs?.map((x: SFXType) => x.id) ?? []
+		// })
+		await retrieve_default_settings('network-only')
+		// watch(default_settings, (newDefaults) => {
+		// 	console.log("default settings: ", newDefaults)
+			if(default_settings.value) {
+				default_rating_type.value = default_settings.value.ratingType ?? rating_types[0]
+				default_rating.value = default_settings.value.rating ?? []
+				new_default_sfxs.value = default_settings.value.sfxs?.map((x: SFXType) => x.id) ?? []
 			}
 			default_completed = true
 			if(trait_completed && default_completed) refreshing.value = false
-		})
+		// })
 	}
 
 	function increase_rating_type(rating_type: string) {
@@ -185,8 +185,9 @@
 
 	function update_locations(locations_enabled: string[], locations_disabled: string[]) {
 		console.log("enabled locations: ", locations_enabled, " disabled: ", locations_disabled)
-		default_settings.value = { locationsEnabled: locations_enabled, locationsDisabled: locations_disabled }
-		mutate_default_settings(default_settings.value)
+		const new_default_settings = { locationsEnabled: locations_enabled, locationsDisabled: locations_disabled }
+		console.log("new default settings: ", new_default_settings)
+		mutate_default_settings(new_default_settings)
 	}
 
 	/* SUB-TRAITS */
@@ -237,14 +238,15 @@
 
 	/* POSSIBLE SFXS */
 	const show_possible_sfxs = ref(false)
+	const sfx_list_counter = ref(0) // for updating sfx list
 	function toggle_show_sfxs() {
 		if(!show_possible_sfxs.value) {
 			retrieve_sfx_list()
-			retrieve_possible_sfxs()
+			retrieve_possible_sfxs('network-only')
 		}
 		show_possible_sfxs.value = !show_possible_sfxs.value
 	}
-	function toggle_possible_sfx(sfx: SFXType) {
+	async function toggle_possible_sfx(sfx: SFXType) {
 		if(new_possible_sfx_ids.value.includes(sfx.id)) {
 			const i = new_possible_sfx_ids.value.indexOf(sfx.id)
 			new_possible_sfx_ids.value.splice(i, 1)
@@ -252,16 +254,19 @@
 		else {
 			new_possible_sfx_ids.value = [...new_possible_sfx_ids.value, sfx.id]
 		}
-		mutate_trait({
+		await mutate_trait({
 			possibleSfxs: new_possible_sfx_ids.value
 		})
-		setTimeout(() => {
-			retrieve_possible_sfxs()
-		}, 200)
-	}
-	watch(() => trait.value.possibleSfxs, () => {
+		await retrieve_possible_sfxs('network-only')
 		new_possible_sfx_ids.value = trait.value.possibleSfxs?.map(x => x.id) ?? []
-	})
+		sfx_list_counter.value++
+		// setTimeout(() => {
+		// 	retrieve_possible_sfxs()
+		// }, 200)
+	}
+	// watch(() => trait.value.possibleSfxs, () => {
+	// 	new_possible_sfx_ids.value = trait.value.possibleSfxs?.map(x => x.id) ?? []
+	// })
 
 	const editing_die = ref<DieType|undefined>(undefined)
 	function edit_die(die: DieType) {
@@ -354,7 +359,7 @@
 					@toggle="toggle_inheritable" />
 				<ToggleButton truthy="this trait is hidden"
 					falsy="this trait is visible"
-					:default="default_settings?.hidden ?? false"
+					:default="new_hidden ?? default_settings?.hidden ?? false"
 					@toggle="toggle_hidden" />
 				<div class="location-restricted">
 					<ToggleButton truthy="location restricted"
@@ -443,7 +448,7 @@
 				<h2 @click="toggle_show_sfxs">sfxs</h2>
 				<div class="sfxs" v-if="show_possible_sfxs">
 					<SFX class="button"
-						v-for="sfx in sfx_list" :key="sfx.id"
+						v-for="sfx in sfx_list" :key="sfx.id + sfx_list_counter"
 						:sfx_id="sfx.id"
 						:adding="!trait.possibleSfxs?.map(x => x.id).includes(sfx.id)"
 						:editing="trait.possibleSfxs?.map(x => x.id).includes(sfx.id)"
@@ -518,10 +523,24 @@
 		.statement-example-divider {
 			border-bottom: 1px solid var(--color-border);
 		}
-		.sfxs {
-			.active {
-				background-color: var(--color-highlight);
-				color: var(--color-highlight-text);
+		.trait-details {
+			padding: 0 1em .4em 1em;
+			border-top: 1px solid var(--color-border);
+			border-bottom: 1px solid var(--color-border);
+			background-color: var(--color-background-mute);
+			.explanation {
+				min-height: 4em;
+				display: block;
+				width: 100%;
+			}
+			.sfxs {
+				.active {
+					background-color: var(--color-highlight);
+					color: var(--color-highlight-text);
+				}
+			}
+			.locations {
+				overflow-x: auto;
 			}
 		}
 	}
@@ -531,17 +550,6 @@
 	}
 	.control-buttons {
 		float: right;
-	}
-	.trait-details {
-		padding: 0 1em .4em 1em;
-		border-top: 1px solid var(--color-border);
-		border-bottom: 1px solid var(--color-border);
-		background-color: var(--color-background-mute);
-		.explanation {
-			min-height: 4em;
-			display: block;
-			width: 100%;
-		}
 	}
 	.default-rating-die {
 		cursor: pointer;

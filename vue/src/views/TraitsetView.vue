@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { ref, computed, watch } from 'vue'
 	import type { Ref } from 'vue'
-	import { useRoute } from 'vue-router'
+	import { useRoute, useRouter } from 'vue-router'
 
 	import { usePlayerStore } from '@/stores/PlayerStore'
 
@@ -24,6 +24,7 @@
 	}>()
 
 	const route = useRoute()
+	const router = useRouter()
 
 	const player = usePlayerStore()
 
@@ -232,6 +233,11 @@
 		retrieve_traitset('network-only')
 		refreshing.value = false
 	}
+
+	function trash_traitset() {
+		delete_traitset()
+		router.push({ name: 'Traitsets' })
+	}
 </script>
 
 <template>
@@ -245,7 +251,7 @@
 		<input type="button" class="delete button" value="🗑" @click="deleting = true" v-if="!deleting" />
 		<div class="delete-confirm" v-if="deleting">
 			are you sure you want to delete this traitset?<br />this action is permanent
-			<input type="button" class="delete-y button" value="✅" @click="delete_traitset" v-if="deleting" />
+			<input type="button" class="delete-y button" value="✅" @click="trash_traitset" v-if="deleting" />
 			<input type="button" class="delete-n button" value="❌" @click="deleting = false" v-if="deleting" />
 		</div>
 		<h2>settings</h2>

@@ -79,41 +79,55 @@
 </template>
 
 <style scoped>
-	.rating-wrapper {
-		max-height: 100%;
-		display: flex;
-		align-items: center;
-		gap: .4em;
-		&.resource .dice {
-			/* display: flex; */
-			gap: 1em;
-			.distinct-resource {
-				line-height: 0;
-			}
-		}
-		&.challenge .dice {
-			/* display: flex; */
-			flex-wrap: wrap;
-			justify-content: end;
-			position: relative;
-			z-index: 1;
-		}
-		.scaling {
-			font-size: 1.6em;
-			transform: translateY(-.1em);
-			letter-spacing: -.15em;
-			/* font-family: "Bevan", serif; */
-			font-weight: bold;
-			font-style: normal;
-			&.result-scaling {
-				color: var(--color-result-light);
-			}
-			&.effect-scaling {
-				color: var(--color-effect);
-			}
+.rating-wrapper {
+	max-height: 100%;
+	display: flex;
+	align-items: center;
+	gap: .4em;
+	&.resource .dice {
+		/* display: flex; */
+		gap: 1em;
+		.distinct-resource {
+			line-height: 0;
 		}
 	}
+	&.challenge .dice {
+		/* display: flex; */
+		flex-wrap: wrap;
+		justify-content: end;
+		position: relative;
+		z-index: 1;
+	}
+	.scaling {
+		font-size: 1.6em;
+		transform: translateY(-.1em);
+		letter-spacing: -.15em;
+		/* font-family: "Bevan", serif; */
+		font-weight: bold;
+		font-style: normal;
+		/* &.result-scaling {
+			color: var(--color-result-light);
+		} */
+		&.effect-scaling {
+			color: var(--color-effect);
+		}
+	}
+}
 </style>
 
 <style>
+.dark {
+	.rating-wrapper {
+		.scaling.result-scaling {
+			color: var(--color-result-light);
+		}
+	}
+}
+.light {
+	.rating-wrapper {
+		.scaling.result-scaling {
+			color: var(--color-result);
+		}
+	}
+}
 </style>

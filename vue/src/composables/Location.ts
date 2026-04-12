@@ -37,7 +37,7 @@ export function useLocation(init?: Location, location_key?: string) {
 		retrieve_small_location()
 	}
 
-	function retrieve_location(caching: FetchPolicy = 'cache-first') {
+	async function retrieve_location(caching: FetchPolicy = 'cache-first') {
 		// console.log('retrieving location: ' + location_key)
 		if(location_key && location_key != 'placeholder') {
 			const get_location_query = gql`query FullLocation($locationId: ID) {
@@ -59,6 +59,7 @@ export function useLocation(init?: Location, location_key?: string) {
 						name
 					}
 					name
+					subtitle
 					image {
 						path
 						ext
@@ -108,7 +109,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			  }`
 			// console.log(get_location_query)
 			if(apolloClient) {
-				apolloClient.query({
+				await apolloClient.query({
 					query: get_location_query,
 					variables: { locationId: location_id.value ?? 'Entities/' + location_key },
 					fetchPolicy: caching
@@ -208,12 +209,13 @@ export function useLocation(init?: Location, location_key?: string) {
 		}
 	}
 
-	function retrieve_small_location() {
+	async function retrieve_small_location(caching: FetchPolicy = 'cache-first') {
 		const get_location_query = gql`query SmallLocation($locationId: ID) {
 			locations(locationId: $locationId) {
 				id
 				key
 				name
+				subtitle
 				flavortext
 				image {
 					path
@@ -232,7 +234,7 @@ export function useLocation(init?: Location, location_key?: string) {
 			apolloClient.query({
 				query: get_location_query,
 				variables: { locationId: location_id.value ?? 'Entities/' + location_key },
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				location.value = {
 					...location.value,
@@ -326,9 +328,10 @@ export function useLocation(init?: Location, location_key?: string) {
 		}
 	}
 
-	function update_location(input: {
+	async function update_location(input: {
 		name?: string,
-		description?: string,
+		subtitle?: string,
+		description?: string
 	}) {
 		/* changes to name, flavortext */
 		const update_location_query = gql`mutation UpdateLocation($locationId: ID!, $locationInput: LocationInput) {
@@ -341,7 +344,7 @@ export function useLocation(init?: Location, location_key?: string) {
 				}
 			}`
 		if(apolloClient) {
-			apolloClient.mutate({
+			await apolloClient.mutate({
 				mutation: update_location_query,
 				variables: {
 					"locationId": location.value.id,

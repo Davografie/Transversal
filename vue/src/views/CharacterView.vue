@@ -20,6 +20,7 @@
 	import ButtonMinimal from '@/components/UI/ButtonMinimal.vue'
 
 	import useClipboard from 'vue-clipboard3'
+import LocationPicker2 from '@/components/LocationPicker2.vue'
 	const { toClipboard } = useClipboard()
 	const copy_id = async () => {
 		try {
@@ -71,6 +72,7 @@
 	const {
 		location,
 		retrieve_small_location,
+		retrieve_parents,
 		retrieve_presence,
 		set_location_key
 	} = useLocation(undefined, entity.value?.location?.id)
@@ -581,9 +583,17 @@
 	})
 
 	const traitset_update_counter = ref(0)
-	watch(() => player.the_entity?.traitsets, (newTraitsets, oldTraitsets) => {
-		traitset_update_counter.value++
-	})
+	// watch(() => player.the_entity?.traitsets, (newTraitsets, oldTraitsets) => {
+	// 	traitset_update_counter.value++
+	// })
+
+	const location_restriction = ref(false)
+	function toggle_location_restriction() {
+		if(!location_restriction.value) {
+			retrieve_parents()
+		}
+		location_restriction.value = !location_restriction.value
+	}
 
 </script>
 
@@ -662,7 +672,7 @@
 				</div>
 
 				<Transition name="fade-description">
-					<div id="character-description" v-if="banner_height > min_banner_height">
+					<div id="character-description" v-if="banner_height > min_banner_height && player.is_gm">
 						<div id="character-meta" v-if="player.is_gm">
 							{{ entity.isArchetype ? 'archetype ' : '' }}
 							{{ entity.entityType }} located in
@@ -848,6 +858,10 @@
 				<ButtonMinimal
 					:function="ButtonTypes.SETTINGS"
 					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
+
+				<ButtonMinimal
+					:function="ButtonTypes.LOCATION_PIN"
+					@click="toggle_location_restriction" />
 			</div>
 
 			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
@@ -890,6 +904,11 @@
 					override_click
 					@click_entity="click_instance(instance.id)" />
 			</div>
+
+			<div id="location-restriction" v-if="location_restriction">
+				<LocationPicker2 v-if="entity.location" :location_id="entity.location.id" />
+			</div>
+
 			<div id="character-buttons-toggle" @click="toggle_controls">
 				<span>{{ show_controls ? '🔼' : '🔽' }}</span>
 				<span>{{ show_controls ? 'hide' : 'show' }} character controls</span>
@@ -932,7 +951,7 @@
 			</div>
 			<div class="reference" v-if="show_reference">
 				<div class="scroll-item" v-for="traitset in entity.traitsets?.filter(ts => entity.traitsets?.map(t => t.id).includes(ts.id))">
-					<a @click="scroll_to_traitset(traitset)">
+					<a @click="scroll_to_traitset(traitset)" v-if="player.is_gm || !traitset.entityTypes?.includes('gm')">
 						{{ traitset.name }}
 					</a>
 				</div>
@@ -1132,7 +1151,7 @@
 			}
 			.character-menu {
 				background-color: var(--color-highlight-mute);
-				color: var(--color-highlight-text);
+				/* color: var(--color-highlight-text); */
 				&#character-quick-switch {
 					padding: 1em;
 					display: flex;
@@ -1285,6 +1304,7 @@
 			flex-direction: column;
 			height: 100vh;
 			position: relative;
+			/* background-color: var(--color-background-mute); */
 			#character-details {
 				background-color: var(--color-background-mute);
 				max-height: 240px;

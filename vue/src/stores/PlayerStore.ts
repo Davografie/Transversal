@@ -139,19 +139,24 @@ export const usePlayerStore = defineStore(
 
 		async function set_perspective(new_perspective_id: string) {
 			console.log("setting perspective to " + new_perspective_id)
-			if(perspective_id.value != new_perspective_id) {
+			if(perspective_id.value != new_perspective_id && perspective.value.entityType != 'character') {
+				// exclude characters, because if you want to view a character during play, leaving it as GM shouldn't deactivate the player's character
 				console.log("deactivating perspective ", perspective_id.value)
 				deactivate_entity(perspective_id.value)
 			}
 			perspective_id.value = new_perspective_id
 			set_perspective_id(new_perspective_id)
-			activate_entity(perspective_id.value)
+			// activate_entity(perspective_id.value)
 			if(new_perspective_id == "Entities/1" && perspective.value.location) {
 				await set_entity_location(new_perspective_id, perspective.value.location.id)
 				await retrieve_perspective()
 			}
 			else {
 				await retrieve_perspective()
+			}
+			if(perspective.value.entityType != 'character') {
+				// GM doesn't play with characters
+				activate_entity(new_perspective_id)
 			}
 		}
 
