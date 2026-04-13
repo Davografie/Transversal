@@ -1360,6 +1360,8 @@ class Trait(ObjectType):
 
 	inheritable = Boolean()
 
+	random_weight = Int()
+
 	default_trait_setting = Field(lambda: TraitSetting)
 
 	# returns all entities that have this trait
@@ -1378,6 +1380,7 @@ class Trait(ObjectType):
 		parent.explanation = trait.get('explanation')
 		parent.location_restricted = trait.get('location_restricted')
 		parent.inheritable = trait.get('inheritable')
+		parent.random_weight = trait.get('random_weight') or 1
 	
 	@classmethod
 	def _hydrate_traitsetting(cls, parent, info):
@@ -1587,6 +1590,11 @@ class Trait(ObjectType):
 			Trait._hydrate_trait(parent, info)
 		return parent.inheritable
 
+	def resolve_random_weight(parent, info):
+		if not parent.random_weight:
+			Trait._hydrate_trait(parent, info)
+		return parent.random_weight
+
 	def resolve_default_trait_setting(parent, info):
 		global absolute_default_trait_setting
 		if parent.id:
@@ -1743,6 +1751,7 @@ class TraitInput(InputObjectType):
 	possible_sub_traitsets = List(ID, required=False)
 	possible_sfxs = List(ID, required=False)
 	inheritable = Boolean(required=False)
+	random_weight = Int(required=False)
 
 class CreateTrait(Mutation):
 	class Arguments:

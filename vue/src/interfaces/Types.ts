@@ -137,6 +137,7 @@ export interface Trait {
     possibleSubTraitsets?: Traitset[]
     possibleSfxs?: SFX[]
     inheritable?: boolean
+    randomWeight?: number
     entities?: Entity[]
     instances?: string[]
 }
@@ -158,6 +159,7 @@ export interface TraitInput {
     available_sfxs?: string[]
     sfxs?: string[]
     inheritable?: boolean
+    randomWeight?: number
 }
 
 export interface Traitset {

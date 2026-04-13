@@ -72,9 +72,9 @@ function submit() {
 <template>
 	<div class="rating-edit">
 		<div class="scaling">
-			<ScalingEdit class="pool-scaling" :scaling="new_pool_scaling" @change-scaling="pool_scaling_change" />
-			<ScalingEdit class="result-scaling" :scaling="new_result_scaling" @change-scaling="result_scaling_change" />
-			<ScalingEdit class="effect-scaling" :scaling="new_effect_scaling" @change-scaling="effect_scaling_change" />
+			<ScalingEdit class="pool-scaling" :scaling="new_pool_scaling" @change_scaling="pool_scaling_change" />
+			<ScalingEdit class="result-scaling" :scaling="new_result_scaling" @change_scaling="result_scaling_change" />
+			<ScalingEdit class="effect-scaling" :scaling="new_effect_scaling" @change_scaling="effect_scaling_change" />
 		</div>
 		<div class="rating-types">
 			<input type="button" class="button"

@@ -121,6 +121,7 @@
 			if (trait.value.ratingType) default_rating_type.value = trait.value.ratingType
 			if (trait.value.requiredTraits) requirements.value = trait.value.requiredTraits.map(x => x.id)
 			if (trait.value.inheritable) new_inheritable.value = trait.value.inheritable
+			if (trait.value.randomWeight) new_random_weight.value = trait.value.randomWeight
 			trait_completed = true
 			if(trait_completed && default_completed) refreshing.value = false
 		// })
@@ -223,13 +224,14 @@
 		console.log("toggling possible subtraitset: ", ts)
 		if(trait.value.possibleSubTraitsets?.map(psts => psts.id).includes(ts.id)) {
 			new_subtraitsets.value = trait.value.possibleSubTraitsets?.filter(psts => psts.id != ts.id) ?? []
+			new_subtraits.value = new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id))
 		}
 		else {
 			new_subtraitsets.value = [...trait.value.possibleSubTraitsets ?? [], ts]
 		}
-		if(ts.traits?.every(t => new_subtraits.value.map(x => x.id).includes(t.id))) {
-			new_subtraits.value = new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id))
-		}
+		// if(ts.traits?.every(t => new_subtraits.value.map(x => x.id).includes(t.id))) {
+		// 	new_subtraits.value = new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id))
+		// }
 		// else {
 		// 	new_subtraits.value = [
 		// 		...new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id)),
@@ -338,6 +340,17 @@
 			hidden: new_hidden.value
 		})
 	}
+
+	import ScalingEdit from './ScalingEdit.vue'
+	const new_random_weight = ref(trait.value.randomWeight ?? 1)
+	const show_random_weight = ref(false)
+	function toggle_random_weight() {
+		show_random_weight.value = !show_random_weight.value
+	}
+	function set_random_weight(n: number) {
+		new_random_weight.value = n
+		mutate_trait({ randomWeight: n })
+	}
 </script>
 
 <template>
@@ -405,6 +418,11 @@
 						{{ d }}
 						<div class="statement-example-divider" v-if="i < statement_examples.length - 1"></div>
 					</div>
+				</div>
+
+				<h2 @click="toggle_random_weight">random weight</h2>
+				<div class="random-weight" v-if="show_random_weight">
+					<ScalingEdit :scaling="new_random_weight" :min="0" :max="12" @change_scaling="set_random_weight" />
 				</div>
 
 				<h2 @click="toggle_change_traitset">change traitset</h2>

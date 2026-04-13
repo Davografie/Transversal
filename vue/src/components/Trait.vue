@@ -912,6 +912,7 @@
 	const location_restriction_index = ref(0)
 
 	import { useTraitset } from '@/composables/Traitset'
+import SubTraitSetAssign from './SubTraitSetAssign.vue'
 
 	const { traitset, set_traitset_id, set_entity, retrieve_traitset } = useTraitset(undefined, trait.value.traitsetId, player.the_entity?.id)
 
@@ -1422,11 +1423,17 @@
 							&& mode == view_modes.Editing
 							&& add_subtraits">
 					<span>add sub-trait:</span>
-					<input type="button" class="button"
+					<!-- <input type="button" class="button"
 						v-for="subtrait in trait.possibleSubTraits.filter((x) => !trait.subTraits?.map((y) => y.id).includes(x.id)
 							&& (x.traitset?.entityTypes?.includes('subtrait') || x.traitSettingId))"
 						:value="subtrait.name"
-						@click="add_subtrait(subtrait)" />
+						@click="add_subtrait(subtrait)" /> -->
+					<template v-for="subtraitset in new Set(trait.possibleSubTraits.map((pst) => pst.traitset?.id))" :key="subtraitset">
+						<SubTraitSetAssign
+							v-if="subtraitset" :traitset_id="subtraitset"
+							:subtraits="trait.possibleSubTraits.filter((pst) => pst.traitset?.id == subtraitset && !trait.subTraits?.map((y) => y.id).includes(pst.id))"
+							@click_subtrait="add_subtrait" />
+					</template>
 				</div>
 
 				<div class="show-character" v-if="show_pc_visible">

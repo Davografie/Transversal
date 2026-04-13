@@ -72,6 +72,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					id
 				}
 				inheritable
+				randomWeight
 			}
 		}`
 		const query_get_setting_trait = gql`query TraitBySetting($traitSettingId: ID, $traitId: ID) {
@@ -140,9 +141,11 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					id
 					name
 					traitset {
+						id
 						entityTypes
 					}
 					traitSettingId
+					randomWeight
 				}
 			}
 		}`
@@ -283,6 +286,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						id
 						entityTypes
 					}
+					randomWeight
 				}
 			}
 		}`
@@ -395,6 +399,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						possibleSubTraitsets {
 							id
 						}
+						randomWeight
 					}
 				}
 			}`
@@ -681,7 +686,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 
 	async function assign_subtrait(trait_setting_id: string, subtrait_id: string, _entity_id?: string) {
 		if(apolloClient && trait_setting_id && subtrait_id) {
-			const query = gql`mutation Mutation($traitSettingId: ID!, $subtraitId: ID!, $entityId: ID) {
+			const query = gql`mutation AssignSubtrait($traitSettingId: ID!, $subtraitId: ID!, $entityId: ID) {
 				assignSubTrait(traitSettingId: $traitSettingId, subtraitId: $subtraitId, entityId: $entityId) {
 					trait {
 						id
