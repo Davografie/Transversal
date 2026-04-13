@@ -9,7 +9,7 @@
 	import { useEntity, entity_icons } from '@/composables/Entity'
 	import { useLocation } from '@/composables/Location'
 	// import { useTraitsetList } from '@/composables/TraitsetList'
-	import type { Traitset as TraitsetType } from '@/interfaces/Types'
+	import type { EntityInput, Traitset as TraitsetType } from '@/interfaces/Types'
 	import { ButtonTypes } from '@/composables/Button'
 
 	import PlotPoint from '@/components/PlotPoint.vue'
@@ -24,7 +24,7 @@
 	const { toClipboard } = useClipboard()
 	const copy_id = async () => {
 		try {
-			await toClipboard(entity.value.id)
+			await toClipboard(player.the_entity?.id)
 		} catch (e) {
 			console.error(e)
 		}
@@ -60,12 +60,17 @@
 		create_relation,
 		prune_location,
 		update_entity
-	} = useEntity(player.the_entity?.key == props.entity_key ? player.the_entity : undefined, 'Entities/' + (props.entity_key ?? route.params.id))
+	} = useEntity(player.the_entity?.key == props.entity_key ? player.the_entity : undefined, 'Entities/' + (player.the_entity?.key ?? props.entity_key ?? route.params.id))
 	// retrieve_small_entity()
 
+	function mutate_entity(input: EntityInput) {
+		set_entity_id(player.the_entity?.id ?? player.perspective_id ?? '')
+		update_entity(input)
+	}
+
 	function mutate_pp(delta: number) {
-		update_entity({
-			pp: (entity.value.pp ?? 0) + delta
+		mutate_entity({
+			pp: (player.the_entity?.pp ?? 0) + delta
 		})
 	}
 
@@ -75,7 +80,7 @@
 		retrieve_parents,
 		retrieve_presence,
 		set_location_key
-	} = useLocation(undefined, entity.value?.location?.id)
+	} = useLocation(undefined, player.the_entity?.location?.id)
 
 
 	// entity name and type
@@ -117,8 +122,8 @@
 	// character description
 	const new_description = ref('')
 	const description = computed(() => {
-		if(entity.value.description) {
-			return marked(entity.value.description)
+		if(player.the_entity?.description) {
+			return marked(player.the_entity?.description)
 		}
 		else {
 			return ""
@@ -158,7 +163,7 @@
 	function click_portrait() {
 		if(!held.value && !editing_portrait.value) {
 			// show_image.value = true
-			player.image_entity = entity.value
+			player.image_entity = player.the_entity
 		}
 	}
 
@@ -173,8 +178,8 @@
 
 	function submit_fileupload() {
 		if(file_upload.value) {
-			let url = API_URL + "upload/" + entity.value.key
-			if(entity.value.location) url += "/" + entity.value.location.key
+			let url = API_URL + "upload/" + player.the_entity?.key
+			if(player.the_entity?.location) url += "/" + player.the_entity?.location.key
 			console.log("uploading file: " + file_upload.value.name + " to url: " + url)
 			const formData = new FormData()
 			formData.append('file', file_upload.value)
@@ -192,7 +197,7 @@
 
 	function imagen() {
 		editing_portrait.value = false
-		const url = API_URL + "imagen/" + entity.value.key + "/" + player.is_gm
+		const url = API_URL + "imagen/" + player.the_entity?.key + "/" + player.is_gm
 		interface API_result {
 			success: boolean
 		}
@@ -201,22 +206,22 @@
 	}
 
 	const img_link_small = computed(() => {
-		if(entity.value.image) {
-			return '/assets/uploads/' + entity.value.image.path
-				+ 'small' + entity.value.image?.ext
+		if(player.the_entity?.image) {
+			return '/assets/uploads/' + player.the_entity?.image.path
+				+ 'small' + player.the_entity?.image?.ext
 		}
 		else {
-			return '/assets/uploads/' + entity.value.entityType + '/small.png'
+			return '/assets/uploads/' + player.the_entity?.entityType + '/small.png'
 		}
 	})
 
 	const img_link_large = computed(() => {
-		if(entity.value.image) {
-			return '/assets/uploads/' + entity.value.image.path
-				+ 'large' + entity.value.image?.ext
+		if(player.the_entity?.image) {
+			return '/assets/uploads/' + player.the_entity?.image.path
+				+ 'large' + player.the_entity?.image?.ext
 		}
 		else {
-			return '/assets/uploads/' + entity.value.entityType + '/large.png'
+			return '/assets/uploads/' + player.the_entity?.entityType + '/large.png'
 		}
 	})
 
@@ -260,7 +265,7 @@
 	const min_banner_height = 100
 	const max_banner_height = 240
 	const banner_height = computed(() => {
-		// uses entity.value.image.width and the traitset scroll Y to determine the banner height
+		// uses player.the_entity?.image.width and the traitset scroll Y to determine the banner height
 		// at top of traitset scroll the banner is max size
 		// scrolling down shrinks the banner height to min size, depending on scroll Y
 		// where it remains until the user scrolled back up to the top
@@ -300,7 +305,7 @@
 
 	function scroll_to_traitset(traitset: TraitsetType) {
 		active_traitset_id.value = traitset.id
-		const el_id = 'ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + entity.value.key
+		const el_id = 'ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + player.the_entity?.key
 		console.log("scrolling to traitset: " + el_id)
 		nextTick(() => scroll_to_element(el_id))
 	}
@@ -320,13 +325,13 @@
 	})
 
 	watch(() => props.entity_key, (newKey) => {
-		if(player.the_entity && player.the_entity?.key == newKey && !entity.value.key) {
-			console.log('setting entity value from player store')
-			entity.value = player.the_entity
-		}
-		if(newKey && entity.value.key != newKey) {
+		// if(player.the_entity && player.the_entity?.key == newKey && !player.the_entity?.key) {
+		// 	console.log('setting entity value from player store')
+		// 	player.the_entity = player.the_entity
+		// }
+		if(newKey && player.the_entity?.key != newKey) {
 			console.log('setting entity key: ' + newKey)
-			console.log('entity.value.key: ' + entity.value.key)
+			console.log('player.the_entity?.key: ' + player.the_entity?.key)
 			console.log('player.the_entity.key: ' + player.the_entity?.key)
 			set_entity_id('Entities/' + newKey)
 			retrieve_full_entity()
@@ -347,9 +352,9 @@
 
 
 
-	watch(() => entity.value.id, () => {
-		if(entity.value.traitsets && entity.value.traitsets.length > 0) {
-			active_traitset_id.value = entity.value.traitsets[0].id
+	watch(() => player.the_entity?.id, () => {
+		if(player.the_entity?.traitsets && player.the_entity?.traitsets.length > 0) {
+			active_traitset_id.value = player.the_entity?.traitsets[0].id
 		}
 		show_controls.value = false
 		entityOverviewType.value = 'NONE'
@@ -357,15 +362,15 @@
 
 	// traits
 	const active_traitset_id = ref(
-		entity.value.traitsets && entity.value.traitsets.length > 0 ?
-		entity.value.traitsets[0].id :
+		player.the_entity?.traitsets && player.the_entity?.traitsets.length > 0 ?
+		player.the_entity?.traitsets[0].id :
 		''
 	)
 
 
 	// the GM's perspective changes location, so reflect that in the traits
 	watch(() => player.the_entity?.location, (newLocation, oldLocation) => {
-		if(player.the_entity?.id == entity.value.id && newLocation != oldLocation) {
+		if(player.the_entity?.id == player.the_entity?.id && newLocation != oldLocation) {
 			retrieve_small_entity()
 		}
 	})
@@ -383,14 +388,14 @@
 
 	// character options
 	function pick_character() {
-		if(entity.value && entity.value.key != 'placeholder') {
-			console.log("picking character: " + entity.value.name + "/" + entity.value.key)
+		if(player.the_entity && player.the_entity?.key != 'placeholder') {
+			console.log("picking character: " + player.the_entity?.name + "/" + player.the_entity?.key)
 			if(player.is_gm) {
-				player.set_perspective(entity.value.id)
+				player.set_perspective(player.the_entity?.id)
 				// player.retrieve_perspective()
 			}
 			else if(player.is_player) {
-				player.player_character_key = entity.value.key
+				player.player_character_key = player.the_entity?.key
 				// if(player.uuid) { activate_character(player.uuid) }
 			}
 		}
@@ -426,7 +431,7 @@
 	}
 
 	function hide_entity() {
-		update_entity({ hidden: !entity.value.hidden })
+		update_entity({ hidden: !player.the_entity?.hidden })
 	}
 
 	const entityOverviewTypes = Object.freeze({
@@ -445,8 +450,8 @@
 
 	const show_known_to = ref(false)
 	function toggle_known_to() {
-		if(entityOverviewType.value != 'KNOWN_TO' && entity.value.location?.key) {
-			set_location_key(entity.value.location.key)
+		if(entityOverviewType.value != 'KNOWN_TO' && player.the_entity?.location?.key) {
+			set_location_key(player.the_entity?.location.key)
 			retrieve_small_location()
 			retrieve_presence()
 			toggleEntityOverviewType('KNOWN_TO')
@@ -457,7 +462,7 @@
 		// show_known_to.value = !show_known_to.value
 	}
 	function remove_known_to(entity_id: string) {
-		update_entity({ knownTo: entity.value.knownTo?.filter(e => e.id != entity_id).map(e => e.id) ?? [] })
+		update_entity({ knownTo: player.the_entity?.knownTo?.filter(e => e.id != entity_id).map(e => e.id) ?? [] })
 		// setTimeout(() => retrieve_small_entity(), 200)
 	}
 
@@ -492,13 +497,13 @@
 			// 	set_entity_id(newId ?? '')
 			// })
 		}
-		if(player.the_entity && !entity.value.id) {
-			entity.value = player.the_entity
-		}
-		if(!entity.value.id || entity.value.key == 'placeholder') {
-			console.log('entity not loaded, retrieving...', entity.value)
-			retrieve_full_entity()
-		}
+		// if(player.the_entity && !player.the_entity?.id) {
+		// 	player.the_entity = player.the_entity
+		// }
+		// if(!player.the_entity?.id || player.the_entity?.key == 'placeholder') {
+		// 	console.log('entity not loaded, retrieving...', player.the_entity)
+		// 	retrieve_full_entity()
+		// }
 		character_wrapper.value?.scrollIntoView({ behavior: 'smooth' })
 		reset_scroll()
 	})
@@ -537,7 +542,7 @@
 	}
 	function toggle_archetype() {
 		update_entity({
-			isArchetype: !entity.value.isArchetype
+			isArchetype: !player.the_entity?.isArchetype
 		})
 	}
 	function show_archetypes() {
@@ -583,15 +588,15 @@
 	const show_reference = ref(false)
 
 	function next_traitset(_traitset: TraitsetType) {
-		if(entity.value.traitsets) {
-			active_traitset_id.value = entity.value.traitsets[entity.value.traitsets?.indexOf(_traitset) + 1]?.id
-			scroll_to_traitset(entity.value.traitsets[entity.value.traitsets?.indexOf(_traitset) + 1])
+		if(player.the_entity?.traitsets) {
+			active_traitset_id.value = player.the_entity?.traitsets[player.the_entity?.traitsets?.indexOf(_traitset) + 1]?.id
+			scroll_to_traitset(player.the_entity?.traitsets[player.the_entity?.traitsets?.indexOf(_traitset) + 1])
 		}
 	}
 
 	const filtered_traitsets = computed(() => {
-		if(!entity.value.traitsets) { return [] }
-		return entity.value.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)
+		if(!player.the_entity?.traitsets) { return [] }
+		return player.the_entity?.traitsets.filter(ts => player.is_gm ? true : ts.entityTypes ? !ts.entityTypes?.includes('gm') || ts.id == 'Traitsets/1' : true)
 	})
 
 	const traitset_update_counter = ref(0)
@@ -635,7 +640,7 @@
 					</div>
 					<div id="generate-portrait" class="portrait-edit-segment">
 						<input type="button" class="button-mnml" id="generate-portrait-button" :value="'imagen (' + player.tickets_remaining + ')'"
-							@click="imagen" v-if="!entity.imagened || player.is_gm" />
+							@click="imagen" v-if="!player.the_entity?.imagened || player.is_gm" />
 					</div>
 				</div>
 			</div>
@@ -644,7 +649,7 @@
 						@click.right="longpress_name"
 						@contextmenu="(e) => e.preventDefault()"
 						v-if="!editing_name_type">
-					{{ entity.name }}
+					{{ player.the_entity?.name }}
 				</h1>
 				<div id="entity-name-wrapper" :class="{ 'editing': editing_name_type }">
 					<input type="text" id="entity-name" class="header" v-model="new_name" v-if="editing_name_type" />
@@ -658,17 +663,17 @@
 					</select>
 					<input type="button" class="button" :value="player.small_buttons ? '💾' : '💾 save'"
 						@click="update_name_type"
-						v-if="(player.editing || editing_name_type) && (entity.name != new_name || entity.entityType != new_entityType)" />
+						v-if="(player.editing || editing_name_type) && (player.the_entity?.name != new_name || player.the_entity?.entityType != new_entityType)" />
 					<input type="button" class="button" :value="player.small_buttons ? '✖' : '✖ cancel'"
 						@click="editing_name_type = false" v-if="editing_name_type" />
 				</div>
 				<div id="plot_points" ref="plot_points_element">
-					<PlotPoint ref="plot_point_element" class="plot_point" v-if="entity.pp"
-						:amount="(entity.pp ?? 0) > showing_max_plot_points ? (entity.pp ?? 0) : undefined"
+					<PlotPoint ref="plot_point_element" class="plot_point" v-if="player.the_entity?.pp"
+						:amount="(player.the_entity?.pp ?? 0) > showing_max_plot_points ? (player.the_entity?.pp ?? 0) : undefined"
 						@click="decrease_pp" />
 					<PlotPoint class="plot_point"
-						v-for="i in (entity.pp || 0) - 1" :key="i"
-						v-if="(entity.pp ?? 0) > 0 && (entity.pp ?? 0) <= showing_max_plot_points"
+						v-for="i in (player.the_entity?.pp || 0) - 1" :key="i"
+						v-if="(player.the_entity?.pp ?? 0) > 0 && (player.the_entity?.pp ?? 0) <= showing_max_plot_points"
 						@click="decrease_pp" />
 					<div ref="add_plot_point_element" id="add_pp" @click="increase_pp" class="button-mnml">
 						<!-- <span>{{ player.small_buttons ? '+' : '+☯' }}</span> -->
@@ -681,19 +686,19 @@
 				<Transition name="fade-description">
 					<div id="character-description" v-if="banner_height > min_banner_height && player.is_gm">
 						<div id="character-meta" v-if="player.is_gm">
-							{{ entity.isArchetype ? 'archetype ' : '' }}
-							{{ entity.entityType }} located in
-							<span v-if="!entity.location || player.the_entity?.id == entity.id">{{ entity.location?.name }}</span>
-							<a v-else @click="player.set_perspective_location(entity.location ?? entity.location)">{{ entity.location?.name }} ⬇</a>
+							{{ player.the_entity?.isArchetype ? 'archetype ' : '' }}
+							{{ player.the_entity?.entityType }} located in
+							<span v-if="!player.the_entity?.location || player.the_entity?.id == player.the_entity?.id">{{ player.the_entity?.location?.name }}</span>
+							<a v-else @click="player.set_perspective_location(player.the_entity?.location ?? player.the_entity?.location)">{{ player.the_entity?.location?.name }} ⬇</a>
 							<div v-if="(player.editing || (player.is_gm && (editing_description || editing_name_type)))">
 								instance of
 								<EntityButton
-									v-for="archetype in entity.archetypes"
+									v-for="archetype in player.the_entity?.archetypes"
 									:entity_id="archetype.id"
 									override_click
 									@click_entity="click_archetype(archetype.id)"
 									/>
-								<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(entity.archetype.id)" v-if="player.is_gm && entity.archetype" />
+								<input type="button" class="button-mnml" value="⬆" @click="switch_to_entity(player.the_entity?.archetype.id)" v-if="player.is_gm && player.the_entity?.archetype" />
 							</div>
 						</div>
 						<div id="character-description-text"
@@ -707,7 +712,7 @@
 							v-if="editing_description" />
 					</div>
 				</Transition>
-				<input type="button" class="button" :value="'save ' + entity.entityType"
+				<input type="button" class="button" :value="'save ' + player.the_entity?.entityType"
 					@click="click_save"
 					v-if="editing_description" />
 				<input type="button" class="button" value="cancel"
@@ -715,7 +720,7 @@
 					v-if="editing_description" />
 			</div>
 		</div>
-		<div id="character" v-if="entity" ref="character_wrapper">
+		<div id="character" v-if="player.the_entity" ref="character_wrapper">
 			<!-- <div id="character-details-spacer" /> -->
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
 			<div id="character-options" :class="{ 'active': show_controls }" v-if="player.theme == user_themes.Dark || show_controls">
@@ -736,15 +741,15 @@
 						<div class="label" v-if="!player.small_buttons">copy ID</div>
 					</div>
 					<div class="button-mnml" id="pick-character"
-						:title="'play as ' + entity.name"
-						v-if="entity.id != player.the_entity?.id && (player.is_gm || (entity.entityType == 'character'))"
+						:title="'play as ' + player.the_entity?.name"
+						v-if="entity.id != player.the_entity?.id && (player.is_gm || (player.the_entity?.entityType == 'character'))"
 						@click="pick_character">
-						<div class="icon">{{ entity_icons[entity.entityType] }}</div>
-						<div class="label" v-if="!player.small_buttons">pick {{entity.entityType}}</div>
+						<div class="icon">{{ entity_icons[player.the_entity?.entityType] }}</div>
+						<div class="label" v-if="!player.small_buttons">pick {{player.the_entity?.entityType}}</div>
 					</div>
 					<div class="button-mnml" id="create-relation"
 						title="create relation"
-						v-if="entity.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(entity.id)"
+						v-if="player.the_entity?.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(player.the_entity?.id)"
 						@click="relate">
 						<div class="icon">🤝</div>
 						<div class="label" v-if="!player.small_buttons">create relation</div>
@@ -764,15 +769,15 @@
 						@click="toggle_quick_switch" />
 
 					<div class="button-mnml" id="archetype"
-						:title="entity.isArchetype ? 'unarchetype' : 'make archetype'"
+						:title="player.the_entity?.isArchetype ? 'unarchetype' : 'make archetype'"
 						v-if="player.is_gm"
 						@click="toggle_archetype">
-						<div class="icon">{{ entity.isArchetype ? '◑' : '○' }}</div>
-						<div class="label" v-if="!player.small_buttons">{{ entity.isArchetype ? 'unarchetype' : 'make archetype' }}</div>
+						<div class="icon">{{ player.the_entity?.isArchetype ? '◑' : '○' }}</div>
+						<div class="label" v-if="!player.small_buttons">{{ player.the_entity?.isArchetype ? 'unarchetype' : 'make archetype' }}</div>
 					</div>
 					<div class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
 						title="show instances"
-						v-if="entity.isArchetype"
+						v-if="player.the_entity?.isArchetype"
 						@click="show_instances">
 						<div class="icon">⊛</div>
 						<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'INSTANCES' ? 'hide' : 'show' }} instances</div>
@@ -791,17 +796,17 @@
 
 					<div class="button-mnml" id="clone-entity"
 						title="clone entity"
-						v-if="entity.isArchetype && player.is_gm"
+						v-if="player.the_entity?.isArchetype && player.is_gm"
 						@click="clone_entity()">
 						<div class="icon">⧉</div>
 						<div class="label" v-if="!player.small_buttons">clone entity</div>
 					</div>
 					<div class="button-mnml" id="hide-entity"
 						title="hide entity"
-						v-if="player.is_gm && (entity.entityType != 'character' || entity.isArchetype)"
+						v-if="player.is_gm && (player.the_entity?.entityType != 'character' || player.the_entity?.isArchetype)"
 						@click="hide_entity">
-						<div class="icon">{{ entity.hidden ? '🌑' : '🌕' }}</div>
-						<div class="label" v-if="!player.small_buttons">{{ entity.hidden ? 'hiding entity' : 'showing entity' }}</div>
+						<div class="icon">{{ player.the_entity?.hidden ? '🌑' : '🌕' }}</div>
+						<div class="label" v-if="!player.small_buttons">{{ player.the_entity?.hidden ? 'hiding entity' : 'showing entity' }}</div>
 					</div>
 					<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
 						title="show known to"
@@ -813,7 +818,7 @@
 					<ButtonMinimal :function="ButtonTypes.KNOWN_TO"
 						@click="toggle_known_to"
 						:class="{ 'active': entityOverviewType == 'KNOWN_TO' }"
-						v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0" />
+						v-if="player.is_gm && player.the_entity?.knownTo && player.the_entity?.knownTo.length > 0" />
 
 					<div class="button-mnml" id="toggle-traitsets" @click="toggle_traitsets" v-if="player.is_gm">
 						<!-- work in progress -->
@@ -836,7 +841,7 @@
 
 					<div class="button-mnml" id="delete-entity"
 						title="delete entity"
-						v-if="player.is_gm && entity.key != 'placeholder' && !['1', '2'].includes(entity.key) && deletion == false"
+						v-if="player.is_gm && player.the_entity?.key != 'placeholder' && !['1', '2'].includes(player.the_entity?.key) && deletion == false"
 						@click="deletion = true">
 						<!-- <div class="icon">🗑</div> -->
 						<img src="/img/icons/trash.png" class="icon" />
@@ -846,7 +851,7 @@
 						<label>🗑</label>
 						<div class="button-mnml verify-rmtree" id="verify-rmtree"
 							title="delete recursively"
-							v-if="entity.entityType == 'location'"
+							v-if="player.the_entity?.entityType == 'location'"
 							@click="entity_deletion(true)">
 							<div class="icon">✔</div>
 							<div class="label">prune</div>
@@ -897,25 +902,25 @@
 				<ArchetypePicker class="character-menu"
 					v-if="entityOverviewType == 'ARCHETYPES'"
 					v-show="show_controls"
-					:entity_id="entity.id"
-					:entity_type="entity.entityType"
-					:location_id="entity.location?.id"
+					:entity_id="player.the_entity?.id"
+					:entity_type="player.the_entity?.entityType"
+					:location_id="player.the_entity?.location?.id"
 					@update_archetype="retrieve_full_entity" />
 
-				<div id="character-known-to" class="character-menu" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0" v-show="show_controls">
+				<div id="character-known-to" class="character-menu" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && player.the_entity?.knownTo && player.the_entity?.knownTo.length > 0" v-show="show_controls">
 					<div class="info">
 						<div class="header">known to</div>
 						<div class="explainer">click to remove from known to</div>
 					</div>
 					<div class="entity-cards">
-						<EntityButton v-for="entity in entity.knownTo" :key="entity.key"
+						<EntityButton v-for="entity in player.the_entity?.knownTo" :key="entity.key"
 							:entity_id="entity.id"
 							override_click
 							@click_entity="remove_known_to(entity.id)" />
 					</div>
 				</div>
 
-				<div id="archetype-instances" class="character-menu" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
+				<div id="archetype-instances" class="character-menu" v-if="player.the_entity?.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
 					<EntityButton v-for="instance in entity.instances" :key="instance.key"
 						class="entity-button"
 						:entity_id="instance.id"
@@ -924,7 +929,7 @@
 				</div>
 
 				<div id="location-restriction" v-if="location_restriction">
-					<LocationPicker2 v-if="entity.location" :location_id="entity.location.id" />
+					<LocationPicker2 v-if="entity.location" :location_id="player.the_entity?.location.id" />
 				</div>
 			</div>
 
@@ -935,28 +940,28 @@
 			</div>
 		</div>
 		<div id="all-traits-wrapper" v-if="!show_traitsets">
-			<AllTraits v-if="entity.id" :entity_id="entity.id" />
+			<AllTraits v-if="player.the_entity?.id" :entity_id="player.the_entity?.id" />
 		</div>
-		<div id="traitsets" ref="traitset_wrapper" v-if="entity.traitsets && show_traitsets">
+		<div id="traitsets" ref="traitset_wrapper" v-if="player.the_entity?.traitsets && show_traitsets">
 			<div class="top-scroll-space"></div>
 			<Suspense>
 				<Traitset
 					v-for="set in filtered_traitsets"
-					:key="set.id + entity.key + traitset_update_counter"
+					:key="set.id + player.the_entity?.key + traitset_update_counter"
 					:traitset="set"
 					:traitset_id="set.id"
-					:entity_id="entity.id"
-					:entity="entity"
+					:entity_id="player.the_entity?.id"
+					:entity="player.the_entity"
 					:limit="set.limit"
 					:expanded="(
 							(set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE')
 							|| player.traitset_defaults == 'EXPANDED'
 						)"
-					:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == entity.id))"
+					:extensible="player.orientation == 'vertical' && (player.is_gm || (player.is_player && player.player_character.id == player.the_entity?.id))"
 					visible
-					:location_key="entity.location?.key"
+					:location_key="player.the_entity?.location?.key"
 					:active="set.id == active_traitset_id && player.traitset_defaults == 'ACTIVE'"
-					:next="player.traitset_defaults == 'ACTIVE' && entity.traitsets?.indexOf(set) - 1 < entity.traitsets.length && entity.traitsets[entity.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
+					:next="player.traitset_defaults == 'ACTIVE' && player.the_entity?.traitsets?.indexOf(set) - 1 < player.the_entity?.traitsets.length && player.the_entity?.traitsets[player.the_entity?.traitsets.indexOf(set) - 1]?.id == active_traitset_id"
 					:location="false"
 					:relationship="false"
 					@next="next_traitset(set)"
@@ -972,7 +977,7 @@
 				<div class="label" v-if="!player.small_buttons">to top</div>
 			</div>
 			<div class="reference" v-if="show_reference">
-				<div class="scroll-item" v-for="traitset in entity.traitsets?.filter(ts => entity.traitsets?.map(t => t.id).includes(ts.id))">
+				<div class="scroll-item" v-for="traitset in player.the_entity?.traitsets?.filter(ts => player.the_entity?.traitsets?.map(t => t.id).includes(ts.id))">
 					<a @click="scroll_to_traitset(traitset)" v-if="player.is_gm || !traitset.entityTypes?.includes('gm')">
 						{{ traitset.name }}
 					</a>
