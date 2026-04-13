@@ -150,11 +150,11 @@
 					<a class="footer-button" :class="{'active': view == 'location'}"
 							@click="click_location">
 						<span class="icon">🗺</span>
-						<span v-if="!player.small_buttons">
+						<span class="label" v-if="!player.small_buttons">
 							{{ 'location' }}
 						</span>
 					</a>
-					<a id="entity-button" class="footer-button"
+					<a id="character-sheet-button" class="footer-button"
 							:class="[
 								{'active': route.name == 'Entity' && route.params.entity_key == player.the_entity?.key},
 								{'with-image': player.is_gm && player.the_entity?.image}
@@ -169,7 +169,7 @@
 						<span class="icon" v-if="!(player.is_gm && player.the_entity?.image)">
 							{{ entity_icons[(player.the_entity?.entityType ?? 'empty')] }}
 						</span>
-						<span v-if="!player.small_buttons || (player.is_gm && !player.the_entity?.image)">
+						<span class="label" v-if="!player.small_buttons || (player.is_gm && !player.the_entity?.image)">
 							{{ player.the_entity?.name }}
 						</span>
 					</a>
@@ -212,14 +212,14 @@
 								&& view != 'contacts' && view != 'location'}"
 							@click="click_settings">
 						<span class="icon">☰</span>
-						<span v-if="!player.small_buttons">
+						<span class="label" v-if="!player.small_buttons">
 							{{ 'settings' }}
 						</span>
 					</a>
 					<a class="footer-button" :class="{'active': view == 'contacts'}"
 							@click="click_codex">
 						<span class="icon">🗂</span>
-						<span v-if="!player.small_buttons">
+						<span class="label" v-if="!player.small_buttons">
 							{{ 'contacts' }}
 						</span>
 					</a>
@@ -282,18 +282,20 @@
 				flex: 1;
 				display: flex;
 				/* flex-direction: column; */
-				/* align-items: center; */
+				align-items: end;
 				justify-content: center;
-				font-size: 12px;
+				/* font-size: 12px; */
 				/* padding: 8px 5px; */
 				/* border: none; */
 				/* border-top: 1px solid var(--color-border); */
 				cursor: pointer;
+				height: 3em;
 				a.footer-button {
 					border-top: 1px solid var(--color-border);
 					background-color: var(--color-background);
 					color: var(--color-text);
 					width: 100%;
+					max-width: calc((100vw - 80px) / 4);
 					height: 50px;
 					display: flex;
 					flex-direction: column;
@@ -301,7 +303,10 @@
 					align-items: center;
 					text-align: center;
 					line-height: 1.5em;
-					text-wrap: nowrap;
+					.label {
+						line-height: .8em;
+					}
+					/* text-wrap: nowrap; */
 					&.active {
 						background-color: var(--color-highlight);
 						color: var(--color-highlight-text);
@@ -335,7 +340,7 @@
 					color: var(--color-text);
 					box-shadow: 0 3px 10px rgba(0,0,0,0.3);
 					font-weight: bold;
-					font-size: 20px;
+					font-size: 1.2em;
 					cursor: pointer;
 					display: flex;
 					align-items: baseline;
@@ -426,6 +431,18 @@
 		#dicepool {
 			position: absolute;
 			bottom: -1px;
+		}
+	}
+}
+</style>
+
+<style>
+.dark {
+	#mobile-container {
+		#mobile-footer {
+			.active {
+				text-shadow: var(--text-glow);
+			}
 		}
 	}
 }

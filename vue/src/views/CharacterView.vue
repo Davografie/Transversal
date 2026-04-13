@@ -4,7 +4,7 @@
 	import { useRoute, useRouter } from 'vue-router'
 	import { useFetch, useElementSize, useScroll } from '@vueuse/core'
 
-	import { input_methods, usePlayerStore } from '@/stores/PlayerStore'
+	import { input_methods, usePlayerStore, user_themes } from '@/stores/PlayerStore'
 	// import { useCharacter } from '@/composables/Character'
 	import { useEntity, entity_icons } from '@/composables/Entity'
 	import { useLocation } from '@/composables/Location'
@@ -14,13 +14,13 @@
 
 	import PlotPoint from '@/components/PlotPoint.vue'
 	import Traitset from '@/components/Traitset.vue'
-	// import AllTraits from '@/components/AllTraits.vue'
+	import AllTraits from '@/components/AllTraits.vue'
 	import EntityButton from '@/components/EntityButton.vue'
 	import ArchetypePicker from '@/components/ArchetypePicker.vue'
 	import ButtonMinimal from '@/components/UI/ButtonMinimal.vue'
 
 	import useClipboard from 'vue-clipboard3'
-import LocationPicker2 from '@/components/LocationPicker2.vue'
+	import LocationPicker2 from '@/components/LocationPicker2.vue'
 	const { toClipboard } = useClipboard()
 	const copy_id = async () => {
 		try {
@@ -157,7 +157,8 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 
 	function click_portrait() {
 		if(!held.value && !editing_portrait.value) {
-			show_image.value = true
+			// show_image.value = true
+			player.image_entity = entity.value
 		}
 	}
 
@@ -460,6 +461,11 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 		// setTimeout(() => retrieve_small_entity(), 200)
 	}
 
+	const show_traitsets = ref(true)
+	function toggle_traitsets() {
+		show_traitsets.value = !show_traitsets.value
+	}
+
 	function cycle_traitset_defaults(reverse = false) {
 		const order = ['COLLAPSED', 'ACTIVE', 'EXPANDED']
 		const index = order.indexOf(player.traitset_defaults)
@@ -485,6 +491,7 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 			entity.value = player.the_entity
 		}
 		if(!entity.value.id || entity.value.key == 'placeholder') {
+			console.log('entity not loaded, retrieving...', entity.value)
 			retrieve_full_entity()
 		}
 		character_wrapper.value?.scrollIntoView({ behavior: 'smooth' })
@@ -599,11 +606,6 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 
 <template>
 	<div id="entity-wrapper" :class="[{ 'editing': player.editing }, props.orientation]" ref="entity_wrapper">
-		<div id="portrait-lightbox" v-if="show_image" @click="show_image = false">
-			<h1>{{ entity.name }}</h1>
-			<img id="portrait_large" v-if="entity.image && show_image"
-				:src="img_link_large" />
-		</div>
 		<div id="character-details">
 			<div id="character-portrait">
 				<img :src="img_link_small"
@@ -711,211 +713,226 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 		<div id="character" v-if="entity" ref="character_wrapper">
 			<!-- <div id="character-details-spacer" /> -->
 			<!-- <ToggleButton truthy="archetype" falsy="" :default="player.is_gm" @toggle="toggle_gm" /> -->
-			<div id="character-buttons" :class="[player.small_buttons ? 'small-buttons' : 'verbose-buttons', scrolling_up ? 'scrolling-up' : 'scrolling-down']" v-show="show_controls">
+			<div id="character-options" :class="{ 'active': show_controls }" v-if="player.theme == user_themes.Dark || show_controls">
+				<div id="character-buttons" :class="[
+					player.small_buttons ? 'small-buttons' : 'verbose-buttons',
+					scrolling_up ? 'scrolling-up' : 'scrolling-down']">
 
-				<ButtonMinimal :function="ButtonTypes.GM"
-					@click="switch_gm"
-					v-if="player.is_gm && player.the_entity?.id != 'Entities/1'" />
+					<ButtonMinimal :function="ButtonTypes.GM"
+						@click="switch_gm"
+						v-if="player.is_gm && player.the_entity?.id != 'Entities/1'" />
 
-				<div class="button-mnml" id="copy-id"
-					title="copy ID"
-					v-if="player.is_gm"
-					@click="copy_id">
-					<!-- <div class="icon">#</div> -->
-					<img src="/img/icons/char_copy_id.png" class="icon" />
-					<div class="label" v-if="!player.small_buttons">copy ID</div>
-				</div>
-				<div class="button-mnml" id="pick-character"
-					:title="'play as ' + entity.name"
-					v-if="entity.id != player.the_entity?.id && (player.is_gm || (entity.entityType == 'character'))"
-					@click="pick_character">
-					<div class="icon">{{ entity_icons[entity.entityType] }}</div>
-					<div class="label" v-if="!player.small_buttons">pick {{entity.entityType}}</div>
-				</div>
-				<div class="button-mnml" id="create-relation"
-					title="create relation"
-					v-if="entity.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(entity.id)"
-					@click="relate">
-					<div class="icon">🤝</div>
-					<div class="label" v-if="!player.small_buttons">create relation</div>
-				</div>
-
-				<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
-					title="switch entity"
-					v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
-					@click="toggle_quick_switch">
-					<div class="icon">🔁</div>
-					<div class="label" v-if="!player.small_buttons">switch entity</div>
-				</div> -->
-				<ButtonMinimal
-					:class="{ 'active': entityOverviewType == 'QUICK_SWITCH'}"
-					:function="ButtonTypes.SWITCH"
-					v-if="(player.player.entities?.length ?? 0) > 0"
-					@click="toggle_quick_switch" />
-
-				<div class="button-mnml" id="archetype"
-					:title="entity.isArchetype ? 'unarchetype' : 'make archetype'"
-					v-if="player.is_gm"
-					@click="toggle_archetype">
-					<div class="icon">{{ entity.isArchetype ? '◑' : '○' }}</div>
-					<div class="label" v-if="!player.small_buttons">{{ entity.isArchetype ? 'unarchetype' : 'make archetype' }}</div>
-				</div>
-				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
-					title="show instances"
-					v-if="entity.isArchetype"
-					@click="show_instances">
-					<div class="icon">⊛</div>
-					<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'INSTANCES' ? 'hide' : 'show' }} instances</div>
-				</div>
-
-				<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'ARCHETYPES' }" id="show-archetypes"
-					title="show archetypes"
-					@click="show_archetypes">
-					<div class="icon">⊛</div>
-					<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show' }} archetypes</div>
-				</div> -->
-				<ButtonMinimal
-					:class="{ 'active': entityOverviewType == 'ARCHETYPES'}"
-					:function="ButtonTypes.ADD_ARCHETYPE"
-					@click="entityOverviewType == 'ARCHETYPES' ? entityOverviewType = 'NONE' : entityOverviewType = 'ARCHETYPES'" />
-
-				<div class="button-mnml" id="clone-entity"
-					title="clone entity"
-					v-if="entity.isArchetype && player.is_gm"
-					@click="clone_entity()">
-					<div class="icon">⧉</div>
-					<div class="label" v-if="!player.small_buttons">clone entity</div>
-				</div>
-				<div class="button-mnml" id="hide-entity"
-					title="hide entity"
-					v-if="player.is_gm && (entity.entityType != 'character' || entity.isArchetype)"
-					@click="hide_entity">
-					<div class="icon">{{ entity.hidden ? '🌑' : '🌕' }}</div>
-					<div class="label" v-if="!player.small_buttons">{{ entity.hidden ? 'hiding entity' : 'showing entity' }}</div>
-				</div>
-				<div class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
-					title="show known to"
-					v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0"
-					@click="toggle_known_to">
-					<div class="icon">👀</div>
-					<div class="label" v-if="!player.small_buttons">known to</div>
-				</div>
-				<ButtonMinimal :function="ButtonTypes.KNOWN_TO"
-					@click="toggle_known_to"
-					v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0" />
-
-				<ButtonMinimal :function="ButtonTypes.TRAITSET_CLOSED"
-					@click="cycle_traitset_defaults(false)"
-					@click.right.prevent="cycle_traitset_defaults(true)"
-					v-if="player.traitset_defaults == 'COLLAPSED'" />
-				<ButtonMinimal :function="ButtonTypes.TRAITSET_ACTIVE"
-					@click="cycle_traitset_defaults(false)"
-					@click.right.prevent="cycle_traitset_defaults(true)"
-					v-else-if="player.traitset_defaults == 'ACTIVE'" />
-				<ButtonMinimal :function="ButtonTypes.TRAITSET_OPEN"
-					@click="cycle_traitset_defaults(false)"
-					@click.right.prevent="cycle_traitset_defaults(true)"
-					v-else-if="player.traitset_defaults == 'EXPANDED'" />
-
-				<div class="button-mnml" id="delete-entity"
-					title="delete entity"
-					v-if="player.is_gm && entity.key != 'placeholder' && !['1', '2'].includes(entity.key) && deletion == false"
-					@click="deletion = true">
-					<!-- <div class="icon">🗑</div> -->
-					<img src="/img/icons/trash.png" class="icon" />
-					<div class="label" v-if="!player.small_buttons">delete entity</div>
-				</div>
-				<div id="delete-confirmation" v-if="deletion">
-					<label>🗑</label>
-					<div class="button-mnml verify-rmtree" id="verify-rmtree"
-						title="delete recursively"
-						v-if="entity.entityType == 'location'"
-						@click="entity_deletion(true)">
-						<div class="icon">✔</div>
-						<div class="label">prune</div>
+					<div class="button-mnml" id="copy-id"
+						title="copy ID"
+						v-if="player.is_gm"
+						@click="copy_id">
+						<!-- <div class="icon">#</div> -->
+						<img src="/img/icons/char_copy_id.png" class="icon" />
+						<div class="label" v-if="!player.small_buttons">copy ID</div>
 					</div>
-					<div class="button-mnml verify" id="verify-delete"
-						title="confirm and delete"
-						@click="entity_deletion(false)">
-						<div class="icon">✔</div>
-						<div class="label">yes</div>
+					<div class="button-mnml" id="pick-character"
+						:title="'play as ' + entity.name"
+						v-if="entity.id != player.the_entity?.id && (player.is_gm || (entity.entityType == 'character'))"
+						@click="pick_character">
+						<div class="icon">{{ entity_icons[entity.entityType] }}</div>
+						<div class="label" v-if="!player.small_buttons">pick {{entity.entityType}}</div>
 					</div>
-					<div class="button-mnml cancel" id="cancel-delete"
-						title="cancel deletion"
-						@click="deletion = false">
-						<div class="icon">✗</div>
-						<div class="label">cancel</div>
+					<div class="button-mnml" id="create-relation"
+						title="create relation"
+						v-if="entity.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(entity.id)"
+						@click="relate">
+						<div class="icon">🤝</div>
+						<div class="label" v-if="!player.small_buttons">create relation</div>
 					</div>
+
+					<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'QUICK_SWITCH' }" id="entity-switch"
+						title="switch entity"
+						v-if="player.previous_perspective_ids.filter(p => p != player.the_entity?.id).length > 0"
+						@click="toggle_quick_switch">
+						<div class="icon">🔁</div>
+						<div class="label" v-if="!player.small_buttons">switch entity</div>
+					</div> -->
+					<ButtonMinimal
+						:class="{ 'active': entityOverviewType == 'QUICK_SWITCH'}"
+						:function="ButtonTypes.SWITCH"
+						v-if="(player.player.entities?.length ?? 0) > 0"
+						@click="toggle_quick_switch" />
+
+					<div class="button-mnml" id="archetype"
+						:title="entity.isArchetype ? 'unarchetype' : 'make archetype'"
+						v-if="player.is_gm"
+						@click="toggle_archetype">
+						<div class="icon">{{ entity.isArchetype ? '◑' : '○' }}</div>
+						<div class="label" v-if="!player.small_buttons">{{ entity.isArchetype ? 'unarchetype' : 'make archetype' }}</div>
+					</div>
+					<div class="button-mnml" :class="{ 'active': entityOverviewType == 'INSTANCES' }" id="show-instances"
+						title="show instances"
+						v-if="entity.isArchetype"
+						@click="show_instances">
+						<div class="icon">⊛</div>
+						<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'INSTANCES' ? 'hide' : 'show' }} instances</div>
+					</div>
+
+					<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'ARCHETYPES' }" id="show-archetypes"
+						title="show archetypes"
+						@click="show_archetypes">
+						<div class="icon">⊛</div>
+						<div class="label" v-if="!player.small_buttons">{{ entityOverviewType == 'ARCHETYPES' ? 'hide' : 'show' }} archetypes</div>
+					</div> -->
+					<ButtonMinimal
+						:class="{ 'active': entityOverviewType == 'ARCHETYPES'}"
+						:function="ButtonTypes.ADD_ARCHETYPE"
+						@click="entityOverviewType == 'ARCHETYPES' ? entityOverviewType = 'NONE' : entityOverviewType = 'ARCHETYPES'" />
+
+					<div class="button-mnml" id="clone-entity"
+						title="clone entity"
+						v-if="entity.isArchetype && player.is_gm"
+						@click="clone_entity()">
+						<div class="icon">⧉</div>
+						<div class="label" v-if="!player.small_buttons">clone entity</div>
+					</div>
+					<div class="button-mnml" id="hide-entity"
+						title="hide entity"
+						v-if="player.is_gm && (entity.entityType != 'character' || entity.isArchetype)"
+						@click="hide_entity">
+						<div class="icon">{{ entity.hidden ? '🌑' : '🌕' }}</div>
+						<div class="label" v-if="!player.small_buttons">{{ entity.hidden ? 'hiding entity' : 'showing entity' }}</div>
+					</div>
+					<!-- <div class="button-mnml" :class="{ 'active': entityOverviewType == 'KNOWN_TO' }" id="show-known-to"
+						title="show known to"
+						v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0"
+						@click="toggle_known_to">
+						<div class="icon">👀</div>
+						<div class="label" v-if="!player.small_buttons">known to</div>
+					</div> -->
+					<ButtonMinimal :function="ButtonTypes.KNOWN_TO"
+						@click="toggle_known_to"
+						:class="{ 'active': entityOverviewType == 'KNOWN_TO' }"
+						v-if="player.is_gm && entity.knownTo && entity.knownTo.length > 0" />
+
+					<div class="button-mnml" id="toggle-traitsets" @click="toggle_traitsets" v-if="player.is_gm">
+						<!-- work in progress -->
+						<div class="icon">📜</div>
+						<div class="label" v-if="!player.small_buttons">traitsets</div>
+					</div>
+
+					<ButtonMinimal :function="ButtonTypes.TRAITSET_CLOSED"
+						@click="cycle_traitset_defaults(false)"
+						@click.right.prevent="cycle_traitset_defaults(true)"
+						v-if="show_traitsets && player.traitset_defaults == 'COLLAPSED'" />
+					<ButtonMinimal :function="ButtonTypes.TRAITSET_ACTIVE"
+						@click="cycle_traitset_defaults(false)"
+						@click.right.prevent="cycle_traitset_defaults(true)"
+						v-else-if="show_traitsets && player.traitset_defaults == 'ACTIVE'" />
+					<ButtonMinimal :function="ButtonTypes.TRAITSET_OPEN"
+						@click="cycle_traitset_defaults(false)"
+						@click.right.prevent="cycle_traitset_defaults(true)"
+						v-else-if="show_traitsets && player.traitset_defaults == 'EXPANDED'" />
+
+					<div class="button-mnml" id="delete-entity"
+						title="delete entity"
+						v-if="player.is_gm && entity.key != 'placeholder' && !['1', '2'].includes(entity.key) && deletion == false"
+						@click="deletion = true">
+						<!-- <div class="icon">🗑</div> -->
+						<img src="/img/icons/trash.png" class="icon" />
+						<div class="label" v-if="!player.small_buttons">delete entity</div>
+					</div>
+					<div id="delete-confirmation" v-if="deletion">
+						<label>🗑</label>
+						<div class="button-mnml verify-rmtree" id="verify-rmtree"
+							title="delete recursively"
+							v-if="entity.entityType == 'location'"
+							@click="entity_deletion(true)">
+							<div class="icon">✔</div>
+							<div class="label">prune</div>
+						</div>
+						<div class="button-mnml verify" id="verify-delete"
+							title="confirm and delete"
+							@click="entity_deletion(false)">
+							<div class="icon">✔</div>
+							<div class="label">yes</div>
+						</div>
+						<div class="button-mnml cancel" id="cancel-delete"
+							title="cancel deletion"
+							@click="deletion = false">
+							<div class="icon">✗</div>
+							<div class="label">cancel</div>
+						</div>
+					</div>
+
+					<div id="refresh-entity" class="button-mnml"
+						title="refresh entity" :key="refresh_counter"
+						@click="player.retrieve_perspective('network-only'); refresh_counter++">
+						<div class="icon">🔄</div>
+						<div class="label" v-if="!player.small_buttons">refresh</div>
+					</div>
+
+					<ButtonMinimal
+						:function="ButtonTypes.SETTINGS"
+						@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
+
+					<ButtonMinimal
+						:function="ButtonTypes.LOCATION_PIN"
+						v-if="player.is_gm"
+						@click="toggle_location_restriction" />
 				</div>
 
-				<div id="refresh-entity" class="button-mnml"
-					title="refresh entity" :key="refresh_counter"
-					@click="player.retrieve_perspective('network-only'); refresh_counter++">
-					<div class="icon">🔄</div>
-					<div class="label" v-if="!player.small_buttons">refresh</div>
-				</div>
-
-				<ButtonMinimal
-					:function="ButtonTypes.SETTINGS"
-					@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
-
-				<ButtonMinimal
-					:function="ButtonTypes.LOCATION_PIN"
-					@click="toggle_location_restriction" />
-			</div>
-
-			<div id="character-quick-switch" class="character-menu" v-show="show_controls"
-					v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities && player.player.entities.length > 0">
-				<EntityButton
-					class="entity-card"
-					v-for="entity_id in player.player.entities.map(e => e.id).slice(0, 12)" :key="entity_id"
-					:entity_id="entity_id"
-					override_click
-					show_archetypes
-					:is_active="player.the_entity?.id != entity_id"
-					@click_entity="player.the_entity?.id != entity_id ? quick_switch(entity_id) : null" />
-			</div>
-
-			<ArchetypePicker class="character-menu"
-				v-if="entityOverviewType == 'ARCHETYPES'"
-				v-show="show_controls"
-				:entity_id="entity.id"
-				:entity_type="entity.entityType"
-				:location_id="entity.location?.id"
-				@update_archetype="retrieve_full_entity" />
-
-			<div id="character-known-to" class="character-menu" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0" v-show="show_controls">
-				<div class="info">
-					<div class="header">known to</div>
-					<div class="explainer">click to remove from known to</div>
-				</div>
-				<div class="entity-cards">
-					<EntityButton v-for="entity in entity.knownTo" :key="entity.key"
-						:entity_id="entity.id"
+				<div id="character-quick-switch" class="character-menu" v-show="show_controls"
+						v-if="entityOverviewType == 'QUICK_SWITCH' && player.player.entities && player.player.entities.length > 0">
+					<EntityButton
+						class="entity-card"
+						v-for="entity_id in player.player.entities.map(e => e.id).slice(0, 12)" :key="entity_id"
+						:entity_id="entity_id"
 						override_click
-						@click_entity="remove_known_to(entity.id)" />
+						show_archetypes
+						:is_active="player.the_entity?.id != entity_id"
+						@click_entity="player.the_entity?.id != entity_id ? quick_switch(entity_id) : null" />
+				</div>
+
+				<ArchetypePicker class="character-menu"
+					v-if="entityOverviewType == 'ARCHETYPES'"
+					v-show="show_controls"
+					:entity_id="entity.id"
+					:entity_type="entity.entityType"
+					:location_id="entity.location?.id"
+					@update_archetype="retrieve_full_entity" />
+
+				<div id="character-known-to" class="character-menu" v-if="player.is_gm && entityOverviewType == 'KNOWN_TO' && entity.knownTo && entity.knownTo.length > 0" v-show="show_controls">
+					<div class="info">
+						<div class="header">known to</div>
+						<div class="explainer">click to remove from known to</div>
+					</div>
+					<div class="entity-cards">
+						<EntityButton v-for="entity in entity.knownTo" :key="entity.key"
+							:entity_id="entity.id"
+							override_click
+							@click_entity="remove_known_to(entity.id)" />
+					</div>
+				</div>
+
+				<div id="archetype-instances" class="character-menu" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
+					<EntityButton v-for="instance in entity.instances" :key="instance.key"
+						class="entity-button"
+						:entity_id="instance.id"
+						override_click
+						@click_entity="click_instance(instance.id)" />
+				</div>
+
+				<div id="location-restriction" v-if="location_restriction">
+					<LocationPicker2 v-if="entity.location" :location_id="entity.location.id" />
 				</div>
 			</div>
 
-			<div id="archetype-instances" class="character-menu" v-if="entity.isArchetype && entityOverviewType == 'INSTANCES'" v-show="show_controls">
-				<EntityButton v-for="instance in entity.instances" :key="instance.key"
-					class="entity-button"
-					:entity_id="instance.id"
-					override_click
-					@click_entity="click_instance(instance.id)" />
-			</div>
-
-			<div id="location-restriction" v-if="location_restriction">
-				<LocationPicker2 v-if="entity.location" :location_id="entity.location.id" />
-			</div>
-
-			<div id="character-buttons-toggle" @click="toggle_controls">
+			<div id="character-buttons-toggle" :class="{ 'active': show_controls }" @click="toggle_controls">
 				<span>{{ show_controls ? '🔼' : '🔽' }}</span>
 				<span>{{ show_controls ? 'hide' : 'show' }} character controls</span>
 				<span>{{ show_controls ? '🔼' : '🔽' }}</span>
 			</div>
 		</div>
-		<div id="traitsets" ref="traitset_wrapper" v-if="entity.traitsets">
+		<div id="all-traits-wrapper" v-if="!show_traitsets">
+			<AllTraits v-if="entity.id" :entity_id="entity.id" />
+		</div>
+		<div id="traitsets" ref="traitset_wrapper" v-if="entity.traitsets && show_traitsets">
 			<div class="top-scroll-space"></div>
 			<Suspense>
 				<Traitset
@@ -961,9 +978,6 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 				<div class="label" v-if="!player.small_buttons">scroll to</div>
 			</div>
 		</div>
-		<!-- <div id="all-traits-wrapper">
-			<AllTraits v-if="entity.id" :entity_id="entity.id" />
-		</div> -->
 	</div>
 </template>
 
@@ -1135,6 +1149,7 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 					text-shadow: var(--text-shadow);
 					text-wrap: wrap;
 					font-size: 1.2em;
+					padding: .2em 1em;
 					&.active {
 						background-color: var(--color-highlight);
 						color: var(--color-highlight-text);
@@ -1173,6 +1188,11 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 						display: flex;
 						justify-content: space-around;
 						flex-wrap: wrap;
+						padding-bottom: 1em;
+						.entity-card {
+							width: 50px;
+							height: 100px;
+						}
 					}
 				}
 			}
@@ -1209,6 +1229,11 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 				max-height: 100vh;
 				border: 1em solid var(--color-text);
 			}
+		}
+		#all-traits-wrapper {
+			flex-grow: 1;
+			padding-top: 2.4em;
+			overflow-y: auto;
 		}
 		#traitsets {
 			border-bottom: 1px solid var(--color-border);
@@ -1305,12 +1330,13 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 			height: 100vh;
 			position: relative;
 			/* background-color: var(--color-background-mute); */
+			backdrop-filter: blur(50px);
 			#character-details {
 				background-color: var(--color-background-mute);
 				max-height: 240px;
 				scroll-snap-align: start;
 				height: v-bind(banner_height + 'px');
-				box-shadow: 0 0 10px var(--color-background);
+				/* box-shadow: 0 0 10px var(--color-background); */
 				#character-portrait img {
 					/* border-radius: 30px 0 0 30px; */
 					/* border: 1px solid var(--color-background); */
@@ -1336,25 +1362,44 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 				scroll-snap-type: y mandatory;
 				height: 0;
 				z-index: 5;
-				#character-buttons {
-					scroll-snap-align: start;
-					overflow-x: auto;
-					backdrop-filter: blur(5px);
-					&.scrolling-up {
-						position: sticky;
-						top: 0;
-						z-index: 1;
+				#character-options {
+					max-height: 0;
+					transition: max-height 1s ease-in-out;
+					overflow-y: hidden;
+					display: flex;
+					flex-direction: column;
+					&.active {
+						max-height: 60vh;
 					}
-					.minimal-button {
-						text-shadow: var(--text-shadow);
-						/* box-shadow: inset 0 0 10px var(--color-background-mute); */
-						/* border: 1px solid var(--color-border); */
-						padding: .2em 1em;
+					#character-buttons {
+						background-color: var(--color-background);
+						/* scroll-snap-align: start; */
+						/* overflow-x: auto; */
+						backdrop-filter: blur(5px);
+						flex-grow: 1;
+						&.scrolling-up {
+							position: sticky;
+							top: 0;
+							z-index: 1;
+						}
+						/* .minimal-button {
+							text-shadow: var(--text-shadow);
+							padding: .2em 1em;
+						} */
+					}
+					.character-menu {
+						background-color: var(--color-background-mute);
+						backdrop-filter: blur(5px);
+						flex-grow: 1;
+						overflow-y: auto;
 					}
 				}
-				.character-menu {
+				#character-buttons-toggle {
 					background-color: var(--color-background-mute);
-					backdrop-filter: blur(5px);
+					&.active {
+						/* backdrop-filter: blur(20px); */
+						box-shadow: 0 10px 10px var(--color-background-mute);
+					}
 				}
 				&.horizontal {
 					background-image: linear-gradient(to left, var(--color-background-mute) 0, transparent 20px, transparent 100%);
@@ -1362,8 +1407,8 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 			}
 			#traitsets {
 				/* border-top: 1px solid var(--color-background); */
-				display: flex;
-				gap: .8em;
+				/* display: flex; */
+				/* gap: .8em; */
 				.top-scroll-space {
 					/* scroll-snap-align: start; */
 					/* height: 100px; */
@@ -1415,15 +1460,15 @@ import LocationPicker2 from '@/components/LocationPicker2.vue'
 				}
 			}
 			/* padding-top: 4em; */
-			#traitsets {
+			/* #traitsets {
 				.traitset {
 					min-width: 33vw;
 				}
-			}
+			} */
 		}
 	}
 	#mobile-container #charactersheet-container #entity-wrapper {
-		padding-bottom: 3em;
+		padding-bottom: 50px;
 		#traitsets {
 			/* padding-bottom: 105px; */
 			.traitset {

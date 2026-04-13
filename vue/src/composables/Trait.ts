@@ -22,6 +22,7 @@ export const placeholder_trait: Trait = {
 
 	// enable/disable trait edit mode
 export enum view_modes {
+	Mini = 'mini',
 	Small = 'small',
 	Neutral = 'neutral',
 	Editing = 'editing',

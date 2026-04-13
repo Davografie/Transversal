@@ -110,7 +110,7 @@
 	#panels {
 		display: grid;
 		/* grid-template-columns: v-bind(third_width + 'px') v-bind(third_width + 'px') v-bind(third_width + 'px'); */
-		grid-template-columns: 3fr 4fr 130px;
+		grid-template-columns: minmax(24em, 2fr) 4fr 130px;
 		width: 100vw;
 		height: 100vh;
 		.character-panel {

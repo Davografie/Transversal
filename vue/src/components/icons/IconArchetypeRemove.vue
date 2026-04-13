@@ -29,30 +29,6 @@
 </template>
 
 <style scoped>
-	/* .cls-1 {
-		fill: #231f20;
-	}
-
-	.cls-2 {
-		stroke: #231f20;
-		stroke-miterlimit: 10;
-	}
-
-	.cls-2, .cls-3 {
-		fill: #fff;
-	}
-
-	.cls-4 {
-		opacity: .53;
-	}
-
-	.cls-3 {
-		font-family: Inter-BlackItalic, Inter;
-		font-size: 25.03px;
-		font-style: italic;
-		font-variation-settings: 'wght' 900, 'slnt' -10;
-		font-weight: 800;
-	} */
 	#icon-remove-archetype {
 		width: 3em;
 		height: 3em;
@@ -65,7 +41,7 @@
 	}
 	.cls-3 {
 		font-family: Inter-BlackItalic, Inter;
-		font-size: 25.03px;
+		font-size: .9em;
 		font-style: italic;
 		font-variation-settings: 'wght' 900, 'slnt' -10;
 		font-weight: 800;

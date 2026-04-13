@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { ref, watch, computed, defineAsyncComponent, onMounted } from 'vue'
 	import _ from 'lodash'
-	import { useVibrate, usePreferredColorScheme } from '@vueuse/core'
+	import { useVibrate } from '@vueuse/core'
 
 	import SessionControl from '@/components/SessionControl.vue'
 	import PoolEntity from '@/components/PoolEntity.vue'
@@ -46,9 +46,8 @@
 	const held = ref(false)
 
 	const { vibrate } = useVibrate({ pattern: [20] })
-	const preferredColor = usePreferredColorScheme()
 	const ruleset_logo = computed(() => {
-		return dicepoolStore.dice.length <= 2 ? 'SwadeLogoSmall' : 'CPC-' + preferredColor.value
+		return dicepoolStore.dice.length <= 2 ? 'SwadeLogoSmall' : 'CPC-' + player.theme
 	})
 
 	const editing = ref(false)
@@ -634,7 +633,7 @@
 			rgba(0, 0, 0, 0) 50%);
 	}
 	#dicepool.collapsed .title {
-		font-size: x-large;
+		font-size: 1.2em;
 	}
 	#dicepool.expanded .title {
 		border-bottom: 1px solid var(--color-border);

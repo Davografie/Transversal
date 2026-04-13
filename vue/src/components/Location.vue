@@ -12,9 +12,7 @@
 		type Ref,
 		computed,
 		watch,
-		onMounted,
-		onUnmounted,
-		nextTick
+		onUnmounted
 	} from 'vue'
 	import { useRoute } from 'vue-router'
 	import { useElementBounding, useWindowSize } from '@vueuse/core'
@@ -904,12 +902,12 @@
 			}
 		}
 		.content {
-			padding: 0 1em 3em;
+			padding: 0 0 3em;
 			display: grid;
-			grid-template-columns: 60px auto 60px;
+			grid-template-columns: minmax(60px, auto) minmax(auto, calc(100% - 120px)) minmax(60px, auto);
 			width: 100%;
 			.left, .right {
-				width: 60px;
+				/* width: 60px; */
 				z-index: 1;
 				display: flex;
 				flex-direction: column;
@@ -918,7 +916,7 @@
 				.presence {
 					padding-top: 10%;
 					max-height: 90%;
-					width: 60px;
+					/* width: 60px; */
 					display: flex;
 					flex-direction: column;
 					align-items: center;
@@ -934,14 +932,14 @@
 				flex-grow: 1;
 				display: flex;
 				flex-direction: column;
-				overflow-x: hidden;
+				/* overflow-x: hidden; */
 				.archetypes {
 					display: flex;
 					flex-wrap: wrap;
 					justify-content: center;
 					gap: 1em;
 					/* overflow-x: auto; */
-					padding: 1em;
+					/* padding: 1em; */
 					.entity-card {
 						width: 50px;
 						min-width: 50px;
@@ -955,7 +953,7 @@
 					/* justify-content: center; */
 					align-items: center;
 					.active-npc {
-						max-width: 90%;
+						/* max-width: 90%; */
 						max-height: 100%;
 						margin: 20px 0;
 					}

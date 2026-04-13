@@ -345,6 +345,7 @@
 <style>
 	.dark {
 		#codex-wrapper {
+			background-color: var(--color-background-mute);
 			&.vertical {
 				background-color: var(--color-background-mute);
 			}

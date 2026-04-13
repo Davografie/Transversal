@@ -94,9 +94,10 @@
 			return !player.perspective.relations?.map(r => r.toEntity.id).includes(entity.value.id) &&
 				player.perspective.id != entity.value.id
 		}
-		else if(!player.is_gm && player.player_character) {
-			return !player.player_character.relations?.map(r => r.toEntity.id).includes(entity.value.id) &&
-				player.player_character.id != entity.value.id
+		else if(player.is_player && player.player_character) {
+			return !player.player_character.relations?.map(r => r.toEntity.id).includes(entity.value.id)
+				&& player.player_character.id != entity.value.id
+				&& !entity.value.isArchetype
 		}
 	})
 
@@ -330,13 +331,14 @@
 				</div>
 				<ButtonMinimal :function="ButtonTypes.ADD_ARCHETYPE"
 					v-if="![player.the_entity, ...player.the_entity?.archetypes].map(arch => arch.id).includes(entity.id) && entity.isArchetype"
+					label="assume archetype"
 					@click.stop="player.set_perspective_archetype(entity.id)" />
 				<ButtonMinimal :function="ButtonTypes.REMOVE_ARCHETYPE"
 					v-if="player.the_entity?.archetypes?.map(arch => arch.id).includes(entity.id) && entity.isArchetype"
 					@click.stop="player.unset_perspective_archetype(entity.id)" />
 				<div class="button-mnml copy-button"
 						@click.stop="instantiate"
-						v-if="entity.isArchetype">
+						v-if="entity.isArchetype && player.is_gm">
 					<span class="icon">⧉</span>
 					<span class="label">{{ player.small_buttons ? '' : 'spawn'}}</span>
 				</div>
@@ -430,8 +432,9 @@
 <style scoped>
 div.active-npc {
 	padding-bottom: 1em;
-	min-width: 16em;
+	/* min-width: 16em; */
 	width: v-bind(card_width + 'px');
+	max-width: 100%;
 	div.card {
 		position: relative;
 		line-height: 0;

@@ -6,10 +6,6 @@
 
 	import useClipboard from 'vue-clipboard3'
 
-	import { usePreferredColorScheme } from '@vueuse/core'
-
-	const preferredColor = usePreferredColorScheme()
-
 	import { useDicepool } from '@/composables/Dicepool'
 
 	import ButtonMinimal from '@/components/UI/ButtonMinimal.vue'
@@ -33,8 +29,8 @@
 		SFX as SFXType, Trait,
 		Entity as EntityType
 	} from '@/interfaces/Types'
-	import TraitSelector from './TraitSelector.vue'
-import ToggleButton from './UI/ToggleButton.vue'
+	import TraitSelector from '@/components/TraitSelector.vue'
+	import ToggleButton from '@/components/UI/ToggleButton.vue'
 
 	const props = defineProps<{
 		trait?: Trait,
@@ -1095,6 +1091,18 @@ import ToggleButton from './UI/ToggleButton.vue'
 			mode.value = view_modes.Small
 		}
 	}
+
+	const positive_subtraits = computed(() => {
+		return trait.value.subTraits?.filter((x) => x.ratingType != 'empty' && x.rating && x.rating.reduce((a, b) => a + b.number_rating, 0) > 0)
+	})
+
+	const neutral_subtraits = computed(() => {
+		return trait.value.subTraits?.filter((x) => x.ratingType == 'empty' || x.rating && x.rating.reduce((a, b) => a + b.number_rating, 0) == 0)
+	})
+
+	const negative_subtraits = computed(() => {
+		return trait.value.subTraits?.filter((x) => x.ratingType != 'empty' && x.rating && x.rating.reduce((a, b) => a + b.number_rating, 0) < 0)
+	})
 </script>
 
 <template>
@@ -1120,8 +1128,6 @@ import ToggleButton from './UI/ToggleButton.vue'
 			]"
 			v-if="trait && passes_filter"
 			v-touch:hold="longtap_trait"
-			@mouseenter="hover_enter"
-			@mouseleave="hover_leave"
 			@click.right="longtap_trait"
 			@click="click_trait"
 			@contextmenu="(e) => e.preventDefault()">
@@ -1263,7 +1269,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 								{{ trait.traitSetting?.fromEntity?.name }}'s
 							</span>
 							<span class="trait-name-label trait-from"
-									v-if="trait.traitSetting?.fromEntity?.name && trait.traitSetting.fromEntity.id != entity?.id && trait.traitSetting?.toEntity?.id == entity?.id">
+									v-if="trait.traitSetting?.fromEntity?.name
+										&& trait.traitSetting.fromEntity.id != props.entity_id
+										&& trait.traitSetting?.toEntity?.id == props.entity_id">
 								{{ trait.traitSetting?.fromEntity?.name }}'s
 							</span>
 							<span class="trait-name-label">
@@ -1275,7 +1283,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 									&& trait.traitSetting?.fromEntity?.name">
 								{{ ' from ' + trait.traitSetting?.fromEntity?.name }}
 							</span>
-							<span class="label trait-owner-self" v-if="[view_modes.Viewing, view_modes.Editing].includes(mode)
+							<span class="label trait-owner-self" v-if="player.is_gm
+									&& [view_modes.Viewing, view_modes.Editing].includes(mode)
 									&& trait.traitSetting?.fromEntity?.id == player.the_entity?.id">
 								{{ ' (self)' }}
 							</span>
@@ -1283,11 +1292,13 @@ import ToggleButton from './UI/ToggleButton.vue'
 								for {{ trait.traitSetting?.toEntity?.name + ' ' }}
 							</span>
 							<span class="trait-for-self"
-									v-if="trait.traitSetting?.fromEntity?.name && trait.traitSetting.fromEntity.id != entity?.id && trait.traitSetting?.toEntity?.id == entity?.id">
+									v-if="trait.traitSetting?.fromEntity?.name
+										&& trait.traitSetting.fromEntity.id != props.entity_id
+										&& trait.traitSetting?.toEntity?.id == props.entity_id">
 								for {{ trait.traitSetting?.toEntity?.name }}
 							</span>
 						</span>
-						<span class="rating-type label" v-if="preferredColor == 'light' || mode == view_modes.Viewing">
+						<span class="rating-type label" v-if="mode == view_modes.Viewing">
 							{{ trait.ratingType ?? 'empty' }}
 						</span>
 						<!-- <span class="scaling label" v-if="trait.traitSetting?.scaling">
@@ -1348,6 +1359,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 						:pool_scaling="new_pool_scaling ?? trait.traitSetting?.poolScaling ?? 0"
 						:result_scaling="new_result_scaling ?? trait.traitSetting?.resultScaling ?? 0"
 						:effect_scaling="new_effect_scaling ?? trait.traitSetting?.effectScaling ?? 0"
+						:die_size="mode == view_modes.Mini ? '2em' : undefined"
 						@click.stop="click_rating"
 						@deplete-resource="deplete_resource"
 						@deplete-challenge="deplete_challenge"
@@ -1362,10 +1374,6 @@ import ToggleButton from './UI/ToggleButton.vue'
 					&& (
 						mode != view_modes.Small ||
 						!trait.statement
-					)
-					&& (player.is_gm
-						|| props.entity_id == player.player_character.id
-						|| props.entity_id?.startsWith('Relations/')
 					)" />
 			</Transition>
 			
@@ -1477,7 +1485,6 @@ import ToggleButton from './UI/ToggleButton.vue'
 				title="trait explanation"
 				v-if="trait.explanation &&
 					(
-						// (preferredColor == 'light' && !trait.notes) ||
 						[view_modes.Viewing, view_modes.Editing].includes(mode) ||
 						// mode == view_modes.Viewing ||
 						// mode == view_modes.Editing ||
@@ -1486,7 +1493,52 @@ import ToggleButton from './UI/ToggleButton.vue'
 				v-html="marked(trait_explanation ?? '')">
 			</div>
 
-			<div class="sfxs" v-if="(trait.sfxs && trait.sfxs?.length > 0) || show_sfxs">
+			<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0 && (mode != view_modes.Small || (positive_subtraits?.length ?? 0) > 0)">
+				<!-- <div class="section-icon">⪽</div> -->
+				<div class="sub-traits-list positive">
+					<template v-for="subtrait in positive_subtraits" :key="subtrait.traitSettingId">
+						<SubTrait v-if="subtrait.traitSettingId"
+							:trait_setting_id="subtrait.traitSettingId"
+							:editing_trait="mode == view_modes.Editing"
+							:edit_mode="props.edit_mode"
+							:mode="mode"
+							:entity_id="props.entity_id"
+							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
+							:parent_traitsetting_id="trait.traitSetting?.id ?? trait.traitSettingId"
+							@click_subtrait="click_subtrait(subtrait, true)"
+							@next_traitset="emit('next_traitset')"
+							@remove_subtrait="remove_subtrait(subtrait)" />
+					</template>
+				</div>
+				<div class="sub-traits-list neutral" v-if="mode != view_modes.Small">
+					<template v-for="subtrait in neutral_subtraits" :key="subtrait.traitSettingId">
+						<SubTrait v-if="subtrait.traitSettingId"
+							:trait_setting_id="subtrait.traitSettingId"
+							:editing_trait="mode == view_modes.Editing"
+							:edit_mode="props.edit_mode"
+							:mode="mode"
+							:entity_id="props.entity_id"
+							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
+							@click_subtrait="click_subtrait(subtrait)"
+							@remove_subtrait="remove_subtrait(subtrait)" />
+					</template>
+				</div>
+				<div class="sub-traits-list negative" v-if="mode != view_modes.Small">
+					<template v-for="subtrait in negative_subtraits" :key="subtrait.traitSettingId">
+						<SubTrait v-if="subtrait.traitSettingId"
+							:trait_setting_id="subtrait.traitSettingId"
+							:editing_trait="mode == view_modes.Editing"
+							:edit_mode="props.edit_mode"
+							:mode="mode"
+							:entity_id="props.entity_id"
+							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
+							@click_subtrait="click_subtrait(subtrait)"
+							@remove_subtrait="remove_subtrait(subtrait)" />
+					</template>
+				</div>
+			</div>
+
+			<div class="sfxs" v-if="mode != view_modes.Small && ((trait.sfxs && trait.sfxs?.length > 0) || show_sfxs)">
 				<!-- <div v-if="(trait.sfxs && trait.sfxs?.length > 0 && !expanded_sfx.id)" class="sfx-sparkles section-icon">✨</div> -->
 				<div class="sfx-list">
 					<template v-for="(sfx, i) in (mode == view_modes.Editing ? new_sfxs : trait.sfxs)" :key="sfx.id">
@@ -1519,51 +1571,6 @@ import ToggleButton from './UI/ToggleButton.vue'
 							@click="create_new_sfx"
 							v-if="new_sfx_name && new_sfx_description" />
 					</div>
-				</div>
-			</div>
-
-			<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0">
-				<!-- <div class="section-icon">⪽</div> -->
-				<div class="sub-traits-list positive">
-					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) > 0)" :key="subtrait.traitSettingId">
-						<SubTrait v-if="subtrait.traitSettingId"
-							:trait_setting_id="subtrait.traitSettingId"
-							:editing_trait="mode == view_modes.Editing"
-							:edit_mode="props.edit_mode"
-							:mode="mode"
-							:entity_id="props.entity_id"
-							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-							:parent_traitsetting_id="trait.traitSetting?.id ?? trait.traitSettingId"
-							@click_subtrait="click_subtrait(subtrait, true)"
-							@next_traitset="emit('next_traitset')"
-							@remove_subtrait="remove_subtrait(subtrait)" />
-					</template>
-				</div>
-				<div class="sub-traits-list neutral">
-					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) == 0)" :key="subtrait.traitSettingId">
-						<SubTrait v-if="subtrait.traitSettingId"
-							:trait_setting_id="subtrait.traitSettingId"
-							:editing_trait="mode == view_modes.Editing"
-							:edit_mode="props.edit_mode"
-							:mode="mode"
-							:entity_id="props.entity_id"
-							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-							@click_subtrait="click_subtrait(subtrait)"
-							@remove_subtrait="remove_subtrait(subtrait)" />
-					</template>
-				</div>
-				<div class="sub-traits-list negative">
-					<template v-for="subtrait in trait.subTraits.filter((x) => x.rating?.reduce((a, b) => a + b.number_rating, 0) < 0)" :key="subtrait.traitSettingId">
-						<SubTrait v-if="subtrait.traitSettingId"
-							:trait_setting_id="subtrait.traitSettingId"
-							:editing_trait="mode == view_modes.Editing"
-							:edit_mode="props.edit_mode"
-							:mode="mode"
-							:entity_id="props.entity_id"
-							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-							@click_subtrait="click_subtrait(subtrait)"
-							@remove_subtrait="remove_subtrait(subtrait)" />
-					</template>
 				</div>
 			</div>
 
@@ -1609,6 +1616,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 					<div class="label" v-if="!player.small_buttons">close</div>
 					<!-- {{ player.small_buttons ? '✖' : '✖ cancel' }} -->
 				</div>
+
 				<ButtonMinimal :function="ButtonTypes.TRASH" label="perma-delete"
 					class="remove-button"
 					@click.stop="deletion = true"
@@ -1647,7 +1655,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 		max-height: 100%;
 		/* overflow-y: auto; */
 		.traitset-name {
-			font-size: small;
+			font-size: .8em;
 		}
 		.descriptor {
 			display: flex;
@@ -1726,20 +1734,23 @@ import ToggleButton from './UI/ToggleButton.vue'
 			display: flex;
 			flex-direction: column;
 			gap: .2em;
-			padding: .4em 1em .4em 2em;
+			/* padding: .4em 1em .4em 2em; */
 			position: relative;
+			padding-left: 1.5em;
 			.section-icon {
 				position: absolute;
 				left: 10px;
-				top: 15px;
+				top: 50%;
+				transform: translateY(-50%);
 				font-size: 1.6em;
 				line-height: 0;
-				color: var(--color-highlight);
+				/* color: var(--color-highlight); */
 			}
 			.sub-traits-list {
 				display: flex;
+				/* flex-direction: column; */
 				justify-content: end;
-				gap: .4em 1em;
+				/* gap: .4em 1em; */
 				flex-wrap: wrap;
 			}
 		}
@@ -1844,9 +1855,13 @@ import ToggleButton from './UI/ToggleButton.vue'
 				}
 			}
 		}
+		&.viewing {
+			max-width: 100%;
+		}
 		&.editing {
 			border-color: var(--color-highlight);
 			width: 100%;
+			max-width: 100%;
 			display: flex;
 			flex-direction: column;
 			gap: 1em;
@@ -2016,16 +2031,17 @@ import ToggleButton from './UI/ToggleButton.vue'
 	.touch {
 		.trait {
 			/* height: 50vh; */
+			width: 100%;
 			.trait-inner {
 				overflow-y: visible;
 			}
 		}
 	}
-	.kbm {
+	/* .kbm {
 		.trait {
 			width: 100%;
 		}
-	}
+	} */
 	@keyframes moveGradient {
 		50% {
 			background-position: 100% 50%;
@@ -2035,18 +2051,18 @@ import ToggleButton from './UI/ToggleButton.vue'
 		.trait {
 			/* flex-grow: 1; */
 			scroll-snap-align: center;
-			width: 85%;
+			/* width: 85%; */
 			max-height: 90vh;
+			/* border-radius: 10px; */
+			text-shadow: none;
 			.trait-inner {
-				border-radius: 10px;
+				/* border-radius: 10px; */
 				height: 100%;
 				overflow-y: auto;
 				display: flex;
 				flex-direction: column;
 				justify-content: space-between;
 			}
-			border-radius: 10px;
-			text-shadow: none;
 			.descriptor {
 				/* padding: 0 1em; */
 				/* overflow: hidden; */
@@ -2091,7 +2107,7 @@ import ToggleButton from './UI/ToggleButton.vue'
 				font-size: .8em;
 				padding: 0.4em 4em;
 				color: var(--color-disabled);
-				background-image: linear-gradient(to bottom, var(--color-border) -100%, transparent 30%);
+				/* background-image: linear-gradient(to bottom, var(--color-border) -100%, transparent 30%); */
 			}
 			.notes-enter-active, .notes-leave-active {
 				transition: max-height .4s ease-out;
@@ -2116,12 +2132,15 @@ import ToggleButton from './UI/ToggleButton.vue'
 				margin-bottom: .4em; */
 				transform: translateY(-.4em) translateX(.4em);
 			}
-			.sub-traits {
+			/* .sub-traits {
+				border-top: 1px solid var(--color-border);
+			} */
+			.sfxs {
 				border-top: 1px solid var(--color-border);
 			}
 			.edit-buttons {
-				border-top: 1px solid var(--color-editing);
-				border-radius: 0 0 10px 10px;
+				border-top: 1px solid var(--color-border);
+				/* border-radius: 0 0 10px 10px; */
 				overflow: hidden;
 				.button-mnml {
 					background-color: transparent;
@@ -2154,7 +2173,8 @@ import ToggleButton from './UI/ToggleButton.vue'
 			&.with-statement {
 				/* font-size: .8em; */
 			}
-			&.inactive {
+			/* &.inactive { */
+			&.viewing {
 				&.positive {
 					&.d4:not(.empty) {
 						.trait-inner {
@@ -2162,12 +2182,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-positive-die-4) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-positive-die-4);
-						border-right: 1px solid var(--color-positive-die-4);
+						/* border-left: 1px solid var(--color-positive-die-4);
+						border-right: 1px solid var(--color-positive-die-4); */
 						border-color: var(--color-positive-die-4);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-4);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
@@ -2182,12 +2202,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-positive-die-6) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-positive-die-6);
-						border-right: 1px solid var(--color-positive-die-6);
+						/* border-left: 1px solid var(--color-positive-die-6);
+						border-right: 1px solid var(--color-positive-die-6); */
 						border-color: var(--color-positive-die-6);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-6);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
@@ -2202,12 +2222,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-positive-die-8) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-positive-die-8);
-						border-right: 1px solid var(--color-positive-die-8);
+						/* border-left: 1px solid var(--color-positive-die-8);
+						border-right: 1px solid var(--color-positive-die-8); */
 						border-color: var(--color-positive-die-8);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-8);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
@@ -2222,12 +2242,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-positive-die-10) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-positive-die-10);
-						border-right: 1px solid var(--color-positive-die-10);
+						/* border-left: 1px solid var(--color-positive-die-10);
+						border-right: 1px solid var(--color-positive-die-10); */
 						border-color: var(--color-positive-die-10);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-10);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
@@ -2242,12 +2262,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-positive-die-12) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-positive-die-12);
-						border-right: 1px solid var(--color-positive-die-12);
+						/* border-left: 1px solid var(--color-positive-die-12);
+						border-right: 1px solid var(--color-positive-die-12); */
 						border-color: var(--color-positive-die-12);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-12);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
@@ -2264,12 +2284,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-negative-die-4) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-negative-die-4);
-						border-right: 1px solid var(--color-negative-die-4);
+						/* border-left: 1px solid var(--color-negative-die-4);
+						border-right: 1px solid var(--color-negative-die-4); */
 						border-color: var(--color-negative-die-4);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-negative-die-4);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(45deg,
@@ -2284,12 +2304,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-negative-die-6) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-negative-die-6);
-						border-right: 1px solid var(--color-negative-die-6);
+						/* border-left: 1px solid var(--color-negative-die-6);
+						border-right: 1px solid var(--color-negative-die-6); */
 						border-color: var(--color-negative-die-6);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-negative-die-6);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(45deg,
@@ -2304,12 +2324,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-negative-die-8) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-negative-die-8);
-						border-right: 1px solid var(--color-negative-die-8);
+						/* border-left: 1px solid var(--color-negative-die-8);
+						border-right: 1px solid var(--color-negative-die-8); */
 						border-color: var(--color-negative-die-8);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-negative-die-8);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(45deg,
@@ -2324,12 +2344,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-negative-die-10) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-negative-die-10);
-						border-right: 1px solid var(--color-negative-die-10);
+						/* border-left: 1px solid var(--color-negative-die-10);
+						border-right: 1px solid var(--color-negative-die-10); */
 						border-color: var(--color-negative-die-10);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-negative-die-10);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(45deg,
@@ -2344,12 +2364,12 @@ import ToggleButton from './UI/ToggleButton.vue'
 								var(--color-negative-die-12) -100%,
 								var(--color-background-mute) 50%);
 						}
-						border-left: 1px solid var(--color-negative-die-12);
-						border-right: 1px solid var(--color-negative-die-12);
+						/* border-left: 1px solid var(--color-negative-die-12);
+						border-right: 1px solid var(--color-negative-die-12); */
 						border-color: var(--color-negative-die-12);
-						.sfxs {
+						/* .sfxs {
 							border-top: 1px solid var(--color-negative-die-12);
-						}
+						} */
 						&:hover {
 							.trait-inner {
 								background-image: linear-gradient(45deg,
@@ -2360,10 +2380,77 @@ import ToggleButton from './UI/ToggleButton.vue'
 					}
 				}
 			}
+			&.resource {
+				border-style: dashed;
+				border-color: var(--color-border);
+			}
+			&.active {
+				background-color: var(--color-highlight);
+				border-left: 1px solid var(--color-highlight);
+				border-right: 1px solid var(--color-highlight);
+				.sfxs {
+					border-top: 1px solid var(--color-highlight);
+				}
+				text-shadow: var(--text-shadow);
+				&.positive {
+					background-image: linear-gradient(235deg,
+						var(--color-highlight) -20%,
+						var(--color-background) 150%);
+				}
+				&.negative {
+					background-image: linear-gradient(45deg,
+						var(--color-highlight) -20%,
+						var(--color-background) 150%);
+				}
+			}
+			&.neutral, &.viewing {
+				/* flex-grow: 1; */
+				width: 100%;
+				height: 100%;
+				/* border-top: 1px solid var(--color-text);
+				border-bottom: 1px solid var(--color-text); */
+				padding-top: .4em;
+			}
+			&.editing {
+				background-image: linear-gradient(45deg,
+					var(--color-editing) -20%,
+					var(--color-background) 70%);
+				border-left: 1px solid var(--color-editing);
+				border-right: 1px solid var(--color-editing);
+				width: 100%;
+				height: 100%;
+				.statement.statement-edit {
+					font-size: 2em;
+				}
+				.sfxs {
+					border-top: 1px solid var(--color-editing);
+				}
+				.changed {
+					border: 1px solid red;
+				}
+				.edit-setting-buttons {
+					border-top: 1px solid var(--color-border);
+					border-left: 1px solid var(--color-border);
+					border-right: 1px solid var(--color-border);
+					border-top-left-radius: 10px;
+					border-top-right-radius: 10px;
+					background-color: transparent;
+					position: sticky;
+					top: 0;
+					z-index: 2;
+					.divider {
+						border-left: 1px solid var(--color-border);
+					}
+					.button-mnml.active {
+						background-color: var(--color-background-mute);
+					}
+				}
+			}
 			&.hidden {
 				opacity: .8;
 				.trait-inner {
-					box-shadow: inset 0 0 20px var(--color-disabled);
+					/* box-shadow: inset 0 0 20px var(--color-disabled); */
+					background-image: linear-gradient(45deg, var(--color-disabled) -80%, transparent 40%, transparent 80%, var(--color-disabled) 150%);
 					/* padding: 10px; */
 				}
 			}
@@ -2398,30 +2485,11 @@ import ToggleButton from './UI/ToggleButton.vue'
 				}
 			}
 		}
-		.trait.empty {
-			/* .trait-inner {
-				background-image: linear-gradient(45deg,
-					var(--color-background-soft) -100%,
-					var(--color-background) 50%);
-			}
-			border-left: 1px solid var(--color-background-soft);
-			border-right: 1px solid var(--color-background-soft);
-			border-color: var(--color-background-soft);
-			.sfxs {
-				border-top: 1px solid var(--color-background-soft);
-			}
-			&:hover {
-				.trait-inner {
-					background-image: linear-gradient(45deg,
-						var(--color-background-soft) -50%,
-						var(--color-background) 80%);
-				}
-			} */
-			/* text-shadow: var(--text-shadow); */
+		/* .trait.empty {
 			box-shadow: 0 0 10px var(--color-background-mute);
 			background-color: var(--color-background-mute);
-		}
-		.trait.challenge {
+		} */
+		/* .trait.challenge {
 			--border-width: 1px;
 			position: relative;
 			.trait-inner {
@@ -2463,83 +2531,17 @@ import ToggleButton from './UI/ToggleButton.vue'
 				background-position: 0 50%;
 				animation: moveGradient 2s alternate infinite;
 			}
-		}
-		.trait.resource {
-			border-style: dashed;
-			border-color: var(--color-border);
-		}
-		.trait.active {
-			background-color: var(--color-highlight);
-			border-left: 1px solid var(--color-highlight);
-			border-right: 1px solid var(--color-highlight);
-			.sfxs {
-				border-top: 1px solid var(--color-highlight);
-			}
-			text-shadow: var(--text-shadow);
-			&.positive {
-				background-image: linear-gradient(235deg,
-					var(--color-highlight) -20%,
-					var(--color-background) 150%);
-			}
-			&.negative {
-				background-image: linear-gradient(45deg,
-					var(--color-highlight) -20%,
-					var(--color-background) 150%);
-			}
-		}
-		.trait.editing {
-			background-image: linear-gradient(45deg,
-				var(--color-editing) -20%,
-				var(--color-background) 70%);
-			border-left: 1px solid var(--color-editing);
-			border-right: 1px solid var(--color-editing);
-			width: 100%;
-			height: 100%;
-			.statement.statement-edit {
-				font-size: 2em;
-			}
-			.sfxs {
-				border-top: 1px solid var(--color-editing);
-			}
-			.changed {
-				border: 1px solid red;
-			}
-			.edit-setting-buttons {
-				border-top: 1px solid var(--color-border);
-				border-left: 1px solid var(--color-border);
-				border-right: 1px solid var(--color-border);
-				border-top-left-radius: 10px;
-				border-top-right-radius: 10px;
-				background-color: transparent;
-				position: sticky;
-				top: 0;
-				z-index: 2;
-				.divider {
-					border-left: 1px solid var(--color-border);
-				}
-				.button-mnml.active {
-					background-color: var(--color-background-mute);
-				}
-			}
-		}
-		.viewing {
-			/* flex-grow: 1; */
-			width: 100%;
-			height: 100%;
-		}
-		.sfxs {
-			border-top: 1px solid var(--color-border);
-		}
+		} */
 	}
 	.light {
 		.trait {
 			/* margin: 1px 0; */
 			/* margin-bottom: .8em; */
-			border-top: 1px solid var(--color-border);
-			border-bottom: 1px solid var(--color-border);
+			/* border-top: 1px solid var(--color-border);
+			border-bottom: 1px solid var(--color-border); */
 			flex-grow: 1;
-			background-color: var(--color-background);
-			padding: 1em 0;
+			/* background-color: var(--color-background); */
+			/* padding: 1em 0; */
 			.descriptor {
 				flex-grow: 1;
 			}
@@ -2554,6 +2556,9 @@ import ToggleButton from './UI/ToggleButton.vue'
 				/* font-family: 'Courier New', Courier, monospace; */
 				font-family: 'Pacifico', 'Dancing Script', 'Bradley Hand', 'Reenie Script Personal Use', 'Great Vibes', 'Alex Brush', 'Snell Roundhand', 'Satisfy', 'Kaushan Script', 'Homemade Apple', 'Caveat', 'Tangerine', 'Permanent Marker', 'Architects Daughter', 'Shadows Into Light', 'Shadows Into Light Two', 'Dancing Script MT', 'Vivaldi', ' segmdl2', 'Material Icons', 'Material Icons Outlined', 'Material Icons Two Tone', 'Material Icons Round', 'Material Icons Sharp';
 				font-size: 2em;
+				margin-top: .1em;
+				line-height: .6em;
+				overflow: visible;
 				background-color: var(--color-background-soft);
 				color: var(--color-negative-die-10);
 				/* text-align: center; */
@@ -2582,9 +2587,10 @@ import ToggleButton from './UI/ToggleButton.vue'
 			}
 			&.hidden {
 				.descriptor {
-					background-color: var(--color-gm-light);
+					/* background-color: var(--color-gm-light);
 					color: var(--color-gm-light-text);
-					padding-left: 1em;
+					padding-left: 1em; */
+					border-left: 1em solid var(--color-gm-light);
 				}
 			}
 			&.small {
@@ -2641,13 +2647,13 @@ import ToggleButton from './UI/ToggleButton.vue'
 			&.with-statement {
 				.trait-name.label {
 					padding-top: .4em;
-					padding-left: 1em;
+					padding-left: 20px;
 				}
 			}
 			&.without-statement {
 				.trait-name.label {
-					font-size: 1.6em;
-					padding-left: 1em;
+					/* font-size: 1.6em; */
+					padding-left: 20px;
 				}
 			}
 			&.dim {

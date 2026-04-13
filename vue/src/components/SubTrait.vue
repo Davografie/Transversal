@@ -246,7 +246,7 @@
 			]"
 			@click.stop="click_subtrait"
 			@contextmenu="(e) => e.preventDefault()">
-		<div :class="editing ? 'editing' : 'neutral'">
+		<div class="sub-trait-inner" :class="editing ? 'editing' : 'neutral'">
 			<span v-if="trait.traitSetting?.fromEntity?.id">🔗</span>
 			<div class="trait-name-and-statement" :class="[
 					{ 'with-statement': (trait.statement ?? '') != ''},
@@ -309,25 +309,30 @@
 <style scoped>
 	.sub-trait {
 		overflow: hidden;
-		border: 1px solid var(--color-border);
-		.neutral {
-			display: flex;
-			height: 100%;
-			align-items: center;
-			text-align: right;
-			padding: 0 1em;
-			.with-statement {
-				.trait-name {
-					font-weight: bold;
-					/* font-size: .8em; */
-				}
-				.statement {
-					line-height: .8em;
-					padding-bottom: .4em;
-				}
+		/* border: 1px solid var(--color-border); */
+		.sub-trait-inner {
+			.trait-name-and-statement {
+				flex-grow: 1;
 			}
-			.rating {
-				margin-left: .4em;
+			&.neutral {
+				display: flex;
+				height: 100%;
+				align-items: center;
+				text-align: right;
+				padding: 0 1em;
+				.with-statement {
+					.trait-name {
+						font-weight: bold;
+						/* font-size: .8em; */
+					}
+					.statement {
+						line-height: .8em;
+						padding-bottom: .4em;
+					}
+				}
+				.rating {
+					margin-left: .4em;
+				}
 			}
 		}
 		&.editing {
@@ -386,10 +391,10 @@
 				font-weight: bold;
 			}
 		}
-		&.static {
+		/* &.static {
 			border-style: solid;
 			border-width: 1px;
-		}
+		} */
 		&.resource {
 			border-style: dashed;
 			border-width: 2px;
@@ -400,7 +405,12 @@
 <style>
 .dark {
 	.sub-trait {
-		border-radius: 30px;
+		flex-grow: 1;
+		.sub-trait-inner {
+			display: flex;
+			justify-content: space-between;
+		}
+		/* border-radius: 30px;
 		&.d4.negative {
 			box-shadow: inset 0 0 20px -6px var(--color-negative-die-4);
 			border-color: var(--color-negative-die-4);
@@ -470,7 +480,7 @@
 			&.editing {
 				background-image: linear-gradient(45deg, var(--color-positive-die-12) -60%, var(--color-background) 60%);
 			}
-		}
+		} */
 	}
 }
 .light {

@@ -6,7 +6,7 @@
 	import { useRouter, useRoute, RouterLink } from 'vue-router'
 	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef, useFullscreen } from '@vueuse/core'
 
-	import { usePlayerStore, input_methods } from '@/stores/PlayerStore'
+	import { usePlayerStore, input_methods, user_themes } from '@/stores/PlayerStore'
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
 	import { useSession } from '@/composables/Session'
 
@@ -32,7 +32,12 @@
 	const { width: windowWidth, height: windowHeight } = useWindowSize()
 	const preferredColor = usePreferredColorScheme()
 	watch(preferredColor, () => {
-		player.theme = preferredColor.value
+		if(player.user_theme == user_themes.Auto) {
+			player.theme = preferredColor.value
+		}
+		else {
+			player.theme = player.user_theme
+		}
 	}, { immediate: true })
 	const { height: dicepoolHeight } = useElementSize(dicepool)
 
@@ -137,16 +142,17 @@
 		// retrieve_small_location()
 		// location_image_link.value = '/assets/uploads/' + location.value.image?.path + '/original' + location.value.image?.ext
 		if(!player.input_method) {
-			if(player.orientation == 'vertical') {
-				player.input_method = input_methods.touch
-			}
-			else {
-				player.input_method = input_methods.kbm
-			}
+			// if(player.orientation == 'vertical') {
+			// 	player.input_method = input_methods.touch
+			// }
+			// else {
+			player.input_method = input_methods.kbm
+			// }
 		}
 		if(player.is_gm) {
 			set_dicepool_limit(dicepool_store.dicepool_limit)
 		}
+		toggleFullscreen()
 	})
 
 	// make sure that new users get redirected to settings
@@ -203,13 +209,13 @@
 	<div id="app-wrapper" :class="[
 				{ 'editing': player.editing },
 				triptych ? 'triptych' : 'landscape',
-				preferredColor,
+				player.theme,
 				player.is_gm ? 'gm' : 'player',
 				location_image_link ? 'has-image' : 'no-image',
 				view,
 				Object.keys(input_methods).find(key => input_methods[key] === player.input_method)
 			]"
-			:style="preferredColor == 'dark' ? { 'background-image': 'url(' + location_image_link + ')'} : ''"
+			:style="player.theme == 'dark' ? { 'background-image': 'url(' + location_image_link + ')'} : ''"
 			ref="app_wrapper_component">
 		<div id="toggle-fullscreen" @click="toggleFullscreen" class="button-mnml">
 			<span class="icon">🪟</span>

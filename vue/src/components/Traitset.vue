@@ -248,12 +248,12 @@
 	}
 
 	const dice_in_dicepool = computed(() => {
-		return traitset_dice(traitset.value.id).filter((d) => d.entityId == props.entity_id)
+		return traitset_dice(traitset.value.id).filter((d) => d.number_rating > 0 && d.entityId == props.entity_id)
 	})
 
 	const traits_in_dicepool: Ref<DieType[]> = computed(() => {
 		return [...new Set(traitset_dice(traitset.value.id)
-			.filter((d) => d.entityId == props.entity_id))]
+			.filter((d) => d.number_rating > 0 && d.entityId == props.entity_id))]
 	})
 
 	const pool_scaling_effect: Ref<number> = computed(() => {
@@ -593,7 +593,7 @@
 				{ 'relationships': props.relationship },
 				{ 'gm': traitset.entityTypes?.includes('gm') },
 				{ 'editing-traits': edit_mode },
-				{ 'full': limiter > 0 && traits_in_dicepool.length == limiter },
+				{ 'full': limiter > 0 && traits_in_dicepool.length >= limiter },
 			]"
 			:id="'ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + props.entity_id.substring(props.entity_id.indexOf('/') + 1)"
 			v-if="(
@@ -632,7 +632,7 @@
 					</span>
 				</div> -->
 
-				<span class="traitset-name header">
+				<span class="traitset-name">
 					{{ (traitset.name?.toUpperCase() ?? '') }}
 				</span>
 
@@ -790,6 +790,7 @@
 				<template class="not-highlighted-traits" v-if="show_traits && highlighted_traits.length == 0" v-for="trait in traits_to_display"
 						:key="trait.traitSettingId">
 					<Trait
+						class="traitset-trait"
 						:id="'ts-' + trait.traitSettingId + '-' + entity.key"
 						:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
 						:trait_id="trait.id"
@@ -824,7 +825,7 @@
 											.some((traitsettingId) => trait.subTraits?.some((st) => st.traitSettingId == traitsettingId))
 									)
 								)
-								|| traitset_dice(traitset.id).length < limiter
+								|| traits_in_dicepool.length < limiter
 								|| limiter == 0
 							)
 						" />
@@ -838,10 +839,11 @@
 				</template>
 				<div class="add-trait" v-if="
 							(
-								(player.is_gm && show_traits)
+								(player.is_gm && show_traits && !props.hide_title)
 								|| (
 									player.is_player
 									&& player.player_character.id == props.entity_id
+									&& (props.expanded || show_traits)
 								)
 								|| (props.relationship && props.extensible)
 								|| (props.location && props.extensible && !props.hide_title && show_traits)
@@ -961,13 +963,15 @@
 			position: sticky;
 			top: 0;
 			text-align: center;
-			font-size: large;
+			font-size: 1.2em;
 			cursor: pointer;
 			/* padding: .4em 0; */
 			justify-content: space-between;
 			display: flex;
 			z-index: 2;
 			gap: 1em;
+			max-width: 100vw;
+			overflow-x: hidden;
 			.trait-count {
 				width: 3em;
 				text-align: right;
@@ -1050,6 +1054,7 @@
 			position: relative;
 			padding-left: 1.5em;
 			border-bottom: 1px solid var(--color-border);
+			background-color: var(--color-background-mute);
 			display: flex;
 			flex-wrap: wrap;
 			font-size: 0.8em;
@@ -1239,9 +1244,10 @@
 			padding: 0;
 			justify-content: space-between;
 			.title {
-				font-weight: bold;
-				align-content: end;
 				flex-direction: column;
+				align-content: end;
+				justify-content: center;
+				font-weight: bold;
 				.big-limiter {
 					line-height: 1em;
 					font-size: 2em;
@@ -1302,6 +1308,9 @@
 				align-items: center;
 				overflow-x: hidden;
 				overflow-y: auto;
+				.traitset-trait {
+					width: 100%;
+				}
 				.add-trait {
 					width: 100%;
 					justify-content: end;
@@ -1324,14 +1333,14 @@
 			display: flex;
 			flex-direction: column;
 			flex-grow: 1;
-			border: 1px solid var(--color-border);
-			border-radius: 10px;
-			backdrop-filter: blur(5px);
-			box-shadow: inset 0 0 10px var(--color-background-mute);
+			/* border: 1px solid var(--color-border); */
+			/* border-radius: 10px; */
+			/* backdrop-filter: blur(5px); */
+			/* box-shadow: inset 0 0 10px var(--color-background-mute); */
 			.set-title {
 				letter-spacing: .1em;
 				&.extended {
-					background-color: var(--color-background);
+					background-color: var(--color-background-mute);
 					/* color: var(--color-); */
 				}
 				.limiter {
@@ -1347,6 +1356,9 @@
 				overflow: hidden;
 				display: flex;
 				flex-direction: column;
+				/* align-items: center; */
+				background-color: var(--color-background-mute);
+				box-shadow: inset 0 0 30px var(--color-background-mute);
 				.traitset-info {
 					text-shadow: var(--text-shadow);
 					.traitset-score {
@@ -1364,10 +1376,9 @@
 				.entity-traits {
 					/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
 					display: flex;
-					/* max-height: calc(100% - 2.4em); */
-					/* overflow: hidden; */
 					padding: .2em;
 					gap: .4em;
+					/* background-color: var(--color-background-mute); */
 					.add-trait {
 						justify-content: end;
 						scroll-snap-align: end;
@@ -1397,9 +1408,11 @@
 			}
 			&.active {
 				.set-title {
-					background-color: var(--color-background-soft);
+					background-color: var(--color-background);
 					text-shadow: none;
-					/* font-size: 2em; */
+					.title {
+						font-size: 1.4em;
+					}
 				}
 			}
 			&.inactive {
@@ -1470,12 +1483,12 @@
 				}
 			}
 			.entity-traits {
-				background-color: var(--color-border);
+				background-color: var(--color-background);
 				display: flex;
 				flex-direction: column;
 				.add-trait {
 					width: 100%;
-					background-color: var(--color-background);
+					/* background-color: var(--color-background); */
 					color: var(--color-text);
 					/* justify-content: center; */
 				}
@@ -1522,7 +1535,7 @@
 	.triptych {
 		.traitset.inactive.next {
 			position: sticky;
-			bottom: -50px;
+			bottom: 0;
 			z-index: 1;
 		}
 	}

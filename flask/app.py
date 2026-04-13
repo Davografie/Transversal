@@ -3235,6 +3235,11 @@ class Entity(Interface):
 			if traitset_id not in unique_traitsets:
 				unique_traitsets.append(traitset_id)
 		# logger.debug(f"Entity\n\tresolve_traitsets:\n\t\tfiltered to {len(unique_traitsets)} trait sets")
+
+		# get all traitsets, so that we can put the relationships traitset in the right sorting location
+		all_traitsets = db.collection('Traitsets').all()
+		all_traitsets = sorted(all_traitsets, key=lambda ts: ts.get('order'))
+		unique_traitsets = [ts.get('_id') for ts in all_traitsets if ts.get('_id') in unique_traitsets]
 		
 		# retrieve unpopulated sets, filtered by location
 		query = f"""FOR set IN Traitsets

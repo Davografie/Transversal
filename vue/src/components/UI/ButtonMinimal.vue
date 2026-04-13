@@ -65,17 +65,18 @@
 <style>
 	.dark {
 		.minimal-button {
-			background-color: var(--color-background-mute);
-			backdrop-filter: blur(5px);
+			/* background-color: var(--color-background-mute); */
+			/* backdrop-filter: blur(5px); */
 			text-shadow: var(--text-shadow);
 			.icon {
-				/* width: 1.4em; */
-				/* height: 1.4em; */
+				width: 1em;
+				height: 1em;
 			}
 			.label {
 			}
 			&.active {
-				background-color: var(--color-background-mute);
+				text-shadow: var(--text-glow);
+				/* background-color: var(--color-background-mute); */
 			}
 		}
 	}

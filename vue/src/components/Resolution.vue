@@ -80,7 +80,7 @@
 	.resolution {
 		padding: .4em .6em;
 		.player {
-			font-size: xx-small;
+			font-size: .8em;
 		}
 		.result {
 			display: flex;

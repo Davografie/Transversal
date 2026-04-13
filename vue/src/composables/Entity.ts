@@ -311,7 +311,7 @@ export function useEntity(init?: Entity, entity_id?: string) {
 					})
 				})
 				entity.value = {
-					...entity.value,
+					// ...entity.value,
 					...result.data.entities[0],
 					"traitsets": traitsets
 				}

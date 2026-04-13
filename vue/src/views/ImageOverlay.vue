@@ -18,9 +18,9 @@ const playerStore = usePlayerStore();
 	left: 0;
 	width: 100vw;
 	height: 100vh;
-	background-size: contain;
+	/* background-size: contain;
 	background-repeat: no-repeat;
-	background-position: center;
+	background-position: center; */
 	z-index: 11; /* above all */
 	cursor: pointer;
 	#image-name {
@@ -72,10 +72,10 @@ const playerStore = usePlayerStore();
 	#image-overlay {
 		#image-name {
 			/* transform: translateX(-50%) translateY(-2em); */
-			padding-bottom: .4em;
+			padding-bottom: .8em;
 		}
 		#image-img {
-			transform: translateX(-50%) translateY(-20em);
+			transform: translateX(-50%) translateY(-70%);
 		}
 	}
 }

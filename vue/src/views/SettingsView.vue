@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { ref, computed, watch, nextTick } from 'vue'
 	import type { Ref } from 'vue'
-	import { templateRef, useScroll } from '@vueuse/core'
+	import { templateRef, useScroll, usePreferredColorScheme } from '@vueuse/core'
 
 	import { useRoute, useRouter, RouterLink } from 'vue-router'
 	
@@ -9,7 +9,7 @@
 	import { usePlayer } from '@/composables/Player'
 	import type { Player as PlayerType } from '@/interfaces/Types'
 
-	import { usePlayerStore, input_methods } from '@/stores/PlayerStore'
+	import { usePlayerStore, input_methods, user_themes } from '@/stores/PlayerStore'
 	import { useDicepool } from '@/composables/Dicepool'
 	import { useSession } from '@/composables/Session'
 
@@ -177,6 +177,16 @@
 	function switch_input(new_input: input_methods) {
 		playerStore.input_method = new_input
 	}
+	function switch_theme(new_theme: user_themes) {
+		playerStore.user_theme = new_theme
+		if(new_theme != user_themes.Auto) {
+			playerStore.theme = new_theme
+		}
+		else {
+			const preferredColor = usePreferredColorScheme()
+			playerStore.theme = preferredColor.value
+		}
+	}
 </script>
 
 <template>
@@ -269,6 +279,18 @@
 						</button>
 					</template>
 				</div>
+				<div class="setting" id="theme-switcher">
+					<label for="theme_switcher">theme</label>
+					<template v-for="theme in Object.entries(user_themes)">
+						<button class="button"
+								:value="theme"
+								:disabled="!theme"
+								@click="switch_theme(theme[1])"
+								:class="{ 'active': playerStore.user_theme == theme[1]}">
+							{{ theme[1] }}
+						</button>
+					</template>
+				</div>
 				<div v-if="playerStore.is_gm" class="setting dicepool-limit-slider">
 					<label>dicepool limit</label>
 					<div id="dicepool-limit">
@@ -347,6 +369,7 @@
 		}
 		#settings-container {
 			/* width: fit-content; */
+			position: relative;
 			height: 100vh;
 			text-align: center;
 			/* width: calc(100vw - 140px); */
@@ -519,17 +542,16 @@
 					text-align: center;
 					/* transform: translateX(1em); */
 					position: relative;
-					&::after {
+					/* &::after {
 						content: "";
 						width: 1em;
 						height: 100%;
 						position: absolute;
 						right: -.3em;
 						top: 0;
-						/* top: 50%; */
 						background-color: var(--color-highlight);
 						border-radius: 0 10px 10px 0;
-					}
+					} */
 				}
 			}
 		}
