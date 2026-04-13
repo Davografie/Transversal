@@ -197,6 +197,7 @@
 	retrieve_traits()
 	const show_subtraits = ref(false)
 	const new_subtraits = ref<TraitType[]>([])
+	const new_subtraitsets = ref<TraitsetType[]>([])
 	const show_linking_subtraits = ref(false)
 	function toggle_show_subtraits() {
 		retrieve_traitsets()
@@ -219,21 +220,28 @@
 	}
 
 	async function toggle_subtraitset(ts: TraitsetType) {
+		console.log("toggling possible subtraitset: ", ts)
+		if(trait.value.possibleSubTraitsets?.map(psts => psts.id).includes(ts.id)) {
+			new_subtraitsets.value = trait.value.possibleSubTraitsets?.filter(psts => psts.id != ts.id) ?? []
+		}
+		else {
+			new_subtraitsets.value = [...trait.value.possibleSubTraitsets ?? [], ts]
+		}
 		if(ts.traits?.every(t => new_subtraits.value.map(x => x.id).includes(t.id))) {
 			new_subtraits.value = new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id))
 		}
-		else {
-			new_subtraits.value = [
-				...new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id)),
-				...ts.traits ?? []
-			]
-		}
+		// else {
+		// 	new_subtraits.value = [
+		// 		...new_subtraits.value.filter(x => !ts.traits?.map(y => y.id).includes(x.id)),
+		// 		...ts.traits ?? []
+		// 	]
+		// }
 		new_subtraits.value = [...new Set(new_subtraits.value)]
 
 		await mutate_trait({
-			possibleSubTraits: new_subtraits.value.map(x => x.id)
+			possibleSubTraits: new_subtraits.value.map(x => x.id),
+			possibleSubTraitsets: new_subtraitsets.value.map(x => x.id)
 		})
-		// retrieve_trait()
 	}
 
 	/* POSSIBLE SFXS */

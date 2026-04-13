@@ -152,7 +152,7 @@
 		if(player.is_gm) {
 			set_dicepool_limit(dicepool_store.dicepool_limit)
 		}
-		toggleFullscreen()
+		// toggleFullscreen()
 	})
 
 	// make sure that new users get redirected to settings

@@ -134,6 +134,7 @@ export interface Trait {
     traitSetting?: TraitSetting
     subTraits?: Trait[]
     possibleSubTraits?: Trait[]
+    possibleSubTraitsets?: Traitset[]
     possibleSfxs?: SFX[]
     inheritable?: boolean
     entities?: Entity[]
@@ -152,6 +153,7 @@ export interface TraitInput {
     ratingType?: string
     rating?: string[]
     possibleSubTraits?: string[]
+    possibleSubTraitsets?: string[]
     possibleSfxs?: string[]
     available_sfxs?: string[]
     sfxs?: string[]

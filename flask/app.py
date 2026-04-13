@@ -313,7 +313,7 @@ def find_docs(collection_name: str, query: dict):
 	redis_key = f"find:{collection_name}:{revision}:{query_hash}"
 	if r.exists(redis_key):
 		# collection has not changed, retrieve result from Redis
-		logger.debug("Collection has not changed, retrieving result from Redis")
+		# logger.debug("Collection has not changed, retrieving result from Redis")
 		result = [json.loads(doc) for doc in r.lrange(redis_key, 0, -1)]
 		result = list(filter(lambda x: x != {}, result))
 		return result
@@ -784,10 +784,12 @@ class SFX(ObjectType):
 	description = String()
 	traits = List(lambda: Trait)
 
+	@classmethod
 	def _hydrate_sfx(cls, parent, info):
-		doc = get_doc_by_id('SFXs', parent.id)
-		parent.name = doc.get('name')
-		parent.description = doc.get('description')
+		if parent.id is not None:
+			doc = get_doc_by_id('SFXs', parent.id)
+			parent.name = doc.get('name')
+			parent.description = doc.get('description')
 
 	def resolve_name(parent, info):
 		if not parent.name:
@@ -1354,6 +1356,7 @@ class Trait(ObjectType):
 
 	sub_traits = List(lambda: Trait)
 	possible_sub_traits = List(lambda: Trait)
+	possible_sub_traitsets = List(lambda: Traitset)
 
 	inheritable = Boolean()
 
@@ -1675,28 +1678,58 @@ class Trait(ObjectType):
 		return [Trait(id=doc.get('_to'), trait_setting_id=doc.get('_id')) for doc in result]
 
 	def resolve_possible_sub_traits(parent, info):
-		if parent.id.startswith('Traits/') and (possible_sub_traits := get_doc_by_id('Traits', parent.id).get('possible_sub_traits')):
+		if parent.id.startswith('Traits/'):# and (possible_sub_traits := get_doc_by_id('Traits', parent.id).get('possible_sub_traits')):
+			trait = get_doc_by_id('Traits', parent.id)
 			result = []
+			added_subtrait_ids = []
+
+			# individual sub-traits
+			possible_sub_traits = trait.get('possible_sub_traits') or []
 			for sub_trait in possible_sub_traits:
 				traitset_id = get_doc_by_id('Traits', sub_trait).get('traitset')
-				# sub-traitsets
+
+				# traitsets specifically for sub-traits
 				if 'subtrait' in get_doc_by_id('Traitsets', traitset_id).get('entity_types'):
 					result.append(Trait(id=sub_trait))
-				# entity traits
+					added_subtrait_ids.append(sub_trait)
+
+				# shortcut traits
 				elif info.context.get('entity_id'):
-					traits = find_docs('TraitSettings', { '_from': info.context.get('entity_id'), '_to': sub_trait })
+					shortcut_traits = find_docs('TraitSettings', { '_from': info.context.get('entity_id'), '_to': sub_trait })
 					entity = get_doc_by_id('Entities', info.context.get('entity_id'))
-					traits = filter_trait_settings_by_location(traits, retrieve_location(entity).get('_id'))
-					for trait in traits:
-						result.append(Trait(id=trait.get('_to'), trait_setting_id=trait.get('_id')))
+					shortcut_traits = filter_trait_settings_by_location(shortcut_traits, retrieve_location(entity).get('_id'))
+					for shortcut_trait in shortcut_traits:
+						result.append(Trait(id=shortcut_trait.get('_to'), trait_setting_id=shortcut_trait.get('_id')))
+				
+				# also shortcut traits, but when entity_id is not available
 				elif info.context.get('trait_setting_id'):
 					entity_id = get_doc_by_id('TraitSettings', info.context.get('trait_setting_id')).get('_from')
-					traits = find_docs('TraitSettings', { '_from': entity_id, '_to': sub_trait })
-					for trait in traits:
-						result.append(Trait(id=trait.get('_to'), trait_setting_id=trait.get('_id')))
+					shortcut_traits = find_docs('TraitSettings', { '_from': entity_id, '_to': sub_trait })
+					for shortcut_trait in shortcut_traits:
+						result.append(Trait(id=shortcut_trait.get('_to'), trait_setting_id=shortcut_trait.get('_id')))
 				else:
 					result.append(Trait(id=sub_trait))
+			
+			# entire sub-traitsets
+			logger.debug(f"trait: {trait}")
+			possbile_sub_traitsets = trait.get('possible_sub_traitsets') or []
+			logger.debug(f"possible_sub_traitsets: {', '.join(possbile_sub_traitsets)}")
+			for sub_traitset in possbile_sub_traitsets:
+				# find every trait in the traitset and add it if its not already there
+				sub_traits = find_docs('Traits', {'traitset': sub_traitset})
+				logger.debug(f"sub_traitset: {sub_traitset},\nsub_traits: {', '.join([_trait.get('_id') for _trait in sub_traits])},\nadded_subtrait_ids: {', '.join(added_subtrait_ids)}")
+				for sub_trait in sub_traits:
+					if sub_trait.get('_id') not in [trait_id for trait_id in added_subtrait_ids]:
+						result.append(Trait(id=sub_trait.get('_id')))
+			
 			return result
+		else:
+			logger.error(f"can't retrieve possible subtraits for parent.id: {parent.id}")
+			return []
+
+	def resolve_possible_sub_traitsets(parent, info):
+		if parent.id.startswith('Traits/') and (possible_sub_traitsets := get_doc_by_id('Traits', parent.id).get('possible_sub_traitsets')):
+			return [Traitset(id=traitset) for traitset in possible_sub_traitsets]
 		else:
 			return []
 
@@ -1707,6 +1740,7 @@ class TraitInput(InputObjectType):
 	required_traits = List(ID, required=False)
 	location_restricted = Boolean(required=False)
 	possible_sub_traits = List(ID, required=False)
+	possible_sub_traitsets = List(ID, required=False)
 	possible_sfxs = List(ID, required=False)
 	inheritable = Boolean(required=False)
 
@@ -1792,8 +1826,10 @@ class MutateTrait(Mutation):
 	trait = Field(Trait)
 
 	def mutate(root, info, trait_id=None, trait_input=None):
-		"""either change trait defaults, or change trait settings for an entity"""
+
+		logger.debug(f"updating trait {trait_id} with {trait_input}")
 		trait = get_doc_by_id('Traits', trait_id)
+
 		if trait_input is not None:
 			if trait_input.get('required_traits') is not None:
 				for required_trait in trait_input.get('required_traits'):
