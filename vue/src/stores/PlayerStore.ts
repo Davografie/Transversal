@@ -135,7 +135,7 @@ export const usePlayerStore = defineStore(
 			}
 		})
 
-		const perspective_id = ref<string>('Entities/1')
+		const perspective_id = ref<string|undefined>()
 		const {
 			entity: perspective,
 			set_entity_id: set_perspective_id,
@@ -162,7 +162,7 @@ export const usePlayerStore = defineStore(
 			// activate_entity(perspective_id.value)
 			if(new_perspective_id == "Entities/1" && perspective.value.location) {
 				await set_entity_location(new_perspective_id, perspective.value.location.id)
-				await retrieve_perspective()
+				await retrieve_perspective('network-only')
 			}
 			else {
 				await retrieve_perspective()
@@ -263,17 +263,17 @@ export const usePlayerStore = defineStore(
 		onMounted(() => {
 			mounted.value = true
 			// retrieve_the_entity()
-			if(player_id.value && player.value.id != player_id.value) {
+			if(player_id.value && player_id.value != player.value.id) {
 				console.log("retrieving player " + player_id.value)
 				set_player_id(player_id.value)
 				retrieve_player()
 			}
-			if(perspective_id.value && perspective.value.id != perspective_id.value && is_gm.value) {
+			if(perspective_id.value && perspective_id.value != perspective.value.id && is_gm.value) {
 				console.log("retrieving perspective " + perspective_id.value)
 				set_perspective(perspective_id.value)
 				// retrieve_perspective()
 			}
-			if(player_character_id.value && player_character.value.id != player_character_id.value && is_player.value) {
+			if(player_character_id.value && player_character_id.value != player_character.value.id && is_player.value) {
 				console.log("retrieving character " + player_character_id.value)
 				set_character_id(player_character_id.value)
 				retrieve_character()

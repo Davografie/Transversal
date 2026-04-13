@@ -71,16 +71,6 @@
 	)
 
 	const {
-		traits,
-		retrieve_potential_traits
-	} = useTraitList(
-		undefined,
-		props.traitset_id,
-		props.entity_id,
-		true
-	)
-
-	const {
 		traits: all_traits,
 		retrieve_potential_traits: retrieve_all_traits
 	} = useTraitList(
@@ -160,7 +150,59 @@
 
 	const { location, retrieve_parents } = useLocation(undefined, props.location_key)
 
+
+	// TRAIT ADDING
+	const {
+		traits,
+		retrieve_potential_traits
+	} = useTraitList(
+		undefined,
+		props.traitset_id,
+		props.entity_id,
+		true
+	)
+
+	const adding_trait: Ref<boolean> = ref(false)
+	const search_potential_traits_visible = ref(false)
+	const trait_search: Ref<string> = ref("")
 	const add_multiple_traits = ref(false)
+	const highlighted_potential_trait = ref<TraitType|undefined>()
+	
+	function toggle_add_trait() {
+		retrieve_default_settings()
+		if(adding_trait.value) {
+			adding_trait.value = false
+			trait_search.value = ""
+			add_multiple_traits.value = false
+		}
+		else {
+			retrieve_potential_traits('network-only')
+			emit('reset_scroll')
+			retrieve_all_traits()
+			retrieve_parents()
+			adding_trait.value = true
+		}
+	}
+
+	const potential_traits: Ref<TraitType[]> = computed(() => {
+		return traits.value.filter(t => (
+			traitset.value.duplicates ?
+				true :
+				!traitset.value.traits?.map(x => x.id).includes(t.id)
+			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
+	})
+
+	function randomize_potential_trait() {
+		let trait_list = []
+		for(const potential_trait of potential_traits.value) {
+			if(potential_trait.randomWeight) {
+				for(let i = 0; i < potential_trait.randomWeight; i++) {
+					trait_list.push(potential_trait)
+				}
+			}
+		}
+		highlighted_potential_trait.value = trait_list[Math.floor(Math.random() * trait_list.length)]
+	}
 
 	async function assign_trait_to_entity(trait: TraitType) {
 		let new_trait: TraitType|null|undefined = null
@@ -199,25 +241,6 @@
 					scroll_to_trait(new_trait)
 				}
 			}, 200)
-		}
-	}
-
-	const adding_trait: Ref<boolean> = ref(false)
-	const trait_search: Ref<string> = ref("")
-	
-	function toggle_add_trait() {
-		retrieve_default_settings()
-		if(adding_trait.value) {
-			adding_trait.value = false
-			trait_search.value = ""
-			add_multiple_traits.value = false
-		}
-		else {
-			retrieve_potential_traits('network-only')
-			emit('reset_scroll')
-			retrieve_all_traits()
-			retrieve_parents()
-			adding_trait.value = true
 		}
 	}
 
@@ -543,14 +566,6 @@
 			adding_trait.value = false
 		}
 	}
-	const potential_traits = computed(() => {
-		return traits.value.filter(t => (
-			traitset.value.duplicates ?
-				true :
-				!traitset.value.traits?.map(x => x.id).includes(t.id)
-			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
-	})
-	const search_potential_traits_visible = ref(false)
 	
 	const filter = ref('')
 	const filtering = ref(false)
@@ -804,7 +819,7 @@
 						:edit_mode="edit_mode"
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
-						:mode="edit_mode ? view_modes.Editing : view_modes.Small"
+						:mode="edit_mode ? view_modes.Editing : player.is_player ? view_modes.Small : view_modes.Neutral"
 						@refetch="retrieve_traitset('network-only')"
 						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
@@ -872,6 +887,10 @@
 						<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
 						<div class="label">adding {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
 					</div>
+					<div class="button-mnml randomize" @click="randomize_potential_trait">
+						<div class="icon">🎲</div>
+						<div class="label">random trait</div>
+					</div>
 					<div class="trait-search" v-if="player.is_gm || potential_traits.length == 0">
 						<input class="trait-search-query" type="text" placeholder="find trait"
 							v-model="trait_search" autocomplete="off" />
@@ -898,10 +917,13 @@
 				<div class="trait-list">
 					<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
 						<div class="button potential-trait"
-								:class="[trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
+								:class="[
+									trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
 										trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn',
 									trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating.map((r) => r.number_rating)[0] > 0 ?
-										'positive' : 'negative']"
+										'positive' : 'negative',
+									{ 'highlighted': highlighted_potential_trait?.id == trait.id }
+								]"
 								@click="assign_trait_to_entity(trait)"
 								@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
 								v-touch:hold="() => toggle_editing_potential_trait(null, trait.id)"
@@ -1173,6 +1195,10 @@
 						.trait-explanation {
 							font-size: .8em;
 						}
+					}
+					&.highlighted .trait-description {
+						background-color: var(--color-highlight);
+						color: var(--color-highlight-text);
 					}
 				}
 				.potential-trait.dn {

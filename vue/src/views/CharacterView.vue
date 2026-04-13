@@ -475,6 +475,11 @@
 	}
 
 	const refresh_counter = ref(0)
+	function refresh_entity() {
+		player.retrieve_perspective('network-only')
+		// retrieve_full_entity('network-only')
+		refresh_counter.value++
+	}
 
 	// CONTROLS END
 
@@ -862,7 +867,7 @@
 
 					<div id="refresh-entity" class="button-mnml"
 						title="refresh entity" :key="refresh_counter"
-						@click="player.retrieve_perspective('network-only'); refresh_counter++">
+						@click="refresh_entity">
 						<div class="icon">🔄</div>
 						<div class="label" v-if="!player.small_buttons">refresh</div>
 					</div>

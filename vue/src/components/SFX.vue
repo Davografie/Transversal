@@ -36,9 +36,7 @@
 
     function click_card() {
         console.log('click card')
-        if(player.editing && !props.editing) return
-        if(props.editing) show_description.value = !show_description.value
-        if(props.adding) show_description.value = !show_description.value
+        if(props.editing || props.adding) show_description.value = !show_description.value
         if(show_description.value) {
 			emit('collapse')
 		} else {

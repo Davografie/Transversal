@@ -140,7 +140,7 @@
 		// }
 		// else 
 		if (mode.value == view_modes.Viewing) {
-			mode.value = view_modes.Small
+			mode.value = props.mode ?? view_modes.Small
 		}
 		// else if (mode.value == view_modes.Small) {
 		else if (mode.value != view_modes.Editing) {
@@ -713,7 +713,12 @@
 	// notes are truncated when mode = small, returns marked
 	const rendered_notes = computed(() => {
 		if (!trait.value.notes) return ''
-		// if (mode.value == view_modes.Small && trait.value.notes.length > 55) return marked.parse(trait.value.notes.substring(0, 50) + '...')
+		if (mode.value == view_modes.Neutral && trait.value.notes.length > 200) {
+			return marked.parse(
+				trait.value.notes.substring(0, 185) + '... +'
+				+ trait.value.notes.match(/\w+/g)?.length + ' words'
+			)
+		}
 		return marked.parse(trait.value.notes)
 	})
 
@@ -1375,7 +1380,8 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 					&& (
 						mode != view_modes.Small ||
 						!trait.statement
-					)" />
+					)
+					&& !(player.is_player && trait.traitSetting?.fromEntity?.id != player.player_character_id)" />
 			</Transition>
 			
 			<div class="edit-trait" v-if="mode == view_modes.Editing">
@@ -1502,6 +1508,19 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 
 			<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0 && (mode != view_modes.Small || (positive_subtraits?.length ?? 0) > 0)">
 				<!-- <div class="section-icon">⪽</div> -->
+				<div class="sub-traits-list neutral" v-if="mode != view_modes.Small">
+					<template v-for="subtrait in neutral_subtraits" :key="subtrait.traitSettingId">
+						<SubTrait v-if="subtrait.traitSettingId"
+							:trait_setting_id="subtrait.traitSettingId"
+							:editing_trait="mode == view_modes.Editing"
+							:edit_mode="props.edit_mode"
+							:mode="mode"
+							:entity_id="props.entity_id"
+							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
+							@click_subtrait="click_subtrait(subtrait)"
+							@remove_subtrait="remove_subtrait(subtrait)" />
+					</template>
+				</div>
 				<div class="sub-traits-list positive">
 					<template v-for="subtrait in positive_subtraits" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
@@ -1514,19 +1533,6 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 							:parent_traitsetting_id="trait.traitSetting?.id ?? trait.traitSettingId"
 							@click_subtrait="click_subtrait(subtrait, true)"
 							@next_traitset="emit('next_traitset')"
-							@remove_subtrait="remove_subtrait(subtrait)" />
-					</template>
-				</div>
-				<div class="sub-traits-list neutral" v-if="mode != view_modes.Small">
-					<template v-for="subtrait in neutral_subtraits" :key="subtrait.traitSettingId">
-						<SubTrait v-if="subtrait.traitSettingId"
-							:trait_setting_id="subtrait.traitSettingId"
-							:editing_trait="mode == view_modes.Editing"
-							:edit_mode="props.edit_mode"
-							:mode="mode"
-							:entity_id="props.entity_id"
-							:parent_traitset_id="trait.traitsetId ?? trait.traitset?.id"
-							@click_subtrait="click_subtrait(subtrait)"
 							@remove_subtrait="remove_subtrait(subtrait)" />
 					</template>
 				</div>
@@ -1556,7 +1562,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 							@remove="remove_sfx(sfx.id)"
 							:editing="mode == view_modes.Editing"
 							:adding="false"
-							:expanded="mode != view_modes.Small || expanded_sfx.id == sfx.id" />
+							:expanded="mode != view_modes.Neutral || expanded_sfx.id == sfx.id" />
 							<!-- v-if="expanded_sfx.id ? sfx.id == expanded_sfx.id : true" /> -->
 						<!-- <span class="sfx-divider" v-if="(i < (trait.sfxs?.length ?? 0) - 1) && !expanded_sfx.id">/</span> -->
 					</template>
@@ -2049,11 +2055,6 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			width: 100%;
 		}
 	} */
-	@keyframes moveGradient {
-		50% {
-			background-position: 100% 50%;
-		}
-	}
 	.dark {
 		.trait {
 			/* flex-grow: 1; */
@@ -2062,6 +2063,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			max-height: 90vh;
 			/* border-radius: 10px; */
 			text-shadow: none;
+			/* border-bottom: 1px solid var(--color-border); */
 			.trait-inner {
 				/* border-radius: 10px; */
 				height: 100%;
@@ -2142,30 +2144,33 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			/* .sub-traits {
 				border-top: 1px solid var(--color-border);
 			} */
-			.sfxs {
+			/* .sfxs {
 				border-top: 1px solid var(--color-border);
-			}
+			} */
 			.edit-buttons {
 				border-top: 1px solid var(--color-border);
 				/* border-radius: 0 0 10px 10px; */
 				overflow: hidden;
 				.button-mnml {
 					background-color: transparent;
+					color: var(--color-text);
 				}
 				.play-button {
-					box-shadow: inset 0 0 80px var(--color-highlight);
+					box-shadow: inset 0 0 80px var(--color-highlight-mute);
 					text-shadow: 0 0 20px var(--color-highlight);
 				}
 				.save-button {
 					box-shadow: inset 0 0 80px var(--color-highlight);
 					text-shadow: 0 0 20px var(--color-highlight);
+					color: var(--color-highlight-text);
 				}
 				.save-temp-button {
 					box-shadow: inset 0 0 80px var(--color-editing);
 					text-shadow: 0 0 20px var(--color-editing);
+					color: var(--color-editing-text);
 				}
 				.edit-button {
-					box-shadow: inset 0 0 80px var(--color-editing);
+					box-shadow: inset 0 0 80px var(--color-editing-mute);
 					text-shadow: 0 0 20px var(--color-editing);
 				}
 				.cancel-button {
@@ -2187,7 +2192,8 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-4) -100%,
-								var(--color-background-mute) 50%);
+								transparent 50%,
+								var(--color-background-mute) 0%);
 						}
 						/* border-left: 1px solid var(--color-positive-die-4);
 						border-right: 1px solid var(--color-positive-die-4); */
@@ -2195,19 +2201,20 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-4);
 						} */
-						&:hover {
+						/* &:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
 									var(--color-positive-die-4) -50%,
 									var(--color-background) 80%);
 							}
-						}
+						} */
 					}
 					&.d6:not(.empty) {
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-6) -100%,
-								var(--color-background-mute) 50%);
+								transparent 50%,
+								var(--color-background-mute) 0%);
 						}
 						/* border-left: 1px solid var(--color-positive-die-6);
 						border-right: 1px solid var(--color-positive-die-6); */
@@ -2215,19 +2222,21 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-6);
 						} */
-						&:hover {
+						/* &:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
 									var(--color-positive-die-6) -50%,
-									var(--color-background) 80%);
+									transparent 45%,
+									var(--color-background) 0%);
 							}
-						}
+						} */
 					}
 					&.d8:not(.empty) {
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-8) -100%,
-								var(--color-background-mute) 50%);
+								transparent 50%,
+								var(--color-background-mute) 0%);
 						}
 						/* border-left: 1px solid var(--color-positive-die-8);
 						border-right: 1px solid var(--color-positive-die-8); */
@@ -2235,19 +2244,20 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-8);
 						} */
-						&:hover {
+						/* &:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
 									var(--color-positive-die-8) -50%,
 									var(--color-background) 80%);
 							}
-						}
+						} */
 					}
 					&.d10:not(.empty) {
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-10) -100%,
-								var(--color-background-mute) 50%);
+								transparent 50%,
+								var(--color-background-mute) 0%);
 						}
 						/* border-left: 1px solid var(--color-positive-die-10);
 						border-right: 1px solid var(--color-positive-die-10); */
@@ -2255,19 +2265,20 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-10);
 						} */
-						&:hover {
+						/* &:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
 									var(--color-positive-die-10) -50%,
 									var(--color-background) 80%);
 							}
-						}
+						} */
 					}
 					&.d12:not(.empty) {
 						.trait-inner {
 							background-image: linear-gradient(215deg,
 								var(--color-positive-die-12) -100%,
-								var(--color-background-mute) 50%);
+								transparent 50%,
+								var(--color-background-mute) 0%);
 						}
 						/* border-left: 1px solid var(--color-positive-die-12);
 						border-right: 1px solid var(--color-positive-die-12); */
@@ -2275,13 +2286,13 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						/* .sfxs {
 							border-top: 1px solid var(--color-positive-die-12);
 						} */
-						&:hover {
+						/* &:hover {
 							.trait-inner {
 								background-image: linear-gradient(215deg,
 									var(--color-positive-die-12) -50%,
 									var(--color-background) 80%);
 							}
-						}
+						} */
 					}
 				}
 				&.negative {
@@ -2309,7 +2320,8 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						.trait-inner {
 							background-image: linear-gradient(45deg,
 								var(--color-negative-die-6) -100%,
-								var(--color-background-mute) 50%);
+								transparent 50%,
+								var(--color-background-mute) 0%);
 						}
 						/* border-left: 1px solid var(--color-negative-die-6);
 						border-right: 1px solid var(--color-negative-die-6); */
@@ -2317,13 +2329,13 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						/* .sfxs {
 							border-top: 1px solid var(--color-negative-die-6);
 						} */
-						&:hover {
+						/* &:hover {
 							.trait-inner {
 								background-image: linear-gradient(45deg,
 									var(--color-negative-die-6) -50%,
 									var(--color-background) 80%);
 							}
-						}
+						} */
 					}
 					&.d8:not(.empty) {
 						.trait-inner {
@@ -2410,7 +2422,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						var(--color-background) 150%);
 				}
 			}
-			&.neutral, &.viewing {
+			&.viewing {
 				/* flex-grow: 1; */
 				width: 100%;
 				height: 100%;
@@ -2496,7 +2508,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			box-shadow: 0 0 10px var(--color-background-mute);
 			background-color: var(--color-background-mute);
 		} */
-		/* .trait.challenge {
+		.trait.challenge {
 			--border-width: 1px;
 			position: relative;
 			.trait-inner {
@@ -2517,7 +2529,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			&::before {
 				position: absolute;
 				content: "";
-				border-radius: 10px;
+				/* border-radius: 10px; */
 				top: calc(-1 * var(--border-width));
 				left: calc(-1 * var(--border-width));
 				z-index: 0;
@@ -2525,20 +2537,25 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 				height: calc(100% + var(--border-width) * 2);
 				background: linear-gradient(
 					60deg,
-					hsl(224, 85%, 66%),
-					hsl(269, 85%, 66%),
+					/* hsl(224, 85%, 66%), */
+					/* hsl(269, 85%, 66%), */
 					hsl(314, 85%, 66%),
 					hsl(359, 85%, 66%),
 					hsl(44, 85%, 66%),
-					hsl(89, 85%, 66%),
-					hsl(134, 85%, 66%),
+					/* hsl(89, 85%, 66%), */
+					/* hsl(134, 85%, 66%), */
 					hsl(179, 85%, 66%)
 				);
 				background-size: 300% 300%;
 				background-position: 0 50%;
-				animation: moveGradient 2s alternate infinite;
+				animation: moveGradient 12s alternate infinite;
 			}
-		} */
+		}
+	}
+	@keyframes moveGradient {
+		50% {
+			background-position: 100% 50%;
+		}
 	}
 	.light {
 		.trait {

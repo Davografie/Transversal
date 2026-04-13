@@ -120,6 +120,7 @@
 			if (trait.value.rating) default_rating.value = trait.value.rating
 			if (trait.value.ratingType) default_rating_type.value = trait.value.ratingType
 			if (trait.value.requiredTraits) requirements.value = trait.value.requiredTraits.map(x => x.id)
+			if (trait.value.traitSetting?.hidden) new_hidden.value = trait.value.traitSetting.hidden
 			if (trait.value.inheritable) new_inheritable.value = trait.value.inheritable
 			if (trait.value.randomWeight) new_random_weight.value = trait.value.randomWeight
 			trait_completed = true
