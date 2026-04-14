@@ -161,7 +161,7 @@
 						:to_type="selected_relation.toEntity?.entityType"
 						@hide_codex="hide_codex"
 						@hide_relation="selected_relation = null"
-						@show_entity="emit('show_entity', $event)"
+						@show_entity="(e_id) => emit('show_entity', e_id)"
 						v-if="selected_relation && player.orientation == 'vertical'" />
 					<div class="mid-scroll-space scroll-space" v-if="player.orientation == 'horizontal'"></div>
 

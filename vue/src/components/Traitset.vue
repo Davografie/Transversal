@@ -899,7 +899,7 @@
 						<div class="icon">🎲</div>
 						<div class="label">random trait</div>
 					</div>
-					<div class="trait-search" v-if="player.is_gm || potential_traits.length == 0">
+					<div class="trait-search" v-if="player.is_gm || potential_traits.length >= 0">
 						<input class="trait-search-query" type="text" placeholder="find trait"
 							v-model="trait_search" autocomplete="off" />
 						<input type="button" class="button create-trait-button"
@@ -1361,16 +1361,9 @@
 		.traitset {
 			scroll-snap-align: center;
 			scroll-snap-stop: always;
-			/* height: 100%; */
-			/* overflow-y: auto; */
-			/* overflow: hidden; */
 			display: flex;
 			flex-direction: column;
 			flex-grow: 1;
-			/* border: 1px solid var(--color-border); */
-			/* border-radius: 10px; */
-			/* backdrop-filter: blur(5px); */
-			/* box-shadow: inset 0 0 10px var(--color-background-mute); */
 			.set-title {
 				letter-spacing: .1em;
 				&.extended {
@@ -1451,9 +1444,10 @@
 			}
 			&.inactive {
 				.set-title {
-					/* color: var(--color-text); */
-					/* background-color: var(--color-background-mute); */
 					justify-content: space-between;
+					.trait-count {
+						width: 60px;
+					}
 					.title {
 						gap: 1em;
 					}

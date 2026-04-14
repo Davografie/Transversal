@@ -270,7 +270,7 @@
 
 	// show_active true shows the active NPC prominently
 	const show_active = ref(true)
-	const overwrite_active = ref<string>()
+	const overwrite_active = ref<string|undefined>(props.active_entity_id ?? undefined)
 	const active_npc = computed(() => {
 		if(player.is_gm) {
 			if(resolutions.filter(r => !r.player.is_gm).length > 0) {

@@ -22,20 +22,21 @@
 	const dicepool = useDicepool()
 
 	const mobile_component = ref<HTMLDivElement>()
-	const view = ref('location')
+	const view = ref('location') // location, entity, contacts, settings
 
-	const overwrite_entity_key = ref<string>()
+	const overwrite_entity_id = ref<string>()
+	const active_entity_id = ref<string|undefined>()
 	const dicepool_expanded = ref(false)
 	const dicepool_pulsate = ref(false)
 
-	function show_entity(entity_key: string) {
-		overwrite_entity_key.value = entity_key
-		view.value = 'entity'
-		router.push({ path: '/location/' + player.the_entity?.location?.key + '/entity/' + entity_key })
+	function show_entity(entity_id: string) {
+		active_entity_id.value = entity_id
+		view.value = 'location'
+		// router.push({ path: '/location/' + player.the_entity?.location?.key + '/entity/' + entity_id })
 	}
 
 	function click_location() {
-		overwrite_entity_key.value = undefined
+		overwrite_entity_id.value = undefined
 		if(view.value == 'location') {
 			scroll_top()
 		}
@@ -47,8 +48,8 @@
 	
 	function click_entity() {
 		if(view.value == 'entity') {
-			if(overwrite_entity_key.value) {
-				overwrite_entity_key.value = undefined
+			if(overwrite_entity_id.value) {
+				overwrite_entity_id.value = undefined
 				router.push({ path: '/location/' + player.the_entity?.location?.key + '/entity/' + player.the_entity?.key })
 			}
 			else {
@@ -58,7 +59,7 @@
 		}
 		else {
 			view.value = 'entity'
-			router.push({ path: '/location/' + player.the_entity?.location?.key + '/entity/' + (overwrite_entity_key.value ?? player.the_entity?.key) })
+			router.push({ path: '/location/' + player.the_entity?.location?.key + (overwrite_entity_id.value ?? '/entity/' + player.the_entity?.key) })
 		}
 	}
 
@@ -70,7 +71,7 @@
 	}
 
 	function click_settings() {
-		overwrite_entity_key.value = undefined
+		overwrite_entity_id.value = undefined
 		if(view.value == 'settings') {
 			view.value = 'location'
 			router.push({ path: '/location/' + player.the_entity?.location?.key })
@@ -82,7 +83,7 @@
 	}
 
 	function click_codex() {
-		overwrite_entity_key.value = undefined
+		overwrite_entity_id.value = undefined
 		if(view.value == 'contacts') {
 			view.value = 'location'
 			router.push({ path: '/location/' + player.the_entity?.location?.key })
@@ -124,14 +125,15 @@
 			<CurrentLocationView
 				:location_key="route.params.location_key as string ?? player.the_entity?.location?.key ?? ''"
 				:key="route.params.location_key as string ?? player.the_entity?.location?.key ?? ''"
+				:active_entity_id="active_entity_id"
 				@show_entity="show_entity"
 				@transverse="scroll_top" />
 		</div>
 
 		<div id="charactersheet-container" v-show="view == 'entity'" :key="view">
 			<CharacterView
-				:entity_key="overwrite_entity_key ?? player.the_entity?.key"
-				:key="overwrite_entity_key ?? player.the_entity?.key"
+				:entity_key="player.the_entity?.key"
+				:key="player.the_entity?.key"
 				orientation="vertical" />
 		</div>
 		<div id="settings-container" v-if="view === 'settings'" :key="view">
@@ -141,7 +143,7 @@
 			<CodexView id="codex"
 				:shown="view == 'contacts'"
 				@hide_codex="view = 'location'"
-				@show_entity="show_entity" />
+				@show_entity="(e_id) => show_entity(e_id)" />
 		</div>
 
 		<footer id="mobile-footer">

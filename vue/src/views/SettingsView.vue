@@ -456,16 +456,21 @@
 			}
 			.menu-button {
 				position: absolute;
-				top: 0;
+				bottom: 30%;
 				left: 0;
+				/* transform: translateY(-50%); */
+				z-index: 2;
 				margin: 0;
-				width: 3em;
-				border-radius: 0 0 10px 0;
-				border-right: none;
+				width: 2em;
+				padding-left: 0.6em;
+				border-radius: 0 10px 10px 0;
+				/* border-top: none; */
+				border-left: none;
 				display: flex;
 				flex-direction: column;
 				align-items: center;
 				gap: 0.5em;
+					background-color: var(--color-background-mute);
 				.icon {
 					font-size: 1.6em;
 				}
@@ -473,6 +478,9 @@
 					font-size: 1em;
 					transform: rotate(-90deg);
 					margin-bottom: 1em;
+				}
+				&.active {
+					color: var(--color-text);
 				}
 			}
 			.page {

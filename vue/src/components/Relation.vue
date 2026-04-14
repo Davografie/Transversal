@@ -111,6 +111,9 @@
 		if(player.is_gm) {
 			player.set_perspective(entity.value.id)
 		}
+		else {
+			emit('show_entity', entity.value.id)
+		}
 	}
 
 	function change_location() {

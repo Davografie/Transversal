@@ -522,7 +522,7 @@
 		else {
 			restrict_location.value = false
 		}
-		editing_statement.value = trait.value.statement || trait.value.notes ? true : false
+		editing_statement.value = trait.value.statement ? true : false
 		editing_notes.value = trait.value.notes ? true : false
 		edit_rating.value = false
 		add_subtraits.value = false
@@ -696,7 +696,7 @@
 		reset_temporary_attributes()
 	}
 
-	const editing_statement = ref(trait.value.statement || trait.value.notes ? true : false)
+	const editing_statement = ref(trait.value.statement ? true : false)
 	const editing_notes = ref(trait.value.notes ? true : false)
 	
 	const statement_examples = ref<string[]>([])
@@ -1346,6 +1346,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 								placeholder="statement"
 								@input="!show_statement_examples ? display_statement_examples() : undefined"
 								@contextmenu="(e) => e.stopPropagation()"
+								autocomplete="off"
 								@click.stop />
 							<span class="statement-length" :class="{ 'exceeded': new_statement && new_statement.split(/\s+/).length > 7}">
 								{{ new_statement ? new_statement.split(/\s+/).length + '/7' : '' }}
@@ -2112,9 +2113,9 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 					padding-right: 2em;
 					.trait-from-entity, .trait-to-entity {
 						position: absolute;
-						height: 100px;
+						height: 5em;
 						transform: translateX(-.8em) translateY(-.6em);
-						/* width: 5em; */
+						width: 5em;
 					}
 				}
 				.rating {

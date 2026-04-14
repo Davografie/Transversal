@@ -42,13 +42,13 @@ function assign_random() {
 </script>
 
 <template>
-	<div class="subtraitset-assign">
+	<div class="subtraitset-assign" v-if="props.subtraits.length > 0">
 		<div class="traitset-info">
 			{{ traitset.name }}
 		</div>
 		<div class="subtraits">
-			<div class="subtrait button-mnml" v-if="props.subtraits.length > 1" @click="assign_random">
-				random
+			<div class="subtrait button-mnml random" v-if="props.subtraits.length > 1" @click="assign_random">
+				random 🎲
 			</div>
 			<div class="subtrait button-mnml" v-for="subtrait in sorted_traits" :key="subtrait.id"
 					:class="{ 'random-pick': random_subtrait?.id == subtrait.id }"
@@ -63,6 +63,9 @@ function assign_random() {
 .subtraitset-assign {
 	.subtrait {
 		display: inline-block;
+		&.random {
+			border-right: 1px solid var(--color-text);
+		}
 		&.random-pick {
 			background-color: var(--color-highlight);
 			color: var(--color-highlight-text);

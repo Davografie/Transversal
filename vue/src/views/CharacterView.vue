@@ -743,13 +743,13 @@
 						<img src="/img/icons/char_copy_id.png" class="icon" />
 						<div class="label" v-if="!player.small_buttons">copy ID</div>
 					</div>
-					<div class="button-mnml" id="pick-character"
+					<!-- <div class="button-mnml" id="pick-character"
 						:title="'play as ' + player.the_entity?.name"
 						v-if="entity.id != player.the_entity?.id && (player.is_gm || (player.the_entity?.entityType == 'character'))"
 						@click="pick_character">
 						<div class="icon">{{ entity_icons[player.the_entity?.entityType] }}</div>
 						<div class="label" v-if="!player.small_buttons">pick {{player.the_entity?.entityType}}</div>
-					</div>
+					</div> -->
 					<div class="button-mnml" id="create-relation"
 						title="create relation"
 						v-if="player.the_entity?.id != player.the_entity?.id && !player.the_entity?.relations?.map(e => e.toEntity.id).includes(player.the_entity?.id)"
