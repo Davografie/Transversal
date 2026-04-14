@@ -57,8 +57,18 @@
 		'require_traits',
 		'set_highlight',
 		'kill_highlight',
-		'show_trait'
+		'show_trait',
+		'show_entity'
 	])
+	// const emit = defineEmits<{
+	// 	refetch: [],
+	// 	next_traitset: [],
+	// 	require_traits: [],
+	// 	set_highlight: [],
+	// 	kill_highlight: [],
+	// 	show_trait: [],
+	// 	show_entity: [entity_id: string]
+	// }>()
 
 	const player = usePlayerStore()
 
@@ -715,8 +725,8 @@
 		if (!trait.value.notes) return ''
 		if (mode.value == view_modes.Neutral && trait.value.notes.length > 200) {
 			return marked.parse(
-				trait.value.notes.substring(0, 185) + '... +'
-				+ trait.value.notes.match(/\w+/g)?.length + ' words'
+				trait.value.notes.substring(0, 185) + '...'
+				// + '+' + trait.value.notes.match(/\w+/g)?.length + ' words'
 			)
 		}
 		return marked.parse(trait.value.notes)
@@ -1262,10 +1272,20 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 				<div class="trait-image" v-if="trait.traitSetting?.fromEntity && trait.traitSetting?.toEntity && !props.entity_id?.startsWith('Relations/')">
 					<EntityButton :entity_id="trait.traitSetting.fromEntity.id"
 						v-if="trait.traitSetting.fromEntity.id != props.entity_id"
-						:show_icon="false" :show_name="false" class="trait-from-entity" is_active />
+						:show_icon="false"
+						:show_name="false"
+						class="trait-from-entity"
+						is_active
+						override_click
+						@click_entity="emit('show_entity', trait.traitSetting.fromEntity.id)" />
 					<EntityButton :entity_id="trait.traitSetting.toEntity.id"
 						v-if="trait.traitSetting.toEntity.id != props.entity_id"
-						:show_icon="false" :show_name="false" class="trait-to-entity" is_active />
+						:show_icon="false"
+						:show_name="false"
+						class="trait-to-entity"
+						is_active
+						override_click
+						@click_entity="emit('show_entity', trait.traitSetting.toEntity.id)" />
 				</div>
 				<div class="trait-text">
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
@@ -2067,7 +2087,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			.trait-inner {
 				/* border-radius: 10px; */
 				height: 100%;
-				overflow-y: auto;
+				/* overflow-y: auto; */
 				display: flex;
 				flex-direction: column;
 				justify-content: space-between;
@@ -2075,16 +2095,17 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			.descriptor {
 				/* padding: 0 1em; */
 				/* overflow: hidden; */
+				/* padding-top: 1em; */
 				.trait-image {
 					position: relative;
-					overflow: visible hidden;
+					/* overflow: visible hidden; */
 					width: 5em;
 					position: relative;
 					width: 90px;
 					padding-right: 2em;
 					.trait-from-entity, .trait-to-entity {
 						position: absolute;
-						height: 120px;
+						height: 100px;
 						transform: translateX(-.8em) translateY(-.6em);
 						/* width: 5em; */
 					}
@@ -2185,8 +2206,19 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			&.with-statement {
 				/* font-size: .8em; */
 			}
+			&.small, &.neutral {
+				.trait-inner {
+					padding: .8em 0;
+				}
+			}
 			/* &.inactive { */
 			&.viewing {
+				/* flex-grow: 1; */
+				width: 100%;
+				height: 100%;
+				/* border-top: 1px solid var(--color-text);
+				border-bottom: 1px solid var(--color-text); */
+				padding-top: .4em;
 				&.positive {
 					&.d4:not(.empty) {
 						.trait-inner {
@@ -2422,14 +2454,6 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						var(--color-background) 150%);
 				}
 			}
-			&.viewing {
-				/* flex-grow: 1; */
-				width: 100%;
-				height: 100%;
-				/* border-top: 1px solid var(--color-text);
-				border-bottom: 1px solid var(--color-text); */
-				padding-top: .4em;
-			}
 			&.editing {
 				background-image: linear-gradient(45deg,
 					var(--color-editing) -20%,
@@ -2478,8 +2502,11 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 					/* padding-left: 20px; */
 					font-size: .8em;
 				}
+				.notes {
+					padding-left: 90px;
+				}
 				.sfxs {
-					/* padding-left: 50px; */
+					padding-left: 70px;
 					/* background-color: var(--color-background-mute); */
 				}
 			}

@@ -631,8 +631,8 @@
 							:show_name="false"
 							show_archetypes
 							is_active
-							@show_entity="(entity_key: string) => emit('show_entity', entity_key)"
-							override_click @click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
+							override_click
+							@click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
 								overwrite_active = archetype.id : overwrite_active = 'empty'" />
 					</div>
 					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
@@ -640,7 +640,7 @@
 							class="active-npc"
 							:entity_id="overwrite_active ?? active_npc"
 							@hide_entity="overwrite_active = 'empty'"
-							@show_entity="(entity_key) => emit('show_entity', entity_key)"
+							@show_entity="(entity_id) => emit('show_entity', entity_id)"
 							@instantiated_entity="set_presence_watcher" />
 					</div>
 					<div class="location-image-wrapper" v-if="show_location_image">
@@ -782,6 +782,7 @@
 									|| traitset.id == 'Traitsets/906502' // resources
 								)"
 							@refetch="retrieve_location"
+							@show_entity="(entity_id) => emit('show_entity', entity_id)"
 						/>
 					</Suspense>
 				</div>

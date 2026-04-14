@@ -134,7 +134,7 @@
 					:parent_width="width"
 					@scroll_to_top="panel.scrollTo({ top: 0, behavior: 'smooth' })"
 					@transverse="transverse"
-					@show_entity="(entity_key) => emit('show_entity', entity_key)" />
+					@show_entity="(entity_id) => emit('show_entity', entity_id)" />
 				<div id="transversables" v-if="location.transversables && location.transversables.length > 0">
 					<div class="attribute-header header">
 						<span>travel</span>

@@ -63,9 +63,10 @@
 	} = useEntity(player.the_entity?.key == props.entity_key ? player.the_entity : undefined, 'Entities/' + (player.the_entity?.key ?? props.entity_key ?? route.params.id))
 	// retrieve_small_entity()
 
-	function mutate_entity(input: EntityInput) {
+	async function mutate_entity(input: EntityInput) {
 		set_entity_id(player.the_entity?.id ?? player.perspective_id ?? '')
-		update_entity(input)
+		await update_entity(input)
+		player.is_gm ? player.retrieve_perspective('network-only') : player.retrieve_character('network-only')
 	}
 
 	function mutate_pp(delta: number) {
@@ -84,8 +85,8 @@
 
 
 	// entity name and type
-	const new_name = ref('')
-	const new_entityType = ref('character')
+	const new_name = ref(player.the_entity?.name ?? '')
+	const new_entityType = ref(player.the_entity?.entityType ?? 'character')
 	const editing_name_type = ref(false)
 	function longpress_name() {
 		held.value = true
@@ -93,7 +94,7 @@
 		setTimeout(() => held.value = false, 500)
 	}
 	function update_name_type() {
-		update_entity({
+		mutate_entity({
 			name: new_name.value,
 			entityType: new_entityType.value
 		})
@@ -137,7 +138,7 @@
 	}
 	function click_save() {
 		editing_description.value = false
-		update_entity({
+		mutate_entity({
 			description: new_description.value,
 			entityType: new_entityType.value
 		})
@@ -318,10 +319,12 @@
 		}
 	}
 
-	watch(entity, (newCharacter) => {
-		new_name.value = newCharacter.name
-		new_description.value = newCharacter.description ?? ''
-		new_entityType.value = newCharacter.entityType
+	watch(() => player.the_entity, (newEntity) => {
+		if(newEntity) {
+			new_name.value = newEntity.name
+			new_description.value = newEntity.description ?? ''
+			new_entityType.value = newEntity.entityType
+		}
 	})
 
 	watch(() => props.entity_key, (newKey) => {
@@ -431,7 +434,7 @@
 	}
 
 	function hide_entity() {
-		update_entity({ hidden: !player.the_entity?.hidden })
+		mutate_entity({ hidden: !player.the_entity?.hidden })
 	}
 
 	const entityOverviewTypes = Object.freeze({
@@ -462,7 +465,7 @@
 		// show_known_to.value = !show_known_to.value
 	}
 	function remove_known_to(entity_id: string) {
-		update_entity({ knownTo: player.the_entity?.knownTo?.filter(e => e.id != entity_id).map(e => e.id) ?? [] })
+		mutate_entity({ knownTo: player.the_entity?.knownTo?.filter(e => e.id != entity_id).map(e => e.id) ?? [] })
 		// setTimeout(() => retrieve_small_entity(), 200)
 	}
 
@@ -541,7 +544,7 @@
 		}
 	}
 	function toggle_archetype() {
-		update_entity({
+		mutate_entity({
 			isArchetype: !player.the_entity?.isArchetype
 		})
 	}
@@ -967,7 +970,8 @@
 					@next="next_traitset(set)"
 					@set_traitset="set_traitset"
 					@reset_scroll="scroll_to_traitset(set)"
-					@unset_traitset="active_traitset_id = ''" />
+					@unset_traitset="active_traitset_id = ''"
+					@show_entity="(e_id) => emit('show_entity', e_id)" />
 			</Suspense>
 			<div class="bottom-scroll-space"></div>
 		</div>

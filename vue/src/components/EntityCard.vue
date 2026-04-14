@@ -352,7 +352,7 @@
 				</div>
 			</div>
 		</div>
-		<span class="location" v-if="entity.location?.name" @click="emit('show_entity', entity.location.key)">
+		<span class="location" v-if="entity.location?.name" @click="emit('show_entity', entity.location.id)">
 			🗺 {{ entity.location.name }}
 		</span>
 		<h2 class="name header" v-if="player.is_gm || !relation_possible">
@@ -370,7 +370,7 @@
 				<span class="entity-link archetype"
 						v-if="show_archetypes"
 						v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id"
-					@click="emit('show_entity', archetype.key)">
+					@click="emit('show_entity', archetype.id)">
 					{{ archetype.name }}
 				</span>
 			<!-- </div> -->
@@ -383,7 +383,7 @@
 				<span class="entity-link sub-archetype"
 						v-if="show_sub_archetypes"
 						v-for="instance in entity.instances?.filter(i => i.isArchetype)" :key="instance.id"
-					@click="emit('show_entity', instance.key)">
+					@click="emit('show_entity', instance.id)">
 					{{ instance.name }}
 				</span>
 			<!-- </div> -->
@@ -396,7 +396,7 @@
 				<span class="entity-link instance"
 						v-if="show_instances"
 						v-for="instance in entity.instances?.filter(i => !i.isArchetype)" :key="instance.id"
-					@click="emit('show_entity', instance.key)">
+					@click="emit('show_entity', instance.id)">
 					{{ instance.name }}
 				</span>
 			</div>

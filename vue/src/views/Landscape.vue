@@ -50,7 +50,7 @@
 				@show_entity="show_entity" />
 			<CurrentLocationView id="current-location" class="panel"
 				:location_key="player.the_entity?.location?.key ?? ''"
-				@show_entity="(ett_key) => show_entity('Entities/' + ett_key)"
+				@show_entity="show_entity"
 				:active_entity_id="active_entity_id"
 				v-if="player.the_entity?.location" />
 			<CodexView id="codex" class="panel"

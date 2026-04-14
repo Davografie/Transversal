@@ -48,7 +48,14 @@
 		traitset?: Traitset
 	}>()
 
-	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset', 'reset_scroll'])
+	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset', 'reset_scroll', 'show_entity'])
+	// const emit = defineEmits<{
+	// 	next: [],
+	// 	set_traitset: [Traitset],
+	// 	unset_traitset: [],
+	// 	reset_scroll: [],
+	// 	show_entity: [entity_id: string]
+	// }>()
 
 	const player = usePlayerStore()
 	const { traitset_dice } = useDicepool(false)
@@ -825,6 +832,7 @@
 						@set_highlight="highlight_traits"
 						@kill_highlight="kill_highlight_traits"
 						@show_trait="scroll_to_trait"
+						@show_entity="(e_id) => emit('show_entity', e_id)"
 						v-if="(player.is_gm
 							|| props.relationship
 							|| (player.is_player && entity.entityType == 'character')
@@ -1403,7 +1411,7 @@
 					/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
 					display: flex;
 					padding: .2em;
-					gap: .4em;
+					/* gap: 1.4em; */
 					/* background-color: var(--color-background-mute); */
 					.add-trait {
 						justify-content: end;
