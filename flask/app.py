@@ -5112,6 +5112,8 @@ def imagegen(entity_key, force):
 			trait_settings += archetype_trait_settings
 			trait_settings = filter_trait_settings_by_location(trait_settings, location.get('_id'))
 			traits = []
+
+			# add subtraits
 			for trait_setting in trait_settings:
 				trait_id = trait_setting.get('_to')
 				trait = get_doc_by_id('Traits', trait_id)
@@ -5136,8 +5138,11 @@ def imagegen(entity_key, force):
 					prompt += ", ("
 					prompt += trait_setting.get('statement') if trait_setting.get('statement') else ""
 					prompt += ", " if trait_setting.get('statement') and trait_setting.get('notes') else ""
-					prompt += trait_setting.get('notes') if trait_setting.get('notes') else ""
-					prompt += ":1.4)"
+					prompt += re.sub(r'[^\w\s.,!?:;]+', '', trait_setting.get('notes', '')) if trait_setting.get('notes') else ""
+					if trait_setting.get('_from') == entity.get('_id'):
+						prompt += ":1.4)"
+					else:
+						prompt += ":0.8)"
 				elif trait.get('name').startswith('LoRA'):
 					loras.append(trait_setting.get('statement'))
 				elif trait.get('name') == 'negative imagen':
@@ -5152,8 +5157,7 @@ def imagegen(entity_key, force):
 					prompt += " is " if trait.get('name') and trait_setting.get('statement') else ""
 					prompt += re.sub(r'\([^)]*\)', '', trait_setting.get('statement')) if trait_setting.get('statement') else ""
 					prompt += " of (" + ",".join([subtrait.get('name') for subtrait in trait.get('subtraits')]) + ")" if trait.get('subtraits') else ""
-					prompt += ", (" if trait_setting.get('notes') else ""
-					prompt += trait_setting.get('notes') + ":0.4)" if trait_setting.get('notes') else ""
+					prompt += f", (" + re.sub(r'[^\w\s.,!?:;]+', '', trait_setting.get('notes', '')) + ":0.4)" if trait_setting.get('notes') else ""
 					# prompt += ":"
 					if trait_setting.get('rating') and trait_setting.get('rating_type') == 'static':
 						prompt += ":" + str(rating_weights[abs(trait_setting.get('rating')[0]) - 1])

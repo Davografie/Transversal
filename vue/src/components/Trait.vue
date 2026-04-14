@@ -1323,6 +1323,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 										&& trait.traitSetting?.toEntity?.id == props.entity_id">
 								for {{ trait.traitSetting?.toEntity?.name }}
 							</span>
+							<ButtonMinimal class="zones-inherit-icon" :function="ButtonTypes.LOCATION_PIN" hide_label v-if="trait.traitSetting?.inheritable" />
 						</span>
 						<span class="rating-type label" v-if="mode == view_modes.Viewing">
 							{{ trait.ratingType ?? 'empty' }}
@@ -1697,11 +1698,17 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 					width: 5em;
 				}
 			}
-			.trait-text .trait-name {
-				display: flex;
-				justify-content: space-between;
-				.label {
-					font-size: 9pt;
+			.trait-text {
+				.zones-inherit-icon {
+					display: inline-flex;
+					height: 1em;
+				}
+				.trait-name {
+					display: flex;
+					justify-content: space-between;
+					.label {
+						font-size: 9pt;
+					}
 				}
 			}
 		}

@@ -10,6 +10,7 @@
 	const props = defineProps<{
 		function: ButtonTypes,
 		label?: string
+		hide_label?: boolean
 	}>()
 
 	const player = usePlayerStore()
@@ -29,7 +30,7 @@
 	<div class="minimal-button">
 		<!-- <IconAddArchetype v-if="props.function == 'add_archetype'" /> -->
 		<component class="icon" :is="the_component" />
-		<div class="label" v-if="!player.small_buttons">
+		<div class="label" v-if="!player.small_buttons && props.hide_label == false">
 			{{ props.label ?? label }}
 		</div>
 	</div>
