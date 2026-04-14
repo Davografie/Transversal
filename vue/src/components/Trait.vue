@@ -1323,7 +1323,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 										&& trait.traitSetting?.toEntity?.id == props.entity_id">
 								for {{ trait.traitSetting?.toEntity?.name }}
 							</span>
-							<ButtonMinimal class="zones-inherit-icon" :function="ButtonTypes.LOCATION_PIN" hide_label v-if="trait.traitSetting?.inheritable" />
+							<ButtonMinimal class="zones-inherit-icon" :function="ButtonTypes.LOCATION_PIN" hide_label v-if="trait.traitSetting?.inheritable && player.is_gm" />
 						</span>
 						<span class="rating-type label" v-if="mode == view_modes.Viewing">
 							{{ trait.ratingType ?? 'empty' }}
