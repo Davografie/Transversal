@@ -36,6 +36,7 @@
 		retrieve_statement_examples,
 		default_settings,
 		retrieve_default_settings,
+		create_default_settings,
 		retrieve_possible_sfxs,
 		mutate_trait,
 		mutate_default_settings,
@@ -311,6 +312,12 @@
 	}
 
 	const show_default = ref(false)
+	async function toggle_default() {
+		await retrieve_default_settings('network-only')
+		if(!default_settings.value || default_settings.value.traitSettingType != 'Traits') await create_default_settings()
+		show_default.value = !show_default.value
+	}
+
 	const show_locations = ref(false)
 	const show_required = ref(false)
 
@@ -493,7 +500,7 @@
 				</div>
 			</div>
 
-			<h2 @click="show_default = !show_default">default</h2>
+			<h2 @click="toggle_default">default</h2>
 			<div id="trait-defaults" v-if="show_default">
 
 				<Trait :trait_setting_id="default_settings?.id" :trait_id="trait.id" />

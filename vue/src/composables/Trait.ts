@@ -24,8 +24,8 @@ export enum view_modes {
 	Mini = 'mini',
 	Small = 'small',
 	Neutral = 'neutral',
-	Editing = 'editing',
-	Viewing = 'viewing'
+	Viewing = 'viewing',
+	Editing = 'editing'
 }
 
 export const rating_types: string[] = ['empty', 'static', 'resource', 'challenge']
@@ -600,6 +600,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						id
 					}
 					hidden
+					traitSettingType
 				}
 			}
 		}`
@@ -607,11 +608,13 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		let query = query_get_default_trait
 		let args: { traitId: string | undefined } = { traitId: trait_id.value }
 		if(apolloClient) {
-			apolloClient.query({
+			const result = await apolloClient.query({
 				query: query,
 				variables: args,
 				fetchPolicy: caching
-			}).then((result) => {
+			})
+			// .then((result) => {
+			if(result.data.traits[0].defaultTraitSetting) {
 				console.log("retrieved default for trait: " + trait_id.value + ": ")
 				console.log(result)
 				let convertedRating = <DieType[]>[]
@@ -633,17 +636,39 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 					...result.data.traits[0].defaultTraitSetting,
 					rating: convertedRating
 				}
-				if(!default_settings.value) {
-					console.log("no defaults found; setting default settings")
-					default_settings.value = {
-						ratingType: 'empty',
-						rating: [],
-						locationsEnabled: [],
-						locationsDisabled: [],
-						sfxs: []
-					}
+			}
+			// else {
+			// 	console.log("no defaults found; setting default settings")
+			// 	default_settings.value = {
+			// 		ratingType: 'empty',
+			// 		rating: [],
+			// 		locationsEnabled: [],
+			// 		locationsDisabled: [],
+			// 		sfxs: []
+			// 	}
+			// }
+			// })
+		}
+	}
+
+	async function create_default_settings(input?: TraitSettingInput) {
+		const query = gql`mutation CreateDefaultTrait($traitId: ID!, $defaultSettings: TraitSettingInput) {
+			createTraitDefault(traitId: $traitId, defaultSettings: $defaultSettings) {
+				trait {
+					id
+				}
+				success
+			}
+		}`
+		if(apolloClient && trait_id.value) {
+			await apolloClient.mutate({
+				mutation: query,
+				variables: {
+					traitId: trait_id.value,
+					defaultSettings: input
 				}
 			})
+			await retrieve_default_settings('network-only')
 		}
 	}
 
@@ -789,6 +814,7 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 		retrieve_statement_examples,
 		retrieve_possible_sfxs,
 		retrieve_default_settings,
+		create_default_settings,
 		mutate_default_settings,
 		assign_subtrait,
 		unassign_subtrait,

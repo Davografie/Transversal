@@ -69,6 +69,7 @@
 		assign_locationrestricted_trait,
 		set_entity,
 		sorting,
+		retrieve_traitset_setting,
 		update_traitset_settings
 	} = useTraitset(
 		props.traitset,
@@ -537,6 +538,19 @@
 		retrieve_traitset()
 	}
 
+	const trait_mode = ref<view_modes>(view_modes.Neutral)
+	async function next_trait_mode(reverse: boolean = false) {
+		const index = Object.values(view_modes).findIndex((s) => s === trait_mode.value)
+		if(!reverse) {
+			trait_mode.value = Object.values(view_modes)[Object.values(view_modes).length > index + 1 ? index + 1 : 0]
+		}
+		else {
+			trait_mode.value = Object.values(view_modes)[index > 0 ? index - 1 : Object.values(view_modes).length - 1]
+		}
+		await update_traitset_settings({ traitMode: trait_mode.value })
+		await retrieve_traitset_setting('network-only')
+	}
+
 	function change_limit(limit: number) {
 		limiter.value += limit
 		if(limiter.value >= 0) {
@@ -719,10 +733,13 @@
 						<div class="icon">🎲</div>
 						<div class="label">{{ player.small_buttons ? '' : '\nrandom' }}</div>
 				</div>
-				<div class="button-mnml"
-					@click.stop="next_sort">
+				<div class="button-mnml sort-button" @click.stop="next_sort">
 					<div class="icon">⇅</div>
 					<div class="label">{{ player.small_buttons ? '' : '\n' + sorting.text }}</div>
+				</div>
+				<div class="button-mnml trait-mode-button" @click.stop="next_trait_mode(false)" @click.right.stop="next_trait_mode(true)" @contextmenu="(e) => e.preventDefault()">
+					<div class="icon">-?-</div>
+					<div class="label">{{ player.small_buttons ? '' : '\n' + trait_mode }}</div>
 				</div>
 				<div class="button-mnml" :class="{ 'disabled': refreshing }" id="refresh-traitset"
 					@click.stop="refresh">
@@ -826,7 +843,7 @@
 						:edit_mode="edit_mode"
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
-						:mode="edit_mode ? view_modes.Editing : player.is_player ? view_modes.Small : view_modes.Neutral"
+						:mode="traitset.traitsetSetting?.traitMode ?? (edit_mode ? view_modes.Editing : player.is_player ? view_modes.Small : view_modes.Neutral)"
 						@refetch="retrieve_traitset('network-only')"
 						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"

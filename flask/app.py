@@ -903,6 +903,7 @@ absolute_default_trait_setting = {
 
 class TraitSetting(ObjectType):
 	id = ID()
+	trait_setting_type = String()
 	trait = Field(lambda: Trait)
 	from_entity = Field(lambda: Entity)
 	to_entity = Field(lambda: Entity)
@@ -941,6 +942,12 @@ class TraitSetting(ObjectType):
 			parent.sfxs_ids = traitsetting.get('sfxs')
 			parent.hidden = traitsetting.get('hidden') if traitsetting.get('hidden') is not None else False
 			parent.permanence = traitsetting.get('permanence') if traitsetting.get('permanence') is not None else True
+			parent.trait_setting_type = traitsetting.get('_from').split('/')[0] if '/' in traitsetting.get('_from') else traitsetting.get('_from')
+
+	def resolve_trait_setting_type(parent, info):
+		if not parent.trait_setting_type and parent.id:
+			TraitSetting._hydrate_traitsetting(parent, info)
+		return parent.trait_setting_type
 
 	def resolve_trait(parent, info):
 		if parent.trait:
@@ -1790,6 +1797,40 @@ class CreateTrait(Mutation):
 				})
 
 		return CreateTrait(trait=Trait(id=new_trait['_id']))
+
+class CreateTraitDefault(Mutation):
+	class Arguments:
+		trait_id = ID(required=True)
+		default_settings = TraitSettingInput(required=False)
+
+	trait = Field(lambda: Trait)
+	success = Boolean()
+
+	def mutate(root, info, trait_id, default_settings=None):
+		logger.debug(f"trait_id: { trait_id }, default_settings: { default_settings }")
+
+		trait_defaults = find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})
+
+		if len(trait_defaults) > 0:
+			return CreateTraitDefault(trait=Trait(id=trait_id), success=False)
+		
+		if default_settings:
+			db.collection('TraitSettings').insert({
+				'_from': trait_id,
+				'_to': 'Traits/1',
+				**default_settings
+			})
+		else:
+			traitset_id = get_doc_by_id('Traits', trait_id).get('traitset')
+			traitset_defaults = find_docs('TraitSettings', {'_from': traitset_id, '_to': 'Traits/1'})
+			if len(traitset_defaults) > 0:
+				db.collection('TraitSettings').insert({
+					'_from': trait_id,
+					'_to': 'Traits/1',
+					**{k: v for k, v in traitset_defaults[0].items() if not k.startswith('_')}
+				})
+
+		return CreateTraitDefault(trait=Trait(id=trait_id), success=True)
 
 class UpdateTraitDefault(Mutation):
 	class Arguments:
@@ -2863,6 +2904,19 @@ class TraitsetSetting(ObjectType):
 	traitset = Field(lambda: Traitset)
 	limit = Int()
 	sfxs = List(lambda: SFX)
+	trait_mode = String()
+	sorting = String() # RATING or NAME
+
+	@classmethod
+	def _hydrate_traitset_setting(cls, parent, info):
+		if parent.id is not None:
+			doc = get_doc_by_id('TraitsetSettings', parent.id)
+			parent.entity = doc.get('_from')
+			parent.traitset = doc.get('_to')
+			parent.limit = doc.get('dicepool_limit')
+			parent.sfxs = doc.get('sfxs')
+			parent.trait_mode = doc.get('trait_mode')
+			parent.sorting = doc.get('sorting')
 
 	def resolve_entity(parent, info):
 		entity_id = get_doc_by_id('TraitsetSettings', parent.id).get('_from')
@@ -2895,10 +2949,17 @@ class TraitsetSetting(ObjectType):
 		else:
 			return []
 
+	def resolve_trait_mode(parent, info):
+		return get_doc_by_id('TraitsetSettings', parent.id).get('trait_mode')
+	
+	def resolve_sorting(parent, info):
+		return get_doc_by_id('TraitsetSettings', parent.id).get('sorting')
+
 class TraitsetSettingInput(InputObjectType):
 	limit = Int()
 	sfxs = List(ID)
 	sorting = String() # NAME or RATING
+	trait_mode = String() # mini, small, neutral, viewing, editing
 
 class UpdateTraitsetSetting(Mutation):
 	class Arguments:
@@ -4667,7 +4728,6 @@ class Query(ObjectType):
 class Mutation(ObjectType):
 	update_session = UpdateSession.Field()
 
-	update_trait_default = UpdateTraitDefault.Field()
 	create_trait = CreateTrait.Field()
 	mutate_trait = MutateTrait.Field()
 	assign_trait = AssignTrait.Field()
@@ -4675,6 +4735,8 @@ class Mutation(ObjectType):
 	unassign_sub_trait = UnassignSubTrait.Field()
 	assign_trait_rating = AssignTraitRating.Field()
 	mutate_trait_setting = MutateTraitSetting.Field()
+	create_trait_default = CreateTraitDefault.Field()
+	update_trait_default = UpdateTraitDefault.Field()
 	unassign_trait = UnassignTrait.Field()
 	delete_trait = DeleteTrait.Field()
 	clone_trait_setting = CloneTraitSetting.Field()

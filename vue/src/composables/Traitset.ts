@@ -131,6 +131,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 							inheritable
 						}
 					}
+					traitsetSetting {
+						traitMode
+					}
 				}
 			}`
 			let query = query_get_traitset
@@ -254,6 +257,39 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
+	async function retrieve_traitset_setting(caching: FetchPolicy = 'cache-first') {
+		const query = gql`query Traitset($traitsetId: ID, $entityId: ID) {
+			traitsets(traitsetId: $traitsetId, entityId: $entityId) {
+				traitsetSetting {
+					id
+					sfxs {
+						id
+						name
+					}
+					sorting
+					traitMode
+				}
+			}
+		}`
+
+		if(apolloClient) {
+			const result = await apolloClient.query({
+				query: query,
+				variables: {
+					traitsetId: traitset_id,
+					entityId: entity_id
+				},
+				fetchPolicy: caching
+			}).catch((error) => {
+				console.error("error retrieving traitset setting: ", traitset_id, "error: ", error)
+			})
+			traitset.value = {
+				...traitset.value,
+				traitsetSetting: result.data.traitsets[0].traitsetSetting
+			}
+		}
+	}
+
 	function mutate_traitset(traitset_input: TraitsetInput) {
 		const query = gql`mutation MutateTraitset(
 			$traitsetId: ID!,
@@ -349,7 +385,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function update_traitset_settings(new_settings: any) {
+	async function update_traitset_settings(new_settings: any) {
 		const mutate_update_traitset = gql`mutation updateTraitsetSetting($entityId: ID, $traitsetId: ID, $traitsetSettingInput: TraitsetSettingInput!) {
 			updateTraitsetSetting(entityId: $entityId, traitsetId: $traitsetId, traitsetSettingInput: $traitsetSettingInput) {
 				traitsetSetting {
@@ -366,7 +402,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 				traitsetSettingInput: new_settings
 			}
 			console.log("updating traitset with variables: ", variables)
-			mutate(variables)
+			await mutate(variables)
 		}
 	}
 
@@ -497,6 +533,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		traitset,
 		retrieve_traitset,
 		mutate_traitset,
+		retrieve_traitset_setting,
 		update_traitset_settings,
 		default_settings,
 		retrieve_default_settings,

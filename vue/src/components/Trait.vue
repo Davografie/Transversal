@@ -1528,9 +1528,9 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 				v-html="marked(trait_explanation ?? '')">
 			</div>
 
-			<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0 && (mode != view_modes.Small || (positive_subtraits?.length ?? 0) > 0)">
+			<div class="sub-traits" v-if="trait.subTraits && trait.subTraits?.length > 0">
 				<!-- <div class="section-icon">⪽</div> -->
-				<div class="sub-traits-list neutral" v-if="mode != view_modes.Small">
+				<div class="sub-traits-list neutral">
 					<template v-for="subtrait in neutral_subtraits" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
@@ -1543,7 +1543,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 							@remove_subtrait="remove_subtrait(subtrait)" />
 					</template>
 				</div>
-				<div class="sub-traits-list positive">
+				<div class="sub-traits-list positive" v-if="mode != view_modes.Small">
 					<template v-for="subtrait in positive_subtraits" :key="subtrait.traitSettingId">
 						<SubTrait v-if="subtrait.traitSettingId"
 							:trait_setting_id="subtrait.traitSettingId"
@@ -2095,7 +2095,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 			.trait-inner {
 				/* border-radius: 10px; */
 				height: 100%;
-				/* overflow-y: auto; */
+				overflow-y: auto;
 				display: flex;
 				flex-direction: column;
 				justify-content: space-between;

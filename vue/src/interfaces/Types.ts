@@ -1,3 +1,5 @@
+import type { view_modes } from "@/composables/Trait"
+
 export interface Die {
     id?: string
     rating: string
@@ -91,6 +93,7 @@ export interface TraitSetting {
     priority?: number
     inherited?: boolean
     inheritable?: boolean
+    traitSettingType?: string
 }
 
 export interface TraitSettingInput {
@@ -162,6 +165,15 @@ export interface TraitInput {
     randomWeight?: number
 }
 
+export interface TraitsetSetting {
+    id?: string
+    traitset: Traitset
+    entity: Entity
+    sfxs?: SFX[]
+    sorting?: string
+    traitMode?: view_modes
+}
+
 export interface Traitset {
     key?: string
     id: string
@@ -177,6 +189,7 @@ export interface Traitset {
     sfxs?: SFX[]
     defaultTraitSetting?: TraitSetting
     score?: number
+    traitsetSetting?: TraitsetSetting
 }
 
 export interface TraitsetInput {
