@@ -291,12 +291,13 @@
 		.container {
 			background-attachment: fixed;
 			#current-location-wrapper {
-				background-image: linear-gradient(to bottom, transparent 0, transparent 50%, var(--color-background-mute) 100%);
+				backdrop-filter: blur(4px);
+				background-image: linear-gradient(to bottom, transparent 0, var(--color-background-mute) 10em);
 			}
-				/* background-position: top left; */
-				background-size: v-bind(width + 'px') 100vh;
-				background-position: v-bind(left + 'px') top;
-				background-repeat: no-repeat;
+			/* background-position: top left; */
+			background-size: v-bind(width + 'px') 100vh;
+			background-position: v-bind(left + 'px') top;
+			background-repeat: no-repeat;
 		}
 	}
 	.light {

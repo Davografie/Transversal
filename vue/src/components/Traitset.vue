@@ -737,7 +737,11 @@
 					<div class="icon">⇅</div>
 					<div class="label">{{ player.small_buttons ? '' : '\n' + sorting.text }}</div>
 				</div>
-				<div class="button-mnml trait-mode-button" @click.stop="next_trait_mode(false)" @click.right.stop="next_trait_mode(true)" @contextmenu="(e) => e.preventDefault()">
+				<div class="button-mnml trait-mode-button"
+						@click.stop="next_trait_mode(false)"
+						@click.right.stop="next_trait_mode(true)"
+						@contextmenu="(e) => e.preventDefault()"
+						v-if="props.entity?.entityType == 'character' || player.is_gm">
 					<div class="icon">-?-</div>
 					<div class="label">{{ player.small_buttons ? '' : '\n' + trait_mode }}</div>
 				</div>

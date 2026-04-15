@@ -483,7 +483,8 @@
 	})
 	const filter = computed(() => 'contrast(' + (1 - filter_degree.value * 0.2) + ')'
 		+ ' grayscale(' + (filter_degree.value * 0.6) + ')'
-		+ ' blur(' + (filter_degree.value * 2) + 'px)')
+		+ ' blur(' + (filter_degree.value * 3) + 'px)'
+		+ ' brightness(' + (1 - filter_degree.value * 0.8) + ')')
 	
 	const location_element = ref()
 	function change_active(entity_id: string) {
@@ -1141,7 +1142,7 @@
 			}
 			/* border: 1px solid var(--color-background); */
 			width: 100%;
-			padding-bottom: 2em;
+			/* padding-bottom: 2em; */
 			>.location-component-wrapper {
 				>.title {
 					padding: 1em 3em 0 3em;
