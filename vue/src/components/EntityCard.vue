@@ -94,9 +94,10 @@
 			return !player.perspective.relations?.map(r => r.toEntity.id).includes(entity.value.id) &&
 				player.perspective.id != entity.value.id
 		}
-		else if(!player.is_gm && player.player_character) {
-			return !player.player_character.relations?.map(r => r.toEntity.id).includes(entity.value.id) &&
-				player.player_character.id != entity.value.id
+		else if(player.is_player && player.player_character) {
+			return !player.player_character.relations?.map(r => r.toEntity.id).includes(entity.value.id)
+				&& player.player_character.id != entity.value.id
+				&& !entity.value.isArchetype
 		}
 	})
 
@@ -186,8 +187,14 @@
 			)
 	})
 
-	function click_follow() {
-		player.is_player ? player.set_character_location(entity.value) : player.set_perspective_location(entity.value)
+	async function click_follow() {
+		if(player.is_player) {
+			await player.set_character_location(entity.value)
+			retrieve_followers('network-only')
+		}
+		else {
+			player.set_perspective_location(entity.value)
+		}
 	}
 
 	function click_unfollow() {
@@ -247,13 +254,21 @@
 			set_location_key(newEntity.key)
 			retrieve_location()
 		}
+		const element = document.getElementById('active-npc')
+		if(element) {
+			element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+		}
 	})
+
+	const show_archetypes = ref(false)
+	const show_sub_archetypes = ref(false)
+	const show_instances = ref(false)
 </script>
 
 <template>
 	<div class="active-npc">
 		<div class="card">
-			<div class="image" @click.stop="player.image_entity = entity">
+			<div id="active-npc" class="image" @click.stop="player.image_entity = entity">
 				<img :src="player.data_saving ? image_link_small : image_link_large" ref="image" />
 			</div>
 			<div class="close-button" @click="emit('hide_entity')">
@@ -263,7 +278,7 @@
 				<div class="button-mnml copy-relation-id-button"
 						@click.stop="copy_id"
 						v-if="player.is_gm && relation?.id">
-					<span class="icon">📋</span>
+					<span class="icon">#</span>
 					<span class="label" v-if="!copied">{{ player.small_buttons ? '' : 'copy relation id'}}</span>
 					<span class="label" v-else>{{ player.small_buttons ? '' : 'copied!'}}</span>
 				</div>
@@ -316,13 +331,14 @@
 				</div>
 				<ButtonMinimal :function="ButtonTypes.ADD_ARCHETYPE"
 					v-if="![player.the_entity, ...player.the_entity?.archetypes].map(arch => arch.id).includes(entity.id) && entity.isArchetype"
+					label="assume archetype"
 					@click.stop="player.set_perspective_archetype(entity.id)" />
 				<ButtonMinimal :function="ButtonTypes.REMOVE_ARCHETYPE"
 					v-if="player.the_entity?.archetypes?.map(arch => arch.id).includes(entity.id) && entity.isArchetype"
 					@click.stop="player.unset_perspective_archetype(entity.id)" />
 				<div class="button-mnml copy-button"
 						@click.stop="instantiate"
-						v-if="entity.isArchetype">
+						v-if="entity.isArchetype && player.is_gm">
 					<span class="icon">⧉</span>
 					<span class="label">{{ player.small_buttons ? '' : 'spawn'}}</span>
 				</div>
@@ -336,34 +352,54 @@
 				</div>
 			</div>
 		</div>
+		<span class="location" v-if="entity.location?.name" @click="emit('show_entity', entity.location.id)">
+			🗺 {{ entity.location.name }}
+		</span>
 		<h2 class="name header" v-if="player.is_gm || !relation_possible">
 			{{ entity.name }}
 		</h2>
-		<span class="location" v-if="entity.location?.name" @click="emit('show_entity', entity.location.key)">
-			🗺 {{ entity.location.name }}
-		</span>
+		<div class="description" v-if="entity.description && player.is_gm" v-html="marked.parse(entity.description)">
+		</div>
 		<!-- <h4 v-if="(entity.archetypes?.length || 0) > 0 && player.is_gm">archetypes</h4> -->
-		<div class="entity-links archetypes" v-if="player.is_gm">
-			<span class="entity-link archetype" v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id"
-				@click="emit('show_entity', archetype.key)">
-				{{ archetype.name }}
-			</span>
-		</div>
-		<!-- <h4 v-if="(entity.instances?.filter(i => i.isArchetype).length || 0) > 0 && player.is_gm">sub-archetypes</h4> -->
-		<div class="entity-links sub-archetypes" v-if="player.is_gm">
-			<span class="entity-link sub-archetype" v-for="instance in entity.instances?.filter(i => i.isArchetype)" :key="instance.id"
-				@click="emit('show_entity', instance.key)">
-				{{ instance.name }}
-			</span>
-		</div>
-		<!-- <h4 v-if="(entity.instances?.filter(i => !i.isArchetype).length || 0) > 0 && player.is_gm">instances</h4> -->
-		<div class="entity-links instances" v-if="player.is_gm">
-			<span class="entity-link instance" v-for="instance in entity.instances?.filter(i => !i.isArchetype)" :key="instance.id"
-				@click="emit('show_entity', instance.key)">
-				{{ instance.name }}
-			</span>
-		</div>
-		<div class="description" v-if="entity.description" v-html="marked.parse(entity.description)">
+		<div class="entity-links">
+			<div class="entity-links archetypes" v-if="player.is_gm">
+				<span class="entity-link archetype"
+					@click="show_archetypes = !show_archetypes"
+					v-if="(entity.archetypes?.filter(a => a.name).length ?? 0) > 0"
+					:class="{ 'active': show_archetypes }">{{ entity.archetypes?.filter(a => a.name).length ?? 0 }} archetypes</span>
+				<span class="entity-link archetype"
+						v-if="show_archetypes"
+						v-for="archetype in entity.archetypes?.filter(a => a.name)" :key="archetype.id"
+					@click="emit('show_entity', archetype.id)">
+					{{ archetype.name }}
+				</span>
+			<!-- </div> -->
+			<!-- <h4 v-if="(entity.instances?.filter(i => i.isArchetype).length || 0) > 0 && player.is_gm">sub-archetypes</h4> -->
+			<!-- <div class="entity-links sub-archetypes" v-if="player.is_gm"> -->
+				<span class="entity-link sub-archetype"
+					@click="show_sub_archetypes = !show_sub_archetypes"
+					v-if="(entity.instances?.filter(i => i.isArchetype).length ?? 0) > 0"
+					:class="{ 'active': show_sub_archetypes }">{{ entity.instances?.filter(i => i.isArchetype).length ?? 0 }} sub-archetypes</span>
+				<span class="entity-link sub-archetype"
+						v-if="show_sub_archetypes"
+						v-for="instance in entity.instances?.filter(i => i.isArchetype)" :key="instance.id"
+					@click="emit('show_entity', instance.id)">
+					{{ instance.name }}
+				</span>
+			<!-- </div> -->
+			<!-- <h4 v-if="(entity.instances?.filter(i => !i.isArchetype).length || 0) > 0 && player.is_gm">instances</h4> -->
+			<!-- <div class="entity-links instances" v-if="player.is_gm"> -->
+				<span class="entity-link instance"
+					@click="show_instances = !show_instances"
+					v-if="(entity.instances?.filter(i => !i.isArchetype).length ?? 0) > 0"
+					:class="{ 'active': show_instances }">{{ entity.instances?.filter(i => !i.isArchetype).length ?? 0 }} instances</span>
+				<span class="entity-link instance"
+						v-if="show_instances"
+						v-for="instance in entity.instances?.filter(i => !i.isArchetype)" :key="instance.id"
+					@click="emit('show_entity', instance.id)">
+					{{ instance.name }}
+				</span>
+			</div>
 		</div>
 		<div class="traits">
 			<Suspense>
@@ -378,16 +414,16 @@
 					relationship />
 			</Suspense>
 			<template v-for="traitset in entity.traitsets" :key="traitset.id + entity.id">
-			<Suspense>
-				<Traitset
-					:traitset_id="traitset.id"
-					:entity_id="entity.id"
-					expanded
-					hide_title
-					:limit="traitset.limit"
-					v-if="(player.is_player && entity.entityType != 'character' && player.the_entity?.id != entity.id)
-						|| (player.is_gm && entity.entityType == 'character' && entity.id != player.the_entity?.id && traitset.id == 'Traitsets/1')" />
-			</Suspense>
+				<Suspense>
+					<Traitset
+						:traitset_id="traitset.id"
+						:entity_id="entity.id"
+						expanded
+						hide_title
+						:limit="traitset.limit"
+						v-if="(player.is_player && entity.entityType != 'character' && player.the_entity?.id != entity.id && !traitset.entityTypes?.includes('relation'))
+							|| (player.is_gm && entity.entityType == 'character' && entity.id != player.the_entity?.id && traitset.id == 'Traitsets/1')" />
+				</Suspense>
 			</template>
 		</div>
 	</div>
@@ -396,8 +432,9 @@
 <style scoped>
 div.active-npc {
 	padding-bottom: 1em;
-	min-width: 16em;
+	/* min-width: 16em; */
 	width: v-bind(card_width + 'px');
+	max-width: 100%;
 	div.card {
 		position: relative;
 		line-height: 0;
@@ -440,14 +477,31 @@ div.active-npc {
 	}
 	.entity-links {
 		display: flex;
-		justify-content: space-evenly;
+		/* justify-content: space-evenly; */
 		gap: .4em;
 		flex-wrap: wrap;
 		padding: .4em;
+		width: 100%;
 		.entity-link {
 			border: 1px solid var(--color-gm);
 			padding: .2em .4em;
 			flex-grow: 1;
+			transition: background-color 1s ease-out, flex-grow .2s ease-in-out;
+			&.active {
+				text-decoration: line-through;
+			}
+			&:hover {
+				flex-grow: 2;
+				&.archetype {
+					background-color: var(--color-background);
+				}
+				&.sub-archetype {
+					background-color: var(--color-background-mute);
+				}
+				&.instance {
+					background-color: var(--color-gm);
+				}
+			}
 		}
 	}
 	.description {

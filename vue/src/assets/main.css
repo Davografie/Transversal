@@ -137,11 +137,11 @@ textarea {
 	border: none;
 }
 
-.pp {
+/* .pp {
 	background-color: black;
 	color: white;
 	cursor: pointer;
-}
+} */
 
 /* @keyframes pulse {
 	25% { background-color: var(--color-background); }
@@ -173,7 +173,7 @@ textarea {
 }
 
 .light {
-	font-family: "Courier New", Courier, monospace;
+	/* font-family: "Courier New", Courier, monospace; */
 	font-size: 10pt;
 	textarea {
 		border-bottom: 1px dashed var(--color-border);

@@ -20,6 +20,18 @@ export enum input_methods {
 	// Voice = 'voice'
 }
 
+export enum user_themes {
+	Auto = 'auto',
+	Light = 'light',
+	Dark = 'dark'
+}
+
+export enum traitset_modes {
+	Collapsed = 'COLLAPSED',
+	Active = 'ACTIVE',
+	Expanded = 'EXPANDED'
+}
+
 export const usePlayerStore = defineStore(
 	'player',
 	() => {
@@ -54,7 +66,7 @@ export const usePlayerStore = defineStore(
 		const is_active_player: Ref<boolean> = ref(false)
 		const small_buttons: Ref<boolean> = ref(false)
 		const data_saving: Ref<boolean> = ref(false)
-		const traitset_defaults: Ref<string> = ref("EXPANDED") // COLLAPSED, ACTIVE, EXPANDED
+		const traitset_defaults: Ref<traitset_modes> = ref(traitset_modes.Active) // COLLAPSED, ACTIVE, EXPANDED
 		const tickets_remaining: Ref<number> = ref(20)
 
 		//	GM variables
@@ -69,6 +81,7 @@ export const usePlayerStore = defineStore(
 		const viewing = ref(false)
 
 		const orientation = ref("horizontal")	// horizontal (for landscape, e.g. desktop monitor) or vertical (for portrait, e.g. mobile)
+		const user_theme = ref<user_themes>(user_themes.Auto)
 		const theme = ref("dark")
 		const font_size = ref(16)
 		const input_method = ref<input_methods|undefined>()
@@ -122,7 +135,7 @@ export const usePlayerStore = defineStore(
 			}
 		})
 
-		const perspective_id = ref<string>('Entities/1')
+		const perspective_id = ref<string|undefined>()
 		const {
 			entity: perspective,
 			set_entity_id: set_perspective_id,
@@ -139,19 +152,24 @@ export const usePlayerStore = defineStore(
 
 		async function set_perspective(new_perspective_id: string) {
 			console.log("setting perspective to " + new_perspective_id)
-			if(perspective_id.value != new_perspective_id) {
+			if(perspective_id.value != new_perspective_id && perspective.value.entityType != 'character') {
+				// exclude characters, because if you want to view a character during play, leaving it as GM shouldn't deactivate the player's character
 				console.log("deactivating perspective ", perspective_id.value)
 				deactivate_entity(perspective_id.value)
 			}
 			perspective_id.value = new_perspective_id
 			set_perspective_id(new_perspective_id)
-			activate_entity(perspective_id.value)
+			// activate_entity(perspective_id.value)
 			if(new_perspective_id == "Entities/1" && perspective.value.location) {
 				await set_entity_location(new_perspective_id, perspective.value.location.id)
-				await retrieve_perspective()
+				await retrieve_perspective('network-only')
 			}
 			else {
 				await retrieve_perspective()
+			}
+			if(perspective.value.entityType != 'character') {
+				// GM doesn't play with characters
+				activate_entity(new_perspective_id)
 			}
 		}
 
@@ -245,17 +263,17 @@ export const usePlayerStore = defineStore(
 		onMounted(() => {
 			mounted.value = true
 			// retrieve_the_entity()
-			if(player_id.value) {
+			if(player_id.value && player_id.value != player.value.id) {
 				console.log("retrieving player " + player_id.value)
 				set_player_id(player_id.value)
 				retrieve_player()
 			}
-			if(perspective_id.value) {
+			if(perspective_id.value && perspective_id.value != perspective.value.id && is_gm.value) {
 				console.log("retrieving perspective " + perspective_id.value)
 				set_perspective(perspective_id.value)
 				// retrieve_perspective()
 			}
-			if(player_character_id.value) {
+			if(player_character_id.value && player_character_id.value != player_character.value.id && is_player.value) {
 				console.log("retrieving character " + player_character_id.value)
 				set_character_id(player_character_id.value)
 				retrieve_character()
@@ -307,6 +325,7 @@ export const usePlayerStore = defineStore(
 			editing,
 			viewing,
 			orientation,
+			user_theme,
 			theme,
 			font_size,
 			input_method,
@@ -324,10 +343,10 @@ export const usePlayerStore = defineStore(
 				'player_name', 
 				'player_character_key',
 				'player_character_id',
-				// 'player_character',
+				'player_character',
 				'previous_perspective_ids',
 				'perspective_id', 
-				// 'perspective',
+				'perspective',
 				'is_gm',
 				'playing',
 				'small_buttons',
@@ -335,7 +354,8 @@ export const usePlayerStore = defineStore(
 				'traitset_defaults',
 				'tickets_remaining',
 				'font_size',
-				'input_method'
+				'input_method',
+				'user_theme'
 			],
 		},
 	},

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+	import _ from 'lodash'
 	import { ref, computed, watch } from 'vue'
 	import type { Ref } from 'vue'
-	import { useRoute } from 'vue-router'
+	import { useRoute, useRouter } from 'vue-router'
 
 	import { usePlayerStore } from '@/stores/PlayerStore'
 
@@ -24,6 +25,7 @@
 	}>()
 
 	const route = useRoute()
+	const router = useRouter()
 
 	const player = usePlayerStore()
 
@@ -204,6 +206,16 @@
 		}
 	}
 
+	const sorted_traits = computed(() => {
+		const traits = _.clone(traitset.value.traits)
+		if(!traits) return []
+		return traits.sort((a, b) => {
+			return a.name.localeCompare(b.name)
+		}).sort((a, b) => {
+			return (b.randomWeight ?? 0) - (a.randomWeight ?? 0)
+		})
+	})
+
 
 	import useClipboard from 'vue-clipboard3'
 	const { toClipboard } = useClipboard()
@@ -232,6 +244,11 @@
 		retrieve_traitset('network-only')
 		refreshing.value = false
 	}
+
+	function trash_traitset() {
+		delete_traitset()
+		router.push({ name: 'Traitsets' })
+	}
 </script>
 
 <template>
@@ -245,7 +262,7 @@
 		<input type="button" class="delete button" value="🗑" @click="deleting = true" v-if="!deleting" />
 		<div class="delete-confirm" v-if="deleting">
 			are you sure you want to delete this traitset?<br />this action is permanent
-			<input type="button" class="delete-y button" value="✅" @click="delete_traitset" v-if="deleting" />
+			<input type="button" class="delete-y button" value="✅" @click="trash_traitset" v-if="deleting" />
 			<input type="button" class="delete-n button" value="❌" @click="deleting = false" v-if="deleting" />
 		</div>
 		<h2>settings</h2>
@@ -388,12 +405,6 @@
 		</div>
 		<div class="traits">
 			<h2>traits</h2>
-			<!-- <Trait v-for="trait in traitset.traits" :trait_id="trait.id" :key="trait.id" viewing /> -->
-			<TraitEdit v-for="trait in traitset.traits"
-				:trait_id="trait.id"
-				:trait_name="trait.name"
-				:key="trait.id" default
-				v-if="player.is_gm" @refetch_traits="retrieve_traitset" />
 			<div id="trait-creation" v-if="player.is_gm">
 				<h3>create new trait</h3>
 				<input type="text" v-model="new_trait_name" placeholder="new trait name" />
@@ -413,6 +424,12 @@
 						@click="create_trait(new_trait_name)" />
 				</div>
 			</div>
+			<TraitEdit v-for="trait in sorted_traits"
+				:trait_id="trait.id"
+				:trait_name="trait.name"
+				:key="trait.id" default
+				v-if="player.is_gm" @refetch_traits="retrieve_traitset" />
+			<!-- <Trait v-for="trait in traitset.traits" :trait_id="trait.id" :key="trait.id" viewing /> -->
 		</div>
 		<div class="bottom-scroll-space scroll-space"></div>
 	</div>

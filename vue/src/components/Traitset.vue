@@ -48,7 +48,14 @@
 		traitset?: Traitset
 	}>()
 
-	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset', 'reset_scroll'])
+	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset', 'reset_scroll', 'show_entity'])
+	// const emit = defineEmits<{
+	// 	next: [],
+	// 	set_traitset: [Traitset],
+	// 	unset_traitset: [],
+	// 	reset_scroll: [],
+	// 	show_entity: [entity_id: string]
+	// }>()
 
 	const player = usePlayerStore()
 	const { traitset_dice } = useDicepool(false)
@@ -62,22 +69,13 @@
 		assign_locationrestricted_trait,
 		set_entity,
 		sorting,
+		retrieve_traitset_setting,
 		update_traitset_settings
 	} = useTraitset(
 		props.traitset,
 		props.traitset_id,
 		props.relation_id ?? props.entity_id,
 		SORTING[0].id
-	)
-
-	const {
-		traits,
-		retrieve_potential_traits
-	} = useTraitList(
-		undefined,
-		props.traitset_id,
-		props.entity_id,
-		true
 	)
 
 	const {
@@ -160,60 +158,23 @@
 
 	const { location, retrieve_parents } = useLocation(undefined, props.location_key)
 
-	const add_multiple_traits = ref(false)
 
-	async function assign_trait_to_entity(trait: TraitType) {
-		let new_trait: TraitType|null = null
-		if(
-			props.entity_id
-			&& props.entity_id != 'placeholder'
-		) {
-			console.log("assigning trait: " + trait.id + " to entity: " + props.entity_id)
-			set_entity(props.entity_id)
-			if(!props.relationship) {
-				if(location.value.parents && location.value.parents?.length > 2 && trait.locationRestricted) {
-					// assign trait restricted to location
-					await assign_trait(trait.id, location.value.parents?.slice(-2, -1)[0].id, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
-						(response) => {
-							new_trait = response
-						}
-					)
-				}
-				else {
-					// assign trait to entity
-					await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
-						(response) => {
-							new_trait = response
-						}
-					)
-				}
-			}
-			else {
-				// assign trait to relationship
-				await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined }).then(
-					(response) => {
-						new_trait = response
-					}
-				)
-			}
-		}
-		else {
-			console.error("Can't assign trait to entity: " + props.entity_id)
-		}
-
-		if(!add_multiple_traits.value) {
-			adding_trait.value = false
-			trait_search.value = ""
-			setTimeout(() => {
-				if(new_trait) {
-					scroll_to_trait(new_trait)
-				}
-			}, 200)
-		}
-	}
+	// TRAIT ADDING
+	const {
+		traits,
+		retrieve_potential_traits
+	} = useTraitList(
+		undefined,
+		props.traitset_id,
+		props.entity_id,
+		true
+	)
 
 	const adding_trait: Ref<boolean> = ref(false)
+	const search_potential_traits_visible = ref(false)
 	const trait_search: Ref<string> = ref("")
+	const add_multiple_traits = ref(false)
+	const highlighted_potential_trait = ref<TraitType|undefined>()
 	
 	function toggle_add_trait() {
 		retrieve_default_settings()
@@ -228,6 +189,66 @@
 			retrieve_all_traits()
 			retrieve_parents()
 			adding_trait.value = true
+		}
+	}
+
+	const potential_traits: Ref<TraitType[]> = computed(() => {
+		return traits.value.filter(t => (
+			traitset.value.duplicates ?
+				true :
+				!traitset.value.traits?.map(x => x.id).includes(t.id)
+			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
+	})
+
+	function randomize_potential_trait() {
+		let trait_list = []
+		for(const potential_trait of potential_traits.value) {
+			if(potential_trait.randomWeight) {
+				for(let i = 0; i < potential_trait.randomWeight; i++) {
+					trait_list.push(potential_trait)
+				}
+			}
+		}
+		highlighted_potential_trait.value = trait_list[Math.floor(Math.random() * trait_list.length)]
+	}
+
+	async function assign_trait_to_entity(trait: TraitType) {
+		let new_trait: TraitType|null|undefined = null
+		if(
+			props.entity_id
+			&& props.entity_id != 'placeholder'
+		) {
+			console.log("assigning trait: " + trait.id + " to entity: " + props.entity_id)
+			set_entity(props.entity_id)
+			if(!props.relationship) {
+				if(location.value.parents && location.value.parents?.length > 2 && trait.locationRestricted) {
+					// assign trait restricted to location
+					new_trait = await assign_trait(trait.id, location.value.parents?.slice(-2, -1)[0].id, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
+				}
+				else {
+					// assign trait to entity
+					new_trait = await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
+				}
+			}
+			else {
+				// assign trait to relationship
+				new_trait = await assign_trait(trait.id, undefined, { knownTo: player.the_entity ? [player.the_entity?.id] : undefined })
+			}
+			await retrieve_traitset('network-only')
+			show_traits.value = true
+		}
+		else {
+			console.error("Can't assign trait to entity: " + props.entity_id)
+		}
+
+		if(!add_multiple_traits.value) {
+			adding_trait.value = false
+			trait_search.value = ""
+			setTimeout(() => {
+				if(new_trait) {
+					scroll_to_trait(new_trait)
+				}
+			}, 200)
 		}
 	}
 
@@ -258,12 +279,12 @@
 	}
 
 	const dice_in_dicepool = computed(() => {
-		return traitset_dice(traitset.value.id).filter((d) => d.entityId == props.entity_id)
+		return traitset_dice(traitset.value.id).filter((d) => d.number_rating > 0 && d.entityId == props.entity_id)
 	})
 
 	const traits_in_dicepool: Ref<DieType[]> = computed(() => {
 		return [...new Set(traitset_dice(traitset.value.id)
-			.filter((d) => d.entityId == props.entity_id))]
+			.filter((d) => d.number_rating > 0 && d.entityId == props.entity_id))]
 	})
 
 	const pool_scaling_effect: Ref<number> = computed(() => {
@@ -364,10 +385,6 @@
 				|| (player.is_player && trait.traitSetting?.knownTo?.map((t) => t.id).includes(player.player_character.id))
 		})
 	})
-
-	// console.log(traitset.value.name + " got traits to show: " + got_traits_to_show.value)
-	const show_traits: Ref<boolean> = ref(got_traits_to_show.value ? props.expanded : false)
-
 	watch(() => props.expanded, (newExpanded) => {
 		if(got_traits_to_show.value) {
 			show_traits.value = newExpanded
@@ -381,6 +398,10 @@
 			trait_search.value = ""
 		}
 	})
+
+	// console.log(traitset.value.name + " got traits to show: " + got_traits_to_show.value)
+	const show_traits: Ref<boolean> = ref(got_traits_to_show.value ? props.expanded : false)
+
 
 	function toggle_traits() {
 		if(!held.value) {
@@ -407,67 +428,19 @@
 			polling_active.value = true
 		}
 	})
-
-	// the user changes location, so reflect that in the traits
-	watch(() => player.the_entity?.location, (newLocation, oldLocation) => {
-		if(newLocation != oldLocation) {
-			retrieve_traitset('network-only')
-		}
-	})
-
-	function next_sort() {
-		const index = SORTING.findIndex((s) => JSON.stringify(s) === JSON.stringify(sorting.value))
-		sorting.value = SORTING[SORTING.length > index + 1 ? index + 1 : 0]
-		retrieve_traitset()
-	}
-
-	function change_limit(limit: number) {
-		limiter.value += limit
-		if(limiter.value >= 0) {
-			update_traitset_settings({ limit: limiter.value })
-		}
-		else {
-			limiter.value = 0
-		}
-	}
-
-	function random_highlight() {
-		// randomly highlight a trait
-		if(highlighted_traits.value.length > 0) {
-			highlighted_traits.value = []
-		}
-		else if(traits_to_display.value.length && traits_to_display.value.length > 0) {
-			const trait = traits_to_display.value[Math.floor(Math.random() * traits_to_display.value.length)]
-			if(trait.traitSettingId) {
-				highlighted_traits.value = [trait.traitSettingId]
-			}
-		}
-	}
-
-	const score = computed(() => {
-		return traits_to_display.value.reduce((acc, cur) => {
-			return acc + cur.rating?.map(r => [1,2,3,5,8][r-1] ?? 0).reduce((a, b) => a + b, 0)
-		}, 0) ?? 0
-	})
-
-	const edit_mode = ref(false)
-	function toggle_edit_mode() {
-		edit_mode.value = !edit_mode.value
-		if(!edit_mode.value) {
-			adding_trait.value = false
-		}
-	}
-	const potential_traits = computed(() => {
-		return traits.value.filter(t => (
-			traitset.value.duplicates ?
-				true :
-				!traitset.value.traits?.map(x => x.id).includes(t.id)
-			) && t.name.toLowerCase().includes(trait_search.value.toLowerCase()))
-	})
-	const search_potential_traits_visible = ref(false)
 	
-	const filter = ref('')
-	const filtering = ref(false)
+	/**
+	 * Determines whether the traitset should be extended to allow adding traits
+	 */
+	const extended = computed(() => {
+		return (
+			(got_traits_to_show.value && props.expanded)
+			|| (player.is_gm && (props.extensible || show_info || edit_mode || traitset.value.traits?.length == 0))
+			|| (player.is_player && player.player_character.id == props.entity_id)
+			|| (props.relationship && props.extensible)
+			|| (props.location && props.extensible)
+		)
+	})
 
 	const traits_to_display = computed(() => {
 		if(traitset.value.traits) {
@@ -506,8 +479,9 @@
 
 			// get unique traits, by name and if it's not inheritable also statement
 			// traitset.duplicates means that duplicate traits are allowed
+			// old version: t.name + ((traitset.value.duplicates == false || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? ''))
 			const unique_traits: string[] = Array.from(new Set(filtered_traits.map((t) =>
-				t.name + ((traitset.value.duplicates == false || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? ''))
+				t.name + (traitset.value.duplicates == false ? '' : (t.traitSetting?.statement ?? ''))
 			)))
 
 			if(traitset.value.name == "challenges") console.log("unique traits: " + JSON.stringify(unique_traits))
@@ -515,7 +489,7 @@
 			// for each unique trait, get the highest priority trait
 			unique_traits.forEach((ut) => {
 				const ut_traits = filtered_traits.filter((t) => {
-					return t.name + ((!traitset.value.duplicates || t.traitSetting?.inheritable == true) ? '' : (t.traitSetting?.statement ?? '')) == ut
+					return t.name + (traitset.value.duplicates == false ? '' : (t.traitSetting?.statement ?? '')) == ut
 				})
 				if(ut_traits.length == 0) {
 					// console.log("traitset duplicates: " + traitset.value.duplicates + ", no traits found for '" + ut + "'")
@@ -550,6 +524,74 @@
 		}
 	})
 
+	// the user changes location, so reflect that in the traits
+	watch(() => player.the_entity?.location, (newLocation, oldLocation) => {
+		if(newLocation != oldLocation) {
+			retrieve_traitset('network-only')
+		}
+	})
+
+	function next_sort() {
+		const index = SORTING.findIndex((s) => JSON.stringify(s) === JSON.stringify(sorting.value))
+		sorting.value = SORTING[SORTING.length > index + 1 ? index + 1 : 0]
+		update_traitset_settings({ sorting: sorting.value.id })
+		retrieve_traitset()
+	}
+
+	const trait_mode = ref<view_modes>(view_modes.Neutral)
+	async function next_trait_mode(reverse: boolean = false) {
+		const index = Object.values(view_modes).findIndex((s) => s === trait_mode.value)
+		if(!reverse) {
+			trait_mode.value = Object.values(view_modes)[Object.values(view_modes).length > index + 1 ? index + 1 : 0]
+		}
+		else {
+			trait_mode.value = Object.values(view_modes)[index > 0 ? index - 1 : Object.values(view_modes).length - 1]
+		}
+		await update_traitset_settings({ traitMode: trait_mode.value })
+		await retrieve_traitset_setting('network-only')
+	}
+
+	function change_limit(limit: number) {
+		limiter.value += limit
+		if(limiter.value >= 0) {
+			update_traitset_settings({ limit: limiter.value })
+		}
+		else {
+			limiter.value = 0
+		}
+	}
+
+	function random_highlight() {
+		// randomly highlight a trait
+		if(highlighted_traits.value.length > 0) {
+			highlighted_traits.value = []
+		}
+		else if(traits_to_display.value.length && traits_to_display.value.length > 0) {
+			const trait = traits_to_display.value[Math.floor(Math.random() * traits_to_display.value.length)]
+			if(trait.traitSettingId) {
+				highlighted_traits.value = [trait.traitSettingId]
+			}
+		}
+	}
+
+	const score = computed(() => {
+		return traits_to_display.value.reduce((acc, cur) => {
+			return acc + cur.rating?.map(r => [1,2,3,5,8][r-1] ?? 0).reduce((a, b) => a + b, 0)
+		}, 0) ?? 0
+	})
+
+	const edit_mode = ref(false)
+	function toggle_edit_mode() {
+		edit_mode.value = !edit_mode.value
+		if(!edit_mode.value) {
+			adding_trait.value = false
+		}
+	}
+	
+	const filter = ref('')
+	const filtering = ref(false)
+
+
 	const refreshing = ref(false)
 	async function refresh() {
 		refreshing.value = true
@@ -557,19 +599,6 @@
 			refreshing.value = false
 		})
 	}
-
-	/**
-	 * Determines whether the traitset should be extended to allow adding traits
-	 */
-	const extended = computed(() => {
-		return (
-			got_traits_to_show.value
-			|| ((props.extensible || show_info || edit_mode || traitset.value.traits?.length == 0) && player.is_gm)
-			|| (player.is_player && player.player_character.id == props.entity_id)
-			|| (props.relationship && props.extensible)
-			|| (props.location && props.extensible)
-		)
-	})
 
 	const active_trait_id = ref("")
 
@@ -600,7 +629,7 @@
 				{ 'relationships': props.relationship },
 				{ 'gm': traitset.entityTypes?.includes('gm') },
 				{ 'editing-traits': edit_mode },
-				{ 'full': limiter > 0 && traits_in_dicepool.length == limiter },
+				{ 'full': limiter > 0 && traits_in_dicepool.length >= limiter },
 			]"
 			:id="'ts-' + traitset.name?.replace(' ', '-').toLowerCase() + '-' + props.entity_id.substring(props.entity_id.indexOf('/') + 1)"
 			v-if="(
@@ -639,7 +668,7 @@
 					</span>
 				</div> -->
 
-				<span class="traitset-name header">
+				<span class="traitset-name">
 					{{ (traitset.name?.toUpperCase() ?? '') }}
 				</span>
 
@@ -704,10 +733,17 @@
 						<div class="icon">🎲</div>
 						<div class="label">{{ player.small_buttons ? '' : '\nrandom' }}</div>
 				</div>
-				<div class="button-mnml"
-					@click.stop="next_sort">
+				<div class="button-mnml sort-button" @click.stop="next_sort">
 					<div class="icon">⇅</div>
 					<div class="label">{{ player.small_buttons ? '' : '\n' + sorting.text }}</div>
+				</div>
+				<div class="button-mnml trait-mode-button"
+						@click.stop="next_trait_mode(false)"
+						@click.right.stop="next_trait_mode(true)"
+						@contextmenu="(e) => e.preventDefault()"
+						v-if="props.entity?.entityType == 'character' || player.is_gm">
+					<div class="icon">-?-</div>
+					<div class="label">{{ player.small_buttons ? '' : '\n' + trait_mode }}</div>
 				</div>
 				<div class="button-mnml" :class="{ 'disabled': refreshing }" id="refresh-traitset"
 					@click.stop="refresh">
@@ -735,7 +771,7 @@
 		</div>
 
 
-		<div class="traits" v-if="show_traits || extended" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
+		<div class="traits" v-if="show_traits == true || extended == true" :class="{ 'hidden_title': (props.hide_title && player.editing) }">
 
 			<div class="traitset-sfxs" v-if="!props.hide_title && traitset.sfxs && traitset.sfxs.length > 0 && show_traits">
 				<!-- <div class="sfx-sparkles">✨</div> -->
@@ -747,7 +783,7 @@
 				</template>
 			</div>
 
-			<div class="entity-traits" v-if="show_traits && !adding_trait">
+			<div class="entity-traits" v-if="(show_traits || extended) && !adding_trait">
 				<template class="highlighted-traits" v-for="trait in traits_to_display"
 						:key="trait.traitSettingId"
 						v-if="highlighted_traits.length > 0">
@@ -794,9 +830,10 @@
 							traitset.traits && traitset.traits.indexOf(trait) < traitset.traits.length - 1
 						"></div> -->
 				</template>
-				<template class="not-highlighted-traits" v-if="highlighted_traits.length == 0" v-for="trait in traits_to_display"
+				<template class="not-highlighted-traits" v-if="show_traits && highlighted_traits.length == 0" v-for="trait in traits_to_display"
 						:key="trait.traitSettingId">
 					<Trait
+						class="traitset-trait"
 						:id="'ts-' + trait.traitSettingId + '-' + entity.key"
 						:highlighted="highlighted_traits.includes(trait.traitSettingId ?? '')"
 						:trait_id="trait.id"
@@ -810,12 +847,13 @@
 						:edit_mode="edit_mode"
 						:filter="filter"
 						:traitset_types="traitset.entityTypes"
-						:mode="edit_mode ? view_modes.Editing : view_modes.Small"
+						:mode="traitset.traitsetSetting?.traitMode ?? (edit_mode ? view_modes.Editing : player.is_player ? view_modes.Small : view_modes.Neutral)"
 						@refetch="retrieve_traitset('network-only')"
 						@next_traitset="limiter - dice_in_dicepool.length <= 0 ? $emit('next') : null"
 						@set_highlight="highlight_traits"
 						@kill_highlight="kill_highlight_traits"
 						@show_trait="scroll_to_trait"
+						@show_entity="(e_id) => emit('show_entity', e_id)"
 						v-if="(player.is_gm
 							|| props.relationship
 							|| (player.is_player && entity.entityType == 'character')
@@ -831,7 +869,7 @@
 											.some((traitsettingId) => trait.subTraits?.some((st) => st.traitSettingId == traitsettingId))
 									)
 								)
-								|| traitset_dice(traitset.id).length < limiter
+								|| traits_in_dicepool.length < limiter
 								|| limiter == 0
 							)
 						" />
@@ -845,13 +883,14 @@
 				</template>
 				<div class="add-trait" v-if="
 							(
-								player.is_gm
+								(player.is_gm && show_traits && !props.hide_title)
 								|| (
 									player.is_player
 									&& player.player_character.id == props.entity_id
+									&& (props.expanded || show_traits)
 								)
 								|| (props.relationship && props.extensible)
-								|| (props.location && props.extensible && !props.hide_title)
+								|| (props.location && props.extensible && !props.hide_title && show_traits)
 								|| adding_trait
 							) && (
 								traits_in_dicepool.length < limiter
@@ -877,7 +916,11 @@
 						<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
 						<div class="label">adding {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
 					</div>
-					<div class="trait-search" v-if="player.is_gm || potential_traits.length == 0">
+					<div class="button-mnml randomize" @click="randomize_potential_trait">
+						<div class="icon">🎲</div>
+						<div class="label">random trait</div>
+					</div>
+					<div class="trait-search" v-if="player.is_gm || potential_traits.length >= 0">
 						<input class="trait-search-query" type="text" placeholder="find trait"
 							v-model="trait_search" autocomplete="off" />
 						<input type="button" class="button create-trait-button"
@@ -903,10 +946,13 @@
 				<div class="trait-list">
 					<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
 						<div class="button potential-trait"
-								:class="[trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
+								:class="[
+									trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating?.length > 0 ?
 										trait.defaultTraitSetting?.rating.map((r) => r.rating)[0] : 'dn',
 									trait.defaultTraitSetting?.rating && trait.defaultTraitSetting?.rating.map((r) => r.number_rating)[0] > 0 ?
-										'positive' : 'negative']"
+										'positive' : 'negative',
+									{ 'highlighted': highlighted_potential_trait?.id == trait.id }
+								]"
 								@click="assign_trait_to_entity(trait)"
 								@click.right.stop="(e) => toggle_editing_potential_trait(e, trait.id)"
 								v-touch:hold="() => toggle_editing_potential_trait(null, trait.id)"
@@ -968,13 +1014,15 @@
 			position: sticky;
 			top: 0;
 			text-align: center;
-			font-size: large;
+			font-size: 1.2em;
 			cursor: pointer;
 			/* padding: .4em 0; */
 			justify-content: space-between;
 			display: flex;
 			z-index: 2;
 			gap: 1em;
+			max-width: 100vw;
+			overflow-x: hidden;
 			.trait-count {
 				width: 3em;
 				text-align: right;
@@ -1057,6 +1105,7 @@
 			position: relative;
 			padding-left: 1.5em;
 			border-bottom: 1px solid var(--color-border);
+			background-color: var(--color-background-mute);
 			display: flex;
 			flex-wrap: wrap;
 			font-size: 0.8em;
@@ -1176,6 +1225,10 @@
 							font-size: .8em;
 						}
 					}
+					&.highlighted .trait-description {
+						background-color: var(--color-highlight);
+						color: var(--color-highlight-text);
+					}
 				}
 				.potential-trait.dn {
 					background-color: var(--color-border);
@@ -1246,9 +1299,10 @@
 			padding: 0;
 			justify-content: space-between;
 			.title {
-				font-weight: bold;
-				align-content: end;
 				flex-direction: column;
+				align-content: end;
+				justify-content: center;
+				font-weight: bold;
 				.big-limiter {
 					line-height: 1em;
 					font-size: 2em;
@@ -1309,6 +1363,9 @@
 				align-items: center;
 				overflow-x: hidden;
 				overflow-y: auto;
+				.traitset-trait {
+					width: 100%;
+				}
 				.add-trait {
 					width: 100%;
 					justify-content: end;
@@ -1325,20 +1382,13 @@
 		.traitset {
 			scroll-snap-align: center;
 			scroll-snap-stop: always;
-			/* height: 100%; */
-			/* overflow-y: auto; */
-			/* overflow: hidden; */
 			display: flex;
 			flex-direction: column;
 			flex-grow: 1;
-			border: 1px solid var(--color-border);
-			border-radius: 10px;
-			backdrop-filter: blur(5px);
-			box-shadow: inset 0 0 10px var(--color-background-mute);
 			.set-title {
 				letter-spacing: .1em;
 				&.extended {
-					background-color: var(--color-background);
+					background-color: var(--color-background-mute);
 					/* color: var(--color-); */
 				}
 				.limiter {
@@ -1354,6 +1404,9 @@
 				overflow: hidden;
 				display: flex;
 				flex-direction: column;
+				/* align-items: center; */
+				background-color: var(--color-background-mute);
+				box-shadow: inset 0 0 30px var(--color-background-mute);
 				.traitset-info {
 					text-shadow: var(--text-shadow);
 					.traitset-score {
@@ -1371,10 +1424,9 @@
 				.entity-traits {
 					/* box-shadow: inset 0 0 10px var(--color-highlight-mute); */
 					display: flex;
-					/* max-height: calc(100% - 2.4em); */
-					/* overflow: hidden; */
 					padding: .2em;
-					gap: .4em;
+					/* gap: 1.4em; */
+					/* background-color: var(--color-background-mute); */
 					.add-trait {
 						justify-content: end;
 						scroll-snap-align: end;
@@ -1404,16 +1456,19 @@
 			}
 			&.active {
 				.set-title {
-					background-color: var(--color-background-soft);
+					background-color: var(--color-background);
 					text-shadow: none;
-					/* font-size: 2em; */
+					.title {
+						font-size: 1.4em;
+					}
 				}
 			}
 			&.inactive {
 				.set-title {
-					/* color: var(--color-text); */
-					/* background-color: var(--color-background-mute); */
 					justify-content: space-between;
+					.trait-count {
+						width: 60px;
+					}
 					.title {
 						gap: 1em;
 					}
@@ -1477,12 +1532,12 @@
 				}
 			}
 			.entity-traits {
-				background-color: var(--color-border);
+				background-color: var(--color-background);
 				display: flex;
 				flex-direction: column;
 				.add-trait {
 					width: 100%;
-					background-color: var(--color-background);
+					/* background-color: var(--color-background); */
 					color: var(--color-text);
 					/* justify-content: center; */
 				}
@@ -1529,7 +1584,7 @@
 	.triptych {
 		.traitset.inactive.next {
 			position: sticky;
-			bottom: -50px;
+			bottom: 0;
 			z-index: 1;
 		}
 	}

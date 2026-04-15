@@ -161,7 +161,7 @@
 						:to_type="selected_relation.toEntity?.entityType"
 						@hide_codex="hide_codex"
 						@hide_relation="selected_relation = null"
-						@show_entity="emit('show_entity', $event)"
+						@show_entity="(e_id) => emit('show_entity', e_id)"
 						v-if="selected_relation && player.orientation == 'vertical'" />
 					<div class="mid-scroll-space scroll-space" v-if="player.orientation == 'horizontal'"></div>
 
@@ -178,6 +178,7 @@
 								class="entity-card"
 								:entity_id="entity.id"
 								override_click
+								is_active
 								@click_entity="click_character(entity)" />
 						</template>
 					</div>
@@ -208,6 +209,7 @@
 								is_relationship
 								show_icon
 								override_click
+								:is_active="false"
 								@click_entity="click_relation(relation)" />
 						</template>
 						<!-- favorite non-characters -->
@@ -343,6 +345,7 @@
 <style>
 	.dark {
 		#codex-wrapper {
+			background-color: var(--color-background-mute);
 			&.vertical {
 				background-color: var(--color-background-mute);
 			}

@@ -25,11 +25,16 @@
 		options_direction:	{	type: String,	default: 'right'	},
 	})
 
-	const emit = defineEmits([
-		'refresh_favorites',	// done after long-pressing the card changing its favorite status
-		'hide_location',		// after navigating to the entity of the card
-		'click_entity',			// after clicking the card
-	])
+	// const emit = defineEmits([
+	// 	'refresh_favorites',	// done after long-pressing the card changing its favorite status
+	// 	'hide_location',		// after navigating to the entity of the card
+	// 	'click_entity',			// after clicking the card
+	// ])
+	const emit = defineEmits<{
+		refresh_favorites: []
+		hide_location: []
+		click_entity: []
+	}>()
 
 
 	// prepare the entity variable for the card
@@ -224,7 +229,7 @@
 					|| props.is_relationship
 				) ? 'clear' : 'faded'
 			]"
-			@click="click_card"
+			@click.stop="click_card"
 			v-touch:hold="longpress_card"
 			@click.right="longpress_card"
 			@contextmenu="(e) => e.preventDefault()"
@@ -547,6 +552,11 @@
 				span {
 					display: block;
 				}
+			}
+			.entity-type {
+				left: 50%;
+				top: 85px;
+				transform: translateX(-50%);
 			}
 			.codex-button.small-button {
 				width: 80%;

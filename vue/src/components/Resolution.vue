@@ -78,10 +78,9 @@
 
 <style scoped>
 	.resolution {
-		background-color: var(--color-background-mute);
 		padding: .4em .6em;
 		.player {
-			font-size: xx-small;
+			font-size: .8em;
 		}
 		.result {
 			display: flex;
@@ -108,6 +107,7 @@
 <style>
 	.dark {
 		.resolution {
+			background-color: var(--color-background-mute);
 			border-radius: 20px;
 			overflow: hidden;
 			.verbose-dice {

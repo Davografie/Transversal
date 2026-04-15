@@ -105,6 +105,7 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 						rating
 					}
 					locationRestricted
+					randomWeight
 				}
 			}`
 			console.log("retrieving potential traits for traitset: " + traitset_id + ", entity_id: " + entity_id)

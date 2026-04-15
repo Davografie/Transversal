@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { ref, computed, watch, nextTick } from 'vue'
 	import type { Ref } from 'vue'
-	import { templateRef, useScroll } from '@vueuse/core'
+	import { templateRef, useScroll, usePreferredColorScheme } from '@vueuse/core'
 
 	import { useRoute, useRouter, RouterLink } from 'vue-router'
 	
@@ -9,7 +9,7 @@
 	import { usePlayer } from '@/composables/Player'
 	import type { Player as PlayerType } from '@/interfaces/Types'
 
-	import { usePlayerStore, input_methods } from '@/stores/PlayerStore'
+	import { usePlayerStore, input_methods, user_themes } from '@/stores/PlayerStore'
 	import { useDicepool } from '@/composables/Dicepool'
 	import { useSession } from '@/composables/Session'
 
@@ -51,9 +51,11 @@
 		return players.value.filter(p => p.name.toLowerCase().includes(player_name.value.toLowerCase()))
 	})
 
-	function new_player() {
-		create_player(player_name.value)
-		setTimeout(() => retrieve_players(), 500)
+	async function new_player() {
+		const created_player = await create_player(player_name.value)
+		await retrieve_players('network-only')
+		switch_to_player(created_player)
+		// setTimeout(() => retrieve_players(), 500)
 	}
 
 	function delete_player(player_id: string) {
@@ -175,6 +177,16 @@
 	function switch_input(new_input: input_methods) {
 		playerStore.input_method = new_input
 	}
+	function switch_theme(new_theme: user_themes) {
+		playerStore.user_theme = new_theme
+		if(new_theme != user_themes.Auto) {
+			playerStore.theme = new_theme
+		}
+		else {
+			const preferredColor = usePreferredColorScheme()
+			playerStore.theme = preferredColor.value
+		}
+	}
 </script>
 
 <template>
@@ -267,6 +279,18 @@
 						</button>
 					</template>
 				</div>
+				<div class="setting" id="theme-switcher">
+					<label for="theme_switcher">theme</label>
+					<template v-for="theme in Object.entries(user_themes)">
+						<button class="button"
+								:value="theme"
+								:disabled="!theme"
+								@click="switch_theme(theme[1])"
+								:class="{ 'active': playerStore.user_theme == theme[1]}">
+							{{ theme[1] }}
+						</button>
+					</template>
+				</div>
 				<div v-if="playerStore.is_gm" class="setting dicepool-limit-slider">
 					<label>dicepool limit</label>
 					<div id="dicepool-limit">
@@ -339,11 +363,13 @@
 					font-size: 1.2em;
 					cursor: pointer;
 					padding: 0.5em;
+					text-align: right;
 				}
 			}
 		}
 		#settings-container {
 			/* width: fit-content; */
+			position: relative;
 			height: 100vh;
 			text-align: center;
 			/* width: calc(100vw - 140px); */
@@ -430,16 +456,21 @@
 			}
 			.menu-button {
 				position: absolute;
-				top: 0;
+				bottom: 30%;
 				left: 0;
+				/* transform: translateY(-50%); */
+				z-index: 2;
 				margin: 0;
-				width: 3em;
-				border-radius: 0 0 10px 0;
-				border-right: none;
+				width: 2em;
+				padding-left: 0.6em;
+				border-radius: 0 10px 10px 0;
+				/* border-top: none; */
+				border-left: none;
 				display: flex;
 				flex-direction: column;
 				align-items: center;
 				gap: 0.5em;
+					background-color: var(--color-background-mute);
 				.icon {
 					font-size: 1.6em;
 				}
@@ -447,6 +478,9 @@
 					font-size: 1em;
 					transform: rotate(-90deg);
 					margin-bottom: 1em;
+				}
+				&.active {
+					color: var(--color-text);
 				}
 			}
 			.page {
@@ -497,7 +531,7 @@
 	}
 	nav {
 		background-image: linear-gradient(
-			to left,
+			to right,
 			var(--color-background-mute) 0,
 			var(--color-background-mute) 90%,
 			var(--color-background)
@@ -505,11 +539,28 @@
 		.links {
 			.link {
 				background-image: linear-gradient(
-					to left,
+					to right,
 					var(--color-highlight) 0,
 					var(--color-highlight) 90%,
-					var(--color-background-mute)
+					var(--color-background-mute) 110%
 				);
+				&.header {
+					background-image: none;
+					background-color: var(--color-highlight);
+					text-align: center;
+					/* transform: translateX(1em); */
+					position: relative;
+					/* &::after {
+						content: "";
+						width: 1em;
+						height: 100%;
+						position: absolute;
+						right: -.3em;
+						top: 0;
+						background-color: var(--color-highlight);
+						border-radius: 0 10px 10px 0;
+					} */
+				}
 			}
 		}
 	}

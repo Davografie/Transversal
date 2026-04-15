@@ -2,6 +2,7 @@
 	import { watch, onMounted } from 'vue';
 	import { useTraitList } from '@/composables/TraitList';
 	import Trait from '@/components/Trait.vue';
+import { view_modes } from '@/composables/Trait';
 
 	const props = defineProps<{
 		entity_id: string;
@@ -25,11 +26,15 @@
 
 <template>
 	<div class="all-traits">
-		<Trait class="trait" v-for="trait in traits" :key="trait.traitSetting?.id"
-			:trait_setting_id="trait.traitSetting?.id"
-			:entity_id="props.entity_id"
-			:trait_id="trait.id"
-			/>
+		<template v-for="trait in traits" :key="trait.traitSetting?.id">
+			<Trait class="trait"
+				:trait_setting_id="trait.traitSetting?.id ?? trait.traitSettingId ?? ''"
+				:entity_id="props.entity_id"
+				:trait_id="trait.id"
+				:mode="view_modes.Mini"
+				v-if="trait.traitSetting?.id"
+				/>
+		</template>
 	</div>
 </template>
 
@@ -39,10 +44,14 @@
 		flex-wrap: wrap;
 		/* flex-direction: column; */
 		gap: 8px;
-		max-height: calc(100vh - 32em);
+		/* max-height: calc(100vh - 32em); */
 		overflow: auto;
-		.trait {
-			max-width: 18em;
+		/* padding-top: 2.4em; */
+		height: 100%;
+		.trait.small {
+			/* max-width: 18em; */
+			flex-grow: 1;
+			max-width: calc(100% / 3 - 10px);
 		}
 	}
 </style>

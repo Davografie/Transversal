@@ -12,9 +12,7 @@
 		type Ref,
 		computed,
 		watch,
-		onMounted,
-		onUnmounted,
-		nextTick
+		onUnmounted
 	} from 'vue'
 	import { useRoute } from 'vue-router'
 	import { useElementBounding, useWindowSize } from '@vueuse/core'
@@ -105,26 +103,29 @@
 	}
 
 	const new_location_name = ref(location.value.name)
+	const new_location_subtitle = ref(location.value.subtitle)
 	const location_name_edit_ref = ref<HTMLInputElement>()
 
 	function longpress_location_header() {
 		held.value = true
 		new_location_name.value = location.value.name
+		new_location_subtitle.value = location.value.subtitle
 		new_flavortext.value = location.value.flavortext
 		editing_location.value = !editing_location.value
 		title_pulsate.value = true
-		nextTick(() => {
-			if(location_name_edit_ref.value) {
-				location_name_edit_ref.value.focus()
-			}
-		})
+		// nextTick(() => {
+		// 	if(location_name_edit_ref.value) {
+		// 		location_name_edit_ref.value.focus()
+		// 	}
+		// })
 		setTimeout(() => {
 			held.value = false
 		}, 500)
 	}
 
-	function update_name() {
-		update_location({ name: new_location_name.value })
+	async function update_name() {
+		await update_location({ name: new_location_name.value, subtitle: new_location_subtitle.value })
+		retrieve_small_location('network-only')
 		editing_location.value = false
 	}
 
@@ -269,7 +270,7 @@
 
 	// show_active true shows the active NPC prominently
 	const show_active = ref(true)
-	const overwrite_active = ref<string>()
+	const overwrite_active = ref<string|undefined>(props.active_entity_id ?? undefined)
 	const active_npc = computed(() => {
 		if(player.is_gm) {
 			if(resolutions.filter(r => !r.player.is_gm).length > 0) {
@@ -337,8 +338,10 @@
 		}
 	})
 
-	function update_flavortext() {
-		update_location({ description: new_flavortext.value })
+	async function update_flavortext() {
+		await update_location({ description: new_flavortext.value })
+		retrieve_small_location('network-only')
+		editing_description.value = false
 	}
 
 
@@ -480,7 +483,8 @@
 	})
 	const filter = computed(() => 'contrast(' + (1 - filter_degree.value * 0.2) + ')'
 		+ ' grayscale(' + (filter_degree.value * 0.6) + ')'
-		+ ' blur(' + (filter_degree.value * 2) + 'px)')
+		+ ' blur(' + (filter_degree.value * 3) + 'px)'
+		+ ' brightness(' + (1 - filter_degree.value * 0.8) + ')')
 	
 	const location_element = ref()
 	function change_active(entity_id: string) {
@@ -528,14 +532,21 @@
 						v-if="!editing_location || player.is_player">
 					{{ location.name != 'placeholder' ? location.name : 'transversal' }}
 				</component>
-
 				<input type="text" class="header location-name"
 					ref="location_name_edit_ref"
 					v-model="new_location_name"
 					v-show="editing_location && player.is_gm"
 					@click.stop />
+
+				<div class="location-subtitle" v-if="!editing_location">{{ location.subtitle }}</div>
+				<input type="text" class="subtitle location-subtitle"
+					v-model="new_location_subtitle"
+					v-show="editing_location && player.is_gm"
+					@click.stop />
+
+
 				<input type="button" class="button" value="save"
-					v-if="location.name != new_location_name && editing_location"
+					v-if="(location.name != new_location_name || location.subtitle != new_location_subtitle) && editing_location"
 					@click.stop="update_name" />
 
 				<input type="button" class="button transverse-button corner-button"
@@ -550,7 +561,7 @@
 				<input type="button" class="button link-button corner-button"
 					:value="player.small_buttons ? '🗺' : '🗺\ntake perspective'"
 					@click.stop="switch_perspective(location.id)"
-					v-if="player.is_gm && route.params.id != location.key && editing_location" />
+					v-if="player.is_gm && route.params.id != location.key && editing_location && location.id != player.the_entity?.id" />
 				
 				<input type="button" class="button codex-button corner-button"
 					:value="player.small_buttons ? '🏷' : '🏷\nadd to contacts'"
@@ -599,6 +610,7 @@
 							:ref="el => entity_button_refs_left.push(el)"
 							:entity_id="entity.id"
 							options_direction="right"
+							:is_active="player.is_gm ? entity.entityType != 'character' || entity.active : entity.active"
 							:show_name="false"
 							override_click
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
@@ -619,8 +631,9 @@
 							:entity_id="archetype.id"
 							:show_name="false"
 							show_archetypes
-							@show_entity="(entity_key: string) => emit('show_entity', entity_key)"
-							override_click @click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
+							is_active
+							override_click
+							@click_entity="(active_npc == archetype.id && overwrite_active == 'empty') || overwrite_active != archetype.id ?
 								overwrite_active = archetype.id : overwrite_active = 'empty'" />
 					</div>
 					<div class="active-npc-wrapper" v-if="show_active && (active_npc || overwrite_active) && overwrite_active != 'empty' && !show_location_image">
@@ -628,7 +641,7 @@
 							class="active-npc"
 							:entity_id="overwrite_active ?? active_npc"
 							@hide_entity="overwrite_active = 'empty'"
-							@show_entity="(entity_key) => emit('show_entity', entity_key)"
+							@show_entity="(entity_id) => emit('show_entity', entity_id)"
 							@instantiated_entity="set_presence_watcher" />
 					</div>
 					<div class="location-image-wrapper" v-if="show_location_image">
@@ -645,6 +658,7 @@
 							:ref="el => entity_button_refs_right.push(el)"
 							:entity_id="entity.id"
 							options_direction="left"
+							:is_active="player.is_gm ? entity.entityType != 'character' || entity.active : entity.active"
 							:show_name="false"
 							override_click
 							@click_entity="(active_npc == entity.id && overwrite_active == 'empty') || overwrite_active != entity.id ?
@@ -769,6 +783,7 @@
 									|| traitset.id == 'Traitsets/906502' // resources
 								)"
 							@refetch="retrieve_location"
+							@show_entity="(entity_id) => emit('show_entity', entity_id)"
 						/>
 					</Suspense>
 				</div>
@@ -822,6 +837,11 @@
 				.location-name {
 					font-size: 2em;
 					background-color: transparent;
+				}
+				.location-subtitle {
+					font-size: 1.2em;
+					background-color: transparent;
+					text-align: center;
 				}
 				.location-name-edit {
 					text-align: center;
@@ -884,12 +904,12 @@
 			}
 		}
 		.content {
-			padding: 0 1em 3em;
+			padding: 0 0 3em;
 			display: grid;
-			grid-template-columns: 60px auto 60px;
+			grid-template-columns: minmax(60px, auto) minmax(auto, calc(100% - 120px)) minmax(60px, auto);
 			width: 100%;
 			.left, .right {
-				width: 60px;
+				/* width: 60px; */
 				z-index: 1;
 				display: flex;
 				flex-direction: column;
@@ -898,7 +918,7 @@
 				.presence {
 					padding-top: 10%;
 					max-height: 90%;
-					width: 60px;
+					/* width: 60px; */
 					display: flex;
 					flex-direction: column;
 					align-items: center;
@@ -914,14 +934,14 @@
 				flex-grow: 1;
 				display: flex;
 				flex-direction: column;
-				overflow-x: hidden;
+				/* overflow-x: hidden; */
 				.archetypes {
 					display: flex;
 					flex-wrap: wrap;
 					justify-content: center;
 					gap: 1em;
 					/* overflow-x: auto; */
-					padding: 1em;
+					/* padding: 1em; */
 					.entity-card {
 						width: 50px;
 						min-width: 50px;
@@ -935,7 +955,7 @@
 					/* justify-content: center; */
 					align-items: center;
 					.active-npc {
-						max-width: 90%;
+						/* max-width: 90%; */
 						max-height: 100%;
 						margin: 20px 0;
 					}
@@ -1122,7 +1142,7 @@
 			}
 			/* border: 1px solid var(--color-background); */
 			width: 100%;
-			padding-bottom: 2em;
+			/* padding-bottom: 2em; */
 			>.location-component-wrapper {
 				>.title {
 					padding: 1em 3em 0 3em;
@@ -1226,7 +1246,7 @@
 				.flavortext, .corner-button {
 					color: var(--color-text);
 				}
-				.title .location-name, .header, .corner-button {
+				.title .location-name, .location-subtitle, .header, .corner-button {
 					text-shadow: var(--color-background) 0px 0px 2px,
 						var(--color-background) 0px 0px 4px,
 						var(--color-background) 0px 0px 8px,

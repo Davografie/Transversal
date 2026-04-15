@@ -53,7 +53,7 @@
 
 	.cls-3 {
 		font-family: Inter-BlackItalic, Inter;
-		font-size: 25.03px;
+		font-size: .9em;
 		font-style: italic;
 		font-variation-settings: 'wght' 900, 'slnt' -10;
 		font-weight: 800;

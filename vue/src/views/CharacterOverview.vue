@@ -133,6 +133,7 @@
 		<div id="search">
 			<input type="text" placeholder="search" v-model="search" />
 		</div>
+		<input type="button refresh-button" class="button" @click="retrieve_entities('network-only')" value="⟳" />
 		<div id="filters">
 			<ToggleButton
 				truthy="show archetypes" falsy="hide archetypes"

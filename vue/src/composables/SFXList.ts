@@ -1,14 +1,14 @@
 import { ref, type Ref, onMounted, inject, watch } from 'vue'
 import type { SFX } from '@/interfaces/Types'
 import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
-import type { ApolloClient } from '@apollo/client/core'
+import type { ApolloClient, FetchPolicy } from '@apollo/client/core'
 import gql from 'graphql-tag'
 
 export function useSFXList() {
 	const apolloClient = inject<ApolloClient<Cache>>('apolloClient')
 	const sfx_list: Ref<SFX[]> = ref([])
 
-	function retrieve_sfx_list() {
+	async function retrieve_sfx_list(caching: FetchPolicy = 'cache-first') {
 		const query_get_sfx_list = gql`query Sfxs {
 			sfxs {
 				id
@@ -28,7 +28,7 @@ export function useSFXList() {
 		if(apolloClient) {
 			apolloClient.query({
 				query: query_get_sfx_list,
-				fetchPolicy: 'cache-first'
+				fetchPolicy: caching
 			}).then((result) => {
 				sfx_list.value = result.data.sfxs
 			})
@@ -54,17 +54,22 @@ export function useSFXList() {
 				createSfx(description: $description, name: $name) {
 					sfx {
 						id
+						name
+						description
 					}
 				}
 			}`
 
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutation_create_sfx))
-			let variables: object = {
-				name: name,
-				description: description
-			}
-			mutate(variables)
+			const result = await apolloClient.mutate({
+				mutation: mutation_create_sfx,
+				variables: {
+					description: description,
+					name: name
+				}
+			})
+			await retrieve_sfx_list('network-only')
+			return result.data.createSfx.sfx
 		}
 	}
 

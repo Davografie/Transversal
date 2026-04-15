@@ -11,7 +11,7 @@
 
 <style scoped>
 	.face {
-		fill: var(--color-background);
+		/* fill: var(--color-background); */
 		stroke: var(--color-text);
 		stroke-width: 2pt;
 		stroke-miterlimit: 10;

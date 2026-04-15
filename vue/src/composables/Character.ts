@@ -170,7 +170,7 @@ export function useCharacter(init?: Character, character_key?: string) {
 	}
 
 	onMounted(() => {
-		if(character_key && character_key != 'placeholder') {
+		if(character_key && (!character.value || character.value.key != character_key) && character_key != 'placeholder') {
 			retrieve_character()
 		}
 		else {

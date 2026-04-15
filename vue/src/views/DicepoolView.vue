@@ -1,7 +1,7 @@
 <script setup lang="ts">
 	import { ref, watch, computed, defineAsyncComponent, onMounted } from 'vue'
 	import _ from 'lodash'
-	import { useVibrate, usePreferredColorScheme } from '@vueuse/core'
+	import { useVibrate } from '@vueuse/core'
 
 	import SessionControl from '@/components/SessionControl.vue'
 	import PoolEntity from '@/components/PoolEntity.vue'
@@ -50,9 +50,8 @@
 	const held = ref(false)
 
 	const { vibrate } = useVibrate({ pattern: [20] })
-	const preferredColor = usePreferredColorScheme()
 	const ruleset_logo = computed(() => {
-		return dicepoolStore.dice.length <= 2 ? 'SwadeLogoSmall' : 'CPC-' + preferredColor.value
+		return dicepoolStore.dice.length <= 2 ? 'SwadeLogoSmall' : 'CPC-' + player.theme
 	})
 
 	const editing = ref(false)
@@ -197,9 +196,9 @@
 	const title_pulsate = ref(false)
 	watch(dicepool.dicepool_size, (newSize) => {
 		title_pulsate.value = true
-		if(newSize == 0 && props.expanded) {
-			hide_dicepool()
-		}
+		// if(newSize == 0 && props.expanded) {
+		// 	hide_dicepool()
+		// }
 	})
 	const phase_pulsate = ref(false)
 	watch(() => dicepoolStore.phase, () => {
@@ -366,7 +365,9 @@
 									<DiePicker
 										@change-die="(r) => edit_die(r)"
 										:die="editing_die"
-										@cancel="editing_die = undefined; editing = false" show_effects :custom="false" />
+										@cancel="editing_die = undefined; editing = false"
+										show_effects
+										:custom="false" />
 								</div>
 								<div id="suggested-complications" v-if="dicepool.inAddingPhase.value">
 									<template v-for="entity_id in new Set(dicepoolStore.suggested_complications.map(d => d.entityId)).values()"
@@ -445,9 +446,6 @@
 							display: block;
 							flex-grow: 1;
 							text-align: center;
-							&.result {
-								color: var(--color-result);
-							}
 							&.effect {
 								color: var(--color-effect);
 							}
@@ -639,7 +637,7 @@
 			rgba(0, 0, 0, 0) 50%);
 	}
 	#dicepool.collapsed .title {
-		font-size: x-large;
+		font-size: 1.2em;
 	}
 	#dicepool.expanded .title {
 		border-bottom: 1px solid var(--color-border);
@@ -662,6 +660,9 @@
 		#dicepool {
 			.title {
 				text-shadow: none;
+				.result {
+					color: var(--color-result);
+				}
 			}
 			.info-half.result {
 				background-color: var(--color-result-mute);
@@ -681,11 +682,22 @@
 	}
 	.light {
 		#dicepool {
-			#dicepool-limit .button-mnml {
-				color: var(--color-highlight-text);
+			#dicepool-limit {
+				.button-mnml {
+					color: var(--color-highlight-text);
+				}
+				.result {
+					color: var(--color-result-light);
+				}
 			}
 			#dicepool-collapsible {
 				background-color: var(--color-background-soft);
+				.info-half.result {
+					background-color: var(--color-result-light);
+				}
+				.info-half.effect {
+					background-color: var(--color-effect-light);
+				}
 			}
 		}
 		#dicepool.empty .title {

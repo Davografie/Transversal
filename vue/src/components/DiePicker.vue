@@ -51,11 +51,11 @@
 	})
 
 	const player = usePlayerStore()
-	watch(player, (newPlayer) => {
-		if(newPlayer.is_gm) {
-			return_rating.value = []
-		}
-	})
+	// watch(player, (newPlayer) => {
+	// 	if(newPlayer.is_gm) {
+	// 		return_rating.value = []
+	// 	}
+	// })
 
 	// const { die, change_rating, step_up, step_down } = useDie(props.die)
 

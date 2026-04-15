@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { watch, ref, onMounted } from 'vue'
+	import { watch, ref, onMounted, nextTick } from 'vue'
 	import { useRouter } from 'vue-router'
 	import { templateRef, useScroll, useElementBounding } from '@vueuse/core'
 
@@ -51,9 +51,16 @@
 		panel.value?.scrollTo({ top: 0, behavior: 'smooth' })
 	})
 
-	watch(() => props.active_entity_id, () => {
-		panel.value?.scrollTo({ top: 0, behavior: 'smooth' })
-	})
+	// watch(() => props.active_entity_id, () => {
+	// 	// panel.value?.scrollTo({ top: 0, behavior: 'smooth' })
+	// 	// get document by id "active-npc" and scroll to it
+	// 	nextTick(() => {
+	// 		const element = document.getElementById('active-npc')
+	// 		if(element) {
+	// 			element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+	// 		}
+	// 	})
+	// })
 
 	watch(() => location.value.parent, (newParent) => {
 		if(newParent) {
@@ -127,7 +134,7 @@
 					:parent_width="width"
 					@scroll_to_top="panel.scrollTo({ top: 0, behavior: 'smooth' })"
 					@transverse="transverse"
-					@show_entity="(entity_key) => emit('show_entity', entity_key)" />
+					@show_entity="(entity_id) => emit('show_entity', entity_id)" />
 				<div id="transversables" v-if="location.transversables && location.transversables.length > 0">
 					<div class="attribute-header header">
 						<span>travel</span>
@@ -284,12 +291,13 @@
 		.container {
 			background-attachment: fixed;
 			#current-location-wrapper {
-				background-image: linear-gradient(to bottom, transparent 0, transparent 50%, var(--color-background-mute) 100%);
+				backdrop-filter: blur(4px);
+				background-image: linear-gradient(to bottom, transparent 0, var(--color-background-mute) 10em);
 			}
-				/* background-position: top left; */
-				background-size: v-bind(width + 'px') 100vh;
-				background-position: v-bind(left + 'px') top;
-				background-repeat: no-repeat;
+			/* background-position: top left; */
+			background-size: v-bind(width + 'px') 100vh;
+			background-position: v-bind(left + 'px') top;
+			background-repeat: no-repeat;
 		}
 	}
 	.light {

@@ -50,7 +50,7 @@
 				@show_entity="show_entity" />
 			<CurrentLocationView id="current-location" class="panel"
 				:location_key="player.the_entity?.location?.key ?? ''"
-				@show_entity="(ett_key) => show_entity('Entities/' + ett_key)"
+				@show_entity="show_entity"
 				:active_entity_id="active_entity_id"
 				v-if="player.the_entity?.location" />
 			<CodexView id="codex" class="panel"
@@ -110,7 +110,7 @@
 	#panels {
 		display: grid;
 		/* grid-template-columns: v-bind(third_width + 'px') v-bind(third_width + 'px') v-bind(third_width + 'px'); */
-		grid-template-columns: 3fr 4fr 130px;
+		grid-template-columns: minmax(24em, 2fr) 4fr 130px;
 		width: 100vw;
 		height: 100vh;
 		.character-panel {

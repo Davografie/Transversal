@@ -5,7 +5,7 @@
 		one for every active player
 		including the current user
 */
-import { ref, type Ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, type Ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 

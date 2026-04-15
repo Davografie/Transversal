@@ -90,6 +90,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					traits {
 						id
 						name
+						randomWeight
 					}
 				}
 			}`
@@ -129,6 +130,9 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 							inherited
 							inheritable
 						}
+					}
+					traitsetSetting {
+						traitMode
 					}
 				}
 			}`
@@ -253,6 +257,39 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
+	async function retrieve_traitset_setting(caching: FetchPolicy = 'cache-first') {
+		const query = gql`query Traitset($traitsetId: ID, $entityId: ID) {
+			traitsets(traitsetId: $traitsetId, entityId: $entityId) {
+				traitsetSetting {
+					id
+					sfxs {
+						id
+						name
+					}
+					sorting
+					traitMode
+				}
+			}
+		}`
+
+		if(apolloClient) {
+			const result = await apolloClient.query({
+				query: query,
+				variables: {
+					traitsetId: traitset_id,
+					entityId: entity_id
+				},
+				fetchPolicy: caching
+			}).catch((error) => {
+				console.error("error retrieving traitset setting: ", traitset_id, "error: ", error)
+			})
+			traitset.value = {
+				...traitset.value,
+				traitsetSetting: result.data.traitsets[0].traitsetSetting
+			}
+		}
+	}
+
 	function mutate_traitset(traitset_input: TraitsetInput) {
 		const query = gql`mutation MutateTraitset(
 			$traitsetId: ID!,
@@ -348,7 +385,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function update_traitset_settings(new_settings: any) {
+	async function update_traitset_settings(new_settings: any) {
 		const mutate_update_traitset = gql`mutation updateTraitsetSetting($entityId: ID, $traitsetId: ID, $traitsetSettingInput: TraitsetSettingInput!) {
 			updateTraitsetSetting(entityId: $entityId, traitsetId: $traitsetId, traitsetSettingInput: $traitsetSettingInput) {
 				traitsetSetting {
@@ -365,7 +402,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 				traitsetSettingInput: new_settings
 			}
 			console.log("updating traitset with variables: ", variables)
-			mutate(variables)
+			await mutate(variables)
 		}
 	}
 
@@ -432,8 +469,8 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 			}
 		}`
 		if(apolloClient) {
-			let trait = null
-			await apolloClient.mutate({
+			// let trait = null
+			const result = await apolloClient.mutate({
 				mutation: mutate_assign_trait,
 				variables: {
 					traitId: trait_id,
@@ -441,12 +478,14 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 					locationId: location_id,
 					traitSettingInput: trait_setting_input
 				}
-			}).then((response) => {
-				retrieve_traitset('network-only')
-				trait = response?.data?.assignTrait?.trait
 			})
-			console.log("assigned trait: ", trait)
-			return trait
+			// .then((response) => {
+			// 	retrieve_traitset('network-only')
+			// 	trait = response?.data?.assignTrait?.trait
+			// })
+			// await retrieve_traitset('network-only')
+			// console.log("assigned trait: ", trait)
+			return result.data.assignTrait.trait
 		}
 	}
 
@@ -472,7 +511,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}
 	}
 
-	function delete_traitset() {
+	async function delete_traitset() {
 		const mutate_delete_traitset = gql`mutation DeleteTraitset($traitsetId: ID!) {
 			deleteTraitset(traitsetId: $traitsetId) {
 				message
@@ -481,12 +520,12 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		}`
 		
 		if(apolloClient) {
-			const { mutate } = provideApolloClient(apolloClient)(() => useMutation(mutate_delete_traitset))
-			let variables: object = {
-				traitsetId: traitset_id
-			}
-			console.log("deleting traitset with variables: ", variables)
-			mutate(variables)
+			await apolloClient.mutate({
+				mutation: mutate_delete_traitset,
+				variables: {
+					traitsetId: traitset.value.id
+				}
+			})
 		}
 	}
 
@@ -494,6 +533,7 @@ export function useTraitset(init?: Traitset, traitset_id?: string, entity_id?: s
 		traitset,
 		retrieve_traitset,
 		mutate_traitset,
+		retrieve_traitset_setting,
 		update_traitset_settings,
 		default_settings,
 		retrieve_default_settings,

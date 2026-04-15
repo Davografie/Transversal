@@ -44,6 +44,10 @@ function decrease_rating_type() {
 	}
 	emit('change-rating', new_rating_type.value, new_rating.value, new_pool_scaling.value, new_result_scaling.value, new_effect_scaling.value)
 }
+function change_rating_type(rating_type: string) {
+	new_rating_type.value = rating_type
+	emit('change-rating', new_rating_type.value, new_rating.value, new_pool_scaling.value, new_result_scaling.value, new_effect_scaling.value)
+}
 function die_picker_change(dice: DieType[]) {
 	new_rating.value = dice
 	submit()
@@ -66,16 +70,19 @@ function submit() {
 </script>
 
 <template>
-	<div>
+	<div class="rating-edit">
 		<div class="scaling">
-			<ScalingEdit class="pool-scaling" :scaling="new_pool_scaling" @change-scaling="pool_scaling_change" />
-			<ScalingEdit class="result-scaling" :scaling="new_result_scaling" @change-scaling="result_scaling_change" />
-			<ScalingEdit class="effect-scaling" :scaling="new_effect_scaling" @change-scaling="effect_scaling_change" />
+			<ScalingEdit class="pool-scaling" :scaling="new_pool_scaling" @change_scaling="pool_scaling_change" />
+			<ScalingEdit class="result-scaling" :scaling="new_result_scaling" @change_scaling="result_scaling_change" />
+			<ScalingEdit class="effect-scaling" :scaling="new_effect_scaling" @change_scaling="effect_scaling_change" />
 		</div>
-		<input type="button" class="button"
-			:value="new_rating_type"
-			@click.stop="increase_rating_type"
-			@click.right="decrease_rating_type" />
+		<div class="rating-types">
+			<input type="button" class="button"
+				v-for="rating_type in rating_types" :key="rating_type"
+				:value="rating_type"
+				:class="{ 'active': new_rating_type == rating_type}"
+				@click="change_rating_type(rating_type)" />
+		</div>
 		<DiePicker
 			:dice="props.rating"
 			preview
@@ -89,15 +96,21 @@ function submit() {
 </template>
 
 <style scoped>
-.scaling {
-	display: flex;
-	justify-content: center;
-	gap: 1em;
-	.result-scaling {
-		color: var(--color-result-light);
+.rating-edit {
+	.rating-types {
+		display: flex;
+		justify-content: center;
 	}
-	.effect-scaling {
-		color: var(--color-effect);
+	.scaling {
+		display: flex;
+		justify-content: center;
+		gap: 1em;
+		.result-scaling {
+			color: var(--color-result-light);
+		}
+		.effect-scaling {
+			color: var(--color-effect);
+		}
 	}
 }
 </style>

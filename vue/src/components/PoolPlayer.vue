@@ -16,7 +16,7 @@
 </script>
 
 <template>
-    <div @click.stop="verbose_dice = !verbose_dice">
+    <div class="pool-player" @click.stop="verbose_dice = !verbose_dice">
         <div class="player">
             <!-- <div>
                 {{ verbose_dice ?
@@ -24,7 +24,7 @@
                     player.small_buttons ? '🔘' : '🔘 simple view' }}
             </div> -->
             <div class="name header">
-                {{ resolution.player.player_name }}
+                {{ resolution.player.name }}
             </div>
         </div>
         <div class="active-pool" v-if="resolution.player.phase != dicepoolStore.phases.RESOLVE">
@@ -45,4 +45,11 @@
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.pool-player {
+    padding: .4em 1em;
+    border: 1px solid var(--color-border);
+    border-radius: 1em;
+    background-color: var(--color-background);
+}
+</style>
