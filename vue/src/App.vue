@@ -2,8 +2,9 @@
 	import Mobile from '@/views/Mobile.vue'
 	import Landscape from '@/views/Landscape.vue'
 	import ImageOverlay from '@/views/ImageOverlay.vue'
-	import { ref, computed, watch, onMounted, onUpdated, toRefs } from 'vue'
-	import { useRouter, useRoute, RouterLink } from 'vue-router'
+	import WebSocketConnection from '@/components/WebSocketConnection.vue'
+	import { ref, computed, watch, onMounted, onUnmounted, onUpdated } from 'vue'
+	import { useRouter, useRoute } from 'vue-router'
 	import { useWindowSize, useElementSize, usePreferredColorScheme, useScreenOrientation, templateRef, useFullscreen } from '@vueuse/core'
 
 	import { usePlayerStore, input_methods, user_themes } from '@/stores/PlayerStore'
@@ -203,6 +204,11 @@
 	// watch(() => dicepool_store.dice.length, () => {
 	// 	dicepool_pulsate.value = true
 	// })
+
+	const websocket_connection = ref()
+	function engage() {
+		websocket_connection.value.engage()
+	}
 </script>
 
 <template>
@@ -217,12 +223,13 @@
 			]"
 			:style="player.theme == 'dark' ? { 'background-image': 'url(' + location_image_link + ')'} : ''"
 			ref="app_wrapper_component">
-		<div id="toggle-fullscreen" @click="toggleFullscreen" class="button-mnml">
-			<span class="icon">🪟</span>
+		<div id="floating-icons">
+			<span id="toggle-fullscreen" @click="toggleFullscreen">🪟</span>
+			<WebSocketConnection ref="websocket_connection" />
 		</div>
 		<ImageOverlay />
-		<Landscape v-if="player.orientation == 'horizontal'" />
-		<Mobile v-else />
+		<Landscape v-if="player.orientation == 'horizontal'" @fullscreen="toggleFullscreen" @engage="engage" />
+		<Mobile v-else @fullscreen="toggleFullscreen" @engage="engage" />
 	</div>
 </template>
 
@@ -234,11 +241,12 @@
 		overflow-y: scroll; */
 		position: relative;
 		scroll-behavior: smooth;
-		#toggle-fullscreen {
+		#floating-icons {
 			position: fixed;
 			top: 0;
 			right: 0;
-			z-index: 5;
+			z-index: 20;
+			display: flex;
 		}
 		#edit-button, #floating-buttons {
 			position: fixed;

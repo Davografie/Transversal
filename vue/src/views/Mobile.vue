@@ -27,7 +27,15 @@
 	const overwrite_entity_id = ref<string>()
 	const active_entity_id = ref<string|undefined>()
 	const dicepool_expanded = ref(false)
+	function expand_dicepool() {
+		dicepool_expanded.value = true
+		emits('engage')
+	}
 	const dicepool_pulsate = ref(false)
+
+	const emits = defineEmits([
+		'engage'
+	])
 
 	function show_entity(entity_id: string) {
 		active_entity_id.value = entity_id
@@ -177,7 +185,7 @@
 					</a>
 				</div>
 				<div id="dicepool-footer-container">
-					<div id="dicepool-footer-widget" @click="dicepool_expanded = true"
+					<div id="dicepool-footer-widget" @click="expand_dicepool"
 							:class="[
 								{ 'pulsate': dicepool_pulsate },
 								{ 'active': dicepool_store.dice.length > 0 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, watch, computed, defineAsyncComponent, onMounted } from 'vue'
+	import { ref, watch, computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 	import _ from 'lodash'
 	import { useVibrate } from '@vueuse/core'
 
@@ -13,7 +13,6 @@
 	const DieComponent = defineAsyncComponent(() => import('@/components/Die.vue'))
 	
 	import { useDicepool } from '@/composables/Dicepool'
-	import { useDicepoolWS } from '@/composables/DicepoolWS'
 	import { die_shapes } from '@/composables/Die'
 
 	import { useDicepoolStore } from '@/stores/DicepoolStore'
@@ -35,17 +34,12 @@
 	const dicepoolStore = useDicepoolStore()
 
 	const dicepool = useDicepool(true)
-	const websocket = useDicepoolWS()
 
-	console.log("connecting websocket")
 	onMounted(() => {
 		console.log("mounted dicepool")
-		websocket.connect()
+		// console.log("connecting websocket")
+		// websocket.connect()
 	})
-	watch(() => dicepoolStore.dice, (newDice) => {
-		console.log("new dice: ", newDice)
-		websocket.send_dicepool(newDice)
-	}, { deep: true })
 
 	const held = ref(false)
 
@@ -76,6 +70,7 @@
 	const verbose_dice = ref(true)
 
 	function open_dicepool() {
+		// websocket.engage()
 		emit('expand')
 	}
 

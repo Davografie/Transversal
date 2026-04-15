@@ -1,8 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.websockets import WebSocketState
-from typing import Dict, List
-import json
-from pydantic import BaseModel
+from typing import Dict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -53,36 +50,48 @@ app = FastAPI()
 
 class ConnectionManager:
 	def __init__(self):
-		self.active_connections: Dict[str, WebSocket] = {}
+		self.active_connections: Dict[str, str|WebSocket] = {}
 
-	async def connect(self, websocket: WebSocket, player_id: str):
+	async def connect(self, websocket: WebSocket, player_key: str, session_id: str):
 		await websocket.accept()
-		self.active_connections[player_id] = websocket
 
-		logger.debug(f"Connected player: {player_id}")
+		self.active_connections[session_id] = {}
+		self.active_connections[session_id]['player_key'] = player_key
+		self.active_connections[session_id]['session_id'] = session_id
+		self.active_connections[session_id]['websocket'] = websocket
+
+		logger.info(f"Connected player: {player_key}")
+		await self.broadcast({"type": "player_connected"}, player_key)
 
 		try:
 			while True:
 				data = await websocket.receive_json()
-				logger.debug(f"Received data: {data}")
-				await self.broadcast(data, player_id)
+				logger.debug(f"Received data from player: {player_key}\n\t{data}")
+				await self.broadcast(data, player_key)
 		except WebSocketDisconnect:
-			self.active_connections.pop(player_id, None)
+			logger.info(f"Disconnected player: {player_key}")
+			del self.active_connections[session_id]
+			await self.broadcast({"type": "player_disconnected"}, player_key)
 	
-	async def broadcast(self, message: Dict[str, str], from_player_id: str):
+	async def broadcast(self, message: Dict[str, str], from_player_key: str, from_session_id: str = None):
 		"""
 		Send message to all other active connections
 		"""
-		for player_id, connection in self.active_connections.items():
-			if player_id != from_player_id:
-				await connection.send_json(message)
+		logger.debug(f"Broadcasting message to sessions {self.active_connections.keys()}")
+		enriched_message = {
+			"from_player_key": from_player_key,
+			"from_session_id": from_session_id,
+			**message
+		}
+		for session_id in self.active_connections.keys():
+			await self.active_connections[session_id]['websocket'].send_json(enriched_message)
 			
+manager = ConnectionManager()
 
 # example endpoint url: ws://localhost:8000/ws/123
-@app.websocket("/ws/{player_id}")
-async def websocket_endpoint(websocket: WebSocket, player_id: str):
-	manager = ConnectionManager()
-	await manager.connect(websocket, player_id)
+@app.websocket("/ws/{player_key}/{session_id}")
+async def websocket_endpoint(websocket: WebSocket, player_key: str, session_id: str):
+	await manager.connect(websocket, player_key, session_id)
 	
 
 		

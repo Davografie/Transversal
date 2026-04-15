@@ -13,6 +13,8 @@
 
 	import type { Location as LocationType } from '@/interfaces/Types';
 
+	const emits = defineEmits(['engage'])
+
 	const route = useRoute()
 	const player = usePlayerStore()
 
@@ -20,6 +22,11 @@
 	const third_width = computed(() => windowWidth.value / 3)
 
 	const dicepool_expanded = ref(false)
+
+	function expand_dicepool() {
+		dicepool_expanded.value = true
+		emits('engage')
+	}
 
 	//	changed by show_entity()
 	const active_entity_id = ref<string|undefined>()
@@ -69,7 +76,7 @@
 			<div id="dicepool-container">
 				<DicepoolView id="dicepool" ref="dicepool"
 					:expanded="dicepool_expanded"
-					@expand="dicepool_expanded = true"
+					@expand="expand_dicepool"
 					@collapse="dicepool_expanded = false" />
 			</div>
 		</footer>

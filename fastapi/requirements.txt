@@ -1,3 +1,4 @@
-fastapi[standard]
-uvicorn
-bidict
+fastapi[standard]==0.135.2
+uvicorn==0.42.0
+# strawberry-graphql[fastapi]==0.311.1
+# redis==7.3.0
