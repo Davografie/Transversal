@@ -1,6 +1,6 @@
 import { ref, watch, inject } from "vue";
 
-import type { ApolloClient } from '@apollo/client/core'
+import type { ApolloClient, FetchPolicy } from '@apollo/client/core'
 import { useQuery, useMutation, provideApolloClient } from "@vue/apollo-composable"
 import gql from 'graphql-tag'
 
@@ -12,16 +12,16 @@ const player_placeholder: Player = {
 	isGm: false
 }
 
-export function usePlayer(_init?: Player, _player_id?: string) {
+export function usePlayer(_init?: Player, player_id?: string) {
 	const apolloClient = inject<ApolloClient<Cache>>('apolloClient')
 	const player = ref<Player>(_init ?? player_placeholder)
 
-	function set_player_id(player_id: string) {
-		_player_id = player_id
+	function set_player_id(_player_id: string) {
+		player_id = _player_id
 	}
 
-	function retrieve_player() {
-		// console.log('retrieving player: ' + _player_id)
+	async function retrieve_player(caching: FetchPolicy = 'cache-first') {
+		console.log('retrieving player: ' + player_id)
 		const query = gql`query Player($playerId: ID!) {
 			players(playerId: $playerId) {
 				id
@@ -34,13 +34,16 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 				}
 			}
 		}`
-		if(apolloClient && _player_id) {
-			apolloClient.query({
+		if(apolloClient && player_id) {
+			await apolloClient.query({
 				query: query,
-				variables: { playerId: _player_id },
-				fetchPolicy: 'network-only'
+				variables: { playerId: player_id },
+				fetchPolicy: caching
 			}).then((result) => {
+				console.log('retrieved player: ', result.data.players[0])
 				player.value = result.data.players[0]
+			}).catch((error) => {
+				console.error('error retrieving player: ', error)
 			})
 		}
 	}
@@ -53,11 +56,11 @@ export function usePlayer(_init?: Player, _player_id?: string) {
 				}
 			}
 		}`
-		if(apolloClient && (_player_id || player.value.id != 'placeholder')) {
+		if(apolloClient && (player_id || player.value.id != 'placeholder')) {
 			await apolloClient.mutate({
 				mutation: query_update_entity,
 				variables: {
-					playerId: _player_id ?? player.value.id,
+					playerId: player_id ?? player.value.id,
 					entityId: entity_id
 				}
 			})

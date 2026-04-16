@@ -2,7 +2,9 @@ import { ref, inject, watch } from 'vue'
 import { useWebSocket } from '@vueuse/core'
 import { usePlayerStore } from '@/stores/PlayerStore'
 import { useDicepoolStore } from '@/stores/DicepoolStore'
-import type { Die } from '@/interfaces/Types'
+import { usePlayer } from '@/composables/Player'
+import type { Die, Dicepool } from '@/interfaces/Types'
+import type { WebsocketData, WsDicepool } from '@/interfaces/WebsocketTypes'
 
 let websocket: ReturnType<typeof useWebSocket>
 
@@ -33,7 +35,7 @@ export function useDicepoolWS() {
 	watch(playerStore.player, (newPlayer) => {
 		if(newPlayer.key) {
 			websocket.close()
-			websocket = useWebSocket(API_WS + "ws/" + newPlayer.key)
+			websocket = useWebSocket(API_WS + "ws/" + newPlayer.key + '/' + playerStore.uuid)
 		}
 	})
 
@@ -50,7 +52,12 @@ export function useDicepoolWS() {
 
 	function send_dicepool(dice: Die[]) {
 		console.log("sending dicepool: ", dice)
-		websocket.send(JSON.stringify({ type: "dicepool", data: dice }))
+		websocket.send(JSON.stringify({
+			type: "dicepool",
+			dicepool: {
+				dice: dice
+			}
+		}))
 	}
 
 	watch(() => dicepoolStore.dice, (newDice) => {
@@ -59,10 +66,39 @@ export function useDicepoolWS() {
 	}, { deep: true })
 
 	const receiving = ref(false)
-	watch(websocket.data, (newData) => {
+	const { player, retrieve_player, set_player_id } = usePlayer(undefined, undefined)
+
+	async function receive_dicepool(data: WebsocketData) {
+		// check current dicepools by player key
+		// if it doesn't exist, create it
+		// if it does exist, update it
+		console.log("receiving dicepool: ", data)
+		if(data.dicepool) {
+			if(dicepoolStore.dicepools.find((dp: Dicepool) => dp.player.key == data.player_key)) {
+				dicepoolStore.dicepools.find((dp: Dicepool) => dp.player.key == data.player_key)!.dice = data.dicepool.dice
+			}
+			else {
+				set_player_id('Players/' + data.player_key)
+				await retrieve_player()
+				console.log("setting dicepool for player: ", player.value)
+				dicepoolStore.dicepools.push({
+					player: player.value,
+					dice: data.dicepool.dice
+				})
+			}
+		}
+	}
+
+	watch(websocket.data, (newData: WebsocketData) => {
 		if(newData) {
 			receiving.value = true
-			console.log("new dicepool: ", newData)
+			const dataObject = typeof newData === "string" ? JSON.parse(newData) : newData;
+			console.log("new dicepool (" + dataObject.type + "): ", dataObject)
+			switch(dataObject.type) {
+				case "dicepool":
+					if(dataObject.dicepool) receive_dicepool(dataObject)
+					break
+			}
 			setTimeout(() => {
 				receiving.value = false
 			}, 200)

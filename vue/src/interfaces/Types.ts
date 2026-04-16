@@ -29,7 +29,7 @@ export interface Die {
 }
 
 export interface Dicepool {
-    player: string
+    player: Player
     dice: Die[]
 }
 
