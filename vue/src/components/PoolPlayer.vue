@@ -1,16 +1,14 @@
 <script setup lang="ts">
     import { ref } from 'vue'
-    import { usePlayerStore } from '@/stores/PlayerStore'
     import { useDicepoolStore } from '@/stores/DicepoolStore'
     import Die from '@/components/Die.vue'
     import PoolEntity from '@/components/PoolEntity.vue'
     import Resolution from '@/components/Resolution.vue'
-    import type { Resolution as ResolutionType } from '@/interfaces/Types'
+    import type { Dicepool } from '@/interfaces/Types'
     const props = defineProps<{
-        resolution: ResolutionType
+        dicepool: Dicepool,
     }>()
 
-    const player = usePlayerStore()
     const dicepoolStore = useDicepoolStore()
     const verbose_dice = ref(false)
 </script>
@@ -24,23 +22,27 @@
                     player.small_buttons ? '🔘' : '🔘 simple view' }}
             </div> -->
             <div class="name header">
-                {{ resolution.player.name }}
+                {{ dicepool.player.name }}
             </div>
         </div>
-        <div class="active-pool" v-if="resolution.player.phase != dicepoolStore.phases.RESOLVE">
+        <div class="active-pool" v-if="dicepool.player.phase != dicepoolStore.phases.RESOLVE">
             <div class="dice" v-if="!verbose_dice">
-                <Die v-for="d in resolution.dice" :key="d.id" :die="d" in_pool />
+                <Die v-for="d in dicepool.dice" :key="d.id" :die="d" in_pool />
             </div>
             <div class="verbose-dice" v-if="verbose_dice">
                 <PoolEntity
-                    v-for="entity in new Set(resolution.dice.map((d) => d.entityId))"
+                    v-for="entity in new Set(props.dicepool.dice.map(d => d.entityId)).values()" :key="entity"
+                    :entity_id="entity ?? ''"
+                    :dice="props.dicepool.dice.filter(d => d.entityId == entity)" />
+                <!-- <PoolEntity
+                    v-for="entity in new Set(dicepool.dice.map((d) => d.entityId))"
                     :key="entity"
-                    :dice="resolution.dice.filter((d) => d.entityId == entity)"
-                    :entity_id="entity" />
+                    :dice="dicepool.dice.filter((d) => d.entityId == entity)"
+                    :entity_id="entity" /> -->
             </div>
         </div>
-        <div class="resolved-pool" v-if="resolution.player.phase == dicepoolStore.phases.RESOLVE">
-            <Resolution :resolution="resolution" :winner="resolution.winner ?? false" :heroic="resolution.heroic" :verbose="verbose_dice" />
+        <div class="resolved-pool" v-if="dicepool.player.phase == dicepoolStore.phases.RESOLVE">
+            <Resolution :resolution="dicepool" :winner="dicepool.winner ?? false" :heroic="dicepool.heroic" :verbose="verbose_dice" />
         </div>
     </div>
 </template>

@@ -93,7 +93,7 @@ export function useDicepoolWS() {
 		if(newData) {
 			receiving.value = true
 			const dataObject = typeof newData === "string" ? JSON.parse(newData) : newData;
-			console.log("new dicepool (" + dataObject.type + "): ", dataObject)
+			console.log("websocket data received (" + dataObject.type + "): ", dataObject)
 			switch(dataObject.type) {
 				case "dicepool":
 					if(dataObject.dicepool) receive_dicepool(dataObject)

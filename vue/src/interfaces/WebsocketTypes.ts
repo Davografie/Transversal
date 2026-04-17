@@ -1,6 +1,9 @@
 import type { Die } from '@/interfaces/Types'
 
 export interface WsDicepool {
+	player: {
+		key: string
+	}
 	dice: Die[]
 }
 

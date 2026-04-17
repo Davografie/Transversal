@@ -59,7 +59,6 @@ class ConnectionManager:
 
 		self.active_connections[session_id] = {}
 		self.active_connections[session_id]['player_key'] = player_key
-		self.active_connections[session_id]['session_id'] = session_id
 		self.active_connections[session_id]['websocket'] = websocket
 
 		logger.info(f"Connected player: {player_key}")
@@ -68,6 +67,8 @@ class ConnectionManager:
 			"session_id": session_id,
 			"type": "player_connected"
 		})
+
+		await self.active_connections[session_id]['websocket'].send_json(dicepools)
 
 		try:
 			while True:
@@ -78,11 +79,12 @@ class ConnectionManager:
 					case "hello_world":
 						await self.broadcast(data)
 					case "dicepool":
-						await self.broadcast({
-							"player_key": player_key,
-							"session_id": session_id,
-							**data
-						})
+						await self.set_dicepool(player_key, session_id, data.get('dicepool', {}).get('dice', []))
+						# await self.broadcast({
+						# 	"player_key": player_key,
+						# 	"session_id": session_id,
+						# 	**data
+						# })
 					case "engage":
 						await self.broadcast(data)
 		except WebSocketDisconnect:
@@ -90,13 +92,27 @@ class ConnectionManager:
 			del self.active_connections[session_id]
 			await self.broadcast({"type": "player_disconnected"})
 	
-	# def set_dicepool(self, player_key: str, session_id: str, dicepool: dict):
-	# 	global dicepools
-	# 	new_dicepool = {
-	# 		"player": {
-				
-	# 		}
-	# 	}
+	async def set_dicepool(self, player_key: str, session_id: str, dice: list):
+		global dicepools
+
+		new_dicepool = {
+			"player": {
+				"key": player_key,
+			},
+			"dice": dice
+		}
+
+		if player_dicepool := next((dp for dp in dicepools if dp['player']['key'] == player_key), None):
+			player_dicepool['dice'] = dice
+		else:
+			dicepools.append(new_dicepool)
+		
+		await self.broadcast({
+			"player_key": player_key,
+			"session_id": session_id,
+			"type": "dicepool",
+			"dicepool": new_dicepool
+		})
 	
 	async def broadcast(self, message: Dict[str, str]):
 		"""

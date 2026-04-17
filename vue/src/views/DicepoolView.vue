@@ -321,13 +321,16 @@
 								<div id="chosen-dice">
 									<div id="chosen-dice-wrapper">
 										<div id="verbose-dice" v-if="verbose_dice">
-											<PoolEntity
+											<PoolPlayer
+												v-for="dp in dicepoolStore.dicepools" :key="dp.player.key"
+												:dicepool="dp" />
+											<!-- <PoolEntity
 												v-for="entity in new Set(dicepoolStore.dice.map(d => d.entityId)).values()" :key="entity"
 												:entity_id="entity ?? ''"
 												:dice="dicepoolStore.dice.filter(d => d.entityId == entity)"
 												:result_limit="dicepool.result_limit.value"
 												:effect_limit="dicepool.effect_limit.value"
-												@longpress_die="(die: DieType) => longtap_die(die)" />
+												@longpress_die="(die: DieType) => longtap_die(die)" /> -->
 										</div>
 										<div id="simple-dice" v-else>
 											<div id="average-result" v-if="dicepoolStore.dice.length > 0">
@@ -385,10 +388,10 @@
 
 						</div>
 						<div id="opposing-pools">
-							<PoolPlayer
+							<!-- <PoolPlayer
 								v-for="opposing_pool in dicepoolStore.resolutions.filter(r => r.player.uuid != player.uuid || dicepool.inResolvePhase.value)"
 								:key="opposing_pool.player.uuid"
-								:resolution="opposing_pool" />
+								:resolution="opposing_pool" /> -->
 						</div>
 					</div>
 				</div>
