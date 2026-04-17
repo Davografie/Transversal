@@ -68,7 +68,7 @@ class ConnectionManager:
 			"type": "player_connected"
 		})
 
-		await self.active_connections[session_id]['websocket'].send_json(dicepools)
+		await self.send_dicepools(websocket)
 
 		try:
 			while True:
@@ -80,13 +80,8 @@ class ConnectionManager:
 						await self.broadcast(data)
 					case "dicepool":
 						await self.set_dicepool(player_key, session_id, data.get('dicepool', {}).get('dice', []))
-						# await self.broadcast({
-						# 	"player_key": player_key,
-						# 	"session_id": session_id,
-						# 	**data
-						# })
 					case "engage":
-						await self.broadcast(data)
+						await self.send_dicepools(websocket)
 		except WebSocketDisconnect:
 			logger.info(f"Disconnected player: {player_key}")
 			del self.active_connections[session_id]
@@ -114,6 +109,12 @@ class ConnectionManager:
 			"dicepool": new_dicepool
 		})
 	
+	async def send_dicepools(self, websocket: WebSocket):
+		await websocket.send_json({
+			"type": "dicepools",
+			"dicepools": dicepools
+		})
+
 	async def broadcast(self, message: Dict[str, str]):
 		"""
 		Send message to all other active connections

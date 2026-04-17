@@ -12,4 +12,5 @@ export interface WebsocketData {
 	session_id: string
 	type: string
 	dicepool?: WsDicepool
+	dicepools?: WsDicepool[]
 }

@@ -89,6 +89,22 @@ export function useDicepoolWS() {
 		}
 	}
 
+	async function receive_dicepools(data: WebsocketData) {
+		console.log("receiving dicepools: ", data)
+		if(data.dicepools) {
+			dicepoolStore.dicepools = []
+			data.dicepools.forEach((dp: WsDicepool) => {
+				set_player_id('Players/' + dp.player.key)
+				retrieve_player().then(() => {
+					dicepoolStore.dicepools.push({
+						player: player.value,
+						dice: dp.dice
+					})
+				})
+			})
+		}
+	}
+
 	watch(websocket.data, (newData: WebsocketData) => {
 		if(newData) {
 			receiving.value = true
@@ -98,11 +114,16 @@ export function useDicepoolWS() {
 				case "dicepool":
 					if(dataObject.dicepool) receive_dicepool(dataObject)
 					break
+				case "dicepools":
+					if(dataObject.dicepools) {
+						receive_dicepools(dataObject)
+					}
+					break
 			}
-			setTimeout(() => {
-				receiving.value = false
-			}, 200)
 		}
+		setTimeout(() => {
+			receiving.value = false
+		}, 200)
 	})
 
 	return {
