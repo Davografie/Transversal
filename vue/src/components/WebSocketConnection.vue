@@ -16,8 +16,13 @@
 		websocket.engage()
 	}
 
+	function next_beat() {
+		websocket.next_beat()
+	}
+
 	defineExpose({
 		engage,
+		next_beat
 	})
 </script>
 

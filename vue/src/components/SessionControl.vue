@@ -2,6 +2,7 @@
 import { usePlayerStore } from '@/stores/PlayerStore';
 import { useSession } from '@/composables/Session'
 import { ref, watch } from 'vue';
+const emits = defineEmits(['next_beat'])
 const { new_session, next_scene, next_beat } = useSession()
 const player = usePlayerStore()
 const changing_beat = ref(false)
@@ -17,7 +18,8 @@ function next_something(what: string) {
 		next_scene()
 	}
 	if(what === 'beat') {
-		next_beat()
+		// next_beat()
+		emits('next_beat')
 	}
 }
 watch(() => player.beat_id, () => {

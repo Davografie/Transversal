@@ -60,6 +60,10 @@ export function useDicepoolWS() {
 		}))
 	}
 
+	function next_beat() {
+		websocket.send(JSON.stringify({ type: "next_beat" }))
+	}
+
 	watch(() => dicepoolStore.dice, (newDice) => {
 		console.log("new dice: ", newDice)
 		send_dicepool(newDice)
@@ -133,6 +137,7 @@ export function useDicepoolWS() {
 		receiving,
 		hello_world,
 		engage,
-		send_dicepool
+		send_dicepool,
+		next_beat
 	}
 }

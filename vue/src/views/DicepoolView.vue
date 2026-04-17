@@ -27,7 +27,8 @@
 
 	const emit = defineEmits([
 		'expand',
-		'collapse'
+		'collapse',
+		'next_beat'
 	])
 
 	const player = usePlayerStore()
@@ -249,13 +250,15 @@
 				<div id="poll-timer">{{ time_until_next_poll }}ms</div>
 			</div> -->
 			<div id="dicepool-collapsible" v-if="props.expanded">
+				<h1>Dicepool</h1>
 				<div id="dicepool-inner">
 					<!-- <input type="button" class="button-mnml" id="dicepool-details-view"
 						:value="verbose_dice ?
 							player.small_buttons ? '👁' : '👁 detail view' :
 							player.small_buttons ? '🔘' : '🔘 simple view'"
 						@click.stop="verbose_dice = !verbose_dice" /> -->
-					<SessionControl v-if="player.is_gm" />
+					<SessionControl v-if="player.is_gm"
+						@next_beat="emit('next_beat')" />
 
 					<div id="dicepools" :style="{ 'background-image': dicepool.dicepool_size.value > 0 ? `url('/img/` + ruleset_logo + `.png')` : '' }">
 
@@ -663,8 +666,8 @@
 	} */
 	.landscape {
 		#dicepool {
-			border-left: 1px solid var(--color-border);
-			border-right: 1px solid var(--color-border);
+			/* border-left: 1px solid var(--color-border);
+			border-right: 1px solid var(--color-border); */
 			position: fixed;
 			left: 50%;
 			bottom: 0;
@@ -678,6 +681,7 @@
 				height: 90vh;
 				border-radius: 2.4em;
 				overflow: hidden;
+				box-shadow: 0 0 10px var(--color-background);
 				#dicepool-wrapper {
 					width: 100%;
 					height: 100%;
@@ -692,6 +696,10 @@
 						display: flex;
 						flex-direction: column;
 						justify-content: space-between;
+						h1 {
+							color: var(--color-background);
+							text-shadow: 0 0 3px var(--color-text);
+						}
 						#dicepool-content {
 							overflow-y: auto;
 						}

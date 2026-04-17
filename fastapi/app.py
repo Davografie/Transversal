@@ -82,6 +82,8 @@ class ConnectionManager:
 						await self.set_dicepool(player_key, session_id, data.get('dicepool', {}).get('dice', []))
 					case "engage":
 						await self.send_dicepools(websocket)
+					case "next_beat":
+						await self.next_beat()
 		except WebSocketDisconnect:
 			logger.info(f"Disconnected player: {player_key}")
 			del self.active_connections[session_id]
@@ -114,6 +116,11 @@ class ConnectionManager:
 			"type": "dicepools",
 			"dicepools": dicepools
 		})
+	
+	async def next_beat(self):
+		global dicepools
+		dicepools = []
+		await self.send_dicepools()
 
 	async def broadcast(self, message: Dict[str, str]):
 		"""

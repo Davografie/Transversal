@@ -209,6 +209,9 @@
 	function engage() {
 		websocket_connection.value.engage()
 	}
+	function next_beat() {
+		websocket_connection.value.next_beat()
+	}
 </script>
 
 <template>
@@ -228,7 +231,10 @@
 			<WebSocketConnection ref="websocket_connection" />
 		</div>
 		<ImageOverlay />
-		<Landscape v-if="player.orientation == 'horizontal'" @fullscreen="toggleFullscreen" @engage="engage" />
+		<Landscape v-if="player.orientation == 'horizontal'"
+			@fullscreen="toggleFullscreen"
+			@engage="engage"
+			@next_beat="next_beat" />
 		<Mobile v-else @fullscreen="toggleFullscreen" @engage="engage" />
 	</div>
 </template>

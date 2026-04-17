@@ -13,7 +13,10 @@
 
 	import type { Location as LocationType } from '@/interfaces/Types';
 
-	const emits = defineEmits(['engage'])
+	const emits = defineEmits([
+		'engage',
+		'next_beat'
+	])
 
 	const route = useRoute()
 	const player = usePlayerStore()
@@ -76,7 +79,8 @@
 			<DicepoolView id="dicepool" ref="dicepool"
 				:expanded="dicepool_expanded"
 				@expand="expand_dicepool"
-				@collapse="dicepool_expanded = false" />
+				@collapse="dicepool_expanded = false"
+				@next_beat="emits('next_beat')" />
 		</footer>
 	</div>
 </template>
