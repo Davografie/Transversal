@@ -1,289 +1,294 @@
 import type { view_modes } from "@/composables/Trait"
 
+export enum overlay_types {
+	IMG,
+	DICEPOOL
+}
+
 export interface Die {
-    id?: string
-    rating: string
-    number_rating: number
-    ratingType?: string
-    sides?: number
-    poolScaling?: number
-    resultScaling?: number
-    effectScaling?: number
-    pool?: boolean
-    result?: number
-    raises?: number
-    isResultDie?: boolean
-    isEffectDie?: boolean
-    isHitch?: boolean
-    isResolved?: boolean
-    player?: string
-    entityId?: string
-    traitsettingId?: string
-    subTraitsettingId?: string
-    traitId?: string
-    sfxId?: string
-    traitsetId?: string
-    disabled?: boolean
-    active?: string
-    inactive?: string
+	id?: string
+	rating: string
+	number_rating: number
+	ratingType?: string
+	sides?: number
+	poolScaling?: number
+	resultScaling?: number
+	effectScaling?: number
+	pool?: boolean
+	result?: number
+	raises?: number
+	isResultDie?: boolean
+	isEffectDie?: boolean
+	isHitch?: boolean
+	isResolved?: boolean
+	player?: string
+	entityId?: string
+	traitsettingId?: string
+	subTraitsettingId?: string
+	traitId?: string
+	sfxId?: string
+	traitsetId?: string
+	disabled?: boolean
+	active?: string
+	inactive?: string
 }
 
 export interface Dicepool {
-    player: Player
-    dice: Die[]
+	player: Player
+	dice: Die[]
 }
 
 export interface Player {
-    uuid?: string
-    id?: string
-    key?: string
-    name: string
-    activeCharacter?: Entity
-    entities?: Entity[]
-    isGm: boolean
-    phase?: string
+	uuid?: string
+	id?: string
+	key?: string
+	name: string
+	activeCharacter?: Entity
+	entities?: Entity[]
+	isGm: boolean
+	phase?: string
 }
 
 export interface Resolution {
-    player: Player
-    dice: Die[]
-    result?: number
-    heroic?: number
-    winner?: boolean
+	player: Player
+	dice: Die[]
+	result?: number
+	heroic?: number
+	winner?: boolean
 }
 
 export interface Session {
-    session: string
-    scene: string
-    beat: string
-    dicepoolLimit: number
+	session: string
+	scene: string
+	beat: string
+	dicepoolLimit: number
 }
 
 export interface SFX {
-    id: string
-    name: string
-    description: string
-    traits: Trait[]
+	id: string
+	name: string
+	description: string
+	traits: Trait[]
 }
 
 export interface SFXInput {
-    name?: string
-    description?: string
+	name?: string
+	description?: string
 }
 
 export interface TraitSetting {
-    id?: string
-    statement?: string
-    notes?: string
-    ratingType?: string
-    rating?: Die[]
-    poolScaling?: number
-    resultScaling?: number
-    effectScaling?: number
-    permanence?: boolean
-    locationsEnabled?: string[]
-    locationsDisabled?: string[]
-    sfxs?: SFX[]
-    sfxsIds?: string[]
-    knownTo?: Character[]
-    hidden?: boolean
-    resource?: boolean
-    fromEntity?: Entity
-    toEntity?: Entity
-    priority?: number
-    inherited?: boolean
-    inheritable?: boolean
-    traitSettingType?: string
+	id?: string
+	statement?: string
+	notes?: string
+	ratingType?: string
+	rating?: Die[]
+	poolScaling?: number
+	resultScaling?: number
+	effectScaling?: number
+	permanence?: boolean
+	locationsEnabled?: string[]
+	locationsDisabled?: string[]
+	sfxs?: SFX[]
+	sfxsIds?: string[]
+	knownTo?: Character[]
+	hidden?: boolean
+	resource?: boolean
+	fromEntity?: Entity
+	toEntity?: Entity
+	priority?: number
+	inherited?: boolean
+	inheritable?: boolean
+	traitSettingType?: string
 }
 
 export interface TraitSettingInput {
-    newTraitId?: string
-    statement?: string
-    notes?: string
-    ratingType?: string
-    rating?: number[]
-    poolScaling?: number
-    resultScaling?: number
-    effectScaling?: number
-    permanence?: boolean
-    locationsEnabled?: string[]
-    locationsDisabled?: string[]
-    sfxs?: string[]
-    knownTo?: string[]
-    hidden?: boolean
-    teachTo?: string
-    resource?: boolean
-    inheritedAs?: string
-    inheritable?: boolean
+	newTraitId?: string
+	statement?: string
+	notes?: string
+	ratingType?: string
+	rating?: number[]
+	poolScaling?: number
+	resultScaling?: number
+	effectScaling?: number
+	permanence?: boolean
+	locationsEnabled?: string[]
+	locationsDisabled?: string[]
+	sfxs?: string[]
+	knownTo?: string[]
+	hidden?: boolean
+	teachTo?: string
+	resource?: boolean
+	inheritedAs?: string
+	inheritable?: boolean
 }
 
 export interface Trait {
-    id: string
-    name: string
-    explanation?: string
-    traitset_id?: string
-    traitsetId?: string
-    traitset?: Traitset
-    requiredTraits?: Trait[]
-    locationRestricted?: boolean
-    resource?: boolean
-    statement?: string
-    notes?: string
-    ratingType?: string
-    rating?: Die[]
-    sfxs?: SFX[]
-    defaultTraitSetting?: TraitSetting
-    traitSettingId?: string
-    traitSetting?: TraitSetting
-    subTraits?: Trait[]
-    possibleSubTraits?: Trait[]
-    possibleSubTraitsets?: Traitset[]
-    possibleSfxs?: SFX[]
-    inheritable?: boolean
-    randomWeight?: number
-    entities?: Entity[]
-    instances?: string[]
+	id: string
+	name: string
+	explanation?: string
+	traitset_id?: string
+	traitsetId?: string
+	traitset?: Traitset
+	requiredTraits?: Trait[]
+	locationRestricted?: boolean
+	resource?: boolean
+	statement?: string
+	notes?: string
+	ratingType?: string
+	rating?: Die[]
+	sfxs?: SFX[]
+	defaultTraitSetting?: TraitSetting
+	traitSettingId?: string
+	traitSetting?: TraitSetting
+	subTraits?: Trait[]
+	possibleSubTraits?: Trait[]
+	possibleSubTraitsets?: Traitset[]
+	possibleSfxs?: SFX[]
+	inheritable?: boolean
+	randomWeight?: number
+	entities?: Entity[]
+	instances?: string[]
 }
 
 export interface TraitInput {
-    name?: string
-    traitsetId?: string
-    statement?: string
-    resource?: boolean
-    locationsEnabled?: string[]
-    locationsDisabled?: string[]
-    requiredTraits?: string[]
-    locationRestricted?: boolean
-    ratingType?: string
-    rating?: string[]
-    possibleSubTraits?: string[]
-    possibleSubTraitsets?: string[]
-    possibleSfxs?: string[]
-    available_sfxs?: string[]
-    sfxs?: string[]
-    inheritable?: boolean
-    randomWeight?: number
+	name?: string
+	traitsetId?: string
+	statement?: string
+	resource?: boolean
+	locationsEnabled?: string[]
+	locationsDisabled?: string[]
+	requiredTraits?: string[]
+	locationRestricted?: boolean
+	ratingType?: string
+	rating?: string[]
+	possibleSubTraits?: string[]
+	possibleSubTraitsets?: string[]
+	possibleSfxs?: string[]
+	available_sfxs?: string[]
+	sfxs?: string[]
+	inheritable?: boolean
+	randomWeight?: number
 }
 
 export interface TraitsetSetting {
-    id?: string
-    traitset: Traitset
-    entity: Entity
-    sfxs?: SFX[]
-    sorting?: string
-    traitMode?: view_modes
+	id?: string
+	traitset: Traitset
+	entity: Entity
+	sfxs?: SFX[]
+	sorting?: string
+	traitMode?: view_modes
 }
 
 export interface Traitset {
-    key?: string
-    id: string
-    name?: string
-    explainer?: string
-    entityTypes?: string[]
-    locationRestricted?: boolean
-    limit?: number
-    order?: number
-    initialXp?: number
-    duplicates?: boolean
-    traits?: Trait[]
-    sfxs?: SFX[]
-    defaultTraitSetting?: TraitSetting
-    score?: number
-    traitsetSetting?: TraitsetSetting
+	key?: string
+	id: string
+	name?: string
+	explainer?: string
+	entityTypes?: string[]
+	locationRestricted?: boolean
+	limit?: number
+	order?: number
+	initialXp?: number
+	duplicates?: boolean
+	traits?: Trait[]
+	sfxs?: SFX[]
+	defaultTraitSetting?: TraitSetting
+	score?: number
+	traitsetSetting?: TraitsetSetting
 }
 
 export interface TraitsetInput {
-    name?: string
-    explainer?: string
-    entityTypes?: string[]
-    locationRestricted?: boolean
-    limit?: number
-    order?: number
-    duplicates?: boolean
-    traits?: string[]
-    sfxs?: string[]
-    defaultTraitSetting?: TraitSetting
+	name?: string
+	explainer?: string
+	entityTypes?: string[]
+	locationRestricted?: boolean
+	limit?: number
+	order?: number
+	duplicates?: boolean
+	traits?: string[]
+	sfxs?: string[]
+	defaultTraitSetting?: TraitSetting
 }
 
 export interface Relation {
-    id: string
-    fromEntity: Entity
-    toEntity: Entity
-    traitsets?: Traitset[]
-    type?: string
-    favorite?: boolean
-    entanglement?: number
+	id: string
+	fromEntity: Entity
+	toEntity: Entity
+	traitsets?: Traitset[]
+	type?: string
+	favorite?: boolean
+	entanglement?: number
 }
 
 export interface Image {
-    path: string
-    ext: string
-    width?: number
-    height?: number
+	path: string
+	ext: string
+	width?: number
+	height?: number
 }
 
 export interface Entity {
-    id: string
-    key: string
-    name: string
-    subtitle?: string
-    active?: boolean
-    description?: string
-    pp?: number
-    image?: Image
-    imagened?: boolean
-    entityType: string
-    location?: Location
-    following?: Entity
-    followers?: Entity[]
-    traitsets?: Traitset[]
-    sfxs?: SFX[]
-    relations?: Relation[]
-    favorite?: boolean
-    isArchetype?: boolean
-    archetype?: Entity
-    archetypes?: Entity[]
-    instances?: Entity[]
-    hidden?: boolean
-    knownTo?: Entity[]
+	id: string
+	key: string
+	name: string
+	subtitle?: string
+	active?: boolean
+	description?: string
+	pp?: number
+	image?: Image
+	imagened?: boolean
+	entityType: string
+	location?: Location
+	following?: Entity
+	followers?: Entity[]
+	traitsets?: Traitset[]
+	sfxs?: SFX[]
+	relations?: Relation[]
+	favorite?: boolean
+	isArchetype?: boolean
+	archetype?: Entity
+	archetypes?: Entity[]
+	instances?: Entity[]
+	hidden?: boolean
+	knownTo?: Entity[]
 }
 
 export interface EntityInput {
-    name?: string
-    description?: string
-    image?: string
-    imagened?: boolean
-    entityType?: string
-    location?: string
-    following?: string
-    traitsets?: string[]
-    sfxs?: string[]
-    favorite?: boolean
-    isArchetype?: boolean
-    archetypeId?: string
-    hidden?: boolean
-    showTo?: string[]
-    knownTo?: string[]
-    pp?: number
+	name?: string
+	description?: string
+	image?: string
+	imagened?: boolean
+	entityType?: string
+	location?: string
+	following?: string
+	traitsets?: string[]
+	sfxs?: string[]
+	favorite?: boolean
+	isArchetype?: boolean
+	archetypeId?: string
+	hidden?: boolean
+	showTo?: string[]
+	knownTo?: string[]
+	pp?: number
 }
 
 export interface Character extends Entity {
-    score?: number
-    available?: boolean
-    pp?: number
+	score?: number
+	available?: boolean
+	pp?: number
 }
 
 export interface GMC {
-    id: string
-    name: string
-    traitsets: Traitset[]
+	id: string
+	name: string
+	traitsets: Traitset[]
 }
 
 export interface Location extends Entity {
-    parent?: Location
-    parents?: Location[]
-    flavortext?: string
-    entities?: Entity[]
-    zones?: Location[]
-    transversables?: Location[]
+	parent?: Location
+	parents?: Location[]
+	flavortext?: string
+	entities?: Entity[]
+	zones?: Location[]
+	transversables?: Location[]
 }

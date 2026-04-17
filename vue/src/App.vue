@@ -2,6 +2,7 @@
 	import Mobile from '@/views/Mobile.vue'
 	import Landscape from '@/views/Landscape.vue'
 	import ImageOverlay from '@/views/ImageOverlay.vue'
+	import Overlay from '@/views/Overlay.vue'
 	import WebSocketConnection from '@/components/WebSocketConnection.vue'
 	import { ref, computed, watch, onMounted, onUnmounted, onUpdated } from 'vue'
 	import { useRouter, useRoute } from 'vue-router'
@@ -13,7 +14,7 @@
 
 	import { useLocation } from '@/composables/Location'
 	
-	import { type Location } from '@/interfaces/Types'
+	import { overlay_types, type Location } from '@/interfaces/Types'
 
 	const player = usePlayerStore()
 	const font_size = computed(() => player.font_size)
@@ -230,7 +231,8 @@
 			<span id="toggle-fullscreen" @click="toggleFullscreen">🪟</span>
 			<WebSocketConnection ref="websocket_connection" />
 		</div>
-		<ImageOverlay />
+		<!-- <ImageOverlay /> -->
+		 <Overlay :overlay_type="overlay_types.IMG" v-if="player.image_entity" :entity="player.image_entity" @close_overlay="player.image_entity = undefined" />
 		<Landscape v-if="player.orientation == 'horizontal'"
 			@fullscreen="toggleFullscreen"
 			@engage="engage"

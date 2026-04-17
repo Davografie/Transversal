@@ -250,7 +250,12 @@
 				<div id="poll-timer">{{ time_until_next_poll }}ms</div>
 			</div> -->
 			<div id="dicepool-collapsible" v-if="props.expanded">
-				<h1>Dicepool</h1>
+				<div class="inner-title">
+					<h1>Dicepool</h1>
+					<div id="close-dicepool-button" class="button-mnml" @click.stop="hide_dicepool()">
+						✖
+					</div>
+				</div>
 				<div id="dicepool-inner">
 					<!-- <input type="button" class="button-mnml" id="dicepool-details-view"
 						:value="verbose_dice ?
@@ -691,15 +696,18 @@
 					.title {
 						display: none;
 					}
+					#close-dicepool-button {
+						position: absolute;
+						top: 0;
+						right: 10px;
+						z-index: 1;
+						font-size: 2em;
+					}
 					#dicepool-collapsible {
 						height: 100%;
 						display: flex;
 						flex-direction: column;
 						justify-content: space-between;
-						h1 {
-							color: var(--color-background);
-							text-shadow: 0 0 3px var(--color-text);
-						}
 						#dicepool-content {
 							overflow-y: auto;
 						}
@@ -726,9 +734,17 @@
 				background-color: var(--color-background-mute);
 				backdrop-filter: blur(5px);
 			}
-			&.expanded .title {
-				background-color: var(--color-highlight);
-				color: var(--color-highlight-text);
+			&.expanded {
+				#dicepool-wrapper #dicepool-collapsible {
+					h1 {
+						color: var(--color-background);
+						text-shadow: 0 0 3px var(--color-text);
+					}
+				}
+				.title {
+					background-color: var(--color-highlight);
+					color: var(--color-highlight-text);
+				}
 			}
 		}
 	}
@@ -751,9 +767,22 @@
 					background-color: var(--color-effect-light);
 				}
 			}
+			&.expanded {
+				
+			}
 		}
 		#dicepool.empty .title {
 			background-color: var(--color-background-soft);
+		}
+	}
+	.light.landscape #dicepool {
+		&.expanded {
+			border: 1em solid var(--color-border);
+		}
+	}
+	.light.triptych #dicepool {
+		&.expanded {
+			max-height: 100vh;
 		}
 	}
 

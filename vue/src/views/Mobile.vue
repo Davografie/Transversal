@@ -27,9 +27,11 @@
 	const overwrite_entity_id = ref<string>()
 	const active_entity_id = ref<string|undefined>()
 	const dicepool_expanded = ref(false)
-	function expand_dicepool() {
-		dicepool_expanded.value = true
-		emits('engage')
+	function toggle_dicepool() {
+		if(!dicepool_expanded.value) {
+			emits('engage')
+		}
+		dicepool_expanded.value = !dicepool_expanded.value
 	}
 	const dicepool_pulsate = ref(false)
 
@@ -155,7 +157,13 @@
 		</div>
 
 		<footer id="mobile-footer">
-			<nav v-if="!dicepool_expanded">
+			<div id="dicepool-container" v-if="dicepool_expanded">
+				<DicepoolView id="dicepool" ref="dicepool_ref"
+					:expanded="dicepool_expanded"
+					@expand="dicepool_expanded = true"
+					@collapse="dicepool_expanded = false" />
+			</div>
+			<nav>
 				<div id="left-footer-links">
 					<a class="footer-button" :class="{'active': view == 'location'}"
 							@click="click_location">
@@ -185,7 +193,7 @@
 					</a>
 				</div>
 				<div id="dicepool-footer-container">
-					<div id="dicepool-footer-widget" @click="expand_dicepool"
+					<div id="dicepool-footer-widget" @click="toggle_dicepool"
 							:class="[
 								{ 'pulsate': dicepool_pulsate },
 								{ 'active': dicepool_store.dice.length > 0 }
@@ -235,12 +243,6 @@
 					</a>
 				</div>
 			</nav>
-			<div id="dicepool-container" v-if="dicepool_expanded">
-				<DicepoolView id="dicepool" ref="dicepool_ref"
-					:expanded="dicepool_expanded"
-					@expand="dicepool_expanded = true"
-					@collapse="dicepool_expanded = false" />
-			</div>
 		</footer>
 	</div>
 </template>
@@ -437,10 +439,10 @@
 		height: 0;
 		width: 100vw;
 		overflow: visible;
-		z-index: 10;
+		/* z-index: 10; */
 		#dicepool {
 			position: absolute;
-			bottom: -1px;
+			bottom: 3em;
 		}
 	}
 }
