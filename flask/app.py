@@ -1700,6 +1700,7 @@ class Trait(ObjectType):
 
 			# individual sub-traits
 			possible_sub_traits = trait.get('possible_sub_traits') or []
+			logger.debug(f"possible_sub_traits: { possible_sub_traits }")
 			for sub_trait in possible_sub_traits:
 				traitset_id = get_doc_by_id('Traits', sub_trait).get('traitset')
 
@@ -2256,19 +2257,17 @@ class DeleteTrait(Mutation):
 				subtraits = find_docs('TraitSettings', {'_from': setting.get('_id')})
 				for subtrait in subtraits:
 					db.collection('TraitSettings').delete(subtrait.get('_id'))
-
-			# delete all assigned traits
-			for setting in settings:
+				# delete all assigned traits
 				db.collection('TraitSettings').delete(setting.get('_id'))
 
 			# delete default settings
-			settings = find_docs('TraitSettings', {'_from': trait_id})
+			settings = find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})
 			for setting in settings:
 				db.collection('TraitSettings').delete(setting.get('_id'))
 			
-			# delete from all possible subtraits
+			# delete from possible subtraits
 			query = f"""FOR t IN Traits
-						FILTER { trait_id } IN t.possible_sub_traits
+						FILTER '{ trait_id }' IN t.possible_sub_traits
 						RETURN {{ 'id': t._id, 'possible_sub_traits': t.possible_sub_traits }}"""
 			traits = execute_aql(query, ['Traits'])
 			for trait in traits:
