@@ -73,12 +73,10 @@
 
 
 		<footer id="landscape-footer">
-			<div id="dicepool-container">
-				<DicepoolView id="dicepool" ref="dicepool"
-					:expanded="dicepool_expanded"
-					@expand="expand_dicepool"
-					@collapse="dicepool_expanded = false" />
-			</div>
+			<DicepoolView id="dicepool" ref="dicepool"
+				:expanded="dicepool_expanded"
+				@expand="expand_dicepool"
+				@collapse="dicepool_expanded = false" />
 		</footer>
 	</div>
 </template>

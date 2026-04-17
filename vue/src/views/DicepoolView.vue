@@ -87,19 +87,19 @@
 	// 	return time_until_next_poll.value / dicepool.pullInterval.value * 100
 	// })
 
-	dicepool.pull_clock()
-	const polling = ref(true)
-	const time_until_next_poll = ref(0)
-	const time_until_next_poll_percentile = computed(() => {
-		return time_until_next_poll.value / dicepool.pullInterval.value * 100
-	})
-	function poll() {
-		if(polling) {
-			time_until_next_poll.value = dicepool.pullInterval.value - (Date.now() - dicepool.last_poll_timestamp.value)
-		}
-		setTimeout(poll, 1500)
-	}
-	poll()
+	// dicepool.pull_clock()
+	// const polling = ref(true)
+	// const time_until_next_poll = ref(0)
+	// const time_until_next_poll_percentile = computed(() => {
+	// 	return time_until_next_poll.value / dicepool.pullInterval.value * 100
+	// })
+	// function poll() {
+	// 	if(polling) {
+	// 		time_until_next_poll.value = dicepool.pullInterval.value - (Date.now() - dicepool.last_poll_timestamp.value)
+	// 	}
+	// 	setTimeout(poll, 1500)
+	// }
+	// poll()
 
 	function click_die(die: DieType) {
 		if(!held.value) {
@@ -245,9 +245,9 @@
 					{{ dicepoolStore.phase.toString() }}
 				</div>
 			</div>
-			<div id="poll-timer-wrapper">
+			<!-- <div id="poll-timer-wrapper">
 				<div id="poll-timer">{{ time_until_next_poll }}ms</div>
-			</div>
+			</div> -->
 			<div id="dicepool-collapsible" v-if="props.expanded">
 				<div id="dicepool-inner">
 					<!-- <input type="button" class="button-mnml" id="dicepool-details-view"
@@ -312,9 +312,9 @@
 						<ResolutionSWADE v-if="dicepool.inSwadeResultPhase.value && dicepoolStore.dice[0].result" />
 
 						<div id="pool-dice">
-							<div id="gm-die-picker" v-if="dicepool.inAddingPhase.value && !editing_die">
+							<!-- <div id="gm-die-picker" v-if="dicepool.inAddingPhase.value && !editing_die">
 								<DiePicker @change-die="add_custom_dice" custom />
-							</div>
+							</div> -->
 
 							<div id="the-meat"
 									v-if="!dicepool.inResolvePhase.value">
@@ -568,6 +568,19 @@
 										right: 10px;
 										z-index: 1;
 									}
+									#verbose-dice {
+										display: flex;
+										/* flex-wrap: wrap; */
+										justify-content: space-evenly;
+										align-items: space-evenly;
+										max-width: 200px;
+										width: 100%;
+										height: 100%;
+										.die {
+											margin: .4em;
+											cursor: crosshair;
+										}
+									}
 									#simple-dice {
 										display: flex;
 										flex-wrap: wrap;
@@ -652,6 +665,39 @@
 		#dicepool {
 			border-left: 1px solid var(--color-border);
 			border-right: 1px solid var(--color-border);
+			position: fixed;
+			left: 50%;
+			bottom: 0;
+			transform: translateX(-50%);
+			z-index: 10;
+			&.expanded {
+				top: 50%;
+				bottom: unset;
+				transform: translate(-50%, -50%);
+				width: 90vw;
+				height: 90vh;
+				border-radius: 2.4em;
+				overflow: hidden;
+				#dicepool-wrapper {
+					width: 100%;
+					height: 100%;
+					display: flex;
+					flex-direction: column;
+					justify-content: space-between;
+					.title {
+						display: none;
+					}
+					#dicepool-collapsible {
+						height: 100%;
+						display: flex;
+						flex-direction: column;
+						justify-content: space-between;
+						#dicepool-content {
+							overflow-y: auto;
+						}
+					}
+				}
+			}
 		}
 	}
 	.dark {
