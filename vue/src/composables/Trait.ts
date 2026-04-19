@@ -216,7 +216,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 						newTrait.traitSettingId,
 						newTrait.traitsetId,
 						entity_id.value,
-						newTrait.traitSetting.scaling
+						newTrait.traitSetting.poolScaling,
+						newTrait.traitSetting.resultScaling,
+						newTrait.traitSetting.effectScaling
 					)
 					newTrait = { ...newTrait, rating: new_rating }
 				}
@@ -232,7 +234,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 								new_subTrait.traitSettingId,
 								new_subTrait.traitsetId,
 								entity_id.value,
-								new_subTrait.traitSetting.scaling
+								new_subTrait.traitSetting.poolScaling,
+								new_subTrait.traitSetting.resultScaling,
+								new_subTrait.traitSetting.effectScaling
 							)
 							new_subTrait = { ...new_subTrait, rating: new_rating }
 						}
@@ -719,6 +723,11 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 							id
 							traitSettingId
 							rating
+							traitSetting {
+								pool_scaling
+								result_scaling
+								effect_scaling
+							}
 						}
 					}
 				}
@@ -743,7 +752,10 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 								new_subTrait.id,
 								new_subTrait.traitSettingId,
 								new_subTrait.traitsetId,
-								entity_id.value
+								entity_id.value,
+								new_subTrait.traitSetting.poolScaling,
+								new_subTrait.traitSetting.resultScaling,
+								new_subTrait.traitSetting.effectScaling
 							)
 							new_subTrait = { ...new_subTrait, rating: new_rating }
 						}

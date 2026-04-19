@@ -1269,6 +1269,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 				
 			<div class="descriptor" :class="[trait.statement ? 'with-statement' : 'without-statement',
 						trait.sfxs && trait.sfxs?.length > 0 ? 'with-sfxs' : 'without-sfxs',]">
+
 				<div class="trait-image" v-if="trait.traitSetting?.fromEntity && trait.traitSetting?.toEntity && !props.entity_id?.startsWith('Relations/')">
 					<EntityButton :entity_id="trait.traitSetting.fromEntity.id"
 						v-if="trait.traitSetting.fromEntity.id != props.entity_id"
@@ -1287,6 +1288,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						override_click
 						@click_entity="emit('show_entity', trait.traitSetting.toEntity.id)" />
 				</div>
+
 				<div class="trait-text">
 					<div class="label trait-name" @click="mode == view_modes.Editing ? editing_trait_id = !editing_trait_id : null">
 						<span class="name">
@@ -1377,7 +1379,6 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 					</div>
 				</div>
 
-
 				<div class="rating" :class="{ 'take-resource': transfer_resource_mode }"
 						v-if="new_ratingType ? new_ratingType != 'empty' : trait.ratingType != 'empty'"
 						@click.stop="(mode == view_modes.Editing && !transfer_resource_mode && can_edit) ? edit_rating = true : undefined">
@@ -1393,6 +1394,7 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 						@deplete-challenge="deplete_challenge"
 						@increase-challenge="increase_challenge" />
 				</div>
+				
 			</div>
 
 			<Transition name="notes">

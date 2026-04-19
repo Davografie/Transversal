@@ -31,67 +31,30 @@
 </script>
 
 <template>
-	<div class="pool-entity-wrapper pool-wrapper">
-		<div class="pool-entity" v-if="props.dice.some((d) => d.traitsetId != 'Traitsets/1')">
-			<RouterLink class="entity_name" :to="'/entity/' + entity.key">
+	<div class="pool-entity pool-wrapper">
+		<div>
+			<span class="entity-name">
 				{{ entity.name }}
-			</RouterLink>
-			<div class="limiters">
-				<span class="result-limit" v-for="i in props.result_limit" :key="i">
-					{{ die_shapes.default_active }}
-				</span>
-				<span class="effect-limit" v-for="i in props.effect_limit" :key="i">
-					{{ die_shapes.default_active }}
-				</span>
-			</div>
+			</span>
 		</div>
-		<div class="entity_name complication-entity" v-else>
-			{{ entity.name }}
-		</div>
-		<div class="divider" />
 		<div class="traitsets">
-			<template v-for="traitset in new Set(dice.map(d => d.traitsetId)).values()" :key="traitset">
-				<PoolTraitset :traitset_id="traitset" :dice="dice.filter(d => d.traitsetId == traitset)"
+			<template v-for="traitset_id in new Set(dice.map(d => d.traitsetId)).values()" :key="traitset_id">
+				<PoolTraitset :traitset_id="traitset_id" :dice="dice.filter(d => d.traitsetId == traitset_id)"
 					@longpress_die="(die: Die) => emit('longpress_die', die)" />
-				<div class="traitset-divider" />
 			</template>
 		</div>
 	</div>
 </template>
 
 <style scoped>
-	.pool-entity-wrapper.pool-wrapper {
-		/* padding-left: 1em; */
-		/* max-width: 24rem; */
-		/* width: 100%; */
-		/* flex-grow: 1; */
-		text-align: left;
-		.pool-entity {
-			display: flex;
-			justify-content: space-between;
-			.limiters {
-				display: flex;
-				gap: .4em;
-				.effect-limit {
-					color: var(--color-effect);
-				}
-			}
-		}
-		.divider {
-			border-bottom: 1px solid var(--color-highlight);
-		}
-		.complication-entity {
-			background-color: var(--color-hitch);
-			color: var(--color-hitch-text);
-			display: inline-block;
-			padding: 3px 1em;
+	.pool-entity.pool-wrapper {
+		border-left: 1px solid var(--color-text);
+		.entity-name {
+			background-color: var(--color-text);
+			color: var(--color-background);
+			padding: .4em;
 		}
 		.traitsets {
-			backdrop-filter: blur(5px);
-			box-shadow: inset 0 0 10px var(--color-highlight-mute);
-		}
-		.traitset-divider {
-			border-bottom: 1px solid var(--color-highlight-mute);
 		}
 	}
 </style>

@@ -121,15 +121,7 @@
 		&.unavailable {
 			color: var(--color-disabled);
 		}
-		.subtraits {
-			/* display: flex;
-			flex-direction: column; */
-			/* line-height: 0.2em; */
-		}
 		.pool-trait-rating {
-			/* float: right; */
-			/* position: absolute;
-			right: 0; */
 			transform: translateY(-.4em);
 		}
 	}
@@ -139,10 +131,7 @@
 			display: flex;
 			flex-direction: column;
 			justify-content: center;
-			.trait-name {
-				font-weight: bold;
-			}
-			.trait-statement {
+			.trait-name, .trait-statement {
 				font-size: 1.2em;
 			}
 			.trait-sfx {

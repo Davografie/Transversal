@@ -55,12 +55,14 @@ export function useDicepoolWS() {
 		websocket.send(JSON.stringify({
 			type: "dicepool",
 			dicepool: {
+				phase: dicepoolStore.phase,
 				dice: dice
 			}
 		}))
 	}
 
 	function next_beat() {
+		console.log("next beat")
 		websocket.send(JSON.stringify({ type: "next_beat" }))
 	}
 

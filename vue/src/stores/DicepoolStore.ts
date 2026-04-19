@@ -10,6 +10,7 @@ import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 
 import type { Die, Resolution, Dicepool } from '@/interfaces/Types'
+import type { WsDicepool } from '@/interfaces/WebsocketTypes'
 
 export enum phases {
 	ADDING = "add dice to pool",
@@ -27,7 +28,7 @@ export const useDicepoolStore = defineStore('dicepool', () => {
 		phase.value = p
 	}
 
-	const dicepools: Ref<Array<Dicepool>> = ref([])
+	const dicepools: Ref<Array<WsDicepool>> = ref([])
 
 	// complications is a set of traits of the complication traitset offered by this user to the opposing dicepools
 	const complications: Ref<Array<Die>> = ref([])

@@ -1,9 +1,9 @@
-import type { Die } from '@/interfaces/Types'
+import type { Die, Player } from '@/interfaces/Types'
+import { phases } from '@/stores/DicepoolStore'
 
 export interface WsDicepool {
-	player: {
-		key: string
-	}
+	player: Player
+	phase: phases
 	dice: Die[]
 }
 

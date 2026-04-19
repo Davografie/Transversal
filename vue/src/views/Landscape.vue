@@ -12,6 +12,7 @@
 	import SettingsView from '@/views/SettingsView.vue';
 
 	import type { Location as LocationType } from '@/interfaces/Types';
+	import DicepoolFloater from '@/components/DicepoolFloater.vue';
 
 	const emits = defineEmits([
 		'engage',
@@ -73,6 +74,8 @@
 				orientation="horizontal"
 				@show_entity="show_entity" />
 		</div>
+
+		<DicepoolFloater @engage="emits('engage')" />
 
 
 		<footer id="landscape-footer">

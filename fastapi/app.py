@@ -117,10 +117,14 @@ class ConnectionManager:
 			"dicepools": dicepools
 		})
 	
+	async def broadcast_dicepools(self):
+		for conn in self.active_connections.values():
+			await self.send_dicepools(conn['websocket'])
+	
 	async def next_beat(self):
 		global dicepools
 		dicepools = []
-		await self.send_dicepools()
+		await self.broadcast_dicepools()
 
 	async def broadcast(self, message: Dict[str, str]):
 		"""

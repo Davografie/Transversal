@@ -208,11 +208,14 @@
 
 	const websocket_connection = ref()
 	function engage() {
+		show_dicepool.value = true
 		websocket_connection.value.engage()
 	}
 	function next_beat() {
 		websocket_connection.value.next_beat()
 	}
+
+	const show_dicepool = ref(false)
 </script>
 
 <template>
@@ -232,7 +235,8 @@
 			<WebSocketConnection ref="websocket_connection" />
 		</div>
 		<!-- <ImageOverlay /> -->
-		 <Overlay :overlay_type="overlay_types.IMG" v-if="player.image_entity" :entity="player.image_entity" @close_overlay="player.image_entity = undefined" />
+		<Overlay :overlay_type="overlay_types.IMG" v-if="player.image_entity" :entity="player.image_entity" @close_overlay="player.image_entity = undefined" />
+		<Overlay :overlay_type="overlay_types.DICEPOOL" v-else-if="show_dicepool" @close_overlay="show_dicepool = false" />
 		<Landscape v-if="player.orientation == 'horizontal'"
 			@fullscreen="toggleFullscreen"
 			@engage="engage"

@@ -9,12 +9,12 @@ const emits = defineEmits(['close_overlay'])
 </script>
 
 <template>
-	<div id="overlay">
-		<div id="image-overlay" v-if="props.overlay_type == overlay_types.IMG && props.entity?.image" @click="emits('close_overlay')">
+	<div id="overlay" @click="emits('close_overlay')">
+		<div id="image-overlay" v-if="props.overlay_type == overlay_types.IMG && props.entity?.image">
 			<span id="image-name" class="header">{{ props.entity.name }}</span>
 			<img id="image-img" :src="'/assets/uploads/' + props.entity.image.path + 'original' + props.entity.image.ext" @click.stop />
 		</div>
-		<NewDicepoolView v-else-if="props.overlay_type == overlay_types.DICEPOOL" />
+		<NewDicepoolView v-else-if="props.overlay_type == overlay_types.DICEPOOL" @close_overlay="emits('close_overlay')" />
 	</div>
 </template>
 
@@ -65,7 +65,8 @@ const emits = defineEmits(['close_overlay'])
 	z-index: 12;
 }
 .dark #overlay {
-	background-color: var(--color-background-mute);
+	/* background-color: var(--color-background-mute); */
+	/* backdrop-filter: blur(5px); */
 }
 .light #overlay {
 	background-color: var(--color-background);

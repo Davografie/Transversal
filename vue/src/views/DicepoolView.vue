@@ -479,8 +479,6 @@
 				}
 			}
 			#dicepool-collapsible {
-				background-color: var(--color-background-mute);
-				backdrop-filter: blur(5px);
 				/* overflow-y: auto; */
 				#dicepool-inner {
 					max-height: calc(90vh - 40px - 3em);
@@ -708,6 +706,8 @@
 						display: flex;
 						flex-direction: column;
 						justify-content: space-between;
+						background-color: var(--color-background-mute);
+						backdrop-filter: blur(10px);
 						#dicepool-content {
 							overflow-y: auto;
 						}
