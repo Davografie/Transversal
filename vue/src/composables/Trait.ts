@@ -724,9 +724,9 @@ export function useTrait(init?: Trait, _trait_id?: string, _trait_setting_id?: s
 							traitSettingId
 							rating
 							traitSetting {
-								pool_scaling
-								result_scaling
-								effect_scaling
+								poolScaling
+								resultScaling
+								effectScaling
 							}
 						}
 					}

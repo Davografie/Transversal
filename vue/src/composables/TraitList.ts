@@ -103,9 +103,9 @@ export function useTraitList(init?: Trait[], traitset_id?: string, entity_id?: s
 					explanation
 					defaultTraitSetting {
 						rating
-						pool_scaling
-						result_scaling
-						effect_scaling
+						poolScaling
+						resultScaling
+						effectScaling
 					}
 					locationRestricted
 					randomWeight
