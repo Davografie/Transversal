@@ -213,7 +213,7 @@
 			return a.name.localeCompare(b.name)
 		}).sort((a, b) => {
 			return (b.randomWeight ?? 0) - (a.randomWeight ?? 0)
-		})
+		}).filter(t => t.name.includes(new_trait_name.value))
 	})
 
 
