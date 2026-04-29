@@ -160,7 +160,8 @@
 		else if(trait.value.rating) {
 			console.log('depleting challenge: ', die)
 			const { die: die_obj, change_type } = useDie(die)
-			change_type(die_obj.value.number_rating + 1)
+			if(die_obj.value.number_rating > 0) change_type(die_obj.value.number_rating - 1)
+			else change_type(die_obj.value.number_rating + 1)
 			let new_rating = []
 			if(die_obj.value.number_rating != 0) {
 				const idx = trait.value.rating.findIndex((d) => d.id == die.id)
