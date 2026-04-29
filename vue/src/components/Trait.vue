@@ -528,6 +528,9 @@
 		add_subtraits.value = false
 		show_sfxs.value = false
 		mode.value = view_modes.Editing
+		if(player.is_gm) {
+			can_edit.value = true
+		}
 		// if(
 		// 	trait.value.traitSetting?.fromEntity?.id != props.entity_id
 		// ) {
@@ -1353,6 +1356,9 @@ import SubTraitSetAssign from './SubTraitSetAssign.vue'
 							</span>
 							<div class="statement-examples">
 								<div class="statement-examples-list">
+									<input type="button" class="button-mnml statement-example random"
+										:value="player.small_buttons ? '🎲' : '🎲\nrandom'"
+										@click.stop="new_statement = statement_examples[Math.floor(Math.random() * statement_examples.length)]" />
 									<input type="button" class="button-mnml statement-example"
 										:value="example"
 										v-for="example in statement_examples.filter((x) => x.toLowerCase().includes(new_statement.toLocaleLowerCase())).slice(0, 12)"
