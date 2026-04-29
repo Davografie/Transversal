@@ -900,7 +900,7 @@
 					<input type="button" class="button add-trait-button"
 						:value="adding_trait ?
 							player.small_buttons ? 'x' : 'stop adding trait x' :
-							player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
+							player.small_buttons ? '+' : traitset.name + ' +'"
 						@click="toggle_add_trait" />
 				</div>
 			</div>
