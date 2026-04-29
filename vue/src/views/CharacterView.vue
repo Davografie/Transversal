@@ -823,11 +823,11 @@
 						:class="{ 'active': entityOverviewType == 'KNOWN_TO' }"
 						v-if="player.is_gm && player.the_entity?.knownTo && player.the_entity?.knownTo.length > 0" />
 
-					<div class="button-mnml" id="toggle-traitsets" @click="toggle_traitsets" v-if="player.is_gm">
-						<!-- work in progress -->
+					<!-- work in progress -->
+					<!-- <div class="button-mnml" id="toggle-traitsets" @click="toggle_traitsets" v-if="player.is_gm">
 						<div class="icon">📜</div>
 						<div class="label" v-if="!player.small_buttons">traitsets</div>
-					</div>
+					</div> -->
 
 					<ButtonMinimal :function="ButtonTypes.TRAITSET_CLOSED"
 						@click="cycle_traitset_defaults(false)"
@@ -842,14 +842,17 @@
 						@click.right.prevent="cycle_traitset_defaults(true)"
 						v-else-if="show_traitsets && player.traitset_defaults == 'EXPANDED'" />
 
-					<div class="button-mnml" id="delete-entity"
+					<!-- <div class="button-mnml" id="delete-entity"
 						title="delete entity"
 						v-if="player.is_gm && player.the_entity?.key != 'placeholder' && !['1', '2'].includes(player.the_entity?.key) && deletion == false"
 						@click="deletion = true">
-						<!-- <div class="icon">🗑</div> -->
+						<div class="icon">🗑</div>
 						<img src="/img/icons/trash.png" class="icon" />
 						<div class="label" v-if="!player.small_buttons">delete entity</div>
-					</div>
+					</div> -->
+					<ButtonMinimal :function="ButtonTypes.TRASH"
+						@click="deletion = true"
+						v-if="player.is_gm && player.the_entity?.key != 'placeholder' && !['1', '2'].includes(player.the_entity?.key) && deletion == false" />
 					<div id="delete-confirmation" v-if="deletion">
 						<label>🗑</label>
 						<div class="button-mnml verify-rmtree" id="verify-rmtree"
