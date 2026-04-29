@@ -171,7 +171,7 @@
 					&& entity.value.location?.id != player.the_entity?.location?.id
 					&& entity.value.entityType != 'location'
 				)														// GM can follow from distance, players can't
-				&& !entity.value.isArchetype							// archetypes aren't actually part of the environment (yet)
+				&& !(entity.value.isArchetype && entity.value.entityType != 'location')		// location can be archetypes (floating vagabond)
 			)
 			&& (		// inclusive
 				player.is_gm
