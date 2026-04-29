@@ -89,7 +89,7 @@
 		show_details.value = !show_details.value
 	}
 
-	function update_trait() {
+	async function update_trait() {
 		const trait_input = {
 			name: default_name.value,
 			explanation: explanation.value,
@@ -97,15 +97,15 @@
 			possibleSubTraits: trait.value.possibleSubTraits?.map(x => x.id),
 			inheritable: new_inheritable.value
 		}
-		mutate_trait(trait_input)
-		mutate_default_settings({
+		await mutate_trait(trait_input)
+		await mutate_default_settings({
 			ratingType: default_rating_type.value,
 			rating: default_rating.value.map(x => x.number_rating),
 			locationsEnabled: default_settings.value?.locationsEnabled,
 			locationsDisabled: default_settings.value?.locationsDisabled,
 			sfxs: new_default_sfxs.value
 		})
-		refresh()
+		await refresh()
 		// toggle_details()
 	}
 
@@ -286,9 +286,9 @@
 		changing_rating.value = true
 	}
 
-	function apply() {
-		update_trait()
-		retrieve_trait()
+	async function apply() {
+		await update_trait()
+		// await retrieve_trait()
 	}
 
 	const show_instances = ref(false)

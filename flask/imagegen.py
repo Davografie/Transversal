@@ -6,57 +6,14 @@ import os
 
 prompt_text = """
 {
-  "4": {
-    "inputs": {
-      "noise_seed": 365437518561265,
-      "steps": 48,
-      "timestep_to_start_cfg": 1,
-      "true_gs": 3.5,
-      "image_to_image_strength": 0,
-      "denoise_strength": 1,
-      "model": [
-        "18",
-        0
-      ],
-      "conditioning": [
-        "44",
-        0
-      ],
-      "neg_conditioning": [
-        "45",
-        0
-      ],
-      "latent_image": [
-        "16",
-        4
-      ]
-    },
-    "class_type": "XlabsSampler",
-    "_meta": {
-      "title": "Xlabs Sampler"
-    }
-  },
-  "9": {
-    "inputs": {
-      "clip_name1": "flux/t5xxl_fp8_e4m3fn.safetensors",
-      "clip_name2": "flux/clip_l.safetensors",
-      "type": "flux",
-      "device": "default",
-      "+": null
-    },
-    "class_type": "DualCLIPLoader",
-    "_meta": {
-      "title": "DualCLIPLoader"
-    }
-  },
-  "11": {
+  "8": {
     "inputs": {
       "samples": [
-        "4",
+        "40",
         0
       ],
       "vae": [
-        "13",
+        "10",
         0
       ]
     },
@@ -65,17 +22,156 @@ prompt_text = """
       "title": "VAE Decode"
     }
   },
-  "13": {
+  "10": {
     "inputs": {
-      "vae_name": "flux/ae.safetensors",
-      "+": null
+      "vae_name": "flux/ae.safetensors"
     },
     "class_type": "VAELoader",
     "_meta": {
       "title": "Load VAE"
     }
   },
-  "16": {
+  "11": {
+    "inputs": {
+      "clip_name1": "flux/flan_t5_xxl_full_FP8e4m3.safetensors",
+      "clip_name2": "flux/Long-ViT-L-14-BEST-GmP-smooth-ft.safetensors",
+      "type": "flux",
+      "device": "default"
+    },
+    "class_type": "DualCLIPLoader",
+    "_meta": {
+      "title": "DualCLIPLoader"
+    }
+  },
+  "17": {
+    "inputs": {
+      "scheduler": "normal",
+      "steps": 24,
+      "denoise": 1,
+      "model": [
+        "50",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "40": {
+    "inputs": {
+      "noise": [
+        "45",
+        0
+      ],
+      "guider": [
+        "56",
+        0
+      ],
+      "sampler": [
+        "47",
+        0
+      ],
+      "sigmas": [
+        "17",
+        0
+      ],
+      "latent_image": [
+        "44",
+        0
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "42": {
+    "inputs": {
+      "guidance": 4.0,
+      "conditioning": [
+        "43",
+        0
+      ]
+    },
+    "class_type": "FluxGuidance",
+    "_meta": {
+      "title": "FluxGuidance"
+    }
+  },
+  "43": {
+    "inputs": {
+      "text": "powerful xianxia practitioner in midair on a horizontal chinese sword (like a skateboard:0.4)",
+      "clip": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "44": {
+    "inputs": {
+      "width": [
+        "51",
+        0
+      ],
+      "height": [
+        "51",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "EmptySD3LatentImage"
+    }
+  },
+  "45": {
+    "inputs": {
+      "noise_seed": 765637178901317
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "47": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "48": {
+    "inputs": {
+      "unet_name": "flux/KreaDevFP8_fp16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "50": {
+    "inputs": {
+      "lora_name": "flux/OrientalFantasyIllustration.safetensors",
+      "strength_model": 0.2,
+      "model": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "51": {
     "inputs": {
       "width": 1024,
       "height": 1024,
@@ -89,116 +185,21 @@ prompt_text = """
       "title": "🔳 CR SDXL Aspect Ratio"
     }
   },
-  "18": {
+  "52": {
     "inputs": {
+      "lora_name": "flux/CultivationNovel.safetensors",
+      "strength_model": 0.4,
       "model": [
-        "47",
-        0
-      ],
-      "clip": [
-        "26",
-        0
-      ],
-      "lora_stack": [
-        "24",
-        2
-      ]
-    },
-    "class_type": "CR Apply LoRA Stack",
-    "_meta": {
-      "title": "💊 CR Apply LoRA Stack"
-    }
-  },
-  "24": {
-    "inputs": {
-      "lora_name": "flux/setting/Hyperborea-v2.safetensors",
-      "lora_weight": 0.4000000000000001,
-      "force_fetch": true,
-      "append_loraname_if_empty": false,
-      "lora_stack": [
-        "25",
-        2
-      ]
-    },
-    "class_type": "LoraLoaderStackedVanilla",
-    "_meta": {
-      "title": "LoraLoaderStackedVanilla"
-    }
-  },
-  "25": {
-    "inputs": {
-      "lora_name": "flux/import/XuErGuangying.safetensors",
-      "lora_weight": 0.8000000000000002,
-      "force_fetch": true,
-      "append_loraname_if_empty": false
-    },
-    "class_type": "LoraLoaderStackedVanilla",
-    "_meta": {
-      "title": "LoraLoaderStackedVanilla"
-    }
-  },
-  "26": {
-    "inputs": {
-      "stop_at_clip_layer": -2,
-      "clip": [
-        "9",
+        "48",
         0
       ]
     },
-    "class_type": "CLIPSetLastLayer",
+    "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "CLIP Set Last Layer"
+      "title": "Load LoRA"
     }
   },
-  "44": {
-    "inputs": {
-      "clip_l": [
-        "53",
-        0
-      ],
-      "t5xxl": [
-        "53",
-        0
-      ],
-      "guidance": 4.0,
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
-      "clip": [
-        "18",
-        1
-      ]
-    },
-    "class_type": "CLIPTextEncodeFlux",
-    "_meta": {
-      "title": "CLIPTextEncodeFlux"
-    }
-  },
-  "45": {
-    "inputs": {
-      "clip_l": "bad or low quality",
-      "t5xxl": "bad or low quality",
-      "guidance": 4.0,
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
-      "clip": [
-        "18",
-        1
-      ]
-    },
-    "class_type": "CLIPTextEncodeFlux",
-    "_meta": {
-      "title": "CLIPTextEncodeFlux"
-    }
-  },
-  "46": {
+  "55": {
     "inputs": {
       "output_path": "[time(%Y-%m-%d)]",
       "filename_prefix": "ComfyUI",
@@ -216,7 +217,7 @@ prompt_text = """
       "embed_workflow": "false",
       "show_previews": "false",
       "images": [
-        "11",
+        "8",
         0
       ]
     },
@@ -225,89 +226,56 @@ prompt_text = """
       "title": "Image Save"
     }
   },
-  "47": {
+  "56": {
     "inputs": {
-      "unet_name": "fluxArtFusionV10FP16_v10FP16GGUFQ8.gguf"
-    },
-    "class_type": "UnetLoaderGGUF",
-    "_meta": {
-      "title": "Unet Loader (GGUF)"
-    }
-  },
-  "48": {
-    "inputs": {
-      "delimiter": ", ",
-      "text_list": [
-        "24",
-        0
-      ]
-    },
-    "class_type": "Text List to Text",
-    "_meta": {
-      "title": "Text List to Text"
-    }
-  },
-  "50": {
-    "inputs": {
-      "delimiter": ", ",
-      "text_list": [
-        "25",
-        0
-      ]
-    },
-    "class_type": "Text List to Text",
-    "_meta": {
-      "title": "Text List to Text"
-    }
-  },
-  "53": {
-    "inputs": {
-      "delimiter": ", ",
-      "clean_whitespace": "true",
-      "text_a": [
-        "54",
-        0
-      ],
-      "text_b": [
+      "cfg": 1,
+      "neg_scale": 4.0,
+      "model": [
         "50",
         0
       ],
-      "text_c": [
-        "48",
+      "positive": [
+        "42",
+        0
+      ],
+      "negative": [
+        "57",
+        0
+      ],
+      "empty_conditioning": [
+        "58",
         0
       ]
     },
-    "class_type": "Text Concatenate",
+    "class_type": "PerpNegGuider",
     "_meta": {
-      "title": "Text Concatenate"
+      "title": "PerpNegGuider"
     }
   },
-  "54": {
+  "57": {
+    "inputs": {
+      "text": "male",
+      "clip": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "58": {
     "inputs": {
       "text": "",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      }
-    },
-    "class_type": "Text Multiline",
-    "_meta": {
-      "title": "Text Multiline"
-    }
-  },
-  "56": {
-    "inputs": {
-      "text": [
-        "53",
+      "clip": [
+        "11",
         0
-      ],
-      "label": "positive image prompt"
+      ]
     },
-    "class_type": "Text to Console",
+    "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "Text to Console"
+      "title": "CLIP Text Encode (Prompt)"
     }
   }
 }
@@ -322,8 +290,8 @@ def queue_prompt(prompt):
 def generate_image(description, entity_key):
 	prompt = json.loads(prompt_text)
 	#set the text prompt for our positive CLIPTextEncode
-	prompt["54"]["inputs"]["text"] = description
-	prompt["46"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
+	prompt["43"]["inputs"]["text"] = description
+	prompt["55"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
 
 	#set the seed for our KSampler node
 	# prompt["3"]["inputs"]["seed"] = 5
@@ -344,21 +312,20 @@ def generate_image(
 		steps=48
 	):
 	prompt = json.loads(prompt_text)
-	prompt["4"]["inputs"]["steps"] = steps
-	prompt["16"]["inputs"]["width"] = width
-	prompt["16"]["inputs"]["height"] = height
-	prompt["54"]["inputs"]["text"] = description
-	prompt["45"]["inputs"]["clip_l"] = negative
-	prompt["45"]["inputs"]["t5xxl"] = negative
-	prompt["24"]["inputs"]["lora_name"] = f"flux/{ lora1 }.safetensors"
-	prompt["24"]["inputs"]["lora_weight"] = lora1_weight
-	prompt["25"]["inputs"]["lora_name"] = f"flux/{ lora2 }.safetensors"
-	prompt["25"]["inputs"]["lora_weight"] = lora2_weight
-	prompt["4"]["inputs"]["noise_seed"] = random.randint(0, 10000)
+	prompt["17"]["inputs"]["steps"] = steps
+	prompt["51"]["inputs"]["width"] = width
+	prompt["51"]["inputs"]["height"] = height
+	prompt["43"]["inputs"]["text"] = description
+	prompt["57"]["inputs"]["text"] = negative
+	prompt["52"]["inputs"]["lora_name"] = f"flux/{ lora1 }.safetensors"
+	prompt["52"]["inputs"]["strength_model"] = lora1_weight
+	prompt["50"]["inputs"]["lora_name"] = f"flux/{ lora2 }.safetensors"
+	prompt["50"]["inputs"]["strength_model"] = lora2_weight
+	prompt["45"]["inputs"]["noise_seed"] = random.randint(0, 10000)
 	if location_key:
-		prompt["46"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}/{location_key}"
+		prompt["55"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}/{location_key}"
 	else:
-		prompt["46"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
+		prompt["55"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
 	
 	queue_prompt(prompt)
 

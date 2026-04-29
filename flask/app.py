@@ -1700,6 +1700,7 @@ class Trait(ObjectType):
 
 			# individual sub-traits
 			possible_sub_traits = trait.get('possible_sub_traits') or []
+			logger.debug(f"possible_sub_traits: { possible_sub_traits }")
 			for sub_trait in possible_sub_traits:
 				traitset_id = get_doc_by_id('Traits', sub_trait).get('traitset')
 
@@ -2256,19 +2257,17 @@ class DeleteTrait(Mutation):
 				subtraits = find_docs('TraitSettings', {'_from': setting.get('_id')})
 				for subtrait in subtraits:
 					db.collection('TraitSettings').delete(subtrait.get('_id'))
-
-			# delete all assigned traits
-			for setting in settings:
+				# delete all assigned traits
 				db.collection('TraitSettings').delete(setting.get('_id'))
 
 			# delete default settings
-			settings = find_docs('TraitSettings', {'_from': trait_id})
+			settings = find_docs('TraitSettings', {'_from': trait_id, '_to': 'Traits/1'})
 			for setting in settings:
 				db.collection('TraitSettings').delete(setting.get('_id'))
 			
-			# delete from all possible subtraits
+			# delete from possible subtraits
 			query = f"""FOR t IN Traits
-						FILTER { trait_id } IN t.possible_sub_traits
+						FILTER '{ trait_id }' IN t.possible_sub_traits
 						RETURN {{ 'id': t._id, 'possible_sub_traits': t.possible_sub_traits }}"""
 			traits = execute_aql(query, ['Traits'])
 			for trait in traits:
@@ -4112,6 +4111,7 @@ class Location(ObjectType):
 		entities.extend(new_entities)
 
 		# active entities need to be added to each other's known_to list if not already there
+		# this should go in to the activate_entity mutation
 		active_entities = [entity for entity in entities if entity.get('active')]
 		for entity in active_entities:
 			character_entities = [entity for entity in active_entities if entity.get('type') == 'character']
@@ -4121,18 +4121,29 @@ class Location(ObjectType):
 						entity['known_to'] = []
 					entity['known_to'].append(other_entity.get('_id'))
 			update_doc('Entities', entity)
+		
+		# add location hierarchy's archetypes
+		hierarchy = retrieve_hierarchy(parent.id)
+		for loc in hierarchy:
+			query = f"""FOR e IN Entities
+						FILTER e.location == '{ loc.get('_id') }'
+						FILTER e.is_archetype == true
+						SORT POSITION(['character', 'npc', 'asset', 'faction'], e.type, true) ASC, e.name ASC
+						RETURN e"""
+			archetypes = execute_aql(query, ['Entities'])
+			entities.extend([doc for doc in archetypes if doc.get('_id') not in [ett.get('_id') for ett in entities]])
 
 		result = []
 		for entity in entities:
 			# entity_type =
 			if entity['type'] in ['character', 'gm']:
 				result.append(Character(id=entity.get('_id')))
+			elif entity['type'] == 'npc':
+				result.append(NPC(id=entity.get('_id')))
 			elif entity['type'] == 'faction':
 				result.append(Faction(id=entity.get('_id')))
 			elif entity['type'] == 'asset':
 				result.append(Asset(id=entity.get('_id')))
-			elif entity['type'] == 'npc':
-				result.append(NPC(id=entity.get('_id')))
 			# else:
 			# 	raise Exception("unknown entity type: ", entity_type)
 		return result
@@ -5069,32 +5080,13 @@ def imagegen(entity_key, force):
 		1.0,
 		1.2,
 	]
-	genre_loras = {
-		"wuxia": "setting/ChineseWuXia",
-		"anime": "style/Anime art",
-		"modern": "import/ModernCartoon-Gudarzi",
-		"fantasy": "import/FantasyIllustration",
-		"scifi": "setting/SydMead-v1",
-		"alien": "setting/PaintedWorld-v2",
-		"space": "setting/LauraSpaceXploration",
-		"urban": "import/arcstyle",
-		"magic": "feature/material/GlowingRunes",
-		"natural": "setting/Vegetation",
-		# "realistic": "style/amateurphoto-v6-forcu",
-		"realistic": "style/RealisticScenePhotography",
-		"cyberpunk": "setting/CyberpunkAnime",
-		"oceanic": "setting/ElementalWaterPlane",
-		"colorful": "colors/ColorPop",
-		"primitive": "setting/Hyperborea-v2",
-		"comic": "style/ComicStyle"
-	}
 
 	# variables used in the generation
 	width = 832
 	height = 1216
-	lora1 = "import/DigitalFantasyIllustration"
+	lora1 = ""
 	lora1_weight = 0.0
-	lora2 = "style/Anime art"
+	lora2 = ""
 	lora2_weight = 0.4
 	loras = []
 	genres = []
@@ -5135,7 +5127,7 @@ def imagegen(entity_key, force):
 			# prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
 			# negative += ", full body, legs, cropped head"
 			prompt = ""
-			genre_loras['realistic'] = "frame/RealFaceji"
+			# genre_loras['realistic'] = "frame/RealFaceji"
 		elif entity_type == "asset":
 			prompt = f"(an image of { name }:1.2), "
 			negative += ", person"
@@ -5201,10 +5193,11 @@ def imagegen(entity_key, force):
 					prompt += trait_setting.get('statement') if trait_setting.get('statement') else ""
 					prompt += ", " if trait_setting.get('statement') and trait_setting.get('notes') else ""
 					prompt += re.sub(r'[^\w\s.,!?:;]+', '', trait_setting.get('notes', '')) if trait_setting.get('notes') else ""
-					if trait_setting.get('_from') == entity.get('_id'):
-						prompt += ":1.4)"
-					else:
-						prompt += ":0.8)"
+					prompt += ":1.4)"
+					# if trait_setting.get('_from') == entity.get('_id'):
+					# 	prompt += ":1.4)"
+					# else:
+					# 	prompt += ":0.8)"
 				elif trait.get('name').startswith('LoRA'):
 					loras.append(trait_setting.get('statement'))
 				elif trait.get('name') == 'negative imagen':
@@ -5235,19 +5228,15 @@ def imagegen(entity_key, force):
 			
 			positive_imagen = []
 
-			hierarchy = retrieve_hierarchy(location.get('_id'))[:-1]
+			hierarchy = retrieve_hierarchy(location.get('_id'))
 			for loc in hierarchy:
-				if entity_type in ["npc"]:
-					prompt += f" (located in { loc.get('name') }, " + re.sub(r'\([^)]*\)', '', loc.get('description'))
+				# if entity_type in ["npc"]:
+				prompt += f" (located in { loc.get('name') }, " + re.sub(r'\([^)]*\)', '', loc.get('description'))
 				loc_trait_settings = find_docs('TraitSettings', {'_from': loc.get('_id')})
 				for lts in loc_trait_settings:
 					trait_id = lts.get('_to')
 					trait = get_doc_by_id('Traits', trait_id)
-					if trait.get('name') == 'genre':
-						genres.append(lts.get('statement'))
-					# elif trait.get('name') == 'LoRA':
-					# 	loras.append(lts.get('statement'))
-					elif trait.get('name') == 'positive imagen':
+					if trait.get('name') == 'positive imagen':
 						positive_imagen.append(lts.get('statement')) if lts.get('statement') else ""
 						positive_imagen.append(lts.get('notes')) if lts.get('notes') else ""
 					elif trait.get('name') == 'negative imagen':
@@ -5256,6 +5245,8 @@ def imagegen(entity_key, force):
 					elif trait.get('name') == 'appearance' and entity_type in ["npc", "asset"]:
 						prompt += ", " + lts.get('statement') if lts.get('statement') else ""
 						prompt += ", " + lts.get('notes') if lts.get('notes') else ""
+					elif trait.get('name').startswith('LoRA'):
+						loras.append(lts.get('statement')) if lts.get('statement') else ""
 			strength = 1.0
 			strength_list = []
 			for loc in hierarchy:
@@ -5335,8 +5326,8 @@ def imagegen(entity_key, force):
 							negative += ", " + t[1]
 						elif t[0].startswith("LoRA"):
 							loras.append(t[1])
-						elif t[0] == "genre":
-							genres.append(t[1])
+						# elif t[0] == "genre":
+						# 	genres.append(t[1])
 						else:
 							traits.append(f"({t[0]}{' is ' + t[1] if t[1] else ''}{' ' + t[3] if t[3] else ''}{':' + str(rating_weights[abs(t[2]) - 1]) if t[2] and t[4] != 'empty' else ''})")
 					prompt += ", ".join(traits)
@@ -5408,9 +5399,9 @@ def imagegen(entity_key, force):
 						lts = l[2]
 						for lt in lts:
 							# logger.debug(f"lt: { lt }")
-							if lt[0].startswith("genre"):
-								genres.append(lt[1])
-							elif lt[0].startswith("LoRA"):
+							# if lt[0].startswith("genre"):
+							# 	genres.append(lt[1])
+							if lt[0].startswith("LoRA"):
 								loras.append(lt[1])
 							elif lt[0] == "positive imagen":
 								prompt += ", " + lt[1] if lt[1] else ""
@@ -5430,24 +5421,10 @@ def imagegen(entity_key, force):
 					FILTER s._to == t._id
 				RETURN [t.name, s.statement, s.notes, s.rating[0]]
 			)
-			LET genres = (
-				FOR v, e, p IN 0..20 OUTBOUND entity.location Relations
-				FILTER p.edges[*].type ALL == 'super'
-				LET hierarchy_traits = (
-					FOR s IN TraitSettings
-						FILTER v._id == s._from
-					FOR t IN Traits
-						FILTER s._to == t._id
-						FILTER t.name == 'genre'
-					RETURN s.statement
-				)
-				RETURN hierarchy_traits
-			)
 			RETURN {{
 				entity: entity.name,
 				description: entity.description,
-				traits: traits,
-				genres: FLATTEN(genres)
+				traits: traits
 			}}"""
 
 			# there should only be one result
@@ -5470,8 +5447,8 @@ def imagegen(entity_key, force):
 							traits.append(f"({name}{' is ' + statement if statement else ''}{notes if notes else ''}:1.4), ")
 						elif name == "LoRA":
 							loras.append(statement)
-						elif name == "genre":
-							genres.append(statement)
+						# elif name == "genre":
+						# 	genres.append(statement)
 						elif name == "negative imagen":
 							negative += ", " + statement if statement else ""
 							negative += ", " + notes if notes else ""
@@ -5479,9 +5456,9 @@ def imagegen(entity_key, force):
 							traits.append(f"({name}{' is ' + statement if statement else ''}{notes if notes else ''}:{ str(rating_weights[abs(rating) - 1]) })")
 					prompt += ", ".join(traits)
 
-				if len(doc.get('genres')) > 0:
-					for g in doc.get('genres'):
-						genres.append(g)
+				# if len(doc.get('genres')) > 0:
+				# 	for g in doc.get('genres'):
+				# 		genres.append(g)
 
 		# if entity_type in ['character', 'npc', 'location']:
 		# 	prompt += ". In the styles of Donato Giancola and Noah Bradley and AquaSixio and Charlie Bowater and Yuumei and Jeremy Fenske and Amy Sol and Greg Tocchini and Carne Griffiths and Wadim Kashin"
@@ -5496,33 +5473,33 @@ def imagegen(entity_key, force):
 		# loras.reverse()
 		# logger.debug(f"loras 3: { loras }")
 		# same for genres
-		seen = set()
-		genres = [x for x in genres if not (x in seen or seen.add(x))]
-		genres.reverse()
+		# seen = set()
+		# genres = [x for x in genres if not (x in seen or seen.add(x))]
+		# genres.reverse()
 		if len(loras) > 0:
 			lora1 = loras[0]
-			lora1_weight = 0.8
+			lora1_weight = 0.5
 			if len(loras) > 1:
 				lora2 = loras[1]
-				lora2_weight = 0.4
-			elif len(genres) > 0:
-				if genres[0] in genre_loras.keys():
-					lora2 = genre_loras.get(genres[0])
-					lora2_weight = 0.4
+				lora2_weight = 0.3
+			# elif len(genres) > 0:
+			# 	if genres[0] in genre_loras.keys():
+			# 		lora2 = genre_loras.get(genres[0])
+			# 		lora2_weight = 0.4
 			else:
 				lora2_weight = 0.0
-		elif len(genres) > 0:
-			if genres[0] in genre_loras.keys():
-				lora1 = genre_loras.get(genres[0])
-				lora1_weight = 0.8
-			if len(genres) > 1 and genres[1] in genre_loras.keys():
-				lora2 = genre_loras.get(genres[1])
-				lora2_weight = 0.4
-			else:
-				lora2_weight = 0.0
-			# elif entity_type in ['character', 'npc']:
-			# 	lora2 = "frame/CharacterPortraitsCaith"
-			# 	lora2_weight = 0.4
+		# elif len(genres) > 0:
+		# 	if genres[0] in genre_loras.keys():
+		# 		lora1 = genre_loras.get(genres[0])
+		# 		lora1_weight = 0.8
+		# 	if len(genres) > 1 and genres[1] in genre_loras.keys():
+		# 		lora2 = genre_loras.get(genres[1])
+		# 		lora2_weight = 0.4
+		# 	else:
+		# 		lora2_weight = 0.0
+		# 	# elif entity_type in ['character', 'npc']:
+		# 	# 	lora2 = "frame/CharacterPortraitsCaith"
+		# 	# 	lora2_weight = 0.4
 		
 		negative += ", watermark, signature"
 		

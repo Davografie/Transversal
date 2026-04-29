@@ -623,7 +623,7 @@
 					</div>
 				</div>
 				<div class="center">
-					<div class="archetypes">
+					<div class="archetypes" v-if="player.is_gm">
 						<EntityButton
 							class="entity-card"
 							v-for="archetype in location.entities?.filter(e => e.isArchetype)"

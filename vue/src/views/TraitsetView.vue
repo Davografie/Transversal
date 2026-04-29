@@ -213,7 +213,7 @@
 			return a.name.localeCompare(b.name)
 		}).sort((a, b) => {
 			return (b.randomWeight ?? 0) - (a.randomWeight ?? 0)
-		})
+		}).filter(t => t.name.includes(new_trait_name.value))
 	})
 
 
@@ -248,6 +248,11 @@
 	function trash_traitset() {
 		delete_traitset()
 		router.push({ name: 'Traitsets' })
+	}
+
+	async function create_new_trait() {
+		await create_trait(new_trait_name.value)
+		new_trait_name.value = ""
 	}
 </script>
 
@@ -421,7 +426,7 @@
 					<div>locations enabled/disabled</div> -->
 					<input type="button" class="button"
 						:value="'add (' + new_trait_name + ') to ' + traitset.name"
-						@click="create_trait(new_trait_name)" />
+						@click="create_new_trait" />
 				</div>
 			</div>
 			<TraitEdit v-for="trait in sorted_traits"

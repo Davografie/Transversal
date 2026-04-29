@@ -944,6 +944,14 @@
 						@click="toggle_add_trait" />
 				</div>
 				<div class="trait-list">
+					<div class="button potential-trait highlighted"
+							@click="assign_trait_to_entity(highlighted_potential_trait)"
+							v-if="highlighted_potential_trait">
+						<div class="trait-description">
+							<div class="trait-name">{{ highlighted_potential_trait?.name }}</div>
+							<div class="trait-explanation">{{ highlighted_potential_trait?.explanation }}</div>
+						</div>
+					</div>
 					<template v-for="trait in potential_traits" :key="trait.id" v-if="potential_traits.length > 0">
 						<div class="button potential-trait"
 								:class="[
