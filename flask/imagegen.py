@@ -229,7 +229,7 @@ prompt_text = """
   "56": {
     "inputs": {
       "cfg": 1,
-      "neg_scale": 4.0,
+      "neg_scale": 3.0,
       "model": [
         "50",
         0

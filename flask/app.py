@@ -5114,7 +5114,7 @@ def imagegen(entity_key, force):
 					location_key = hierarchy[-2].get('_key')
 		name = entity.get('name')
 		description = entity.get('description')
-		negative = "cgi, 3d, bad quality, watermark, signature, text"
+		negative = "cgi, watermark, signature, text"
 
 		if entity_type == "character":
 			steps = 48
@@ -5123,13 +5123,14 @@ def imagegen(entity_key, force):
 		if entity.get('is_archetype'):
 			steps -= 8
 
-		if entity_type in ["character", "npc"]:
-			# prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
-			# negative += ", full body, legs, cropped head"
-			prompt = ""
-			# genre_loras['realistic'] = "frame/RealFaceji"
-		elif entity_type == "asset":
-			prompt = f"(an image of { name }:1.2), "
+		prompt = ""
+		# if entity_type in ["character", "npc"]:
+		# 	# prompt = f"(a solo upper body character portrait of { name }:1.2), head, shoulders, "
+		# 	# negative += ", full body, legs, cropped head"
+		# 	prompt = ""
+		# 	# genre_loras['realistic'] = "frame/RealFaceji"
+		if entity_type == "asset":
+			# prompt = f"(an image of { name }:1.2), "
 			negative += ", person"
 			# width = 1216
 			# height = 832
@@ -5182,7 +5183,11 @@ def imagegen(entity_key, force):
 				traits.append((traitset, trait, trait_setting))
 
 			prompt += "("
-			prompt += f"portrait of {entity.get('name')}" if entity.get('name') else ""
+			if entity_type in ["character", "npc", "gm"]:
+				prompt += "a solo upper body character portrait of "
+			elif entity_type == "asset":
+				prompt += "a concept art image of "
+			prompt += f"{entity.get('name')}" if entity.get('name') else ""
 			prompt += f", {entity.get('description')}" if entity.get('description') else ""
 			prompt += ", " + ", ".join([archetype.get('name') for archetype in archetypes])
 			for traitset, trait, trait_setting in traits:
@@ -5212,7 +5217,7 @@ def imagegen(entity_key, force):
 					prompt += " is " if trait.get('name') and trait_setting.get('statement') else ""
 					prompt += re.sub(r'\([^)]*\)', '', trait_setting.get('statement')) if trait_setting.get('statement') else ""
 					prompt += " of (" + ",".join([subtrait.get('name') for subtrait in trait.get('subtraits')]) + ")" if trait.get('subtraits') else ""
-					prompt += f", (" + re.sub(r'[^\w\s.,!?:;]+', '', trait_setting.get('notes', '')) + ":0.4)" if trait_setting.get('notes') else ""
+					prompt += f". " + re.sub(r'[^\w\s\-.,!?:;]+', '', trait_setting.get('notes', '')) if trait_setting.get('notes') else ""
 					# prompt += ":"
 					if trait_setting.get('rating') and trait_setting.get('rating_type') == 'static':
 						prompt += ":" + str(rating_weights[abs(trait_setting.get('rating')[0]) - 1])
@@ -5227,11 +5232,11 @@ def imagegen(entity_key, force):
 			prompt += ":1.2), "
 			
 			positive_imagen = []
+			location_prompt = ""
 
 			hierarchy = retrieve_hierarchy(location.get('_id'))
 			for loc in hierarchy:
-				# if entity_type in ["npc"]:
-				prompt += f" (located in { loc.get('name') }, " + re.sub(r'\([^)]*\)', '', loc.get('description'))
+				location_prompt += f" (located in { loc.get('name') }, " + re.sub(r'\([^)]*\)', '', loc.get('description'))
 				loc_trait_settings = find_docs('TraitSettings', {'_from': loc.get('_id')})
 				for lts in loc_trait_settings:
 					trait_id = lts.get('_to')
@@ -5243,10 +5248,15 @@ def imagegen(entity_key, force):
 						negative += ", " + lts.get('statement') if lts.get('statement') else ""
 						negative += ", " + lts.get('notes') if lts.get('notes') else ""
 					elif trait.get('name') == 'appearance' and entity_type in ["npc", "asset"]:
-						prompt += ", " + lts.get('statement') if lts.get('statement') else ""
-						prompt += ", " + lts.get('notes') if lts.get('notes') else ""
+						location_prompt += ", " + lts.get('statement') if lts.get('statement') else ""
+						location_prompt += ", " + lts.get('notes') if lts.get('notes') else ""
 					elif trait.get('name').startswith('LoRA'):
 						loras.append(lts.get('statement')) if lts.get('statement') else ""
+
+			if len(positive_imagen) > 0:
+				prompt += "(" + ", ".join(positive_imagen) + ":0.8), "
+			
+			# add nested location appearances
 			strength = 1.0
 			strength_list = []
 			for loc in hierarchy:
@@ -5254,14 +5264,12 @@ def imagegen(entity_key, force):
 				strength_list.append(strength)
 			strength_list.reverse()
 			if entity_type in ["npc", "asset"]:
+				prompt += location_prompt
 				for i in range(len(strength_list)):
 					prompt += f":{str(strength_list[i])}"
 					if i < len(strength_list) - 1:
 						prompt += ")"
 				prompt += ")"
-			# prompt += "), "
-			if len(positive_imagen) > 0:
-				prompt += ", (" + ", ".join(positive_imagen) + ":0.8)"
 
 
 
@@ -5478,10 +5486,10 @@ def imagegen(entity_key, force):
 		# genres.reverse()
 		if len(loras) > 0:
 			lora1 = loras[0]
-			lora1_weight = 0.5
+			lora1_weight = 0.8
 			if len(loras) > 1:
 				lora2 = loras[1]
-				lora2_weight = 0.3
+				lora2_weight = 0.4
 			# elif len(genres) > 0:
 			# 	if genres[0] in genre_loras.keys():
 			# 		lora2 = genre_loras.get(genres[0])
