@@ -110,7 +110,8 @@
 	.pool-trait-wrapper {
 		/* border-bottom: 1px solid var(--color-border); */
 		display: flex;
-		justify-content: space-between;
+		/* justify-content: space-between; */
+		gap: 1em;
 		align-items: center;
 		position: relative;
 		max-height: 1.6em;
@@ -120,9 +121,6 @@
 		}
 		&.unavailable {
 			color: var(--color-disabled);
-		}
-		.pool-trait-rating {
-			transform: translateY(-.4em);
 		}
 	}
 	.pool-wrapper {

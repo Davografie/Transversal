@@ -19,9 +19,9 @@
 
 <template>
 	<div class="pool-traitset-wrapper pool-wrapper">
-		<div class="traitset-name" v-if="traitset">
+		<!-- <div class="traitset-name" v-if="traitset">
 			{{  traitset.name }}
-		</div>
+		</div> -->
 		<template v-for="traitsetting in new Set(props.dice.map((d) => d.traitsettingId ?? 'custom')).values()" :key="traitsetting">
 			<PoolTrait v-if="traitsetting"
 				:traitsetting_id="traitsetting"
