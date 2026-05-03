@@ -8,3 +8,5 @@ python-arango==8.1.2
 Pillow==11.0.0
 pandas==2.2.3
 redis
+gunicorn
+gevent

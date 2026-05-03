@@ -6,35 +6,40 @@ import os
 
 prompt_text = """
 {
-  "8": {
+  "3": {
     "inputs": {
-      "samples": [
-        "40",
+      "noise_seed": 257762932021983,
+      "steps": 24,
+      "timestep_to_start_cfg": 1,
+      "true_gs": 3.5,
+      "image_to_image_strength": 0,
+      "denoise_strength": 1,
+      "model": [
+        "30",
         0
       ],
-      "vae": [
-        "10",
+      "conditioning": [
+        "5",
         0
+      ],
+      "neg_conditioning": [
+        "19",
+        0
+      ],
+      "latent_image": [
+        "24",
+        4
       ]
     },
-    "class_type": "VAEDecode",
+    "class_type": "XlabsSampler",
     "_meta": {
-      "title": "VAE Decode"
+      "title": "Xlabs Sampler"
     }
   },
-  "10": {
+  "4": {
     "inputs": {
-      "vae_name": "flux/ae.safetensors"
-    },
-    "class_type": "VAELoader",
-    "_meta": {
-      "title": "Load VAE"
-    }
-  },
-  "11": {
-    "inputs": {
-      "clip_name1": "flux/flan_t5_xxl_full_FP8e4m3.safetensors",
-      "clip_name2": "flux/Long-ViT-L-14-BEST-GmP-smooth-ft.safetensors",
+      "clip_name1": "flux/Long-ViT-L-14-BEST-GmP-smooth-ft.safetensors",
+      "clip_name2": "flux/flan_t5_xxl_full_FP8e4m3.safetensors",
       "type": "flux",
       "device": "default"
     },
@@ -43,135 +48,74 @@ prompt_text = """
       "title": "DualCLIPLoader"
     }
   },
-  "17": {
+  "5": {
     "inputs": {
-      "scheduler": "normal",
-      "steps": 24,
-      "denoise": 1,
-      "model": [
-        "50",
-        0
-      ]
-    },
-    "class_type": "BasicScheduler",
-    "_meta": {
-      "title": "BasicScheduler"
-    }
-  },
-  "40": {
-    "inputs": {
-      "noise": [
-        "45",
+      "clip_l": [
+        "25",
         0
       ],
-      "guider": [
-        "56",
+      "t5xxl": [
+        "25",
         0
       ],
-      "sampler": [
-        "47",
-        0
-      ],
-      "sigmas": [
-        "17",
-        0
-      ],
-      "latent_image": [
-        "44",
-        0
-      ]
-    },
-    "class_type": "SamplerCustomAdvanced",
-    "_meta": {
-      "title": "SamplerCustomAdvanced"
-    }
-  },
-  "42": {
-    "inputs": {
-      "guidance": 4.0,
-      "conditioning": [
-        "43",
-        0
-      ]
-    },
-    "class_type": "FluxGuidance",
-    "_meta": {
-      "title": "FluxGuidance"
-    }
-  },
-  "43": {
-    "inputs": {
-      "text": "powerful xianxia practitioner in midair on a horizontal chinese sword (like a skateboard:0.4)",
+      "guidance": 3.5,
       "clip": [
-        "11",
-        0
-      ]
-    },
-    "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
-    }
-  },
-  "44": {
-    "inputs": {
-      "width": [
-        "51",
-        0
-      ],
-      "height": [
-        "51",
+        "30",
         1
+      ]
+    },
+    "class_type": "CLIPTextEncodeFlux",
+    "_meta": {
+      "title": "CLIPTextEncodeFlux"
+    }
+  },
+  "7": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
       ],
-      "batch_size": 1
-    },
-    "class_type": "EmptySD3LatentImage",
-    "_meta": {
-      "title": "EmptySD3LatentImage"
-    }
-  },
-  "45": {
-    "inputs": {
-      "noise_seed": 765637178901317
-    },
-    "class_type": "RandomNoise",
-    "_meta": {
-      "title": "RandomNoise"
-    }
-  },
-  "47": {
-    "inputs": {
-      "sampler_name": "euler"
-    },
-    "class_type": "KSamplerSelect",
-    "_meta": {
-      "title": "KSamplerSelect"
-    }
-  },
-  "48": {
-    "inputs": {
-      "unet_name": "flux/KreaDevFP8_fp16.safetensors",
-      "weight_dtype": "default"
-    },
-    "class_type": "UNETLoader",
-    "_meta": {
-      "title": "Load Diffusion Model"
-    }
-  },
-  "50": {
-    "inputs": {
-      "lora_name": "flux/OrientalFantasyIllustration.safetensors",
-      "strength_model": 0.2,
-      "model": [
-        "52",
+      "vae": [
+        "8",
         0
       ]
     },
-    "class_type": "LoraLoaderModelOnly",
+    "class_type": "VAEDecode",
     "_meta": {
-      "title": "Load LoRA"
+      "title": "VAE Decode"
     }
   },
-  "51": {
+  "8": {
+    "inputs": {
+      "vae_name": "flux/ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "19": {
+    "inputs": {
+      "clip_l": [
+        "26",
+        0
+      ],
+      "t5xxl": [
+        "26",
+        0
+      ],
+      "guidance": 4,
+      "clip": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncodeFlux",
+    "_meta": {
+      "title": "CLIPTextEncodeFlux"
+    }
+  },
+  "24": {
     "inputs": {
       "width": 1024,
       "height": 1024,
@@ -185,21 +129,34 @@ prompt_text = """
       "title": "🔳 CR SDXL Aspect Ratio"
     }
   },
-  "52": {
+  "25": {
     "inputs": {
-      "lora_name": "flux/CultivationNovel.safetensors",
-      "strength_model": 0.4,
-      "model": [
-        "48",
-        0
-      ]
+      "text": "concept art of a vertical spaceship, thrusters, hull, in outer space"
     },
-    "class_type": "LoraLoaderModelOnly",
+    "class_type": "Text Multiline",
     "_meta": {
-      "title": "Load LoRA"
+      "title": "positive"
     }
   },
-  "55": {
+  "26": {
+    "inputs": {
+      "text": "spacestation"
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "negative"
+    }
+  },
+  "27": {
+    "inputs": {
+      "unet_name": "fluxArtFusionFP16_v10Q8.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "28": {
     "inputs": {
       "output_path": "[time(%Y-%m-%d)]",
       "filename_prefix": "ComfyUI",
@@ -217,7 +174,7 @@ prompt_text = """
       "embed_workflow": "false",
       "show_previews": "false",
       "images": [
-        "8",
+        "7",
         0
       ]
     },
@@ -226,56 +183,42 @@ prompt_text = """
       "title": "Image Save"
     }
   },
-  "56": {
+  "29": {
     "inputs": {
-      "cfg": 1,
-      "neg_scale": 4.0,
+      "lora_name": "flux/SydMead-v1.safetensors",
+      "strength_model": 0.5,
+      "strength_clip": 1,
       "model": [
-        "50",
+        "27",
         0
       ],
-      "positive": [
-        "42",
-        0
-      ],
-      "negative": [
-        "57",
-        0
-      ],
-      "empty_conditioning": [
-        "58",
+      "clip": [
+        "4",
         0
       ]
     },
-    "class_type": "PerpNegGuider",
+    "class_type": "LoraLoader",
     "_meta": {
-      "title": "PerpNegGuider"
+      "title": "Load LoRA (Model and CLIP)"
     }
   },
-  "57": {
+  "30": {
     "inputs": {
-      "text": "male",
-      "clip": [
-        "11",
+      "lora_name": "flux/SpaceshipGenerator-v2.safetensors",
+      "strength_model": 0.3,
+      "strength_clip": 1,
+      "model": [
+        "29",
         0
+      ],
+      "clip": [
+        "29",
+        1
       ]
     },
-    "class_type": "CLIPTextEncode",
+    "class_type": "LoraLoader",
     "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
-    }
-  },
-  "58": {
-    "inputs": {
-      "text": "",
-      "clip": [
-        "11",
-        0
-      ]
-    },
-    "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
+      "title": "Load LoRA (Model and CLIP)"
     }
   }
 }
@@ -312,20 +255,20 @@ def generate_image(
 		steps=48
 	):
 	prompt = json.loads(prompt_text)
-	prompt["17"]["inputs"]["steps"] = steps
-	prompt["51"]["inputs"]["width"] = width
-	prompt["51"]["inputs"]["height"] = height
-	prompt["43"]["inputs"]["text"] = description
-	prompt["57"]["inputs"]["text"] = negative
-	prompt["52"]["inputs"]["lora_name"] = f"flux/{ lora1 }.safetensors"
-	prompt["52"]["inputs"]["strength_model"] = lora1_weight
-	prompt["50"]["inputs"]["lora_name"] = f"flux/{ lora2 }.safetensors"
-	prompt["50"]["inputs"]["strength_model"] = lora2_weight
-	prompt["45"]["inputs"]["noise_seed"] = random.randint(0, 10000)
+	prompt["3"]["inputs"]["steps"] = steps
+	prompt["3"]["inputs"]["noise_seed"] = random.randint(0, 10000)
+	prompt["24"]["inputs"]["width"] = width
+	prompt["24"]["inputs"]["height"] = height
+	prompt["25"]["inputs"]["text"] = description
+	prompt["26"]["inputs"]["text"] = negative
+	prompt["29"]["inputs"]["lora_name"] = f"flux/{ lora1 }.safetensors"
+	prompt["29"]["inputs"]["strength_model"] = lora1_weight
+	prompt["30"]["inputs"]["lora_name"] = f"flux/{ lora2 }.safetensors"
+	prompt["30"]["inputs"]["strength_model"] = lora2_weight
 	if location_key:
-		prompt["55"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}/{location_key}"
+		prompt["28"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}/{location_key}"
 	else:
-		prompt["55"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
+		prompt["28"]["inputs"]["output_path"] = f"/media/imagens/{entity_key}"
 	
 	queue_prompt(prompt)
 

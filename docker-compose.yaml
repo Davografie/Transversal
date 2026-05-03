@@ -62,8 +62,8 @@ services:
       - 5000:5000
     expose:
       - 5000
-    entrypoint: python
-    command: app.py
+    # entrypoint: python
+    command: gunicorn --worker-class gevent --workers 1 --bind 0.0.0.0:5000 --worker-connections 10 "app:app"
   fastapi:
     build: ./fastapi
     image: tv_fastapi

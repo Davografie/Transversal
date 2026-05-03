@@ -414,6 +414,9 @@
 
 	const deletion = ref(false)
 	function entity_deletion(rmtree?: boolean) {
+		if(!entity.value && player.the_entity) {
+			entity.value = player.the_entity
+		}
 		if(rmtree) {
 			prune_location()
 		}
@@ -613,6 +616,29 @@
 			retrieve_parents()
 		}
 		location_restriction.value = !location_restriction.value
+	}
+
+	/**
+	 * when a traitset changes in a subcomponent, update the traitset in the player-store
+	 */
+	function update_traitset(ts: TraitsetType) {
+		if(player.the_entity?.traitsets?.map(t => t.id).includes(ts.id)) {
+			const current_ts_index = player.the_entity.traitsets.findIndex(t => t.id == ts.id)
+			let traitsets = player.the_entity.traitsets
+			traitsets[current_ts_index] = ts
+			if(player.is_gm) {
+				player.perspective = {
+					...player.perspective,
+					traitsets: traitsets
+				}
+			}
+			else {
+				player.player_character = {
+					...player.player_character,
+					traitsets: traitsets
+				}
+			}
+		}
 	}
 
 </script>
@@ -823,11 +849,11 @@
 						:class="{ 'active': entityOverviewType == 'KNOWN_TO' }"
 						v-if="player.is_gm && player.the_entity?.knownTo && player.the_entity?.knownTo.length > 0" />
 
-					<div class="button-mnml" id="toggle-traitsets" @click="toggle_traitsets" v-if="player.is_gm">
-						<!-- work in progress -->
+					<!-- work in progress -->
+					<!-- <div class="button-mnml" id="toggle-traitsets" @click="toggle_traitsets" v-if="player.is_gm">
 						<div class="icon">📜</div>
 						<div class="label" v-if="!player.small_buttons">traitsets</div>
-					</div>
+					</div> -->
 
 					<ButtonMinimal :function="ButtonTypes.TRAITSET_CLOSED"
 						@click="cycle_traitset_defaults(false)"
@@ -842,16 +868,19 @@
 						@click.right.prevent="cycle_traitset_defaults(true)"
 						v-else-if="show_traitsets && player.traitset_defaults == 'EXPANDED'" />
 
-					<div class="button-mnml" id="delete-entity"
+					<!-- <div class="button-mnml" id="delete-entity"
 						title="delete entity"
 						v-if="player.is_gm && player.the_entity?.key != 'placeholder' && !['1', '2'].includes(player.the_entity?.key) && deletion == false"
 						@click="deletion = true">
-						<!-- <div class="icon">🗑</div> -->
+						<div class="icon">🗑</div>
 						<img src="/img/icons/trash.png" class="icon" />
 						<div class="label" v-if="!player.small_buttons">delete entity</div>
-					</div>
+					</div> -->
+					<ButtonMinimal :function="ButtonTypes.TRASH"
+						@click="deletion = true"
+						v-if="player.is_gm && player.the_entity?.key != 'placeholder' && !['1', '2'].includes(player.the_entity?.key) && deletion == false" />
 					<div id="delete-confirmation" v-if="deletion">
-						<label>🗑</label>
+						<label>🗑 {{ entity.name ?? player.the_entity.name ?? 'undefined' }}</label>
 						<div class="button-mnml verify-rmtree" id="verify-rmtree"
 							title="delete recursively"
 							v-if="player.the_entity?.entityType == 'location'"
@@ -880,12 +909,10 @@
 						<div class="label" v-if="!player.small_buttons">refresh</div>
 					</div>
 
-					<ButtonMinimal
-						:function="ButtonTypes.SETTINGS"
+					<ButtonMinimal :function="ButtonTypes.SETTINGS"
 						@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
 
-					<ButtonMinimal
-						:function="ButtonTypes.LOCATION_PIN"
+					<ButtonMinimal :function="ButtonTypes.LOCATION_PIN"
 						v-if="player.is_gm"
 						@click="toggle_location_restriction" />
 				</div>
@@ -971,7 +998,8 @@
 					@set_traitset="set_traitset"
 					@reset_scroll="scroll_to_traitset(set)"
 					@unset_traitset="active_traitset_id = ''"
-					@show_entity="(e_id) => emit('show_entity', e_id)" />
+					@show_entity="(e_id) => emit('show_entity', e_id)"
+					@update_traitset="update_traitset" />
 			</Suspense>
 			<div class="bottom-scroll-space"></div>
 		</div>

@@ -24,8 +24,9 @@
 		retrieve_zones
 	} = useLocation(undefined, props.location_key)
 
-	retrieve_small_location()
-	retrieve_presence()
+	retrieve_small_location().then(() => {
+		retrieve_presence()
+	})
 	if(props.level < 0) retrieve_zones()
 
 	const filtered_presence = computed(() => {
@@ -33,7 +34,7 @@
 			e => (
 					e.entityType != 'gm'
 					&& e.entityType != 'faction'
-					// && !e.isArchetype
+					&& !e.isArchetype
 				)
 				&& (
 					player.is_gm									// always show to GM
@@ -70,8 +71,7 @@
 <template>
 	<div class="parent-location-inheritance"
 			:class="[{ 'super': props.level > 0, 'transversable': props.level == 0, 'zone': props.level < 0 }]"
-			:style="backgroundImage"
-			v-if="(filtered_presence && filtered_presence.length > 0) || (location.zones && location.zones.length > 0)">
+			:style="backgroundImage">
 		<div class="parent-location-name" @click="emit('transverse', location)">
 			{{ location.name }}
 		</div>

@@ -45,6 +45,8 @@
 		justify-content: end;
 		flex-grow: 1;
 		/* height: 100%; */
+		min-width: 4em;
+		max-width: 6em;
 		.icon {
 			width: 2em;
 			height: 2em;
