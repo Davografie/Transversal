@@ -618,6 +618,29 @@
 		location_restriction.value = !location_restriction.value
 	}
 
+	/**
+	 * when a traitset changes in a subcomponent, update the traitset in the player-store
+	 */
+	function update_traitset(ts: TraitsetType) {
+		if(player.the_entity?.traitsets?.map(t => t.id).includes(ts.id)) {
+			const current_ts_index = player.the_entity.traitsets.findIndex(t => t.id == ts.id)
+			let traitsets = player.the_entity.traitsets
+			traitsets[current_ts_index] = ts
+			if(player.is_gm) {
+				player.perspective = {
+					...player.perspective,
+					traitsets: traitsets
+				}
+			}
+			else {
+				player.player_character = {
+					...player.player_character,
+					traitsets: traitsets
+				}
+			}
+		}
+	}
+
 </script>
 
 <template>
@@ -975,7 +998,8 @@
 					@set_traitset="set_traitset"
 					@reset_scroll="scroll_to_traitset(set)"
 					@unset_traitset="active_traitset_id = ''"
-					@show_entity="(e_id) => emit('show_entity', e_id)" />
+					@show_entity="(e_id) => emit('show_entity', e_id)"
+					@update_traitset="update_traitset" />
 			</Suspense>
 			<div class="bottom-scroll-space"></div>
 		</div>

@@ -53,7 +53,8 @@
 		'set_traitset',
 		'unset_traitset',
 		'reset_scroll',
-		'show_entity'
+		'show_entity',
+		'update_traitset'
 	])
 	// const emit = defineEmits<{
 	// 	next: [],
@@ -602,6 +603,9 @@
 	async function refresh() {
 		refreshing.value = true
 		await retrieve_traitset('network-only').then(() => {
+			if(props.traitset) {
+				emit('update_traitset', traitset.value)
+			}
 			refreshing.value = false
 		})
 	}
