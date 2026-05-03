@@ -48,7 +48,13 @@
 		traitset?: Traitset
 	}>()
 
-	const emit = defineEmits(['next', 'set_traitset', 'unset_traitset', 'reset_scroll', 'show_entity'])
+	const emit = defineEmits([
+		'next',
+		'set_traitset',
+		'unset_traitset',
+		'reset_scroll',
+		'show_entity'
+	])
 	// const emit = defineEmits<{
 	// 	next: [],
 	// 	set_traitset: [Traitset],
@@ -911,14 +917,20 @@
 				<div v-if="potential_traits.length == 0" class="no-results">no available traits to add</div>
 
 				<div class="controls">
-				
-					<div class="button-mnml add-multiple-toggle" @click="add_multiple_traits = !add_multiple_traits">
-						<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
-						<div class="label">adding {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
-					</div>
-					<div class="button-mnml randomize" @click="randomize_potential_trait">
-						<div class="icon">🎲</div>
-						<div class="label">random trait</div>
+					<div class="buttons">
+						<div class="button-mnml add-multiple-toggle" @click="add_multiple_traits = !add_multiple_traits">
+							<div class="icon">{{ add_multiple_traits ? '☑' : '⭕' }}</div>
+							<div class="label">adding {{ add_multiple_traits ? 'multiple' : 'single' }}</div>
+						</div>
+						<div class="button-mnml randomize" @click="randomize_potential_trait">
+							<div class="icon">🎲</div>
+							<div class="label">random trait</div>
+						</div>
+						<input type="button" class="button add-trait-button"
+							:value="adding_trait ?
+								player.small_buttons ? 'x' : 'stop adding trait x' :
+								player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
+							@click="toggle_add_trait" />
 					</div>
 					<div class="trait-search" v-if="player.is_gm || potential_traits.length >= 0">
 						<input class="trait-search-query" type="text" placeholder="find trait"
@@ -937,11 +949,6 @@
 						<div class="button" @click="search_potential_traits_visible = false" v-else>x</div>
 					</div> -->
 
-					<input type="button" class="button add-trait-button"
-						:value="adding_trait ?
-							player.small_buttons ? 'x' : 'stop adding trait x' :
-							player.small_buttons ? '+' : 'add ' + traitset.name + ' +'"
-						@click="toggle_add_trait" />
 				</div>
 				<div class="trait-list">
 					<div class="button potential-trait highlighted"
@@ -1156,26 +1163,21 @@
 			text-align: center;
 			padding: 1em;
 			.controls {
-				display: flex;
-				justify-content: space-between;
-				align-items: start;
+				.buttons {
+					display: flex;
+					justify-content: space-between;
+				}
 				.trait-search {
-					flex: 1;
 					display: flex;
 					justify-content: center;
 					.trait-search-query {
-						font-size: 1.2em;
-						height: 2em;
-						border-radius: 10px;
-						padding: 0 1em;
+						padding: .4em;
 					}
 					.create-trait-button {
 						background-color: var(--color-highlight);
 						color: var(--color-highlight-text);
 						margin: 0;
 						margin-left: .2em;
-						border-radius: 0 10px 10px 0;
-						height: 2em;
 					}
 				}
 				.add-trait-button {
