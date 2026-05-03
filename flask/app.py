@@ -1,6 +1,8 @@
 """
 	Flask and GraphQL endpoints
 """
+from gevent import monkey
+monkey.patch_all()
 from uuid import uuid4
 import pandas as pd
 import datetime
