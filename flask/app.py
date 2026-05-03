@@ -282,7 +282,11 @@ def execute_aql(query, collections=[]):
 	else:
 		# query has changed, execute query and store result in Redis
 		# logger.debug(f"Query has changed, executing query and storing result in Redis\n\tQuery: {query}")
-		cursor = db.aql.execute(query)
+		try:
+			cursor = db.aql.execute(query)
+		except Exception as e:
+			logger.error(f"Error executing AQL query: {e}\n{query}")
+			return []
 		result = [doc for doc in cursor]
 		# logger.debug(f"Query result: {result}")
 		try:
@@ -546,7 +550,7 @@ class Player(ObjectType):
 		# for every entity, get the entity and check the type to make sure to return the proper object
 		for relation in relations:
 			entity = get_doc_by_id('Entities', relation.get('_to'))
-			if entity.get('type') == 'character':
+			if entity.get('type') in ['character', 'gm']:
 				# yield Character(id=entity.get('_id'))
 				result.append(Character(id=entity.get('_id')))
 			elif entity.get('type') == 'npc':
@@ -615,24 +619,15 @@ class ActivateEntity(Mutation):
 		# reduce existing relations
 		# player = get_doc_by_id('Players', player_id)
 		relations = find_docs('Relations', { '_from': player_id, 'type': 'agency' })
-		for relation in relations:
-			if relation.get('count') is not None:
-				# multiplier = 0.96 ** len(relations)
-				multiplier = 0.96
-				new_count = relation.get('count') * multiplier
-				relation['count'] = new_count
-				if new_count < 0.1:# and player.get('is_gm') is True:
-					# GM's keep switching between perspectives, so it rises out of the pan
-					# 	this keeps the simmer down
-					logger.debug(f"deleting player's {player_id} relation to {relation.get('_to')}, count {new_count}<0.1")
-					entity = get_doc_by_id('Entities', relation.get('_to'))
-					logger.debug(f"deleting player's {player_id} relation to {entity.get('name')}, count {new_count}<0.1")
-					db.collection('Relations').delete({ '_id': relation.get('_id') })
-				else:
-					update_doc('Relations', relation)
+		# sort by last_used
+		relations = sorted(relations, key=lambda x: x.get('last_used', 0), reverse=True)
+		depreciation_multiplier = 0.5
+		for relation in relations[6:]:
+			# update the count
+			relation['count'] = int(relation.get('count') * depreciation_multiplier)
+			if relation.get('count') <= 0.1:
+				db.collection('Relations').delete({ '_id': relation.get('_id') })
 			else:
-				# if count is not set, set it to 1
-				relation['count'] = 1
 				update_doc('Relations', relation)
 
 		# check if agency relation exists
@@ -640,7 +635,7 @@ class ActivateEntity(Mutation):
 		logger.debug(f"checking relations: {relations}")
 		if len(relations) == 0:
 			logger.debug("creating agency relation, rev: " + db.collection('Relations').revision())
-			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency', 'count': 1 })
+			db.collection('Relations').insert({ '_from': player_id, '_to': entity_id, 'type': 'agency', 'count': 1, 'last_used': int(datetime.datetime.now().timestamp()) })
 		elif len(relations) == 1:
 			# update the count
 			relation = relations[0]
@@ -648,6 +643,7 @@ class ActivateEntity(Mutation):
 				relation['count'] = 1
 			new_count = relation.get('count') + 1
 			relation['count'] = new_count
+			relation['last_used'] = int(datetime.datetime.now().timestamp())
 			update_doc('Relations', relation)
 		
 		logger.info(f"Activating entity {entity_id} for player {player_id}")
@@ -2486,13 +2482,28 @@ class Traitset(ObjectType):
 							LET hierarchies = APPEND([location._id], parent_locations)
 							LET inherited_traits = (
 								FOR entity IN hierarchies
-									FOR trait, traitsetting IN OUTBOUND entity TraitSettings
+								FOR trait, traitsetting IN OUTBOUND entity TraitSettings
 									FILTER trait.traitset == '{ parent.id }'
 									FILTER traitsetting.inheritable == true
-									COLLECT traitId = traitsetting._to INTO traitsettings
-									RETURN traitsettings[*].traitsetting
+								COLLECT traitId = traitsetting._to INTO traitsettings
+								RETURN traitsettings[*].traitsetting
 							)
-							FOR trait IN UNIQUE(APPEND(direct_traits, FLATTEN(inherited_traits)))
+							LET archetypes = (
+								// gets archetypes of location from Relations
+								FOR v, e, p IN 0..20 OUTBOUND '{ entity.get('_id') }' Relations
+								FILTER p.edges[*].type ALL == 'archetype'
+								FILTER v._id != '{ entity.get('_id') }'
+								RETURN v
+							)
+							FOR archetype IN archetypes
+							LET archetype_traits = (
+								FOR trait, traitsetting IN OUTBOUND archetype TraitSettings
+								FILTER trait.traitset == '{ parent.id }'
+								COLLECT traitId = traitsetting._to INTO traitsettings
+								RETURN traitsettings[*].traitsetting
+							)
+							LET extra_traits = APPEND(inherited_traits, archetype_traits)
+							FOR trait IN UNIQUE(APPEND(direct_traits, FLATTEN(extra_traits)))
 							RETURN trait"""
 				traits = execute_aql(query, ['Entities', 'TraitSettings', 'Traits'])
 				overwritten_traits = [trait.get('inherited_as') for trait in traits if trait.get('inherited_as') is not None]
@@ -2544,7 +2555,7 @@ class Traitset(ObjectType):
 						FOR v, e, p IN 0..20 OUTBOUND '{ entity.get('_id') }' Relations
 						FILTER p.edges[*].type ALL == 'archetype'
 						FILTER v._id != '{ entity.get('_id') }'
-						FILTER v.location IN [{ ",".join(["'" + location.get('_id') + "'" for location in location_hierarchy]) }]
+						//FILTER v.location IN [{ ",".join(["'" + location.get('_id') + "'" for location in location_hierarchy]) }]
 						RETURN {{
 							id: v._id,
 							depth: LENGTH(p.edges)
@@ -2921,7 +2932,7 @@ class TraitsetSetting(ObjectType):
 		entity_id = get_doc_by_id('TraitsetSettings', parent.id).get('_from')
 		if entity_id.startswith('Entities/'):
 			entity = get_doc_by_id('Entities', entity_id)
-			if entity.get('type') == 'character':
+			if entity.get('type') in ['character', 'gm']:
 				return Character(id=entity_id)
 			elif entity.get('type') == 'npc':
 				return NPC(id=entity_id)
@@ -3409,7 +3420,7 @@ class Entity(Interface):
 		result = []
 		following_entities = find_docs('Entities', {'location': parent.id})
 		for entity in following_entities:
-			if entity.get('type') == 'character':
+			if entity.get('type') in ['character', 'gm']:
 				result.append(Character(id=entity.get('_id')))
 			elif entity.get('type') == 'npc':
 				result.append(NPC(id=entity.get('_id')))
@@ -3483,6 +3494,8 @@ class Entity(Interface):
 					result.append(Asset(id=archetype_id))
 				elif archetype.get('type') == 'faction':
 					result.append(Faction(id=archetype_id))
+				elif archetype.get('type') == 'location':
+					result.append(Location(id=archetype_id))
 		return result
 
 	def resolve_instances(parent, info):
@@ -3506,7 +3519,7 @@ class Entity(Interface):
 		# cursor = db.aql.execute(query)
 		cursor = execute_aql(query, ['Relations'])
 		for entity in cursor:
-			if entity.get('type') == 'character':
+			if entity.get('type') in ['character', 'gm']:
 				result.append(Character(id=entity.get('_id')))
 			elif entity.get('type') == 'npc':
 				result.append(NPC(id=entity.get('_id')))
@@ -3534,7 +3547,7 @@ class Entity(Interface):
 				known_to.remove(entity_id)
 				changed = True
 				continue
-			if entity.get('type') == 'character':
+			if entity.get('type') in ['character', 'gm']:
 				result.append(Character(id=entity_id))
 			elif entity.get('type') == 'npc':
 				result.append(NPC(id=entity_id))
@@ -3765,7 +3778,7 @@ class InstantiateArchetype(Mutation):
 				new_trait['_to'] = trait.get('_to')
 				db.collection('TraitSettings').insert(new_trait)
 
-		if new_entity.get('type') == 'character':
+		if new_entity.get('type') in ['character', 'gm']:
 			return InstantiateArchetype(entity=Character(id=new_entity.get('_id')), message="entity cloned")
 		elif new_entity.get('type') == 'npc':
 			return InstantiateArchetype(entity=NPC(id=new_entity.get('_id')), message="entity cloned")
@@ -3795,6 +3808,10 @@ class DeleteEntity(Mutation):
 			Args:
 				entity_id (str): The ID of the entity to remove
 			"""
+			# don't delete GM or root location
+			if entity_id in ['Entities/1', 'Entities/2']:
+				logger.error("Can't delete GM or root location")
+				return
 			# we don't want any dangling relations, so we need to delete those, but because relations
 			# can have traits associated with them we need to delete the trait settings associated with those relations too
 			# first _from this entity
@@ -4114,7 +4131,7 @@ class Location(ObjectType):
 		# this should go in to the activate_entity mutation
 		active_entities = [entity for entity in entities if entity.get('active')]
 		for entity in active_entities:
-			character_entities = [entity for entity in active_entities if entity.get('type') == 'character']
+			character_entities = [entity for entity in active_entities if entity.get('type') in ['character', 'gm']]
 			for other_entity in character_entities:
 				if other_entity.get('_id') != entity.get('_id') and (entity.get('known_to') or []).count(other_entity.get('_id')) == 0:
 					if entity.get('known_to') is None:
@@ -5284,6 +5301,20 @@ def imagegen(entity_key, force):
 					FILTER s._to == t._id
 				RETURN [t.name, s.statement, s.rating[0], s.notes, s.rating_type]
 			)
+			LET archetypes = (
+				FOR v, e, p IN 0..20 OUTBOUND 'Entities/{ entity_key }' Relations
+					FILTER p.edges[*].type ALL == 'archetype'
+					FILTER v._id != 'Entities/{ entity_key }'
+				RETURN v
+			)
+			FOR archetype IN archetypes
+			LET archetype_traits = (
+				FOR s IN TraitSettings
+					FILTER archetype._id == s._from
+				FOR t IN Traits
+					FILTER s._to == t._id
+				RETURN [t.name, s.statement, s.rating[0], s.notes, s.rating_type]
+			)
 			LET hierarchy = (
 				FOR v, e, p IN 0..20 OUTBOUND entity Relations
 				FILTER p.edges[*].type ALL == 'super'
@@ -5305,7 +5336,7 @@ def imagegen(entity_key, force):
 			RETURN {{
 				entity: entity.name,
 				description: entity.description,
-				traits: traits,
+				traits: APPEND(traits, archetype_traits),
 				hierarchy: hierarchy,
 				zones: zones
 			}}"""
