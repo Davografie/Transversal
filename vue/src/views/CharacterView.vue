@@ -414,6 +414,9 @@
 
 	const deletion = ref(false)
 	function entity_deletion(rmtree?: boolean) {
+		if(!entity.value && player.the_entity) {
+			entity.value = player.the_entity
+		}
 		if(rmtree) {
 			prune_location()
 		}
@@ -854,7 +857,7 @@
 						@click="deletion = true"
 						v-if="player.is_gm && player.the_entity?.key != 'placeholder' && !['1', '2'].includes(player.the_entity?.key) && deletion == false" />
 					<div id="delete-confirmation" v-if="deletion">
-						<label>🗑</label>
+						<label>🗑 {{ entity.name ?? player.the_entity.name ?? 'undefined' }}</label>
 						<div class="button-mnml verify-rmtree" id="verify-rmtree"
 							title="delete recursively"
 							v-if="player.the_entity?.entityType == 'location'"
@@ -883,12 +886,10 @@
 						<div class="label" v-if="!player.small_buttons">refresh</div>
 					</div>
 
-					<ButtonMinimal
-						:function="ButtonTypes.SETTINGS"
+					<ButtonMinimal :function="ButtonTypes.SETTINGS"
 						@click="router.push({ path: '/location/' + player.the_entity?.location?.key + '/settings' })" />
 
-					<ButtonMinimal
-						:function="ButtonTypes.LOCATION_PIN"
+					<ButtonMinimal :function="ButtonTypes.LOCATION_PIN"
 						v-if="player.is_gm"
 						@click="toggle_location_restriction" />
 				</div>
